@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NightFind Legal Information - Privacy Policy, Terms of Service, and Cookies Policy.">
+    <title>Legal - NightFind</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <style>
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--purple);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .tab-button {
+            padding: 1rem 2rem;
+            background: transparent;
+            color: var(--gray-light);
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .tab-button:hover {
+            color: var(--white);
+            background: rgba(124, 58, 237, 0.1);
+        }
+        
+        .tab-button.active {
+            color: var(--purple);
+            background: rgba(124, 58, 237, 0.2);
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--purple);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.svg" alt="NightFind Logo">
+                <span>NightFind</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="bars.html">Bars</a></li>
+                <li><a href="clubs.html">Clubs</a></li>
+                <li><a href="events.html">Events</a></li>
+                <li><a href="legal.html" class="active">Legal</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>Legal Information</h1>
+        <p>Privacy Policy, Terms of Service, and Cookies Policy</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('privacy')">Privacy Policy</button>
+            <button class="tab-button" onclick="showTab('terms')">Terms of Service</button>
+            <button class="tab-button" onclick="showTab('cookies')">Cookies Policy</button>
+        </div>
+
+        <!-- Privacy Policy Tab -->
+        <div id="privacy" class="tab-content active">
+            <div class="content-section">
+                <p style="font-style: italic; color: var(--gray-light);">Last Updated: November 2, 2025</p>
+                
+                <p>
+                    At NightFind, we take your privacy seriously. This Privacy Policy explains how we collect, 
+                    use, disclose, and safeguard your information when you use our mobile application and services.
+                </p>
+
+                <h2>1. Information We Collect</h2>
+                
+                <h3>1.1 Personal Information</h3>
+                <p>When you create an account or use NightFind, we may collect:</p>
+                <ul>
+                    <li>Name and email address</li>
+                    <li>Profile picture (optional)</li>
+                    <li>Date of birth (to verify you are 18+)</li>
+                    <li>Phone number (optional)</li>
+                    <li>Payment information for premium features</li>
+                </ul>
+
+                <h3>1.2 Location Data</h3>
+                <p>
+                    NightFind requires access to your device's location to provide core functionality, including:
+                </p>
+                <ul>
+                    <li>Showing nearby venues, clubs, and bars</li>
+                    <li>Creating optimized route plans</li>
+                    <li>Providing location-based event recommendations</li>
+                    <li>Distance calculations and navigation features</li>
+                </ul>
+                <p>
+                    You can control location permissions through your device settings. Disabling location access 
+                    may limit app functionality. We collect both precise location (GPS) and approximate location 
+                    (network-based) data when you use the app.
+                </p>
+
+                <h3>1.3 Usage Data</h3>
+                <p>We automatically collect information about your interactions with the app:</p>
+                <ul>
+                    <li>Venues you view, save, or visit</li>
+                    <li>Search queries and filters used</li>
+                    <li>Routes created and navigation history</li>
+                    <li>Events you're interested in or attending</li>
+                    <li>App features you use and frequency of use</li>
+                    <li>Device information (model, OS version, unique identifiers)</li>
+                    <li>App crash reports and performance data</li>
+                </ul>
+
+                <h2>2. Third-Party Services & APIs</h2>
+                <p>
+                    NightFind integrates with third-party services to provide enhanced functionality:
+                </p>
+
+                <h3>2.1 Supabase</h3>
+                <p>
+                    We use Supabase as our backend infrastructure for database management, authentication, 
+                    and real-time features. Your account data and app content are stored on Supabase servers. 
+                    Learn more at: <a href="https://supabase.com/privacy" target="_blank" style="color: var(--purple);">supabase.com/privacy</a>
+                </p>
+
+                <h3>2.2 Google Services</h3>
+                <p>
+                    We use Google Maps Platform for location services, mapping, and place data. Google may 
+                    collect information about your use of mapping features. 
+                    Learn more at: <a href="https://policies.google.com/privacy" target="_blank" style="color: var(--purple);">policies.google.com/privacy</a>
+                </p>
+
+                <h3>2.3 Apple Services</h3>
+                <p>
+                    If you sign in with Apple ID, Apple provides limited information as per your privacy choices. 
+                    We respect Apple's privacy features including email relay. 
+                    Learn more at: <a href="https://www.apple.com/privacy/" target="_blank" style="color: var(--purple);">apple.com/privacy</a>
+                </p>
+
+                <h2>3. Your Privacy Rights</h2>
+                <p>Depending on your location, you may have the following rights:</p>
+                <ul>
+                    <li><strong>Access:</strong> Request a copy of your personal data</li>
+                    <li><strong>Correction:</strong> Update inaccurate or incomplete information</li>
+                    <li><strong>Deletion:</strong> Request deletion of your account and associated data</li>
+                    <li><strong>Portability:</strong> Receive your data in a structured, machine-readable format</li>
+                    <li><strong>Opt-Out:</strong> Unsubscribe from marketing communications</li>
+                    <li><strong>Location Control:</strong> Manage location permissions through device settings</li>
+                </ul>
+                <p>
+                    To exercise these rights, contact us at <a href="mailto:privacy@nightfind.com" style="color: var(--purple);">privacy@nightfind.com</a>
+                </p>
+
+                <h2>4. Contact Us</h2>
+                <p>
+                    If you have questions or concerns about this Privacy Policy or our data practices, 
+                    please contact us:
+                </p>
+                <p>
+                    <strong>Email:</strong> <a href="mailto:privacy@nightfind.com" style="color: var(--purple);">privacy@nightfind.com</a><br>
+                    <strong>Support:</strong> <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a><br>
+                    <strong>Website:</strong> <a href="contact.html" style="color: var(--purple);">Contact Form</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Terms of Service Tab -->
+        <div id="terms" class="tab-content">
+            <div class="content-section">
+                <p style="font-style: italic; color: var(--gray-light);">Last Updated: November 2, 2025</p>
+                
+                <p>
+                    Welcome to NightFind. By accessing or using our mobile application and services, you agree 
+                    to be bound by these Terms of Service ("Terms"). Please read them carefully.
+                </p>
+
+                <h2>1. Age Requirement</h2>
+                <p>
+                    <strong>NightFind is intended for users aged 18 years or older.</strong> By using the app, 
+                    you represent and warrant that you are at least 18 years of age. We reserve the right to 
+                    verify your age and terminate accounts of users who do not meet this requirement.
+                </p>
+
+                <h2>2. User Obligations and Conduct</h2>
+                <p>When using NightFind, you agree to:</p>
+                <ul>
+                    <li><strong>Comply with Laws:</strong> Follow all applicable local, national, and international laws</li>
+                    <li><strong>Accurate Information:</strong> Provide truthful information in your profile and interactions</li>
+                    <li><strong>Respect Others:</strong> Treat other users, venues, and staff with respect</li>
+                    <li><strong>Responsible Use:</strong> Use the app responsibly and not while impaired</li>
+                    <li><strong>No Harassment:</strong> Refrain from abusive, threatening, or discriminatory behavior</li>
+                </ul>
+
+                <h2>3. Premium Listings</h2>
+                <p>
+                    NightFind offers premium listing opportunities for venues, clubs, and bars. Premium venues 
+                    receive enhanced visibility, featured placement, and access to analytics. These are paid 
+                    promotional placements clearly marked within the app.
+                </p>
+                <p>
+                    Premium listings do not affect our commitment to providing accurate, unbiased information. 
+                    User reviews and ratings for premium venues are not influenced by their premium status.
+                </p>
+
+                <h2>4. Limitation of Liability</h2>
+                <p>
+                    <strong>TO THE FULLEST EXTENT PERMITTED BY LAW, NIGHTFIND AND ITS AFFILIATES SHALL NOT BE LIABLE FOR:</strong>
+                </p>
+                <ul>
+                    <li>Any indirect, incidental, special, consequential, or punitive damages</li>
+                    <li>Loss of profits, revenue, data, or use</li>
+                    <li>Personal injury or property damage</li>
+                    <li>Incidents occurring at venues or events discovered through the app</li>
+                    <li>Actions or omissions of other users or third parties</li>
+                    <li>Reliance on venue information or reviews</li>
+                </ul>
+
+                <h2>5. Safety and Responsibility</h2>
+                <p>
+                    You are solely responsible for your safety and well-being when using NightFind and visiting 
+                    venues. We strongly encourage you to:
+                </p>
+                <ul>
+                    <li>Drink responsibly and never drink and drive</li>
+                    <li>Travel with friends and stay aware of your surroundings</li>
+                    <li>Use ride-sharing services or public transportation</li>
+                    <li>Trust your instincts and leave situations that feel unsafe</li>
+                </ul>
+
+                <h2>6. Contact Information</h2>
+                <p>
+                    For questions about these Terms, please contact us:
+                </p>
+                <p>
+                    <strong>Email:</strong> <a href="mailto:legal@nightfind.com" style="color: var(--purple);">legal@nightfind.com</a><br>
+                    <strong>Support:</strong> <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Cookies Policy Tab -->
+        <div id="cookies" class="tab-content">
+            <div class="content-section">
+                <p style="font-style: italic; color: var(--gray-light);">Last Updated: November 2, 2025</p>
+                
+                <p>
+                    This Cookies Policy explains how NightFind uses cookies and similar tracking technologies 
+                    on our mobile application and website. By using NightFind, you consent to our use of 
+                    cookies as described in this policy.
+                </p>
+
+                <h2>1. What Are Cookies?</h2>
+                <p>
+                    Cookies are small text files stored on your device (computer, smartphone, or tablet) when 
+                    you visit a website or use an application. Cookies help websites and apps remember information 
+                    about your visit, making your experience more efficient and personalized.
+                </p>
+
+                <h2>2. Types of Cookies We Use</h2>
+
+                <h3>2.1 Essential Cookies</h3>
+                <p>
+                    These cookies are necessary for the app to function properly and cannot be disabled. They include:
+                </p>
+                <ul>
+                    <li><strong>Authentication:</strong> Keep you logged in and verify your identity</li>
+                    <li><strong>Security:</strong> Protect against unauthorized access and cyber threats</li>
+                    <li><strong>Session Management:</strong> Maintain your session state across app screens</li>
+                    <li><strong>Preferences:</strong> Remember your language, region, and app settings</li>
+                </ul>
+
+                <h3>2.2 Analytics Cookies</h3>
+                <p>
+                    We use analytics cookies to understand how users interact with NightFind, helping us improve 
+                    the app. These cookies collect anonymous information such as:
+                </p>
+                <ul>
+                    <li>Pages/screens visited and time spent</li>
+                    <li>Features used and user flow patterns</li>
+                    <li>Device type, operating system, and app version</li>
+                    <li>Crash reports and error logs</li>
+                </ul>
+
+                <h2>3. Third-Party Services</h2>
+                <p>
+                    NightFind integrates with third-party services that may set their own cookies:
+                </p>
+
+                <h3>3.1 Supabase</h3>
+                <p>
+                    Our backend infrastructure provider uses cookies for authentication, session management, 
+                    and database operations. Learn more: 
+                    <a href="https://supabase.com/privacy" target="_blank" style="color: var(--purple);">supabase.com/privacy</a>
+                </p>
+
+                <h3>3.2 Google Services</h3>
+                <p>
+                    We use Google Maps and Google Analytics, which may collect data through cookies. Learn more:
+                    <a href="https://policies.google.com/technologies/cookies" target="_blank" style="color: var(--purple);">policies.google.com/technologies/cookies</a>
+                </p>
+
+                <h2>4. How to Manage Cookies</h2>
+                
+                <h3>4.1 iOS Devices</h3>
+                <p>To control tracking on iOS devices:</p>
+                <ol>
+                    <li>Go to <strong>Settings > Privacy & Security</strong></li>
+                    <li>Tap <strong>Tracking</strong></li>
+                    <li>Toggle off "Allow Apps to Request to Track"</li>
+                </ol>
+
+                <h3>4.2 Android Devices</h3>
+                <p>To control tracking on Android devices:</p>
+                <ol>
+                    <li>Go to <strong>Settings > Privacy</strong></li>
+                    <li>Tap <strong>Ads</strong></li>
+                    <li>Enable "Opt out of Ads Personalization"</li>
+                </ol>
+
+                <h2>5. Contact Us</h2>
+                <p>
+                    If you have questions or concerns about our use of cookies, please contact us:
+                </p>
+                <p>
+                    <strong>Email:</strong> <a href="mailto:privacy@nightfind.com" style="color: var(--purple);">privacy@nightfind.com</a><br>
+                    <strong>Support:</strong> <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="legal.html">Privacy Policy</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="legal.html">Terms of Service</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="legal.html">Cookies Policy</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="contact.html">Contact</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 NightFind • All rights reserved • 
+                <a href="mailto:info@nightfind.com">info@nightfind.com</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Scroll to top of content
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile menu toggle
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
+
+        navToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
+
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                navToggle.classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>

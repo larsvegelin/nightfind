@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NightFind - Your ultimate international nightlife discovery app. Find clubs, bars, and events. Plan your perfect night out.">
+    <meta name="keywords" content="nightlife, clubs, bars, events, party, nightfind">
+    <meta name="author" content="NightFind">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nightfind.com/">
+    <meta property="og:title" content="NightFind - Find. Plan. Enjoy — Your Night Starts Here.">
+    <meta property="og:description" content="Discover the best nightlife experiences worldwide. Find clubs, bars, and events in your city.">
+    <meta property="og:image" content="https://nightfind.com/assets/logo.svg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://nightfind.com/">
+    <meta property="twitter:title" content="NightFind - Find. Plan. Enjoy — Your Night Starts Here.">
+    <meta property="twitter:description" content="Discover the best nightlife experiences worldwide. Find clubs, bars, and events in your city.">
+    <meta property="twitter:image" content="https://nightfind.com/assets/logo.svg">
+    
+    <title>NightFind - Find. Plan. Enjoy — Your Night Starts Here.</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.svg" alt="NightFind Logo">
+                <span>NightFind</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="bars.html">Bars</a></li>
+                <li><a href="clubs.html">Clubs</a></li>
+                <li><a href="events.html">Events</a></li>
+                <li><a href="legal.html">Legal</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <img src="assets/logo.svg" alt="NightFind Logo" class="hero-logo" style="width: 200px; height: 200px;">
+            <h1 style="font-size: 4.5rem; margin-top: 2rem;">NightFind</h1>
+            <p class="hero-tagline">Find. Plan. Enjoy — Your Night Starts Here.</p>
+            <p style="font-size: 1.3rem; max-width: 600px; margin: 0 auto 3rem;">
+                Discover the best nightlife experiences in your city and around the world. 
+                From exclusive clubs to hidden bars, plan your perfect night out with NightFind.
+            </p>
+            
+            <!-- Download Buttons -->
+            <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem;">
+                <a href="https://apps.apple.com/app/nightfind" target="_blank" style="transition: transform 0.3s ease; display: block;">
+                    <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1441065600" alt="Download on the App Store" style="height: 60px;">
+                </a>
+                <a href="https://play.google.com/store/apps/nightfind" target="_blank" style="transition: transform 0.3s ease; display: block;">
+                    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" style="height: 60px;">
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="container">
+        <div class="content-section fade-in-up" style="text-align: center;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 3rem;">Why NightFind?</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 2rem; max-width: 800px; margin: 0 auto;">
+                <div class="card scroll-reveal">
+                    <h3 style="color: var(--purple); margin-bottom: 1rem;">Discover</h3>
+                    <p>
+                        Browse thousands of verified venues including clubs, bars, lounges, and live music spots. 
+                        Filter by vibe, music genre, and your preferences.
+                    </p>
+                </div>
+                
+                <div class="card scroll-reveal">
+                    <h3 style="color: var(--purple); margin-bottom: 1rem;">Plan Your Route</h3>
+                    <p>
+                        Create the perfect pub crawl or night out itinerary. Our smart routing helps you 
+                        maximize your night with optimized paths between venues.
+                    </p>
+                </div>
+                
+                <div class="card scroll-reveal">
+                    <h3 style="color: var(--purple); margin-bottom: 1rem;">Exclusive Events</h3>
+                    <p>
+                        Stay updated on special events, DJ performances, and exclusive parties. 
+                        Never miss out on the hottest happenings in your area.
+                    </p>
+                </div>
+                
+                <div class="card scroll-reveal">
+                    <h3 style="color: var(--purple); margin-bottom: 1rem;">Premium Venues</h3>
+                    <p>
+                        Discover featured venues with premium listings, offering special perks, 
+                        VIP access, and exclusive deals for NightFind users.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- City Stats Section -->
+    <section class="container">
+        <div class="content-section text-center">
+            <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">Global Nightlife at Your Fingertips</h2>
+            <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; margin-top: 3rem;">
+                <div>
+                    <div style="font-size: 3rem; color: var(--purple); font-weight: 700;" id="countryCount">-</div>
+                    <div style="color: var(--gray-light);">Countries</div>
+                </div>
+                <div>
+                    <div style="font-size: 3rem; color: var(--purple); font-weight: 700;" id="cityCount">-</div>
+                    <div style="color: var(--gray-light);">Cities</div>
+                </div>
+                <div>
+                    <div style="font-size: 3rem; color: var(--purple); font-weight: 700;" id="barCount">-</div>
+                    <div style="color: var(--gray-light);">Bars</div>
+                </div>
+                <div>
+                    <div style="font-size: 3rem; color: var(--purple); font-weight: 700;" id="clubCount">-</div>
+                    <div style="color: var(--gray-light);">Clubs</div>
+                </div>
+                <div>
+                    <div style="font-size: 3rem; color: var(--purple); font-weight: 700;" id="eventCount">-</div>
+                    <div style="color: var(--gray-light);">Events</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="legal.html">Privacy Policy</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="legal.html">Terms of Service</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="legal.html">Cookies Policy</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="contact.html">Contact</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 NightFind • All rights reserved • 
+                <a href="mailto:info@nightfind.com">info@nightfind.com</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://wwsxjoavjccajwrcrtfg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3c3hqb2F2amNjYWp3cmNydGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMzUwMTYsImV4cCI6MjA2OTkxMTAxNn0.9w25Fw0q7vNfH3KC5XphzgJP_S2jM7E89tb2OrKr8pE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Load statistics from Supabase
+        async function loadStatistics() {
+            try {
+                // Count countries
+                const { count: countryCount, error: countryError } = await supabase
+                    .from('countries')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (!countryError && countryCount !== null) {
+                    document.getElementById('countryCount').textContent = countryCount.toLocaleString();
+                }
+
+                // Count cities
+                const { count: cityCount, error: cityError } = await supabase
+                    .from('cities')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (!cityError && cityCount !== null) {
+                    document.getElementById('cityCount').textContent = cityCount.toLocaleString();
+                }
+
+                // Count bars - need to count across all city-specific tables
+                const { data: cities, error: citiesError } = await supabase
+                    .from('cities')
+                    .select('name');
+                
+                let totalBars = 0;
+                let totalClubs = 0;
+                let totalEvents = 0;
+                
+                if (!citiesError && cities) {
+                    // Count bars from all city tables
+                    for (const city of cities) {
+                        const barTable = `venues_bars_${city.name}`;
+                        const { count: barCount } = await supabase
+                            .from(barTable)
+                            .select('*', { count: 'exact', head: true });
+                        if (barCount) totalBars += barCount;
+                    }
+                    
+                    // Count clubs from all city tables
+                    for (const city of cities) {
+                        const clubTable = `venues_clubs_${city.name}`;
+                        const { count: clubCount } = await supabase
+                            .from(clubTable)
+                            .select('*', { count: 'exact', head: true });
+                        if (clubCount) totalClubs += clubCount;
+                    }
+                    
+                    // Count events from all city tables
+                    for (const city of cities) {
+                        const eventTable = `events_${city.name}`;
+                        const { count: eventCount } = await supabase
+                            .from(eventTable)
+                            .select('*', { count: 'exact', head: true })
+                            .gte('event_date', new Date().toISOString().split('T')[0]);
+                        if (eventCount) totalEvents += eventCount;
+                    }
+                    
+                    document.getElementById('barCount').textContent = totalBars.toLocaleString();
+                    document.getElementById('clubCount').textContent = totalClubs.toLocaleString();
+                    document.getElementById('eventCount').textContent = totalEvents.toLocaleString();
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                // Set fallback values
+                document.getElementById('countryCount').textContent = '5';
+                document.getElementById('cityCount').textContent = '7';
+                document.getElementById('barCount').textContent = '100+';
+                document.getElementById('clubCount').textContent = '50+';
+                document.getElementById('eventCount').textContent = '25+';
+            }
+        }
+
+        // Call on page load
+        window.addEventListener('load', loadStatistics);
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile menu toggle
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
+
+        navToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                navToggle.classList.remove('active');
+            });
+        });
+
+        // Scroll reveal animation
+        const revealElements = document.querySelectorAll('.scroll-reveal');
+        
+        const revealOnScroll = () => {
+            revealElements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                
+                if (elementTop < windowHeight - 100) {
+                    element.classList.add('revealed');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealOnScroll);
+        window.addEventListener('load', revealOnScroll);
+    </script>
+</body>
+</html>

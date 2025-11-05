@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Discover the best bars worldwide with NightFind.">
+    <title>Bars - NightFind</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.svg" alt="NightFind Logo">
+                <span>NightFind</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="bars.html" class="active">Bars</a></li>
+                <li><a href="clubs.html">Clubs</a></li>
+                <li><a href="events.html">Events</a></li>
+                <li><a href="legal.html">Legal</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>Bars</h1>
+        <p>Discover amazing bars in cities around the world</p>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="container">
+        <div class="content-section">
+            <!-- City Selector -->
+            <div style="margin-bottom: 1.5rem;">
+                <select id="citySelect" style="width: 100%; padding: 1rem 1.5rem; background: var(--gray-dark); color: var(--white); border: 2px solid var(--purple); border-radius: 16px; font-size: 1rem; cursor: pointer; font-weight: 600;">
+                    <option value="">Select a City</option>
+                </select>
+            </div>
+
+            <!-- Filter Toggle Button -->
+            <div style="margin-bottom: 1.5rem;">
+                <button id="filterToggle" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1.5rem; background: var(--gray-dark); color: var(--white); border: 2px solid var(--gray-medium); border-radius: 16px; font-size: 1rem; cursor: pointer; font-weight: 600; width: 100%;">
+                    <span>Filters</span>
+                    <span style="margin-left: auto; transition: transform 0.3s;">▼</span>
+                </button>
+            </div>
+
+            <!-- Filter Chips (collapsible) -->
+            <div id="filterPanel" style="display: none; margin-bottom: 2rem; padding: 1.5rem; background: var(--gray-dark); border-radius: 16px; border: 2px solid var(--gray-medium);">
+                <!-- Subcategory Filters -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="color: var(--gray-light); font-size: 0.9rem; font-weight: 600; display: block; margin-bottom: 0.75rem;">Category:</label>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button class="filter-chip active" data-filter="all" onclick="filterBySubcategory('all')">All</button>
+                        <button class="filter-chip" data-filter="10" onclick="filterBySubcategory(10)">Beer</button>
+                        <button class="filter-chip" data-filter="11" onclick="filterBySubcategory(11)">Student</button>
+                        <button class="filter-chip" data-filter="12" onclick="filterBySubcategory(12)">Local</button>
+                        <button class="filter-chip" data-filter="13" onclick="filterBySubcategory(13)">Pub</button>
+                        <button class="filter-chip" data-filter="14" onclick="filterBySubcategory(14)">Rock</button>
+                        <button class="filter-chip" data-filter="15" onclick="filterBySubcategory(15)">Live Music</button>
+                        <button class="filter-chip" data-filter="16" onclick="filterBySubcategory(16)">Karaoke</button>
+                        <button class="filter-chip" data-filter="17" onclick="filterBySubcategory(17)">Cocktail</button>
+                        <button class="filter-chip" data-filter="18" onclick="filterBySubcategory(18)">LGBTQ+</button>
+                        <button class="filter-chip" data-filter="19" onclick="filterBySubcategory(19)">Rooftop</button>
+                        <button class="filter-chip" data-filter="20" onclick="filterBySubcategory(20)">Sports</button>
+                        <button class="filter-chip" data-filter="21" onclick="filterBySubcategory(21)">Beach</button>
+                        <button class="filter-chip" data-filter="22" onclick="filterBySubcategory(22)">Reggae</button>
+                        <button class="filter-chip" data-filter="23" onclick="filterBySubcategory(23)">Salsa</button>
+                        <button class="filter-chip" data-filter="24" onclick="filterBySubcategory(24)">Dance</button>
+                    </div>
+                </div>
+
+                <!-- Price Filters -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="color: var(--gray-light); font-size: 0.9rem; font-weight: 600; display: block; margin-bottom: 0.75rem;">Price:</label>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button class="filter-chip price-filter active" data-price="all" onclick="filterByPrice('all')">All</button>
+                        <button class="filter-chip price-filter" data-price="€" onclick="filterByPrice('€')">€</button>
+                        <button class="filter-chip price-filter" data-price="€€" onclick="filterByPrice('€€')">€€</button>
+                        <button class="filter-chip price-filter" data-price="€€€" onclick="filterByPrice('€€€')">€€€</button>
+                    </div>
+                </div>
+                
+                <!-- Status Filters -->
+                <div>
+                    <label style="color: var(--gray-light); font-size: 0.9rem; font-weight: 600; display: block; margin-bottom: 0.75rem;">Status:</label>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button class="filter-chip status-filter active" data-status="all" onclick="filterByStatus('all')">All</button>
+                        <button class="filter-chip status-filter" data-status="open" onclick="filterByStatus('open')">Open Now</button>
+                        <button class="filter-chip status-filter" data-status="closed" onclick="filterByStatus('closed')">Closed</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loadingIndicator" style="text-align: center; padding: 2rem; color: var(--purple); display: none;">
+                <span style="font-size: 1.1rem;">Loading bars...</span>
+            </div>
+
+            <!-- Bars Grid -->
+            <div id="barsGrid" style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Bars will be loaded here -->
+            </div>
+
+            <div id="emptyState" style="text-align: center; padding: 3rem; color: var(--gray-light); display: none;">
+                <h3 style="color: var(--white); margin-bottom: 1rem;">No bars found</h3>
+                <p>Try adjusting your filters or select a different city.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="legal.html">Privacy Policy</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="legal.html">Terms of Service</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="legal.html">Cookies Policy</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="contact.html">Contact</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 NightFind • All rights reserved • 
+                <a href="mailto:info@nightfind.com">info@nightfind.com</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://wwsxjoavjccajwrcrtfg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3c3hqb2F2amNjYWp3cmNydGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMzUwMTYsImV4cCI6MjA2OTkxMTAxNn0.9w25Fw0q7vNfH3KC5XphzgJP_S2jM7E89tb2OrKr8pE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentCity = '';
+        let currentCityId = null;
+        let allBars = [];
+        let currentFilters = {
+            subcategory: 'all',
+            price: 'all',
+            status: 'all'
+        };
+
+        // Subcategory names and icons mapping
+        const subcategoryNames = {
+            10: 'Beer',
+            11: 'Student',
+            12: 'Local',
+            13: 'Pub',
+            14: 'Rock',
+            15: 'Live Music',
+            16: 'Karaoke',
+            17: 'Cocktail',
+            18: 'LGBTQ+',
+            19: 'Rooftop',
+            20: 'Sports',
+            21: 'Beach',
+            22: 'Reggae',
+            23: 'Salsa',
+            24: 'Dance'
+        };
+
+        const subcategoryIcons = {
+            10: '🍺',
+            11: '🎓',
+            12: '🎷',
+            13: '☘️',
+            14: '🎸',
+            15: '🎵',
+            16: '🎤',
+            17: '🍸',
+            18: '🏳️‍🌈',
+            19: '☀️',
+            20: '⚽',
+            21: '🏖️',
+            22: '🎶',
+            23: '💃',
+            24: '🪩'
+        };
+
+        // Check if venue is open now
+        function isOpenNow(venue) {
+            const now = new Date();
+            const day = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            const time = now.getHours() * 60 + now.getMinutes();
+            
+            const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const hoursKey = `${dayMap[day]}_hours`;
+            const hours = venue[hoursKey];
+            
+            if (!hours || hours === 'Gesloten' || hours === 'Closed') return false;
+            
+            // Parse hours like "16:00-00:00"
+            const match = hours.match(/(\d{2}):(\d{2})-(\d{2}):(\d{2})/);
+            if (!match) return false;
+            
+            const openTime = parseInt(match[1]) * 60 + parseInt(match[2]);
+            let closeTime = parseInt(match[3]) * 60 + parseInt(match[4]);
+            
+            // Handle overnight closing (e.g., 23:00-04:00)
+            if (closeTime < openTime) {
+                return time >= openTime || time < closeTime;
+            }
+            
+            return time >= openTime && time < closeTime;
+        }
+
+        // Load cities for filter
+        async function loadCities() {
+            try {
+                // Get available cities with their IDs from cities table
+                const { data, error } = await supabase
+                    .from('cities')
+                    .select('id, name, country_id')
+                    .order('name');
+
+                if (error) throw error;
+
+                const select = document.getElementById('citySelect');
+                select.innerHTML = '<option value="">Select a City</option>';
+                
+                data.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.name; // Use city name for table lookup
+                    option.dataset.cityId = city.id; // Store ID in dataset
+                    option.textContent = city.name;
+                    select.appendChild(option);
+                });
+
+                // Load bars for first city
+                if (data.length > 0) {
+                    currentCity = data[0].name;
+                    currentCityId = data[0].id;
+                    select.value = currentCity;
+                    loadBars(currentCity, currentCityId);
+                }
+            } catch (error) {
+                console.error('Error loading cities:', error);
+                document.getElementById('citySelect').innerHTML = '<option value="">Error loading cities</option>';
+            }
+        }
+
+        // Load bars from Supabase
+        async function loadBars(city = '', cityId = null) {
+            const grid = document.getElementById('barsGrid');
+            const emptyState = document.getElementById('emptyState');
+            const loading = document.getElementById('loadingIndicator');
+            
+            if (!city) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            loading.style.display = 'block';
+            grid.innerHTML = '';
+            emptyState.style.display = 'none';
+
+            try {
+                const tableName = `venues_bars_${city}`;
+                
+                const { data, error } = await supabase
+                    .from(tableName)
+                    .select('*')
+                    .order('ranking', { ascending: false });
+
+                if (error) {
+                    console.error('Supabase error:', error);
+                    throw error;
+                }
+
+                loading.style.display = 'none';
+
+                if (!data || data.length === 0) {
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                allBars = data;
+                applyFilters();
+            } catch (error) {
+                console.error('Error loading bars:', error);
+                loading.style.display = 'none';
+                grid.innerHTML = `<p style="color: var(--gray-light); grid-column: 1/-1; text-align: center;">Error loading bars for ${city}.</p>`;
+            }
+        }
+
+        // Apply all filters
+        function applyFilters() {
+            const grid = document.getElementById('barsGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            let filtered = allBars.filter(bar => {
+                // Subcategory filter
+                if (currentFilters.subcategory !== 'all') {
+                    if (bar.subcategory_id != currentFilters.subcategory) return false;
+                }
+                
+                // Price filter
+                if (currentFilters.price !== 'all') {
+                    if (bar.price_level !== currentFilters.price) return false;
+                }
+                
+                // Status filter
+                if (currentFilters.status !== 'all') {
+                    const open = isOpenNow(bar);
+                    if (currentFilters.status === 'open' && !open) return false;
+                    if (currentFilters.status === 'closed' && open) return false;
+                }
+                
+                return true;
+            });
+            
+            grid.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            filtered.forEach(bar => {
+                const card = createVenueCard(bar);
+                grid.appendChild(card);
+            });
+        }
+
+        // Filter functions
+        function filterBySubcategory(subcatId) {
+            currentFilters.subcategory = subcatId;
+            document.querySelectorAll('.filter-chip[data-filter]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter == subcatId);
+            });
+            applyFilters();
+        }
+
+        function filterByPrice(price) {
+            currentFilters.price = price;
+            document.querySelectorAll('.price-filter').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.price === price);
+            });
+            applyFilters();
+        }
+
+        function filterByStatus(status) {
+            currentFilters.status = status;
+            document.querySelectorAll('.status-filter').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.status === status);
+            });
+            applyFilters();
+        }
+
+        // Create modern venue card
+        function createVenueCard(venue) {
+            const card = document.createElement('div');
+            card.className = 'venue-card';
+            
+            const isOpen = isOpenNow(venue);
+            const statusClass = isOpen ? 'open' : 'closed';
+            const statusText = isOpen ? 'Open' : 'Closed';
+            
+            // Get primary subcategory icon
+            const primaryIcon = venue.subcategory_id && subcategoryIcons[venue.subcategory_id] 
+                ? subcategoryIcons[venue.subcategory_id] 
+                : '';
+            
+            card.innerHTML = `
+                ${venue.image ? `<img src="${venue.image}" alt="${venue.name}" class="venue-image" onerror="this.style.display='none'">` : '<div class="venue-image" style="display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">${primaryIcon}</div>'}
+                <div class="venue-content">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.3rem;">
+                        <div style="flex: 1; min-width: 0;">
+                            <h3 class="venue-name" style="display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+                                ${primaryIcon ? `<span style="font-size: 1.1rem;">${primaryIcon}</span>` : ''}
+                                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${venue.name || 'Unnamed Venue'}</span>
+                            </h3>
+                            ${venue.area ? `<p class="venue-info" style="margin: 0.2rem 0 0 0; font-size: 0.8rem; color: var(--gray-light);">${venue.area}</p>` : ''}
+                        </div>
+                        <span class="venue-status ${statusClass}" style="flex-shrink: 0;">${statusText}</span>
+                    </div>
+                    
+                    ${venue.price_level ? `<p class="venue-info venue-price" style="margin: 0.3rem 0;">${venue.price_level}</p>` : ''}
+                </div>
+            `;
+            
+            card.addEventListener('click', () => showDetailModal(venue));
+            
+            return card;
+        }
+
+        // Show detail modal
+        function showDetailModal(venue) {
+            const modal = document.getElementById('detailModal') || createDetailModal();
+            const isOpen = isOpenNow(venue);
+            const statusClass = isOpen ? 'open' : 'closed';
+            const statusText = isOpen ? 'Open' : 'Closed';
+            
+            // Get all subcategories
+            const allSubcategories = [];
+            [venue.subcategory_id, venue.subcategory2_id, venue.subcategory3_id].forEach(id => {
+                if (id && subcategoryNames[id]) {
+                    allSubcategories.push(subcategoryNames[id]);
+                }
+            });
+            
+            const primaryIcon = venue.subcategory_id && subcategoryIcons[venue.subcategory_id] 
+                ? subcategoryIcons[venue.subcategory_id] 
+                : '';
+            
+            modal.querySelector('.detail-content').innerHTML = `
+                <button class="detail-close" onclick="closeDetailModal()" style="position: absolute; top: 1rem; left: 1rem; z-index: 10; background: rgba(0,0,0,0.6); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+                
+                <div style="position: absolute; top: 1rem; right: 1rem; z-index: 10; display: flex; gap: 0.75rem;">
+                    <button style="background: rgba(0,0,0,0.6); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">↗</button>
+                    <button style="background: rgba(0,0,0,0.6); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">➤</button>
+                    <button style="background: rgba(0,0,0,0.6); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">♡</button>
+                </div>
+                
+                ${venue.image ? `
+                    <div style="width: 100%; height: 400px; background-image: url('${venue.image}'); background-size: cover; background-position: center;"></div>
+                ` : `
+                    <div style="width: 100%; height: 400px; background: linear-gradient(135deg, var(--purple), var(--indigo)); display: flex; align-items: center; justify-content: center; font-size: 8rem;">
+                        ${primaryIcon}
+                    </div>
+                `}
+                
+                <div style="padding: 1.5rem; background: var(--black);">
+                    <h2 style="color: var(--white); font-size: 2rem; margin-bottom: 0.5rem;">${venue.name}</h2>
+                    <p style="color: var(--gray-light); font-size: 1rem; margin-bottom: 1rem;">${venue.address || ''}</p>
+                    <p style="color: var(--gray-light); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                        <span class="venue-status ${statusClass}" style="display: inline-block;">${statusText}</span>
+                        <span style="margin-left: 0.5rem;">• ${statusText === 'Open' ? 'Gesloten' : 'Closed'}</span>
+                    </p>
+                    
+                    ${allSubcategories.length > 0 ? `
+                        <div style="margin-bottom: 2rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            ${allSubcategories.map(subcat => `
+                                <span style="background: var(--purple); color: var(--white); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.95rem; font-weight: 600; display: inline-block;">
+                                    ${subcat}
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 1.5rem; margin-bottom: 2rem;">
+                        ${venue.price_level ? `
+                            <div style="flex: 1;">
+                                <h4 style="color: var(--white); font-size: 1.1rem; margin-bottom: 0.5rem;">Price Category</h4>
+                                <div style="background: var(--purple); color: var(--white); padding: 0.75rem 1.25rem; border-radius: 16px; text-align: center; font-size: 1.1rem; font-weight: 700; border: 2px solid var(--purple);">
+                                    ${venue.price_level}
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${venue.age_group ? `
+                            <div style="flex: 1;">
+                                <h4 style="color: var(--white); font-size: 1.1rem; margin-bottom: 0.5rem;">Age Category</h4>
+                                <div style="background: var(--purple); color: var(--white); padding: 0.75rem 1.25rem; border-radius: 16px; text-align: center; font-size: 1.1rem; font-weight: 700; border: 2px solid var(--purple);">
+                                    ${venue.age_group}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${venue.description ? `
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: var(--white); font-size: 1.3rem; margin-bottom: 0.75rem;">About</h3>
+                            <p style="color: var(--gray-light); line-height: 1.6;">${venue.description}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function createDetailModal() {
+            const modal = document.createElement('div');
+            modal.id = 'detailModal';
+            modal.className = 'detail-modal';
+            modal.innerHTML = '<div class="detail-content"></div>';
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeDetailModal();
+            });
+            
+            return modal;
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('detailModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // Filter toggle
+        document.getElementById('filterToggle').addEventListener('click', function() {
+            const panel = document.getElementById('filterPanel');
+            const arrow = this.querySelector('span:last-child');
+            
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                panel.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // City filter change
+        document.getElementById('citySelect').addEventListener('change', (e) => {
+            currentCity = e.target.value;
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            currentCityId = selectedOption.dataset.cityId;
+            loadBars(currentCity, currentCityId);
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile menu toggle
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
+
+        navToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
+
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                navToggle.classList.remove('active');
+            });
+        });
+
+        // Load on page ready
+        window.addEventListener('load', loadCities);
+    </script>
+</body>
+</html>
