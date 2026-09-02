@@ -2,6 +2,35 @@
 
 Basis: `parselab/index.html`. Het dashboard is een prototype-shell met echte tools erin. De spec kiest bewust voor "alleen navigatie werkt"; de punten hieronder gaan over wat er nodig is zodra echte gebruikers erin werken.
 
+## Status van toepassing
+
+Alle punten hieronder zijn toegepast in `index.html`, tenzij anders vermeld. Wat een backend nodig heeft, staat in de UI klaar en zegt dat eerlijk.
+
+| Element | Status |
+|---|---|
+| Logo `title="Naar overzicht"` | Toegepast |
+| Werkruimte: Overzicht, Bestanden, Hulp | Toegepast (`#files`, `#help`) |
+| Tellers alleen als ze iets betekenen ("3 fouten", "1 bezig") | Toegepast; lege tools hebben geen teller |
+| Verbruik in "handelingen", waarschuwing en knop pas bij 80% | Toegepast |
+| Gebruikersmenu: Account, Team, Uitloggen, Sessies en apparaten, Verbonden extensie | Toegepast (menu + dialogen) |
+| Subregel in gewone taal onder de toolnaam | Toegepast (`tagline`) |
+| Zoekveld "Zoek een taak of bestand…" over alle software | Toegepast; één resultatenlijst |
+| Primaire actie "Wat wil je doen?" met vier keuzes | Toegepast |
+| Kaarten met taak als kop, productnaam erboven, statuspil met fouten | Toegepast |
+| Laatste rondes klikbaar: bestand of fouten, "regels", "taak", "14 van 24" | Toegepast (ronde-dialoog) |
+| Bespaarde tijd met rekenregel | Toegepast |
+| Vraagt aandacht met één knop per melding | Toegepast |
+| Toolheader met extensiestaat en "wat blijft waar" | Toegepast; de extensie meldt zich via `bridge.js` |
+| KPI-pil weglaten zonder cijfer; "Om na te kijken" met knop | Toegepast |
+| Lijstregels openen de werkbank op dat item; koppen in gewone taal | Toegepast |
+| "Begin met stap 1 →" en Tips zodra er items zijn | Toegepast |
+| Laatste bestand met bestemming, "Open in Excel", bewaartermijn | Toegepast; downloaden zelf wacht op accounts |
+| Iframe met `sandbox`, tellers via `postMessage` (`parselab:stats`) | Toegepast; `localStorage` blijft de terugval. Eigen subdomein vraagt hosting |
+| Installatiepaneel: "Toevoegen aan Chrome", "Voor IT-beheer", handleiding op Hulp | Toegepast; Web Store-URL in `CONFIG.webstoreUrl` zodra de vermelding er is |
+| Woordenlijst (taak, ronde, uitlezen, bestand, regel, sjabloon) | Toegepast in alle dashboardteksten |
+| Inloggen met inloglink, Microsoft/Google, tweede stap op Business | Toegepast als scherm; de link wordt pas echt verstuurd met een backend |
+| Lokaal versus ParseLab per taak zichtbaar met slotje | Toegepast |
+
 ## Zijbalk
 
 ### Logo en wordmark
@@ -103,7 +132,7 @@ Basis: `parselab/index.html`. Het dashboard is een prototype-shell met echte too
 
 ### Iframe-werkbank (ParsePDF, ParseBoard)
 - **Nu:** de echte tool in een witte kaart, met "In nieuw tabblad openen" en "Sluiten".
-- **Simpeler:** gedaan. De eigen navigatie van de tool (ParsePDF: Home/Documenten/Kolommen/Resultaten/Automatiseren; ParseBoard: zes stappen) is in de werkbank verborgen en klapt uit als sub-items onder de tool in de dashboardzijbalk. De tool meldt zijn eigen sectie terug (bijv. na "Volgende"), zodat de zijbalk meeloopt; de hash wordt `#pdf/docs` of `#board/3`. Bij ParseBoard zijn stappen die nog niet bereikt zijn gedimd, precies zoals de stappenbalk van de tool dat deed. De extensie-tools klappen uit naar "Extensie installeren". Volgende stap: ParsePDF's "Rondleiding" en taalkeuze (stonden in de verborgen zijbalk) een plek geven in Instellingen.
+- **Simpeler:** gedaan. De eigen navigatie van de tool (ParsePDF: Uploaden/Aanwijzen/Controleren/Downloaden; ParseBoard: zes stappen) is in de werkbank verborgen en klapt uit als sub-items onder de tool in de dashboardzijbalk. De tool meldt zijn eigen sectie terug (bijv. na "Volgende"), zodat de zijbalk meeloopt; de hash wordt `#pdf/docs` of `#board/3`. Bij ParseBoard zijn stappen die nog niet bereikt zijn gedimd, precies zoals de stappenbalk van de tool dat deed. De extensie-tools klappen uit naar "Extensie installeren". Volgende stap: ParsePDF's "Rondleiding" en taalkeuze (stonden in de verborgen zijbalk) een plek geven in Instellingen.
 - **Veiliger:** een iframe op dezelfde origin deelt opslag en cookies met het dashboard. Zet de tools op een eigen subdomein (`app.parselab.nl/pdf`, of `pdf.parselab.nl`) met een `sandbox`-attribuut dat alleen `allow-same-origin allow-scripts allow-forms allow-downloads` geeft, en laat het dashboard via `postMessage` om tellers vragen in plaats van `localStorage` te lezen.
 - **Prioriteit:** 2
 

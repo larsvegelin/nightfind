@@ -12,6 +12,16 @@ Opdracht: ga per tool na waar het simpeler en gebruiksvriendelijker kan voor men
 
 Elk element krijgt vier regels: **Nu** (wat er staat), **Simpeler** (voor iemand zonder IT-achtergrond), **Veiliger** (waar dat speelt) en **Prioriteit** (1 = eerst doen, 3 = later).
 
+## Status
+
+| Winstpunt | Status |
+|---|---|
+| 1. Eén taal | Toegepast in dashboard, extensie en ParsePDF (namen, woordenlijst, jargon achter "Gevorderd") |
+| 2. Web Store | Voorbereid: één knop "Toevoegen aan Chrome" in het dashboard (`CONFIG.webstoreUrl`), IT-route eronder; de vermelding zelf moet worden ingediend |
+| 3. Openbare sites vanuit het dashboard | Ontwerp in `parsescraper.md`; vraagt een serverbrowser en is niet gebouwd |
+| 4. Geen API-sleutels in de browser | Toegepast: sleutelopslag verwijderd uit ParsePDF, herkenning loopt via een ParseLab-endpoint met opt-in per document |
+| 5. Minder rechten | Toegepast in `manifest.json`: sitetoegang per website na toestemming, `debugger` optioneel |
+
 ## De vijf grootste winstpunten, over alle tools heen
 
 1. **Eén taal in de hele suite.** Het dashboard zegt ParseForm, ParseScraper, ParsePDF en ParseBoard; de tools zelf heten nog "WebTool Scraper", "PDF Scraper" en "Paneel". Voor een gebruiker zijn dat zeven producten. Hernoem de tools, en schrap woorden als *regex*, *selector*, *attribuut*, *structuurpad*, *MCP*, *manifest* uit alles wat een gebruiker ziet. Prioriteit 1.
