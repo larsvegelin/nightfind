@@ -59,6 +59,13 @@
   .nav-item .label { flex:1; }
   .nav-item .meta { font-family:var(--mono); font-size:12px; letter-spacing:.02em; color:var(--on-dark-label); }
   .nav-item[aria-current="page"] .meta { color:var(--on-dark-muted); }
+  .nav-sub { display:flex; flex-direction:column; gap:2px; padding:2px 0 6px 0; }
+  .nav-sub-item { display:flex; align-items:center; gap:10px; width:100%; text-align:left; font-size:15px; font-weight:500; border-radius:14px; padding:9px 14px 9px 52px; color:var(--on-dark-muted); transition:background 150ms ease-out; }
+  .nav-sub-item:hover { background:rgba(242,240,231,.08); }
+  .nav-sub-item[aria-current="page"] { background:var(--nav-active); color:var(--on-dark); }
+  .nav-sub-item[disabled] { color:var(--on-dark-label); cursor:default; }
+  .nav-sub-item[disabled]:hover { background:transparent; }
+  .nav-sub-item .idx { font-family:var(--mono); font-size:12px; letter-spacing:.02em; width:16px; flex:none; }
   .dot { width:8px; height:8px; border-radius:999px; display:block; flex:none; }
   .tile { border-radius:9px; color:var(--ink-deep); font-family:var(--mono); display:flex; align-items:center; justify-content:center; flex:none; }
   .tile-26 { width:26px; height:26px; font-size:11px; }
@@ -169,7 +176,7 @@
   .bench { padding:0; overflow:hidden; gap:0; }
   .bench-head { display:flex; align-items:center; gap:12px; padding:20px 28px; border-bottom:1px solid var(--hairline); flex-wrap:wrap; }
   .bench-head .caps { flex:1; color:var(--muted); }
-  .bench-frame { width:100%; height:calc(100vh - 260px); min-height:720px; border:0; display:block; background:var(--cream-white); }
+  .bench-frame { width:100%; height:calc(100vh - 150px); min-height:720px; border:0; display:block; background:var(--cream-white); }
   .bench-body { padding:28px; display:grid; grid-template-columns:1.2fr 1fr; gap:32px; align-items:start; }
   .bench-body .steps { gap:20px; }
   .bench-actions { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
@@ -227,6 +234,7 @@
         <h1 id="top-title"></h1>
       </div>
       <div class="topbar-actions">
+        <a class="link" id="top-ext" target="_blank" rel="noopener" hidden>In nieuw tabblad openen →</a>
         <input class="search" id="search" type="search" placeholder="Zoek een flow of export…" aria-label="Zoeken">
         <button class="btn btn-navy" id="top-action"></button>
       </div>
@@ -264,6 +272,7 @@ function toolDefs() {
       status:"3 flows actief", statusCls:LIVE.cls, navMeta:"3 flows",
       headline:"1.842", headlineLabel:"Velden deze maand",
       cta:"Nieuwe flow opnemen", unit:"flow", listLabel:"Flows", cols:["flow","portaal","rijen"],
+      sections:[ { id:"install", label:"Extensie installeren" } ],
       kpis:[
         { label:"Rijen verwerkt", value:"1.842", delta:"+8,2%", note:"Deze maand, over 3 flows" },
         { label:"Gemiddeld per rij", value:"11 sec", delta:"−2 sec", note:"Handmatig was ~4 min" },
@@ -295,6 +304,7 @@ function toolDefs() {
       status:"1 run bezig", statusCls:NEUTRAL.cls, navMeta:"1 run",
       headline:"24.106", headlineLabel:"Rijen deze maand",
       cta:"Nieuwe scrape starten", unit:"scrape", listLabel:"Scrapes", cols:["scrape","bron","items"],
+      sections:[ { id:"install", label:"Extensie installeren" } ],
       kpis:[
         { label:"Rijen gescrapet", value:"24.106", delta:"+19%", note:"Over 5 bronnen" },
         { label:"Actieve run", value:"3 / 6", delta:"live", note:"Webshop-prijzen · rij 14 van 24" },
@@ -327,6 +337,7 @@ function toolDefs() {
       statusCls:NEUTRAL.cls, navMeta:live.pdfTemplates != null ? nl(live.pdfTemplates) + " sjabl." : "2 sjabl.",
       headline:"1.284", headlineLabel:"Documenten deze maand",
       cta:"Documenten uploaden", unit:"sjabloon", listLabel:"Sjablonen", cols:["sjabloon","documenttype","velden"],
+      sections:[ { id:"home", label:"Home" }, { id:"docs", label:"Documenten" }, { id:"columns", label:"Kolommen" }, { id:"results", label:"Resultaten" }, { id:"automate", label:"Automatiseren" } ],
       kpis:[
         { label:"Documenten verwerkt", value:"1.284", delta:"+12,4%", note:"Waarvan 218 scans" },
         { label:"Handmatig nagekeken", value:"3,1%", delta:"−0,8%", note:"40 van 1.284 rijen" },
@@ -352,6 +363,7 @@ function toolDefs() {
       navMeta: live.boardSaved ? "1 board" : "—",
       headline: live.boardColumns != null ? nl(live.boardColumns) : "12", headlineLabel: live.boardColumns != null ? "Kolommen in je board" : "Tegels in je boards",
       cta:"Dashboard bouwen", unit:"dashboard", listLabel:"Dashboards", cols:["dashboard","bron","tegels"],
+      sections:[ { id:"1", label:"Databron" }, { id:"2", label:"Typen" }, { id:"3", label:"Metrieken" }, { id:"4", label:"Onderdelen" }, { id:"5", label:"Weergave" }, { id:"6", label:"Dashboard" } ], numbered:true,
       kpis:[
         { label:"Verversing", value:"per batch", delta:"live", note:"Elke nieuwe export schuift erin" },
         { label:"Bronnen gekoppeld", value: live.boardSaved ? "1" : "0", delta: live.boardSaved ? "csv" : "—", note: live.boardFile ? live.boardFile : "Koppel een ParsePDF-sjabloon of CSV" },
@@ -435,19 +447,29 @@ function dot(color) { return `<span class="dot" style="background:${color}"></sp
 
 /* ===== State & routing ===== */
 const VIEWS = ["overview", "form", "scrape", "pdf", "board"];
-const state = { view:"overview", bench:false, query:"" };
+/* state.section = sectie binnen de tool (bijv. "docs" of "3"); state.toolMax = hoogste bereikbare stap (ParseBoard). */
+const state = { view:"overview", bench:false, section:null, toolMax:null, query:"" };
 
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, "");
   const [view, sub] = h.split("/");
   state.view = VIEWS.includes(view) ? view : "overview";
-  state.bench = state.view !== "overview" && sub === "werkbank";
+  const tool = state.view !== "overview" ? toolDefs().find(d => d.key === state.view) : null;
+  state.bench = !!(tool && sub);
+  if (state.bench) {
+    const ids = tool.sections.map(x => x.id);
+    state.section = ids.includes(sub) ? sub : ids[0];
+  } else { state.section = null; }
 }
+/* go(view) = detailweergave; go(view, true) = werkbank op de eerste sectie; go(view, "docs") = werkbank op die sectie. */
 function go(view, bench) {
-  const target = "#" + view + (bench ? "/werkbank" : "");
+  let sub = "";
+  if (bench === true) { const t = toolDefs().find(d => d.key === view); sub = t ? "/" + t.sections[0].id : ""; }
+  else if (typeof bench === "string") { sub = "/" + bench; }
+  const target = "#" + view + sub;
   if (location.hash === target) { parseHash(); render(); } else { location.hash = target; }
 }
-window.addEventListener("hashchange", () => { parseHash(); render(); window.scrollTo({ top:0, behavior:"smooth" }); });
+window.addEventListener("hashchange", () => { const wasBench = state.bench, wasView = state.view; parseHash(); if (state.view !== wasView) state.toolMax = null; render(); if (!(wasBench && state.bench && state.view === wasView)) window.scrollTo({ top:0, behavior:"smooth" }); });
 
 /* ===== Render ===== */
 function render() {
@@ -455,7 +477,7 @@ function render() {
   const tool = defs.find(d => d.key === state.view) || null;
 
   document.getElementById("nav-main").innerHTML = navItem({ label:"Overzicht", key:"overview", meta:"", lead: dot("#F2F0E7") });
-  document.getElementById("nav-tools").innerHTML = defs.map(d => navItem({ label:d.name, key:d.key, meta:d.navMeta, lead: tile(d, 26) })).join("");
+  document.getElementById("nav-tools").innerHTML = defs.map(d => navItem({ label:d.name, key:d.key, meta:d.navMeta, lead: tile(d, 26) }) + navSub(d)).join("");
 
   const pct = Math.min(100, Math.round(WORKSPACE.used / WORKSPACE.limit * 100));
   document.getElementById("usage").innerHTML = `
@@ -467,21 +489,31 @@ function render() {
   document.getElementById("user-name").textContent = WORKSPACE.user;
   document.getElementById("user-role").textContent = WORKSPACE.role;
 
-  const eyebrow = document.getElementById("top-eyebrow"), title = document.getElementById("top-title"), action = document.getElementById("top-action");
+  const eyebrow = document.getElementById("top-eyebrow"), title = document.getElementById("top-title"), action = document.getElementById("top-action"), ext = document.getElementById("top-ext");
   if (tool) {
     eyebrow.textContent = tool.kind; title.textContent = tool.name;
     action.textContent = state.bench ? "Terug naar " + tool.name : tool.bench.benchLabel;
+    ext.hidden = !(state.bench && tool.bench.kind === "frame");
+    if (!ext.hidden) ext.href = tool.bench.src;
     action.onclick = () => go(tool.key, !state.bench);
     document.title = tool.name + " · ParseLab";
   } else {
     eyebrow.textContent = "Werkruimte · " + WORKSPACE.org; title.textContent = greeting() + ", " + WORKSPACE.user.split(" ")[0];
     action.textContent = "Nieuwe flow"; action.onclick = () => go("form", true);
     document.title = "ParseLab Dashboard";
+    ext.hidden = true;
   }
 
   const view = document.getElementById("view");
-  view.innerHTML = tool ? (state.bench ? renderBench(tool) : renderTool(tool)) : renderOverview(defs);
-  bindActions(view, tool);
+  const frame = view.querySelector("iframe.bench-frame");
+  if (tool && state.bench && frame && frame.dataset.tool === tool.key) {
+    sendSection(frame, state.section);
+  } else {
+    view.innerHTML = tool ? (state.bench ? renderBench(tool) : renderTool(tool)) : renderOverview(defs);
+    bindActions(view, tool);
+    const f = view.querySelector("iframe.bench-frame");
+    if (f) f.addEventListener("load", () => sendSection(f, state.section));
+  }
   document.getElementById("search").value = state.query;
 }
 
@@ -493,6 +525,17 @@ function greeting() {
 function navItem({ label, key, meta, lead }) {
   const on = state.view === key;
   return `<button type="button" class="nav-item" data-go="${key}" ${on ? 'aria-current="page"' : ""}>${lead}<span class="label">${esc(label)}</span><span class="meta">${esc(meta)}</span></button>`;
+}
+
+/* Uitgeklapte secties onder de actieve tool: de navigatie van de tool zelf, zodat er geen tweede menu in de werkbank staat. */
+function navSub(t) {
+  if (state.view !== t.key) return "";
+  const max = state.toolMax != null ? state.toolMax : Infinity;
+  return `<div class="nav-sub">${t.sections.map((s, i) => {
+    const on = state.bench && state.section === s.id;
+    const locked = t.numbered && (i + 1) > max;
+    return `<button type="button" class="nav-sub-item" data-section="${esc(s.id)}" ${on ? 'aria-current="page"' : ""} ${locked ? "disabled" : ""}>${t.numbered ? `<span class="idx">${i + 1}</span>` : ""}<span>${esc(s.label)}</span></button>`;
+  }).join("")}</div>`;
 }
 
 function renderOverview(defs) {
@@ -612,7 +655,7 @@ function renderBench(t) {
     </div>`;
 
   if (b.kind === "frame") {
-    return `<div class="card bench">${head}<iframe class="bench-frame" src="${esc(b.src)}?embed=1" title="${esc(t.name)}" loading="eager"></iframe></div>`;
+    return `<div class="card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1" title="${esc(t.name)}" loading="eager"></iframe></div>`;
   }
 
   return `
@@ -652,8 +695,33 @@ function renderBench(t) {
     </div>`;
 }
 
-function bindActions(root, tool) {
+function sendSection(frame, section) {
+  if (!frame || !section) return;
+  try { frame.contentWindow.postMessage({ type:"parselab:nav", section }, "*"); } catch (e) {}
+}
+
+/* De ingebedde tool meldt zijn eigen sectie (bijv. na "Volgende"); de zijbalk en de hash volgen zonder herladen. */
+window.addEventListener("message", ev => {
+  const d = ev.data || {};
+  if (d.source !== "parselab-tool" || d.type !== "parselab:section") return;
+  const tool = toolDefs().find(t => t.key === state.view);
+  if (!tool || !state.bench) return;
+  if (d.max != null) state.toolMax = d.max;
+  if (d.section && tool.sections.some(s => s.id === String(d.section))) {
+    state.section = String(d.section);
+    history.replaceState(null, "", "#" + tool.key + "/" + state.section);
+  }
+  document.getElementById("nav-tools").innerHTML = toolDefs().map(t => navItem({ label:t.name, key:t.key, meta:t.navMeta, lead: tile(t, 26) }) + navSub(t)).join("");
+  bindNav();
+});
+
+function bindNav() {
   document.querySelectorAll("[data-go]").forEach(el => { el.onclick = () => go(el.getAttribute("data-go"), false); });
+  document.querySelectorAll(".nav-sub-item[data-section]").forEach(el => { el.onclick = () => { if (!el.disabled) go(state.view, el.getAttribute("data-section")); }; });
+}
+
+function bindActions(root, tool) {
+  bindNav();
   root.querySelectorAll("[data-bench]").forEach(el => { el.onclick = () => go(el.getAttribute("data-bench"), true); });
 }
 

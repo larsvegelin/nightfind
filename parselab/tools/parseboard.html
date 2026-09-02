@@ -1887,7 +1887,7 @@ function render(){
 applyTheme();
 render();
 </script>
-<!-- ParseLab: ingebed in het dashboard -> zelfde tokens als de shell, geen eigen kop/voet -->
+<!-- ParseLab: ingebed in het dashboard -> zelfde tokens als de shell, geen eigen kop, voet of navigatie -->
 <style id="parselab-embed">
   html.parselab-embed, html.parselab-embed[data-theme] {
     color-scheme: light;
@@ -1901,13 +1901,29 @@ render();
   }
   html.parselab-embed .site-header, html.parselab-embed .site-footer,
   html.parselab-embed .wordmark, html.parselab-embed .tagline, html.parselab-embed body > footer { display:none !important; }
+  html.parselab-embed .topbar-wrap { display:none !important; }
 </style>
 <script>
   (function () {
     var embedded = false;
     try { embedded = window.self !== window.top || /[?&]embed=1/.test(location.search); } catch (e) { embedded = true; }
-    if (embedded) document.documentElement.classList.add("parselab-embed");
+    if (!embedded) return;
+    document.documentElement.classList.add("parselab-embed");
+    function post(msg) { try { window.parent.postMessage(Object.assign({ source:"parselab-tool" }, msg), "*"); } catch (e) {} }
+    
+    // Stappen lopen via de zijbalk van het dashboard. Eigen stappenbalk is verborgen.
+    function report() { try { post({ type:"parselab:section", section: String(state.step), max: state.step, labels: STEPS }); } catch (e) {} }
+    window.addEventListener("message", function (ev) {
+      var d = ev.data || {};
+      if (d.type !== "parselab:nav" || !d.section) return;
+      var n = parseInt(d.section, 10);
+      try { if (n >= 1 && n <= state.step) goto(n); else report(); } catch (e) {}
+    });
+    try {
+      var _render = render;
+      render = function () { _render.apply(this, arguments); report(); };
+    } catch (e) {}
+    window.addEventListener("load", report);
   })();
 </script>
 </body>
-</html>
