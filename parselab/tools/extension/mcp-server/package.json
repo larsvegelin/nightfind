@@ -1,0 +1,14 @@
+{
+  "name": "webtool-scraper-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP-server die de WebTool Scraper-extensie aanstuurt: velden van de huidige (ingelogde) pagina ophalen en records automatisch invullen — bv. 30 producten achter elkaar in een extranet.",
+  "bin": { "webtool-scraper-mcp": "server.js" },
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  }
+}

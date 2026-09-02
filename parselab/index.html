@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ParseLab Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231F3A5F'/%3E%3Crect x='9' y='9' width='14' height='14' rx='4' fill='%23F2F0E7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===== Tokens — DESIGN-parselab.md, geen nieuwe kleuren ===== */
+  :root {
+    color-scheme: light;
+    --navy:#1F3A5F; --navy-alt:#1A3253; --ink-deep:#16293F;
+    --cream:#F2F0E7; --cream-white:#FBFAF6; --white:#FFFFFF;
+    --on-dark:#F2F0E7; --on-dark-muted:rgba(242,240,231,.72); --on-dark-faint:rgba(242,240,231,.58); --on-dark-label:rgba(242,240,231,.48);
+    --ink:#16293F; --muted:#6B7A8C; --hairline:#E6E3D8; --fill-inactive:#D8D5C8; --dot-inactive:#B9C3CE;
+    --gold:#C9A961; --gold-tint:#EDE7D5; --blue:#2C6FA8; --blue-tint:#DCE8F2;
+    --chip-dark:rgba(242,240,231,.16); --track-dark:rgba(242,240,231,.18); --nav-active:rgba(242,240,231,.14);
+    --shadow-light:0 18px 44px rgba(6,18,35,.10); --shadow-dark:0 24px 60px rgba(6,18,35,.28);
+    --font:Poppins,-apple-system,"Segoe UI",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { font-family:var(--font); -webkit-font-smoothing:antialiased; color:var(--ink); background:var(--cream-white); font-size:16px; line-height:1.55; }
+  a { color:var(--ink); text-decoration:none; }
+  button { font-family:inherit; font-size:inherit; color:inherit; cursor:pointer; border:0; background:none; }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline:2px solid var(--gold); outline-offset:3px; border-radius:14px; }
+  ::selection { background:var(--blue-tint); color:var(--ink-deep); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; animation:none !important; } }
+
+  /* ===== Type ===== */
+  .caps { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; line-height:1.2; }
+  .caps-nav { font-size:13px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
+  .num { font-size:34px; font-weight:700; line-height:1.1; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+  .mono { font-family:var(--mono); font-size:13px; letter-spacing:.02em; line-height:1.5; }
+  .mono-12 { font-family:var(--mono); font-size:12px; letter-spacing:.02em; }
+  .mono-14 { font-family:var(--mono); font-size:14px; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+  .title-24 { font-size:24px; font-weight:600; line-height:1.25; letter-spacing:-.01em; text-wrap:balance; }
+  .muted { color:var(--muted); }
+  .body-muted { font-size:16px; line-height:1.55; color:var(--muted); text-wrap:pretty; }
+  .note { font-size:15px; line-height:1.5; color:var(--muted); text-wrap:pretty; }
+
+  /* ===== Shell ===== */
+  .shell { display:grid; grid-template-columns:272px 1fr; min-height:100vh; }
+
+  .side { background:var(--navy); padding:32px 20px; display:flex; flex-direction:column; gap:32px; min-height:100vh; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .logo { display:flex; align-items:center; gap:12px; padding:0 8px; }
+  .logo-mark { width:26px; height:26px; border-radius:9px; background:var(--cream); display:block; flex:none; }
+  .logo-word { font-size:19px; font-weight:600; letter-spacing:-.02em; color:var(--on-dark); }
+  .group { display:flex; flex-direction:column; gap:6px; }
+  .group-label { padding:0 8px 6px; color:var(--on-dark-label); }
+  .nav-item { display:flex; align-items:center; gap:12px; width:100%; text-align:left; font-size:16px; font-weight:500; border-radius:14px; padding:12px 14px; background:transparent; color:var(--on-dark-muted); transition:background 150ms ease-out; }
+  .nav-item:hover { background:rgba(242,240,231,.08); }
+  .nav-item[aria-current="page"] { background:var(--nav-active); color:var(--on-dark); }
+  .nav-item .label { flex:1; }
+  .nav-item .meta { font-family:var(--mono); font-size:12px; letter-spacing:.02em; color:var(--on-dark-label); }
+  .nav-item[aria-current="page"] .meta { color:var(--on-dark-muted); }
+  .dot { width:8px; height:8px; border-radius:999px; display:block; flex:none; }
+  .tile { border-radius:9px; color:var(--ink-deep); font-family:var(--mono); display:flex; align-items:center; justify-content:center; flex:none; }
+  .tile-26 { width:26px; height:26px; font-size:11px; }
+  .tile-36 { width:36px; height:36px; border-radius:14px; font-size:13px; }
+  .tile-52 { width:52px; height:52px; border-radius:14px; font-size:16px; }
+  .spacer { flex:1; }
+  .usage { background:var(--navy-alt); border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .usage .caps { color:var(--on-dark-muted); }
+  .usage .num { color:var(--on-dark); }
+  .track { height:8px; border-radius:999px; background:var(--track-dark); overflow:hidden; }
+  .track > i { display:block; height:100%; background:var(--cream); border-radius:999px; transition:width 700ms ease-out; }
+  .usage .mono-12 { color:var(--on-dark-muted); }
+  .user { display:flex; align-items:center; gap:12px; padding:0 8px; }
+  .avatar { width:36px; height:36px; border-radius:999px; background:var(--gold); color:var(--ink-deep); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:none; }
+  .user-name { font-size:15px; font-weight:500; color:var(--on-dark); }
+  .user-role { font-size:13px; color:var(--on-dark-muted); }
+
+  .work { padding:32px 48px 64px; display:flex; flex-direction:column; gap:32px; max-width:1240px; width:100%; min-width:0; }
+  .topbar { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+  .topbar-text { display:flex; flex-direction:column; gap:6px; flex:1; min-width:240px; }
+  .topbar-text .caps-nav { color:var(--muted); }
+  .topbar-text h1 { font-size:34px; font-weight:700; letter-spacing:-.01em; line-height:1.1; text-wrap:balance; }
+  .topbar-actions { display:flex; align-items:center; gap:12px; }
+  .search { background:var(--white); border-radius:14px; padding:13px 18px; font-size:15px; color:var(--ink); box-shadow:var(--shadow-light); min-width:240px; border:0; font-family:inherit; }
+  .search::placeholder { color:var(--muted); }
+
+  /* ===== Buttons ===== */
+  .btn { display:inline-flex; align-items:center; gap:12px; font-size:16px; font-weight:600; line-height:1; border-radius:14px; padding:15px 24px; transition:transform 150ms ease-out, filter 150ms ease-out; white-space:nowrap; }
+  .btn:hover { transform:translateY(-1px); filter:brightness(1.03); }
+  .btn .arrow { transition:transform 150ms ease-out; }
+  .btn:hover .arrow { transform:translateX(4px); }
+  .btn-navy { background:var(--navy); color:var(--on-dark); }
+  .btn-cream { background:var(--cream); color:var(--ink-deep); }
+  .btn-outline { background:var(--white); color:var(--navy); border:1px solid var(--navy); padding:14px 20px; }
+  .btn-ghost-dark { background:none; color:var(--on-dark); padding:15px 8px; }
+  .link { font-size:15px; font-weight:600; color:var(--blue); }
+  .link:hover { color:var(--blue); filter:brightness(.9); }
+
+  /* ===== Cards ===== */
+  .card { background:var(--white); border-radius:20px; padding:28px; box-shadow:var(--shadow-light); display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .card-navy { background:var(--navy); color:var(--on-dark); border-radius:20px; padding:28px; box-shadow:var(--shadow-light); display:flex; flex-direction:column; gap:14px; }
+  .card-navy .caps { color:var(--on-dark-muted); }
+  .card-head { display:flex; align-items:center; gap:12px; }
+  .card-head .caps { flex:1; color:var(--muted); }
+  .hairline { height:1px; background:var(--hairline); }
+  .card-btn { text-align:left; transition:filter 150ms ease-out; color:var(--ink); }
+  .card-btn:hover { filter:brightness(1.01); }
+
+  .pill { display:inline-flex; align-items:center; border-radius:999px; padding:4px 12px; font-size:13px; font-weight:500; line-height:1.4; white-space:nowrap; }
+  .pill-live { background:var(--blue-tint); color:var(--blue); }
+  .pill-neutral { background:var(--cream); color:var(--ink-deep); }
+  .pill-delta { background:var(--blue-tint); color:var(--blue); font-weight:600; }
+  .pill-dark { background:var(--chip-dark); color:var(--on-dark); padding:6px 14px; }
+
+  /* ===== Overzicht ===== */
+  .tools-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:24px; }
+  .tool-card { gap:16px; }
+  .tool-card .card-head { display:grid; grid-template-columns:auto 1fr; gap:10px 12px; align-items:center; }
+  .tool-card .card-head .caps { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tool-card .card-head .pill { grid-column:1 / -1; justify-self:start; }
+  .tool-card .foot { display:flex; align-items:flex-end; gap:16px; }
+  .tool-card .foot .stack { display:flex; flex-direction:column; gap:2px; flex:1; }
+  .tool-card .foot .caps { color:var(--muted); }
+  .tool-card .open { font-size:16px; font-weight:600; white-space:nowrap; }
+  .row-2 { display:grid; grid-template-columns:1.5fr 1fr; gap:24px; align-items:start; }
+  .stack-24 { display:flex; flex-direction:column; gap:24px; }
+
+  .table { display:flex; flex-direction:column; }
+  .thead, .tr { display:grid; align-items:center; gap:12px; }
+  .thead { font-family:var(--mono); font-size:12px; letter-spacing:.02em; color:var(--muted); padding-bottom:4px; }
+  .tr { padding:12px 0; border-top:1px solid var(--hairline); }
+  .cols-runs { grid-template-columns:1.6fr 1fr .8fr .8fr; }
+  .cols-list { grid-template-columns:1.7fr .9fr .7fr .7fr; }
+  .cell-main { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .cell-main > span:first-child { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cell-main .mono-12 { color:var(--muted); }
+  .cell-tool { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--muted); }
+  .cell-text { font-size:15px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .bars { display:flex; align-items:flex-end; gap:8px; height:88px; }
+  .bar-col { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; align-items:center; }
+  .bar { width:100%; border-radius:8px 8px 4px 4px; flex:none; background:rgba(242,240,231,.35); transition:height 700ms ease-out; }
+  .bar.on { background:var(--cream); }
+  .bar-label { font-size:13px; font-weight:500; letter-spacing:.02em; color:var(--on-dark-muted); }
+
+  .alert { display:flex; gap:12px; align-items:flex-start; }
+  .alert .dot { margin-top:8px; }
+  .alert .stack { display:flex; flex-direction:column; gap:2px; flex:1; }
+  .alert .stack > span:first-child { font-size:16px; font-weight:500; }
+
+  /* ===== Tool-detail ===== */
+  .tool-header { background:var(--navy); color:var(--on-dark); border-radius:20px; padding:32px; box-shadow:var(--shadow-dark); display:flex; align-items:center; gap:32px; flex-wrap:wrap; }
+  .tool-header .text { flex:1; min-width:260px; display:flex; flex-direction:column; gap:6px; }
+  .tool-header .title-24 { color:var(--on-dark); }
+  .tool-header .body-muted { color:var(--on-dark-muted); max-width:56ch; }
+  .tool-header .actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .kpis { display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; }
+  .kpi { gap:10px; }
+  .kpi .note { font-size:15px; }
+
+  .steps { display:flex; flex-direction:column; gap:16px; }
+  .step { display:flex; gap:14px; align-items:flex-start; }
+  .step-n { width:28px; height:28px; border-radius:9px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:none; }
+  .step .stack { display:flex; flex-direction:column; gap:2px; flex:1; }
+  .step .stack > span:first-child { font-size:16px; font-weight:500; }
+
+  /* ===== Werkbank (de echte tool) ===== */
+  .bench { padding:0; overflow:hidden; gap:0; }
+  .bench-head { display:flex; align-items:center; gap:12px; padding:20px 28px; border-bottom:1px solid var(--hairline); flex-wrap:wrap; }
+  .bench-head .caps { flex:1; color:var(--muted); }
+  .bench-frame { width:100%; height:calc(100vh - 260px); min-height:720px; border:0; display:block; background:var(--cream-white); }
+  .bench-body { padding:28px; display:grid; grid-template-columns:1.2fr 1fr; gap:32px; align-items:start; }
+  .bench-body .steps { gap:20px; }
+  .bench-actions { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .bench-note { background:var(--cream); border-radius:14px; padding:16px 20px; display:flex; flex-direction:column; gap:6px; }
+  .bench-note .mono { color:var(--ink-deep); word-break:break-all; }
+  .bench-side { display:flex; flex-direction:column; gap:24px; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:6px 16px; align-items:baseline; }
+  .kv .caps { color:var(--muted); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 1100px) { .kpis { grid-template-columns:1fr 1fr; } .row-2 { grid-template-columns:1fr; } .bench-body { grid-template-columns:1fr; } }
+  @media (max-width: 860px) {
+    .shell { grid-template-columns:1fr; }
+    .side { position:static; height:auto; min-height:0; padding:20px; gap:20px; }
+    .side .spacer { display:none; }
+    .work { padding:24px 20px 48px; }
+    .kpis { grid-template-columns:1fr; }
+    .cols-runs, .cols-list { grid-template-columns:1.6fr 1fr auto; }
+    .cols-runs > :nth-child(3), .cols-list > :nth-child(3) { display:none; }
+    .bench-frame { height:80vh; min-height:560px; }
+    .topbar-text h1 { font-size:28px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell" id="app">
+  <aside class="side" aria-label="Navigatie">
+    <a class="logo" href="#overview" aria-label="ParseLab, naar overzicht">
+      <span class="logo-mark"></span>
+      <span class="logo-word">ParseLab</span>
+    </a>
+    <nav class="group" aria-label="Werkruimte">
+      <div class="caps-nav group-label">Werkruimte</div>
+      <div id="nav-main"></div>
+    </nav>
+    <nav class="group" aria-label="Software">
+      <div class="caps-nav group-label">Software</div>
+      <div id="nav-tools" class="group"></div>
+    </nav>
+    <div class="spacer"></div>
+    <div class="usage" id="usage"></div>
+    <div class="user">
+      <span class="avatar" id="user-initials">SD</span>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <span class="user-name" id="user-name">Sanne de Vries</span>
+        <span class="user-role" id="user-role">Administratie</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="work" id="work">
+    <div class="topbar">
+      <div class="topbar-text">
+        <div class="caps-nav" id="top-eyebrow"></div>
+        <h1 id="top-title"></h1>
+      </div>
+      <div class="topbar-actions">
+        <input class="search" id="search" type="search" placeholder="Zoek een flow of export…" aria-label="Zoeken">
+        <button class="btn btn-navy" id="top-action"></button>
+      </div>
+    </div>
+    <section id="view" aria-live="polite"></section>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   ParseLab Dashboard — app-shell voor ParseForm, ParseScraper, ParsePDF en ParseBoard.
+   state.view = overview | form | scrape | pdf | board ; state.bench = true toont de echte tool.
+   Tooldata staat in toolDefs(); nieuwe software = één object erbij.
+   ========================================================================= */
+
+const TONE = {
+  form:   { tile:"#DCE8F2", dot:"#2C6FA8" },
+  scrape: { tile:"#EDE7D5", dot:"#C9A961" },
+  pdf:    { tile:"#F2F0E7", dot:"#6B7A8C" },
+  board:  { tile:"#D8D5C8", dot:"#16293F" }
+};
+const LIVE = { cls:"pill-live" };
+const NEUTRAL = { cls:"pill-neutral" };
+
+const WORKSPACE = { org:"Van Dijk Administratie", user:"Sanne de Vries", initials:"SD", role:"Administratie", plan:"Pro", used:3240, limit:5000, reset:"1 okt" };
+
+function toolDefs() {
+  const live = readLiveData();
+  return [
+    {
+      key:"form", name:"ParseForm", kind:"Chrome-extensie", mark:"PF", tone:TONE.form,
+      body:"Vult formulieren en drukt knoppen in elk portaal, per CSV-regel.",
+      status:"3 flows actief", statusCls:LIVE.cls, navMeta:"3 flows",
+      headline:"1.842", headlineLabel:"Velden deze maand",
+      cta:"Nieuwe flow opnemen", unit:"flow", listLabel:"Flows", cols:["flow","portaal","rijen"],
+      kpis:[
+        { label:"Rijen verwerkt", value:"1.842", delta:"+8,2%", note:"Deze maand, over 3 flows" },
+        { label:"Gemiddeld per rij", value:"11 sec", delta:"−2 sec", note:"Handmatig was ~4 min" },
+        { label:"Foutloos", value:"97,4%", delta:"+1,1%", note:"48 rijen nagekeken" }
+      ],
+      rows:[
+        { a:"Aangifte per relatienummer", sub:"12 velden · dagelijks", b:"Gemeenteportaal", c:"412", status:"actief", cls:LIVE.cls },
+        { a:"Verhuizingen doorgeven", sub:"8 velden · per batch", b:"MudBlazor-app", c:"236", status:"actief", cls:LIVE.cls },
+        { a:"Polisgegevens bijwerken", sub:"6 velden · wekelijks", b:"Extranet", c:"188", status:"gepauzeerd", cls:NEUTRAL.cls },
+        { a:"Contactcheck", sub:"4 velden · handmatig", b:"CRM", c:"74", status:"concept", cls:NEUTRAL.cls }
+      ],
+      steps:[
+        { title:"Open het portaal", body:"Klik het extensie-icoon of gebruik Alt+Shift+S; het paneel blijft boven modals staan." },
+        { title:"Wijs velden en knoppen aan", body:"De koppeling wordt op structuurpad vastgelegd, dus een refresh of nieuw sessie-ID breekt niets." },
+        { title:"Laad je CSV", body:"Eén regel per rij; de flow draait de lijst af en stopt alleen bij een rij die aandacht vraagt." }
+      ],
+      exportName:"aangifte-week35.csv", exportMeta:"412 rijen · 28 aug 09:12 · UTF-8 · ;",
+      bench:{ kind:"extension", benchLabel:"Extensie installeren", panelTitle:"ParseForm draait als extensie in je browser",
+        intro:"Formulieren invullen gebeurt op de echte pagina van het portaal. Daarom is ParseForm een Chrome-extensie en geen web-app in dit dashboard: installeer hem één keer, daarna open je het paneel op elke pagina met Alt+Shift+S.",
+        steps:[
+          { title:"Download het extensiepakket", body:"Pak de zip uit in een map die blijft staan, bijvoorbeeld Documenten/ParseLab/extensie." },
+          { title:"Laad hem in Chrome, Edge of Brave", body:"Ga naar chrome://extensions, zet Ontwikkelaarsmodus aan en kies Uitgepakte extensie laden." },
+          { title:"Open een portaal en neem je flow op", body:"Kies ✎ Formulier vullen of ✎ Veld invullen, wijs de velden aan en download het CSV-sjabloon van invoervelden." }
+        ] }
+    },
+    {
+      key:"scrape", name:"ParseScraper", kind:"Klik-en-scrape", mark:"PS", tone:TONE.scrape,
+      body:"Klik één item aan en haal de hele lijst van elke pagina op.",
+      status:"1 run bezig", statusCls:NEUTRAL.cls, navMeta:"1 run",
+      headline:"24.106", headlineLabel:"Rijen deze maand",
+      cta:"Nieuwe scrape starten", unit:"scrape", listLabel:"Scrapes", cols:["scrape","bron","items"],
+      kpis:[
+        { label:"Rijen gescrapet", value:"24.106", delta:"+19%", note:"Over 5 bronnen" },
+        { label:"Actieve run", value:"3 / 6", delta:"live", note:"Webshop-prijzen · rij 14 van 24" },
+        { label:"Gemiddelde runtijd", value:"4 min", delta:"−40 sec", note:"Inclusief scroll & laad" }
+      ],
+      rows:[
+        { a:"Webshop-prijzen", sub:"6 stappen · dagelijks 07:00", b:"shop.example.nl", c:"24", status:"bezig", cls:NEUTRAL.cls },
+        { a:"Concurrentie-assortiment", sub:"4 stappen · wekelijks", b:"3 domeinen", c:"1.204", status:"actief", cls:LIVE.cls },
+        { a:"Voorraadstanden", sub:"5 stappen · per uur", b:"leveranciersportaal", c:"486", status:"actief", cls:LIVE.cls },
+        { a:"Vacatures regio", sub:"3 stappen · maandelijks", b:"2 sites", c:"92", status:"gepauzeerd", cls:NEUTRAL.cls }
+      ],
+      steps:[
+        { title:"Open het paneel", body:"Alt+Shift+S op de pagina die je wilt uitlezen." },
+        { title:"Klik één item aan", body:"De hele lijst wordt herkend, inclusief paginering en oneindig scrollen." },
+        { title:"Draai en exporteer", body:"Volg de teller per stap; resultaat als CSV, Excel of ZIP in je downloadmap." }
+      ],
+      exportName:"webshop-prijzen.xlsx", exportMeta:"24 items · vandaag 07:04 · map /webtool",
+      bench:{ kind:"extension", benchLabel:"Extensie installeren", panelTitle:"ParseScraper draait bovenop de pagina die je bekijkt",
+        intro:"Geen proxy en geen render-server: de extensie scrapet in je eigen browser, dus JavaScript is al uitgevoerd en portalen waar je bent ingelogd werken gewoon. ParseForm en ParseScraper zitten in hetzelfde pakket.",
+        steps:[
+          { title:"Download het extensiepakket", body:"Hetzelfde pakket als ParseForm; heb je dat al geladen, dan ben je klaar." },
+          { title:"Laad hem in Chrome, Edge of Brave", body:"Ga naar chrome://extensions, zet Ontwikkelaarsmodus aan en kies Uitgepakte extensie laden." },
+          { title:"Klik één item van een lijst aan", body:"Kies 📋 Lijst scrapen; per kolom kies je attribuut en opschoning. Start de run en exporteer naar CSV of Excel." }
+        ] }
+    },
+    {
+      key:"pdf", name:"ParsePDF", kind:"PDF-parse", mark:"PP", tone:TONE.pdf,
+      body:"Haalt bedragen, datums en tabellen uit documenten en scans.",
+      status:live.pdfTemplates != null ? nl(live.pdfTemplates) + " " + (live.pdfTemplates === 1 ? "sjabloon" : "sjablonen") : "2 sjablonen",
+      statusCls:NEUTRAL.cls, navMeta:live.pdfTemplates != null ? nl(live.pdfTemplates) + " sjabl." : "2 sjabl.",
+      headline:"1.284", headlineLabel:"Documenten deze maand",
+      cta:"Documenten uploaden", unit:"sjabloon", listLabel:"Sjablonen", cols:["sjabloon","documenttype","velden"],
+      kpis:[
+        { label:"Documenten verwerkt", value:"1.284", delta:"+12,4%", note:"Waarvan 218 scans" },
+        { label:"Handmatig nagekeken", value:"3,1%", delta:"−0,8%", note:"40 van 1.284 rijen" },
+        { label:"Grootste batch", value:"500", delta:"max", note:"In één wachtrij afgerond" }
+      ],
+      rows: live.pdfRows || [
+        { a:"Inkoopfacturen NL", sub:"7 velden · regexset A", b:"Factuur", c:"7", status:"actief", cls:LIVE.cls },
+        { a:"Bonnen mobiel", sub:"4 velden · scans", b:"Bon", c:"4", status:"actief", cls:LIVE.cls },
+        { a:"Jaarrapporten", sub:"12 velden · tabellen", b:"Rapport", c:"12", status:"concept", cls:NEUTRAL.cls }
+      ],
+      steps:[
+        { title:"Sleep je documenten", body:"Tot 500 per batch; niets wordt opgeslagen tenzij je dat aanvinkt." },
+        { title:"Kies een sjabloon", body:"Of definieer een nieuw veld met label, patroon en voorbeeld." },
+        { title:"Controleer en exporteer", body:"Elke rij toont brondocument en pagina; export naar Excel of CSV." }
+      ],
+      exportName:"inkoopfacturen-augustus.csv", exportMeta:"98 rijen · 29 aug 16:40 · UTF-8 · ;",
+      bench:{ kind:"frame", src:"tools/parsepdf.html", benchLabel:"ParsePDF openen", panelTitle:"ParsePDF" }
+    },
+    {
+      key:"board", name:"ParseBoard", kind:"Dashboards", mark:"PB", tone:TONE.board,
+      body:"Zet je uitgelezen data om in KPI's en trends die zichzelf bijwerken.",
+      status: live.boardSaved ? "1 dashboard" : "nog geen dashboard", statusCls: live.boardSaved ? LIVE.cls : NEUTRAL.cls,
+      navMeta: live.boardSaved ? "1 board" : "—",
+      headline: live.boardColumns != null ? nl(live.boardColumns) : "12", headlineLabel: live.boardColumns != null ? "Kolommen in je board" : "Tegels in je boards",
+      cta:"Dashboard bouwen", unit:"dashboard", listLabel:"Dashboards", cols:["dashboard","bron","tegels"],
+      kpis:[
+        { label:"Verversing", value:"per batch", delta:"live", note:"Elke nieuwe export schuift erin" },
+        { label:"Bronnen gekoppeld", value: live.boardSaved ? "1" : "0", delta: live.boardSaved ? "csv" : "—", note: live.boardFile ? live.boardFile : "Koppel een ParsePDF-sjabloon of CSV" },
+        { label:"Gedeeld als link", value:"0", delta:"—", note:"Read-only delen met team of accountant" }
+      ],
+      rows: live.boardSaved ? [
+        { a: live.boardFile || "Mijn dashboard", sub: nl(live.boardColumns || 0) + " kolommen · lokaal opgeslagen", b:"CSV-upload", c: String(live.boardTiles ?? "—"), status:"actief", cls:LIVE.cls }
+      ] : [
+        { a:"Omzet per maand", sub:"voorbeeld · webshop-bestellingen", b:"Voorbeelddata", c:"6", status:"concept", cls:NEUTRAL.cls },
+        { a:"Verzekeringsportefeuille", sub:"voorbeeld · polissen", b:"Voorbeelddata", c:"8", status:"concept", cls:NEUTRAL.cls }
+      ],
+      steps:[
+        { title:"Koppel een bron", body:"Upload een CSV, of begin met de voorbeelddata om het te verkennen." },
+        { title:"Kies je tegels", body:"Controleer de kolomtypen en kies KPI's en grafieken; suggesties staan klaar." },
+        { title:"Sla op en deel", body:"Het dashboard blijft lokaal bewaard en is met één klik een tabel of CSV." }
+      ],
+      exportName:"overzicht-per-maand.csv", exportMeta:"12 rijen · gisteren 11:20 · UTF-8 · ;",
+      bench:{ kind:"frame", src:"tools/parseboard.html", benchLabel:"ParseBoard openen", panelTitle:"ParseBoard" }
+    }
+  ];
+}
+
+/* Runs en aandachtspunten voor het overzicht — volgende stap: uit echte exports. */
+function overviewData(defs) {
+  const byKey = Object.fromEntries(defs.map(d => [d.key, d]));
+  return {
+    runs:[
+      { name:"Webshop-prijzen", when:"vandaag 07:04", tool:byKey.scrape, rows:"24", status:"bezig", cls:NEUTRAL.cls },
+      { name:"Aangifte per relatienummer", when:"vandaag 06:30", tool:byKey.form, rows:"412", status:"klaar", cls:LIVE.cls },
+      { name:"Inkoopfacturen NL", when:"gisteren 16:40", tool:byKey.pdf, rows:"98", status:"klaar", cls:LIVE.cls },
+      { name:"Omzet per maand", when:"gisteren 11:20", tool:byKey.board, rows:"12", status:"klaar", cls:LIVE.cls },
+      { name:"Voorraadstanden", when:"gisteren 14:00", tool:byKey.scrape, rows:"486", status:"klaar", cls:LIVE.cls },
+      { name:"Polisgegevens bijwerken", when:"29 aug 11:20", tool:byKey.form, rows:"188", status:"3 fouten", cls:NEUTRAL.cls },
+      { name:"Bonnen mobiel", when:"28 aug 09:05", tool:byKey.pdf, rows:"218", status:"klaar", cls:LIVE.cls }
+    ],
+    bars:[
+      { h:38, label:"mrt" }, { h:52, label:"apr" }, { h:46, label:"mei" }, { h:68, label:"jun" }, { h:82, label:"jul", on:true }, { h:74, label:"aug" }
+    ],
+    savedHours:"148 uur",
+    alerts:[
+      { dot:TONE.scrape.dot, title:"Polisgegevens bijwerken", body:"3 rijen gestopt: het veld 'Toevoeging' ontbrak op de nieuwe pagina." },
+      { dot:TONE.form.dot, title:"Verbruik op " + Math.round(WORKSPACE.used / WORKSPACE.limit * 100) + "%", body: nl(WORKSPACE.used) + " van " + nl(WORKSPACE.limit) + " pagina's gebruikt. Jaarlijks betalen scheelt 20%." },
+      { dot:TONE.pdf.dot, title:"Sjabloon Jaarrapporten", body:"Nog een concept — 12 velden gedefinieerd, nog niet getest op een batch." }
+    ]
+  };
+}
+
+/* Leest wat de ingebedde tools lokaal hebben opgeslagen (zelfde origin). Faalt stil. */
+function readLiveData() {
+  const out = {};
+  try {
+    const t = JSON.parse(localStorage.getItem("pdfScraperTemplates") || "null");
+    const list = Array.isArray(t) ? t : (t && typeof t === "object" ? Object.entries(t).map(([name, v]) => Object.assign({ name }, v)) : null);
+    if (list && list.length) {
+      out.pdfTemplates = list.length;
+      out.pdfRows = list.slice(0, 6).map(tpl => {
+        const fields = Array.isArray(tpl.columns) ? tpl.columns.length : Array.isArray(tpl.fields) ? tpl.fields.length : Array.isArray(tpl.rules) ? tpl.rules.length : null;
+        return { a: String(tpl.name || tpl.title || "Sjabloon"), sub: (fields != null ? nl(fields) + " velden" : "sjabloon") + " · lokaal opgeslagen", b: String(tpl.docType || tpl.type || tpl.branche || "Document"), c: fields != null ? nl(fields) : "—", status:"actief", cls:LIVE.cls };
+      });
+    }
+  } catch (e) {}
+  try {
+    const c = JSON.parse(localStorage.getItem("paneel-config") || "null");
+    if (c && typeof c === "object") {
+      out.boardSaved = true;
+      out.boardFile = c.fileName || null;
+      out.boardColumns = Array.isArray(c.columns) ? c.columns.length : null;
+      const k = Array.isArray(c.kpis) ? c.kpis.length : 0, g = Array.isArray(c.charts) ? c.charts.length : 0;
+      out.boardTiles = (k + g) || null;
+    }
+  } catch (e) {}
+  return out;
+}
+
+/* ===== Helpers ===== */
+function nl(n) { return Number(n).toLocaleString("nl-NL"); }
+function esc(s) { return String(s).replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch])); }
+function pill(text, cls) { return `<span class="pill ${cls}">${esc(text)}</span>`; }
+function tile(tool, size) { return `<span class="tile tile-${size}" style="background:${tool.tone.tile}">${esc(tool.mark)}</span>`; }
+function dot(color) { return `<span class="dot" style="background:${color}"></span>`; }
+
+/* ===== State & routing ===== */
+const VIEWS = ["overview", "form", "scrape", "pdf", "board"];
+const state = { view:"overview", bench:false, query:"" };
+
+function parseHash() {
+  const h = location.hash.replace(/^#\/?/, "");
+  const [view, sub] = h.split("/");
+  state.view = VIEWS.includes(view) ? view : "overview";
+  state.bench = state.view !== "overview" && sub === "werkbank";
+}
+function go(view, bench) {
+  const target = "#" + view + (bench ? "/werkbank" : "");
+  if (location.hash === target) { parseHash(); render(); } else { location.hash = target; }
+}
+window.addEventListener("hashchange", () => { parseHash(); render(); window.scrollTo({ top:0, behavior:"smooth" }); });
+
+/* ===== Render ===== */
+function render() {
+  const defs = toolDefs();
+  const tool = defs.find(d => d.key === state.view) || null;
+
+  document.getElementById("nav-main").innerHTML = navItem({ label:"Overzicht", key:"overview", meta:"", lead: dot("#F2F0E7") });
+  document.getElementById("nav-tools").innerHTML = defs.map(d => navItem({ label:d.name, key:d.key, meta:d.navMeta, lead: tile(d, 26) })).join("");
+
+  const pct = Math.min(100, Math.round(WORKSPACE.used / WORKSPACE.limit * 100));
+  document.getElementById("usage").innerHTML = `
+    <div class="caps">Verbruik · ${esc(WORKSPACE.plan)}</div>
+    <div class="num">${nl(WORKSPACE.used)}</div>
+    <div class="track"><i style="width:${pct}%"></i></div>
+    <div class="mono-12">van ${nl(WORKSPACE.limit)} pagina's · reset ${esc(WORKSPACE.reset)}</div>`;
+  document.getElementById("user-initials").textContent = WORKSPACE.initials;
+  document.getElementById("user-name").textContent = WORKSPACE.user;
+  document.getElementById("user-role").textContent = WORKSPACE.role;
+
+  const eyebrow = document.getElementById("top-eyebrow"), title = document.getElementById("top-title"), action = document.getElementById("top-action");
+  if (tool) {
+    eyebrow.textContent = tool.kind; title.textContent = tool.name;
+    action.textContent = state.bench ? "Terug naar " + tool.name : tool.bench.benchLabel;
+    action.onclick = () => go(tool.key, !state.bench);
+    document.title = tool.name + " · ParseLab";
+  } else {
+    eyebrow.textContent = "Werkruimte · " + WORKSPACE.org; title.textContent = greeting() + ", " + WORKSPACE.user.split(" ")[0];
+    action.textContent = "Nieuwe flow"; action.onclick = () => go("form", true);
+    document.title = "ParseLab Dashboard";
+  }
+
+  const view = document.getElementById("view");
+  view.innerHTML = tool ? (state.bench ? renderBench(tool) : renderTool(tool)) : renderOverview(defs);
+  bindActions(view, tool);
+  document.getElementById("search").value = state.query;
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 6 ? "Goedenacht" : h < 12 ? "Goedemorgen" : h < 18 ? "Goedemiddag" : "Goedenavond";
+}
+
+function navItem({ label, key, meta, lead }) {
+  const on = state.view === key;
+  return `<button type="button" class="nav-item" data-go="${key}" ${on ? 'aria-current="page"' : ""}>${lead}<span class="label">${esc(label)}</span><span class="meta">${esc(meta)}</span></button>`;
+}
+
+function renderOverview(defs) {
+  const ov = overviewData(defs);
+  const q = state.query.trim().toLowerCase();
+  const runs = q ? ov.runs.filter(r => (r.name + " " + r.tool.name).toLowerCase().includes(q)) : ov.runs;
+  return `
+    <div style="display:flex; flex-direction:column; gap:32px;">
+      <div class="tools-grid">
+        ${defs.map(t => `
+          <button type="button" class="card card-btn tool-card" data-go="${t.key}">
+            <div class="card-head">${tile(t, 36)}<span class="caps">${esc(t.kind)}</span>${pill(t.status, t.statusCls)}</div>
+            <div class="title-24">${esc(t.name)}</div>
+            <div class="body-muted">${esc(t.body)}</div>
+            <div class="hairline"></div>
+            <div class="foot">
+              <div class="stack"><span class="num">${esc(t.headline)}</span><span class="caps">${esc(t.headlineLabel)}</span></div>
+              <span class="open">Openen →</span>
+            </div>
+          </button>`).join("")}
+      </div>
+
+      <div class="row-2">
+        <div class="card">
+          <div class="card-head"><div class="caps">Recente runs</div><a class="link" href="#overview">Alles bekijken →</a></div>
+          <div class="table">
+            <div class="thead cols-runs"><div>flow</div><div>software</div><div>rijen</div><div>status</div></div>
+            ${runs.length ? runs.map(r => `
+              <div class="tr cols-runs">
+                <div class="cell-main"><span>${esc(r.name)}</span><span class="mono-12">${esc(r.when)}</span></div>
+                <div class="cell-tool">${dot(r.tool.tone.dot)}<span>${esc(r.tool.name)}</span></div>
+                <div class="mono-14">${esc(r.rows)}</div>
+                <div>${pill(r.status, r.cls)}</div>
+              </div>`).join("") : `<div class="tr note">Geen runs gevonden voor “${esc(state.query)}”.</div>`}
+          </div>
+        </div>
+
+        <div class="stack-24">
+          <div class="card-navy">
+            <div class="caps">Bespaarde tijd</div>
+            <div class="num">${esc(ov.savedHours)}</div>
+            <div class="bars">
+              ${ov.bars.map(b => `<div class="bar-col"><div class="bar ${b.on ? "on" : ""}" style="height:${b.h}%"></div><div class="bar-label">${esc(b.label)}</div></div>`).join("")}
+            </div>
+          </div>
+          <div class="card" style="gap:14px;">
+            <div class="caps muted">Vraagt aandacht</div>
+            ${ov.alerts.map(a => `<div class="alert">${dot(a.dot)}<div class="stack"><span>${esc(a.title)}</span><span class="note">${esc(a.body)}</span></div></div>`).join("")}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderTool(t) {
+  const q = state.query.trim().toLowerCase();
+  const rows = q ? t.rows.filter(r => (r.a + " " + r.b + " " + r.sub).toLowerCase().includes(q)) : t.rows;
+  return `
+    <div style="display:flex; flex-direction:column; gap:32px;">
+      <div class="tool-header">
+        ${tile(t, 52)}
+        <div class="text"><div class="title-24">${esc(t.name)}</div><div class="body-muted">${esc(t.body)}</div></div>
+        <div class="actions">${pill(t.status, "pill-dark")}<button type="button" class="btn btn-cream" data-bench="${t.key}">${esc(t.cta)} <span class="arrow">→</span></button></div>
+      </div>
+
+      <div class="kpis">
+        ${t.kpis.map(k => `
+          <div class="card kpi">
+            <div class="card-head"><div class="caps">${esc(k.label)}</div>${pill(k.delta, "pill-delta")}</div>
+            <div class="num">${esc(k.value)}</div>
+            <div class="note">${esc(k.note)}</div>
+          </div>`).join("")}
+      </div>
+
+      <div class="row-2">
+        <div class="card">
+          <div class="card-head"><div class="caps">${esc(t.listLabel)}</div><button type="button" class="link" data-bench="${t.key}">Nieuwe ${esc(t.unit)} →</button></div>
+          <div class="table">
+            <div class="thead cols-list"><div>${esc(t.cols[0])}</div><div>${esc(t.cols[1])}</div><div>${esc(t.cols[2])}</div><div>status</div></div>
+            ${rows.length ? rows.map(r => `
+              <div class="tr cols-list">
+                <div class="cell-main"><span>${esc(r.a)}</span><span class="mono-12">${esc(r.sub)}</span></div>
+                <div class="cell-text">${esc(r.b)}</div>
+                <div class="mono-14">${esc(r.c)}</div>
+                <div>${pill(r.status, r.cls)}</div>
+              </div>`).join("") : `<div class="tr note">Niets gevonden voor “${esc(state.query)}”.</div>`}
+          </div>
+        </div>
+
+        <div class="stack-24">
+          <div class="card">
+            <div class="caps muted">Zo werkt het hier</div>
+            <div class="steps">
+              ${t.steps.map((s, i) => `<div class="step"><span class="step-n">${i + 1}</span><div class="stack"><span>${esc(s.title)}</span><span class="note">${esc(s.body)}</span></div></div>`).join("")}
+            </div>
+          </div>
+          <div class="card" style="gap:12px;">
+            <div class="caps muted">Laatste export</div>
+            <div class="title-24">${esc(t.exportName)}</div>
+            <div class="mono muted">${esc(t.exportMeta)}</div>
+            <div><button type="button" class="btn btn-outline" style="margin-top:4px;" data-bench="${t.key}">Download opnieuw</button></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* De werkbank: de echte tool in de shell (iframe), of het installatiepaneel voor de extensie. */
+function renderBench(t) {
+  const b = t.bench;
+  const head = `
+    <div class="bench-head">
+      ${tile(t, 36)}
+      <div class="caps">${esc(b.panelTitle)}</div>
+      ${b.kind === "frame" ? `<a class="link" href="${esc(b.src)}" target="_blank" rel="noopener">In nieuw tabblad openen →</a>` : ""}
+      <button type="button" class="link" data-go="${t.key}">Sluiten</button>
+    </div>`;
+
+  if (b.kind === "frame") {
+    return `<div class="card bench">${head}<iframe class="bench-frame" src="${esc(b.src)}?embed=1" title="${esc(t.name)}" loading="eager"></iframe></div>`;
+  }
+
+  return `
+    <div class="card bench">${head}
+      <div class="bench-body">
+        <div style="display:flex; flex-direction:column; gap:24px;">
+          <div class="title-24" style="max-width:24ch;">${esc(b.panelTitle)}</div>
+          <div class="body-muted" style="max-width:56ch;">${esc(b.intro)}</div>
+          <div class="steps">
+            ${b.steps.map((s, i) => `<div class="step"><span class="step-n">${i + 1}</span><div class="stack"><span>${esc(s.title)}</span><span class="note">${esc(s.body)}</span></div></div>`).join("")}
+          </div>
+          <div class="bench-actions">
+            <a class="btn btn-navy" href="tools/parselab-extension.zip" download="parselab-extension.zip">Download extensiepakket <span class="arrow">→</span></a>
+            <a class="btn btn-outline" href="tools/extension/README.md" target="_blank" rel="noopener">Handleiding</a>
+          </div>
+        </div>
+        <div class="bench-side">
+          <div class="bench-note">
+            <span class="caps muted">Sneltoets</span>
+            <span class="mono">Alt + Shift + S · paneel aan/uit</span>
+          </div>
+          <div class="bench-note">
+            <span class="caps muted">Pakket</span>
+            <div class="kv">
+              <span class="caps">Versie</span><span class="mono">1.17.0 · manifest v3</span>
+              <span class="caps">Browsers</span><span class="mono">Chrome · Edge · Brave</span>
+              <span class="caps">Rechten</span><span class="mono">activeTab · storage · downloads</span>
+              <span class="caps">Data</span><span class="mono">0 bytes verlaten je computer</span>
+            </div>
+          </div>
+          <div class="bench-note">
+            <span class="caps muted">Vanuit een AI-agent</span>
+            <span class="note">Het pakket bevat een MCP-server (<span class="mono">mcp-server/</span>) met <span class="mono">read_fields</span> en <span class="mono">fill_records</span>, die via een lokale bridge in jouw ingelogde tabblad werken. Zet de koppeling aan onder ⚙ Meer opties.</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function bindActions(root, tool) {
+  document.querySelectorAll("[data-go]").forEach(el => { el.onclick = () => go(el.getAttribute("data-go"), false); });
+  root.querySelectorAll("[data-bench]").forEach(el => { el.onclick = () => go(el.getAttribute("data-bench"), true); });
+}
+
+document.getElementById("search").addEventListener("input", e => {
+  state.query = e.target.value;
+  if (!state.bench) { const v = document.getElementById("view"); const tool = toolDefs().find(d => d.key === state.view) || null; v.innerHTML = tool ? renderTool(tool) : renderOverview(toolDefs()); bindActions(v, tool); }
+});
+
+/* Zodra een ingebedde tool iets opslaat, verversen de zijbalk-tellers bij de volgende weergave. */
+window.addEventListener("storage", () => { if (!state.bench) render(); });
+
+parseHash();
+render();
+</script>
+</body>
+</html>
