@@ -2,6 +2,30 @@
 
 Basis: `tools/parsepdf.html` (de "PDF Scraper"). Alles draait in de browser: PDF-parsing, regels, export, en optioneel structuurherkenning via de Claude API.
 
+## Status van toepassing
+
+| Element | Status |
+|---|---|
+| Naam "ParsePDF" overal, woordenlijst (uitlezen, regel, sjabloon, bestand) | Toegepast |
+| Branchekeuze → na de eerste upload "Dit lijkt een factuur. Klopt dat?" met herkenning factuur/bon/loonstrook/rapport | Toegepast; oude branchekeuze en opslag verwijderd |
+| Twee startroutes: Documenten uitlezen, Eerst rondkijken | Toegepast |
+| Eén rondleiding van drie stappen, geen losse instel-wizard | Toegepast |
+| Vier stappen Uploaden → Aanwijzen → Controleren → Downloaden (`page-upload` … `page-download`), Home vervalt | Toegepast; oude namen werken als alias |
+| Automatiseren als uitklap op stap 4 met eerlijke tabblad-zin | Toegepast |
+| Sleepvlak, "of kies een map", miniatuur en soort per document, "Deze bestanden blijven op jouw computer", "Alles verwijderen" | Toegepast |
+| Documentlabel automatisch uit de herkende soort, corrigeerbaar | Toegepast |
+| Gebied selecteren als standaard, voorbeeldwaarde als alternatief | Toegepast |
+| Paginakeuze onder "Alleen op bepaalde pagina's" | Toegepast |
+| Patroon en extractieopties onder "Toon het patroon (gevorderd)" | Toegepast |
+| Preview in drie documenten met "Dit is goed" / "Niet dit, maar…" | Toegepast |
+| Voorbeeldsjablonen Nederlandse factuur, Bon, Loonstrook | Toegepast; sjablonen bij het account wacht op een backend |
+| API-sleutel weg; "Laat ParseLab de velden herkennen" met opt-in per document via `window.PARSELAB_API` | Toegepast; het endpoint zelf moet nog bestaan |
+| Regels om na te kijken gemarkeerd en als filter bovenaan | Toegepast |
+| "Download voor Excel" standaard, CSV altijd `;` zonder keuze, "Kopiëren — plak in Excel of Sheets" | Toegepast |
+| "Vul hiermee een formulier in" → invullijst en ParseForm openen in het dashboard | Toegepast |
+| Taal volgt het dashboard; taalkeuze verborgen als ingebed | Toegepast |
+| Eigen zijbalk verborgen in het dashboard; secties, tellers en openen via `postMessage` | Toegepast |
+
 ## Onboarding
 
 ### Branchekeuze ("In welke branche werk je?")
@@ -105,6 +129,6 @@ Basis: `tools/parsepdf.html` (de "PDF Scraper"). Alles draait in de browser: PDF
 - **Prioriteit:** 3
 
 ### Ingebedde kop en navigatie
-- **Nu:** in de werkbank van het dashboard is de eigen kop verborgen (embed-patch), maar de eigen zijbalk niet.
-- **Simpeler:** zie `dashboard.md`, werkbank: op termijn de vier stappen als sub-items in de dashboardzijbalk.
+- **Nu:** in de werkbank van het dashboard zijn kop én zijbalk verborgen; de vier stappen staan als sub-items in de dashboardzijbalk.
+- **Simpeler:** gedaan, zie `dashboard.md`, werkbank.
 - **Prioriteit:** 2
