@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PDF Scraper - Upload meerdere PDF's, extraheer data met regels en exporteer naar CSV of Excel.">
+    <meta name="description" content="ParsePDF - Upload meerdere PDF's, wijs aan wat je nodig hebt en download het als Excel. Alles blijft op jouw computer.">
     <meta name="robots" content="noindex">
 
-    <title>PDF Scraper</title>
+    <title>ParsePDF</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%84%3C/text%3E%3C/svg%3E">
@@ -951,6 +951,57 @@
             .table-scroll { box-shadow: inset -14px 0 14px -14px rgba(11,11,11,.30), inset 14px 0 14px -14px rgba(11,11,11,.30); }
             .rule-head, .rule-body { grid-template-columns: 1fr; }
         }
+        /* === ParsePDF: vier stappen, aanwijzen, controleren === */
+        .nav-num {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px; border-radius: 50%; flex: none;
+            font-size: 12px; font-weight: 700; margin-right: 10px;
+            border: 1.5px solid var(--baseline); color: var(--ink-2); background: var(--surface);
+        }
+        .nav-item.active .nav-num { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+        .privacy-line {
+            display: flex; align-items: center; gap: 8px; margin: 0.75rem 0 0;
+            font-weight: 600; color: var(--good); font-size: 14px;
+        }
+        .privacy-line svg.ico { width: 18px; height: 18px; }
+        .dz-actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 0.75rem; }
+        .step-nav { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.25rem; }
+        .define-primary {
+            display: flex; gap: 1rem; flex-wrap: wrap; align-items: stretch; margin-bottom: 1rem;
+        }
+        .define-card {
+            flex: 1 1 280px; border: 1px solid var(--grid); border-radius: var(--radius);
+            background: var(--surface); padding: 1rem 1.1rem;
+        }
+        .define-card.primary { border-color: color-mix(in srgb, var(--accent) 45%, var(--grid)); box-shadow: var(--shadow-card); }
+        .define-card h3 { font-size: 15px; margin-bottom: 0.3rem; }
+        .define-card p { font-size: 13px; color: var(--ink-2); margin-bottom: 0.75rem; }
+        .preview-panel {
+            border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--grid)); border-radius: var(--radius);
+            background: color-mix(in srgb, var(--accent) 5%, var(--surface)); padding: 1rem 1.1rem; margin-bottom: 1rem;
+        }
+        .preview-panel h3 { font-size: 15px; margin-bottom: 0.4rem; }
+        .preview-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin-top: 0.75rem; }
+        .result-table td.cell-review { background: color-mix(in srgb, #e0a800 16%, var(--surface)); }
+        .result-table tr.row-hidden { display: none; }
+        .review-toggle {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600;
+            border: 1px solid color-mix(in srgb, #e0a800 55%, var(--grid)); background: color-mix(in srgb, #e0a800 12%, var(--surface));
+            color: var(--ink); border-radius: 999px; padding: 0.3rem 0.8rem; cursor: pointer; margin: 0.5rem 0;
+        }
+        .review-toggle.active { background: #e0a800; border-color: #e0a800; color: #1b1b1b; }
+        .review-toggle.hidden { display: none; }
+        .dl-primary { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .dl-primary .btn { font-size: 15px; padding: 0.7rem 1.2rem; }
+        .dl-other { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .tmpl-group-label { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-right: 4px; }
+        .tmpl-chip.builtin { border-style: dashed; }
+        .tmpl-chip.builtin.active { border-style: solid; }
+        .kind-select { font-size: 12.5px; padding: 0.15rem 0.3rem; border-radius: 6px; border: 1px solid var(--baseline); background: var(--surface); color: var(--ink); }
+        details.adv-details > summary { cursor: pointer; font-size: 13px; color: var(--ink-2); font-weight: 600; }
+        details.adv-details { margin-top: 0.75rem; }
+        html.parselab-embed #langWrap { display: none !important; }
+        @media (max-width: 720px) { .sidebar .nav-num { display: none; } }
     </style>
 </head>
 <body>
@@ -992,184 +1043,173 @@
     </div>
     <div class="app">
         <aside class="sidebar">
-            <div class="brand"><span aria-hidden="true" style="color:var(--accent);display:flex;"><svg class="ico" aria-hidden="true"><use href="#i-doc"></use></svg></span><span>PDF <span style="color: var(--accent);">Scraper</span></span></div>
-            <div class="nav-item active" data-page="home"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-home"></use></svg></span>Home</div>
-            <div class="nav-item" data-page="docs"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-doc"></use></svg></span>Documenten<span class="nav-check hidden" id="navCheckDocs"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
-            <div class="nav-item" data-page="columns"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-columns"></use></svg></span>Kolommen<span class="nav-check hidden" id="navCheckCols"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
-            <div class="nav-item" data-page="results"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-table"></use></svg></span>Resultaten<span class="nav-check hidden" id="navCheckRes"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
-            <div class="nav-item" data-page="automate"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-bolt"></use></svg></span>Automatiseren</div>
+            <div class="brand"><span aria-hidden="true" style="color:var(--accent);display:flex;"><svg class="ico" aria-hidden="true"><use href="#i-doc"></use></svg></span><span>Parse<span style="color: var(--accent);">PDF</span></span></div>
+            <div class="nav-item active" data-page="upload"><span class="nav-num">1</span>Uploaden<span class="nav-check hidden" id="navCheckDocs"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
+            <div class="nav-item" data-page="define"><span class="nav-num">2</span>Aanwijzen<span class="nav-check hidden" id="navCheckCols"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
+            <div class="nav-item" data-page="check"><span class="nav-num">3</span>Controleren<span class="nav-check hidden" id="navCheckRes"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
+            <div class="nav-item" data-page="download"><span class="nav-num">4</span>Downloaden<span class="nav-check hidden" id="navCheckDl"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
             <div class="nav-sep" style="margin-top:auto;"></div>
             <div class="nav-item" id="tourNavBtn"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-help"></use></svg></span>Rondleiding</div>
-            <div class="field" style="padding: 0.4rem 0.65rem 0;">
-                <label>Taal / Language</label>
-                <select id="langSelect">
-                    <option value="nl">Nederlands</option>
-                    <option value="en">English</option>
-                    <option value="de">Deutsch</option>
-                </select>
-            </div>
-            <p class="sidebar-note"><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>Alles draait lokaal in je browser. Alleen de AI-herkenning stuurt tekst naar de Claude API — en waarschuwt je vooraf.</span></p>
+            <p class="sidebar-note"><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>Deze bestanden blijven op jouw computer. Alleen als je daar zelf per document voor kiest, gaat de tekst naar ParseLab voor herkenning.</span></p>
         </aside>
         <main class="main">
         <div class="tool-wrap" style="padding-top:2rem;">
 
-        <!-- Pagina: Home -->
-        <div class="app-page active" id="page-home">
-            <h1 class="page-title">Home</h1>
-            <p class="page-sub">Haal data uit PDF's en zet die om naar CSV of Excel — volledig lokaal, jouw documenten verlaten je computer niet.</p>
-            <button type="button" class="next-hint hidden" id="hintHome"><span class="nh-text"></span><svg class="ico ico-sm nh-arrow" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+        <!-- Stap 1: Uploaden -->
+        <div class="app-page active" id="page-upload">
+            <h1 class="page-title">1 &middot; Uploaden</h1>
+            <p class="page-sub">Sleep je PDF&rsquo;s hierheen. ParsePDF leest ze uit op jouw computer &mdash; er wordt niets ge&uuml;pload.</p>
+            <button type="button" class="next-hint hidden" id="hintDocs"><span class="nh-text"></span><svg class="ico ico-sm nh-arrow" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
 
             <div class="tour-banner">
                 <span style="color:var(--accent);display:flex;"><svg class="ico ico-lg" aria-hidden="true"><use href="#i-compass"></use></svg></span>
                 <div class="tb-body">
-                    <div class="tb-title">Rondleiding: zo werkt alles</div>
-                    <div class="tb-sub">De tool licht elk onderdeel op en legt het uit — in één minuut weet je alles.</div>
+                    <div class="tb-title">Rondleiding in drie stappen</div>
+                    <div class="tb-sub">Uploaden, aanwijzen, downloaden &mdash; in een minuut weet je hoe het werkt.</div>
                 </div>
-                <button class="btn" id="tourStartBtn">Start rondleiding</button>
-                <button class="btn btn-secondary btn-small" id="wizardOpenBtn">Instel-wizard</button>
+                <button class="btn btn-secondary btn-small" id="tourStartBtn">Start rondleiding</button>
             </div>
 
-            <h2 style="font-size:17px; font-weight:600; margin-bottom:0.9rem;">Aan de slag</h2>
+            <div class="tool-section">
+                <div class="dropzone" id="dropzone">
+                    <strong>Sleep je PDF&rsquo;s hierheen</strong>
+                    <div class="dz-actions">
+                        <button type="button" class="btn btn-small btn-secondary" id="pickFilesBtn">of kies bestanden</button>
+                        <button type="button" class="btn btn-small btn-secondary" id="pickDirBtn">of kies een map</button>
+                    </div>
+                </div>
+                <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple class="hidden">
+                <input type="file" id="dirInput" webkitdirectory directory multiple class="hidden">
+                <p class="privacy-line"><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>Deze bestanden blijven op jouw computer.</span></p>
+
+                <div class="toolbar" id="labelBar" style="margin-top:0.75rem;">
+                    <span class="tmpl-label">Soorten</span>
+                    <div class="tmpl-chips" id="labelChips"></div>
+                    <input type="text" id="newLabelName" class="tmpl-input" placeholder="bijv. Offerte" style="width:150px;">
+                    <button class="btn btn-small btn-ghost" id="addLabelBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"></use></svg>Soort</button>
+                </div>
+                <p class="hint" id="labelHint">ParsePDF herkent de soort van elk document (factuur, bon, loonstrook, rapport). Klopt het niet? Pas de soort per document aan met het labelicoon. Klik op een soort om alleen die documenten te gebruiken.</p>
+                <div class="progress" id="parseProgress"><i></i></div>
+                <div class="file-list" id="fileList"></div>
+                <div class="toolbar" style="margin-top:0.9rem;">
+                    <button type="button" class="btn btn-small btn-secondary" id="clearAllBtn">Alles verwijderen</button>
+                    <span class="hint" style="margin:0;">Haalt alle documenten en soorten uit je browser weg.</span>
+                </div>
+            </div>
+
+            <h2 style="font-size:17px; font-weight:600; margin:1.5rem 0 0.9rem;">Zo werkt het</h2>
             <div class="check-row" id="chkDocs">
                 <span class="check-ico"><svg class="ico" aria-hidden="true"><use href="#i-doc"></use></svg></span>
                 <div class="check-body">
-                    <div class="check-title">Upload documenten</div>
-                    <div class="check-sub">Sleep één of meerdere PDF's naar binnen — ze worden direct verwerkt.</div>
+                    <div class="check-title">1 &middot; Uploaden</div>
+                    <div class="check-sub">Sleep &eacute;&eacute;n of meer PDF&rsquo;s naar binnen &mdash; ze worden direct verwerkt.</div>
                 </div>
                 <span class="check-status"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span>
-                <button class="btn btn-small btn-secondary" data-goto="docs">Uploaden</button>
+                <button class="btn btn-small btn-secondary" data-goto="upload">Uploaden</button>
             </div>
             <div class="check-row" id="chkCols">
                 <span class="check-ico"><svg class="ico" aria-hidden="true"><use href="#i-columns"></use></svg></span>
                 <div class="check-body">
-                    <div class="check-title">Maak kolommen</div>
-                    <div class="check-sub">Laat ze automatisch herkennen, of stel zelf in wat je uit elk document wilt halen.</div>
+                    <div class="check-title">2 &middot; Aanwijzen</div>
+                    <div class="check-sub">Teken een vak om een waarde, of kies een voorbeeldsjabloon.</div>
                 </div>
                 <span class="check-status"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span>
-                <button class="btn btn-small btn-secondary" data-goto="columns">Kolommen</button>
-            </div>
-            <div class="check-row" id="chkTmpl">
-                <span class="check-ico"><svg class="ico" aria-hidden="true"><use href="#i-tag"></use></svg></span>
-                <div class="check-body">
-                    <div class="check-title">Sla op als template</div>
-                    <div class="check-sub">Bewaar je kolommen per soort document en wissel later met één klik.</div>
-                </div>
-                <span class="check-status"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span>
-                <button class="btn btn-small btn-secondary" data-goto="columns">Templates</button>
+                <button class="btn btn-small btn-secondary" data-goto="define">Aanwijzen</button>
             </div>
             <div class="check-row" id="chkRes">
                 <span class="check-ico"><svg class="ico" aria-hidden="true"><use href="#i-table"></use></svg></span>
                 <div class="check-body">
-                    <div class="check-title">Scrape &amp; exporteer</div>
-                    <div class="check-sub">Bekijk het resultaat in een tabel en download als CSV of Excel.</div>
+                    <div class="check-title">3 &middot; Controleren</div>
+                    <div class="check-sub">Bekijk de tabel en kijk de gemarkeerde regels na.</div>
                 </div>
                 <span class="check-status"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span>
-                <button class="btn btn-small btn-secondary" data-goto="results">Resultaten</button>
+                <button class="btn btn-small btn-secondary" data-goto="check">Controleren</button>
             </div>
-            <div class="check-row" id="chkAuto">
-                <span class="check-ico"><svg class="ico" aria-hidden="true"><use href="#i-bolt"></use></svg></span>
+            <div class="check-row" id="chkDl">
+                <span class="check-ico"><svg class="ico" aria-hidden="true"><use href="#i-download"></use></svg></span>
                 <div class="check-body">
-                    <div class="check-title">Automatiseer je workflow</div>
-                    <div class="check-sub">Kies een template, sleep bestanden en krijg direct je download — alles in één klik.</div>
+                    <div class="check-title">4 &middot; Downloaden</div>
+                    <div class="check-sub">Download voor Excel, of vul er direct een formulier mee in.</div>
                 </div>
                 <span class="check-status"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span>
-                <button class="btn btn-small btn-secondary" data-goto="automate">Automatiseren</button>
+                <button class="btn btn-small btn-secondary" data-goto="download">Downloaden</button>
             </div>
-        </div>
 
-        <!-- Pagina: Documenten -->
-        <div class="app-page" id="page-docs">
-        <h1 class="page-title">Documenten</h1>
-        <p class="page-sub">Upload één of meerdere PDF's — ze worden parallel verwerkt en blijven op je computer.</p>
-            <button type="button" class="next-hint hidden" id="hintDocs"><span class="nh-text"></span><svg class="ico ico-sm nh-arrow" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+            <div class="step-nav"><button class="btn" data-goto="define">Verder naar Aanwijzen &rarr;</button></div>
 
-        <!-- Step 1: Upload -->
-        <div class="tool-section">
-            <div class="dropzone" id="dropzone">
-                <strong>Sleep PDF-bestanden hierheen</strong> of klik om te selecteren.<br>
-                <span style="font-size:0.85rem;">Meerdere bestanden tegelijk mogelijk — ze worden parallel geparsed.</span>
-            </div>
-            <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple class="hidden">
-            <div class="toolbar" id="pageOptsBar" style="margin-top:1rem;">
-                <div class="field" style="width:110px;">
-                    <label>Vanaf pagina</label>
-                    <input type="number" id="pgFrom" min="1" value="1">
-                </div>
+            <div class="toolbar" id="langWrap" style="margin-top:2rem; border-top:1px solid var(--grid); padding-top:1rem;">
                 <div class="field" style="width:170px;">
-                    <label>Tot en met</label>
-                    <select id="pgToMode">
-                        <option value="last">laatste pagina</option>
-                        <option value="secondlast">een-na-laatste</option>
-                        <option value="n">pagina&hellip;</option>
-                    </select>
-                </div>
-                <div class="field hidden" id="pgToNWrap" style="width:90px;">
-                    <label>Pagina</label>
-                    <input type="number" id="pgToN" min="1" value="1">
-                </div>
-                <div class="field" style="width:140px;">
-                    <label>Alleen</label>
-                    <select id="pgParity">
-                        <option value="all">alle pagina's</option>
-                        <option value="odd">oneven pagina's</option>
-                        <option value="even">even pagina's</option>
+                    <label>Taal / Language</label>
+                    <select id="langSelect">
+                        <option value="nl">Nederlands</option>
+                        <option value="en">English</option>
+                        <option value="de">Deutsch</option>
                     </select>
                 </div>
             </div>
-            <p class="hint">Geldt voor herkennen, AI en scrapen — je documenten worden automatisch opnieuw verwerkt.</p>
-
-            <div class="toolbar" id="labelBar" style="margin-top:0.75rem;">
-                <span class="tmpl-label">Categorieën</span>
-                <div class="tmpl-chips" id="labelChips"></div>
-                <input type="text" id="newLabelName" class="tmpl-input" placeholder="bijv. Facturen" style="width:150px;">
-                <button class="btn btn-small btn-ghost" id="addLabelBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"></use></svg>Label</button>
-            </div>
-            <p class="hint" id="labelHint">Maak categorieën met eigen namen (Facturen, Verzekeringen …) en ken ze toe met het labelicoon. Documenten met een categorie worden in je browser bewaard: bij je volgende bezoek staan ze er automatisch weer. Klik op een categorie om te filteren.</p>
-            <div class="progress" id="parseProgress"><i></i></div>
-            <div class="file-list" id="fileList"></div>
         </div>
 
-        <!-- Step 2: Columns / rules -->
-        </div>
-
-        <!-- Pagina: Kolommen & templates -->
-        <div class="app-page" id="page-columns">
-        <h1 class="page-title">Kolommen &amp; templates</h1>
-        <p class="page-sub">Elke kolom is één extractieregel. Klik op een kolom om hem uit te klappen en aan te passen.</p>
+        <!-- Stap 2: Aanwijzen -->
+        <div class="app-page" id="page-define">
+        <h1 class="page-title">2 &middot; Aanwijzen</h1>
+        <p class="page-sub">Wijs aan wat je uit elk document wilt halen. Elke aanwijzing wordt een kolom in je tabel.</p>
             <button type="button" class="next-hint hidden" id="hintCols"><span class="nh-text"></span><svg class="ico ico-sm nh-arrow" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
         <div class="tool-section">
 
             <div class="tmpl-bar">
-                <span class="tmpl-label">Templates</span>
+                <span class="tmpl-label">Sjablonen</span>
                 <div class="tmpl-chips" id="tmplChips"></div>
-                <input type="text" id="tmplName" class="tmpl-input" placeholder="bijv. Inboedelpolis">
-                <button class="btn btn-small btn-secondary" id="tmplSaveBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-save"></use></svg>Template opslaan</button>
+                <input type="text" id="tmplName" class="tmpl-input" placeholder="bijv. Facturen">
+                <button class="btn btn-small btn-secondary" id="tmplSaveBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-save"></use></svg>Sjabloon opslaan</button>
             </div>
-            <p class="hint" style="margin:-0.25rem 0 1rem;">Sla je kolommen op als template per soort document (bijv. Inboedelpolis, AVP, Auto) en wissel met &eacute;&eacute;n klik. Templates worden in je browser bewaard.</p>
+            <p class="hint" style="margin:-0.25rem 0 1rem;">Kies een voorbeeldsjabloon om snel te starten, of sla je eigen kolommen op als sjabloon per soort document. Sjablonen bevatten geen documentgegevens.</p>
 
-            <div id="rulesContainer"></div>
+            <div id="definePreview" class="preview-panel hidden"></div>
 
-            <div class="toolbar">
-                <button class="btn" id="autoDetectBtn"><svg class="ico" aria-hidden="true"><use href="#i-sparkles"></use></svg>Herken kolommen</button>
-                <button class="btn btn-small btn-secondary" id="addRuleBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"></use></svg>Kolom</button>
-                <button class="btn btn-small btn-secondary" id="aiDetectBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-robot"></use></svg>AI herkennen</button>
+            <div class="define-primary" id="defineActions">
+                <div class="define-card primary">
+                    <h3>Gebied selecteren</h3>
+                    <p>Teken een vak om de waarde in je PDF (&ldquo;hier staat het bedrag&rdquo;). ParsePDF leest datzelfde vak in alle documenten.</p>
+                    <button class="btn" id="addRegionBtn"><svg class="ico" aria-hidden="true"><use href="#i-columns"></use></svg>Gebied selecteren</button>
+                </div>
+                <div class="define-card">
+                    <h3>Waarde die je in de PDF ziet</h3>
+                    <p>Typ een waarde uit je document (bijv. een factuurnummer). ParsePDF zoekt hem op en leidt de kolom zelf af.</p>
+                    <div class="rule-body" style="margin-top:0;">
+                        <div class="field" style="flex:1; min-width:160px;">
+                            <label>Waarde</label>
+                            <input type="text" id="valueInput" placeholder="bijv. 2026-001">
+                        </div>
+                        <div class="field" style="min-width:160px;">
+                            <label>In document</label>
+                            <select id="valueFileSelect"></select>
+                        </div>
+                        <button class="btn btn-small btn-secondary" id="valueSearchBtn">Zoek</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toolbar" style="margin-top:0;">
+                <button class="btn btn-small btn-secondary" id="autoDetectBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-sparkles"></use></svg>Velden herkennen</button>
+                <button class="btn btn-small btn-secondary" id="aiDetectBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-robot"></use></svg>Laat ParseLab de velden herkennen</button>
                 <div class="more-wrap">
                     <button class="btn btn-small btn-secondary" id="moreBtn" aria-expanded="false"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-dots"></use></svg>Meer</button>
                     <div class="more-menu" id="moreMenu">
-                        <button type="button" id="uploadHeadersBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-upload"></use></svg>Kolomkop uploaden (.csv)</button>
+                        <button type="button" id="addRuleBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"></use></svg>Lege kolom toevoegen</button>
+                        <button type="button" id="uploadHeadersBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-upload"></use></svg>Kolomnamen uploaden (.csv)</button>
                         <button type="button" id="toggleHeadersBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-columns"></use></svg>Kolomnamen plakken</button>
-                        <button type="button" id="saveConfigBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-save"></use></svg>Config opslaan</button>
-                        <button type="button" id="loadConfigBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-download"></use></svg>Config laden</button>
+                        <button type="button" id="saveConfigBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-save"></use></svg>Instellingen opslaan</button>
+                        <button type="button" id="loadConfigBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-download"></use></svg>Instellingen laden</button>
                     </div>
                 </div>
                 <input type="file" id="configInput" accept=".json,application/json" class="hidden">
                 <label class="checkbox-line" style="margin-left:auto;">
                     <input type="checkbox" id="includeFilename" checked>
-                    Kolom met bestandsnaam toevoegen
+                    Kolom met bestandsnaam
                 </label>
                 <label class="checkbox-line">
                     <input type="checkbox" id="includeLabels">
-                    Kolom met labels toevoegen
+                    Kolom met soort document
                 </label>
             </div>
 
@@ -1182,72 +1222,114 @@
                     <button class="btn btn-small btn-secondary" id="applyHeadersBtn">Toepassen</button>
                     <input type="file" id="headersFileInput" accept=".csv,.txt,text/csv,text/plain" class="hidden">
                 </div>
-                <p class="hint">Namen die al bestaan blijven ongewijzigd; nieuwe namen komen er als kolommen bij. De tool zoekt daarbij automatisch het bijpassende label in je PDF's.</p>
+                <p class="hint">Namen die al bestaan blijven ongewijzigd; nieuwe namen komen er als kolommen bij. De tool zoekt daarbij automatisch het bijpassende label in je PDF&rsquo;s.</p>
             </div>
+
+            <h2 style="font-size:16px; font-weight:600; margin:1.25rem 0 0.6rem;">Je kolommen</h2>
+            <div id="rulesContainer"></div>
+
+            <details class="adv-details" id="pageOptsDetails">
+                <summary>Alleen op bepaalde pagina&rsquo;s</summary>
+                <div class="toolbar" id="pageOptsBar" style="margin-top:0.6rem;">
+                    <div class="field" style="width:110px;">
+                        <label>Vanaf pagina</label>
+                        <input type="number" id="pgFrom" min="1" value="1">
+                    </div>
+                    <div class="field" style="width:170px;">
+                        <label>Tot en met</label>
+                        <select id="pgToMode">
+                            <option value="last">laatste pagina</option>
+                            <option value="secondlast">een-na-laatste</option>
+                            <option value="n">pagina&hellip;</option>
+                        </select>
+                    </div>
+                    <div class="field hidden" id="pgToNWrap" style="width:90px;">
+                        <label>Pagina</label>
+                        <input type="number" id="pgToN" min="1" value="1">
+                    </div>
+                    <div class="field" style="width:140px;">
+                        <label>Alleen</label>
+                        <select id="pgParity">
+                            <option value="all">alle pagina's</option>
+                            <option value="odd">oneven pagina's</option>
+                            <option value="even">even pagina's</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="hint">Geldt voor alle documenten en alle kolommen &mdash; je documenten worden automatisch opnieuw verwerkt.</p>
+            </details>
+        </div>
+        <div class="step-nav"><button class="btn btn-secondary" data-goto="upload">&larr; Uploaden</button><button class="btn" data-goto="check">Verder naar Controleren &rarr;</button></div>
         </div>
 
-        <!-- Step 3: Run & export -->
-        </div>
-
-        <!-- Pagina: Resultaten & export -->
-        <div class="app-page" id="page-results">
-        <h1 class="page-title">Resultaten &amp; export</h1>
-        <p class="page-sub">Scrape je documenten en download het resultaat als CSV of Excel.</p>
+        <!-- Stap 3: Controleren -->
+        <div class="app-page" id="page-check">
+        <h1 class="page-title">3 &middot; Controleren</h1>
+        <p class="page-sub">Elke regel is &eacute;&eacute;n document. Gemarkeerde cellen zijn leeg of twijfelachtig &mdash; kijk die even na.</p>
             <button type="button" class="next-hint hidden" id="hintRes"><span class="nh-text"></span><svg class="ico ico-sm nh-arrow" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
         <div class="tool-section">
             <div class="toolbar" style="margin-top:0;">
-                <button class="btn" id="runBtn"><svg class="ico" aria-hidden="true"><use href="#i-bolt"></use></svg>Scrape documenten</button>
-                <div class="field" style="width:170px;">
-                    <label>CSV-scheidingsteken</label>
-                    <select id="csvDelimiter">
-                        <option value=";">Puntkomma ( ; )</option>
-                        <option value=",">Komma ( , )</option>
-                        <option value="tab">Tab</option>
-                    </select>
-                </div>
-                <button class="btn btn-secondary" id="exportCsvBtn" disabled><svg class="ico ico-sm" aria-hidden="true"><use href="#i-download"></use></svg>CSV</button>
-                <button class="btn btn-secondary" id="exportXlsxBtn" disabled><svg class="ico ico-sm" aria-hidden="true"><use href="#i-download"></use></svg>Excel</button>
-                <button class="btn btn-secondary" id="copyBtn" disabled>Kopiëren</button>
+                <button class="btn" id="runBtn"><svg class="ico" aria-hidden="true"><use href="#i-bolt"></use></svg>Documenten uitlezen</button>
                 <label class="checkbox-line">
                     <input type="checkbox" id="livePreview" checked>
-                    Live bulk-preview (tabel werkt automatisch bij)
+                    Tabel werkt automatisch bij
                 </label>
             </div>
             <div class="status-line" id="statusLine"></div>
             <div class="progress" id="runProgress"><i></i></div>
+            <button type="button" class="review-toggle hidden" id="reviewToggle" aria-pressed="false"><span id="reviewToggleText">0 regels om na te kijken</span> &rarr;</button>
             <div class="empty-state" id="resultsEmpty">
                 <svg class="ico" aria-hidden="true"><use href="#i-table"></use></svg>
-                <p class="es-text">Nog geen resultaat. Scrape je documenten en de tabel verschijnt hier — klaar om te downloaden.</p>
+                <p class="es-text">Nog geen resultaat. Lees je documenten uit en de tabel verschijnt hier.</p>
             </div>
             <div class="table-scroll" id="tableScroll" style="display:none;">
                 <table class="result-table" id="resultTable"></table>
             </div>
         </div>
+        <div class="step-nav"><button class="btn btn-secondary" data-goto="define">&larr; Aanwijzen</button><button class="btn" data-goto="download">Verder naar Downloaden &rarr;</button></div>
         </div>
 
-        <!-- Pagina: Automatiseren -->
-        <div class="app-page" id="page-automate">
-            <h1 class="page-title">Automatiseren</h1>
-            <p class="page-sub">Alles in één klik: kies een template, sleep je bestanden en de download start vanzelf.</p>
-            <button type="button" class="next-hint hidden" id="hintAuto"><span class="nh-text"></span><svg class="ico ico-sm nh-arrow" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+        <!-- Stap 4: Downloaden -->
+        <div class="app-page" id="page-download">
+            <h1 class="page-title">4 &middot; Downloaden</h1>
+            <p class="page-sub">Download je tabel voor Excel, of vul er direct een formulier mee in.</p>
+            <button type="button" class="next-hint hidden" id="hintDl"><span class="nh-text"></span><svg class="ico ico-sm nh-arrow" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
             <div class="tool-section">
-                <div class="rule-body" style="align-items:flex-end;">
-                    <div class="field" style="min-width:220px;">
-                        <label>Template</label>
-                        <select id="wfTemplate"></select>
-                    </div>
-                    <label class="checkbox-line"><input type="checkbox" id="wfCsv" checked> CSV downloaden</label>
-                    <label class="checkbox-line"><input type="checkbox" id="wfXlsx"> Excel downloaden</label>
+                <div class="dl-primary">
+                    <button class="btn" id="exportXlsxBtn" disabled><svg class="ico" aria-hidden="true"><use href="#i-download"></use></svg>Download voor Excel</button>
+                    <button class="btn btn-secondary" id="toFormBtn" disabled>Vul hiermee een formulier in</button>
+                    <span class="status-line" id="dlStatus" style="margin-top:0;"></span>
                 </div>
-                <div class="dropzone" id="wfDropzone" style="margin-top:1rem;">
-                    <strong>Sleep PDF's hierheen</strong> of klik om te selecteren.
+                <div class="dl-other">
+                    <span class="tmpl-label">Andere formaten</span>
+                    <button class="btn btn-small btn-secondary" id="exportCsvBtn" disabled>CSV</button>
+                    <button class="btn btn-small btn-secondary" id="copyBtn" disabled>Kopi&euml;ren &mdash; plak in Excel of Sheets</button>
                 </div>
-                <div class="toolbar">
-                    <button class="btn" id="wfRunBtn"><svg class="ico" aria-hidden="true"><use href="#i-bolt"></use></svg>Run workflow</button>
-                    <span class="status-line" id="wfStatus" style="margin-top:0;"></span>
-                </div>
-                <p class="hint">De workflow gebruikt de documenten die je hier (of op de pagina Documenten) hebt geüpload, past het gekozen template toe, scrapet alles en start direct je download.</p>
+                <p class="hint" id="dlHint">Nog niets om te downloaden. Lees eerst je documenten uit op stap 3.</p>
             </div>
+
+            <details class="adv-details" id="autoDetails" style="margin-top:1.25rem;">
+                <summary>Dit voortaan automatisch doen</summary>
+                <div class="tool-section" style="margin-top:0.75rem;">
+                    <p class="hint" style="margin-top:0;">Elke keer dat je hier PDF&rsquo;s neerzet, gebruikt ParsePDF het gekozen sjabloon en start je download vanzelf. Dit werkt alleen zolang dit tabblad open staat.</p>
+                    <div class="rule-body" style="align-items:flex-end;">
+                        <div class="field" style="min-width:220px;">
+                            <label>Sjabloon</label>
+                            <select id="wfTemplate"></select>
+                        </div>
+                        <label class="checkbox-line"><input type="checkbox" id="wfXlsx" checked> Excel downloaden</label>
+                        <label class="checkbox-line"><input type="checkbox" id="wfCsv"> CSV downloaden</label>
+                    </div>
+                    <div class="dropzone" id="wfDropzone" style="margin-top:1rem;">
+                        <strong>Sleep PDF&rsquo;s hierheen</strong> of klik om te kiezen.
+                    </div>
+                    <div class="toolbar">
+                        <button class="btn" id="wfRunBtn"><svg class="ico" aria-hidden="true"><use href="#i-bolt"></use></svg>Nu uitvoeren</button>
+                        <span class="status-line" id="wfStatus" style="margin-top:0;"></span>
+                    </div>
+                </div>
+            </details>
+            <div class="step-nav"><button class="btn btn-secondary" data-goto="check">&larr; Controleren</button></div>
         </div>
 
         </div>
@@ -1273,10 +1355,10 @@
                 <canvas id="regionCanvas" width="600" height="200"></canvas>
                 <div class="select-rect" id="selectRect"></div>
             </div>
-            <p class="hint">Sleep met de muis een rechthoek over het gebied dat je wilt uitlezen. Het gebied wordt als percentage van de pagina opgeslagen en werkt dus ook op PDF's met een ander formaat.</p>
+            <p class="hint">Sleep met de muis een vak om de waarde die je wilt uitlezen. Datzelfde vak wordt in alle documenten gelezen, ook als de pagina een ander formaat heeft.</p>
             <div class="modal-actions">
                 <button class="btn btn-secondary" id="regionCancelBtn">Annuleren</button>
-                <button class="btn" id="regionSaveBtn" disabled>Gebied opslaan</button>
+                <button class="btn" id="regionSaveBtn" disabled>Dit gebied gebruiken</button>
             </div>
         </div>
     </div>
@@ -1312,68 +1394,70 @@
         </div>
     </div>
 
-    <!-- AI-herkenning: waarschuwing + sleutel -->
+    <!-- Herkenning via ParseLab: opt-in per document -->
     <div class="modal-backdrop" id="aiModal">
-        <div class="modal" style="max-width:600px;">
-            <h3>&#129302; Structuur herkennen met AI</h3>
-            <div class="wiz-notfound" style="margin-top:0.5rem;">
-                &#9888;&#65039; <strong>Let op: hiermee gebruik je AI.</strong> De tekst van je eerste document wordt naar
-                de Claude API van Anthropic gestuurd om de structuur te herkennen. Je data verlaat daarmee
-                je computer. Gebruik dit niet voor gevoelige of persoonsgegevens als dat niet is toegestaan.
-            </div>
-            <div class="field" style="margin-top:1rem;">
-                <label>Claude API-sleutel</label>
-                <input type="password" id="aiKey" placeholder="sk-ant-...">
-            </div>
-            <label class="checkbox-line" style="margin-top:0.6rem;">
-                <input type="checkbox" id="aiRemember"> Sleutel onthouden in deze browser
-            </label>
-            <label class="checkbox-line" style="margin-top:0.4rem;">
-                <input type="checkbox" id="aiConsent"> Ik begrijp dat mijn documenttekst naar de Claude API wordt gestuurd
-            </label>
+        <div class="modal" style="max-width:560px;">
+            <h3>Laat ParseLab de velden herkennen</h3>
+            <p style="margin-top:0.5rem;">Stuur dit document naar ParseLab voor herkenning? Alleen de tekst van dit document wordt verstuurd.</p>
+            <p class="hint" id="aiDocName" style="margin-top:0.4rem;"></p>
             <div class="modal-actions">
-                <button class="btn btn-secondary" id="aiCancelBtn">Annuleren</button>
-                <button class="btn" id="aiRunBtn" disabled>Herken structuur met AI</button>
+                <button class="btn btn-secondary" id="aiCancelBtn">Nee</button>
+                <button class="btn" id="aiRunBtn">Ja</button>
             </div>
             <p class="status-line" id="aiStatus"></p>
-            <p class="hint">Een sleutel maak je aan op console.anthropic.com; het gebruik loopt via je eigen account (doorgaans enkele centen per document). Zonder sleutel werkt de rest van de tool gewoon volledig lokaal.</p>
+        </div>
+    </div>
+
+
+    <!-- Soort document: bevestigen na de eerste upload -->
+    <div class="modal-backdrop" id="kindModal">
+        <div class="modal" style="max-width:520px;">
+            <h3 id="kindTitle">Dit lijkt een factuur. Klopt dat?</h3>
+            <p class="hint" id="kindDocName" style="margin-top:0.4rem;"></p>
+            <div class="modal-actions" id="kindActions">
+                <button class="btn btn-secondary" id="kindNoBtn">Nee, iets anders</button>
+                <button class="btn" id="kindYesBtn">Ja</button>
+            </div>
+            <div id="kindOther" class="hidden" style="margin-top:0.75rem;">
+                <div class="field">
+                    <label>Wat is het dan?</label>
+                    <select id="kindSelect">
+                        <option>Factuur</option>
+                        <option>Bon</option>
+                        <option>Loonstrook</option>
+                        <option>Rapport</option>
+                        <option value="__other">Iets anders&hellip;</option>
+                    </select>
+                </div>
+                <div class="field hidden" id="kindCustomWrap" style="margin-top:0.5rem;">
+                    <label>Naam van de soort</label>
+                    <input type="text" id="kindCustom" placeholder="bijv. Offerte">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" id="kindApplyBtn">Opslaan</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Eerste-keer-onboarding -->
     <div class="fsob" id="fsOnboarding">
         <div class="fsob-left">
-            <div class="brand" style="padding:0;"><span aria-hidden="true">📄</span><span>PDF <span style="color: var(--accent);">Scraper</span></span></div>
+            <div class="brand" style="padding:0;"><span aria-hidden="true">📄</span><span>Parse<span style="color: var(--accent);">PDF</span></span></div>
 
-            <div id="fsobStep1">
-                <h1>In welke branche werk je?</h1>
-                <p class="fsob-sub">Dan stellen we alvast passende voorbeelden voor. Je kunt later altijd wisselen.</p>
-                <div class="fsob-chips" data-fsob-group="branche">
-                    <button type="button" class="fsob-chip">Verzekeringen</button>
-                    <button type="button" class="fsob-chip">Accountancy &amp; administratie</button>
-                    <button type="button" class="fsob-chip">Juridisch &amp; notariaat</button>
-                    <button type="button" class="fsob-chip">Zorg</button>
-                    <button type="button" class="fsob-chip">HR &amp; recruitment</button>
-                    <button type="button" class="fsob-chip">Financieel advies</button>
-                    <button type="button" class="fsob-chip">Overheid</button>
-                    <button type="button" class="fsob-chip">Anders</button>
-                </div>
-            </div>
-
-            <div id="fsobStep2" class="hidden">
+            <div id="fsobStep2">
                 <h1>Wat wil je als eerste doen?</h1>
-                <p class="fsob-sub">Je kunt later altijd meer doen — dit bepaalt alleen waar je begint.</p>
+                <p class="fsob-sub">Je kunt later altijd meer doen &mdash; dit bepaalt alleen waar je begint.</p>
                 <div class="fsob-chips" data-fsob-group="start">
-                    <button type="button" class="fsob-chip" data-start="wizard">📄 Direct documenten scrapen</button>
-                    <button type="button" class="fsob-chip" data-start="columns">🧩 Zelf kolommen instellen</button>
-                    <button type="button" class="fsob-chip" data-start="home">👀 Eerst rondkijken</button>
+                    <button type="button" class="fsob-chip selected" data-start="upload">📄 Documenten uitlezen</button>
+                    <button type="button" class="fsob-chip" data-start="tour">👀 Eerst rondkijken</button>
                 </div>
+                <p class="hint" style="margin-top:1.25rem;">🔒 Je documenten blijven op jouw computer.</p>
             </div>
 
             <div class="fsob-nav">
                 <button type="button" class="fsob-skip" id="fsobSkip">Overslaan</button>
-                <button type="button" class="btn btn-secondary hidden" id="fsobBack">&#8249; Terug</button>
-                <button type="button" class="btn" id="fsobNext">Verder &#8250;</button>
+                <button type="button" class="btn" id="fsobNext">Aan de slag &#8250;</button>
             </div>
         </div>
         <div class="fsob-right" aria-hidden="true">
@@ -1387,162 +1471,9 @@
         </div>
     </div>
 
-    <!-- Onboarding wizard -->
-    <div class="modal-backdrop" id="wizardModal">
-        <div class="modal" style="max-width:780px;">
-            <h3>Onboarding — PDF Scraper instellen</h3>
-            <div class="wiz-steps">
-                <span class="wiz-step-dot" data-step="1">1 · PDF's</span>
-                <span class="wiz-step-dot" data-step="2">2 · Opmaak</span>
-                <span class="wiz-step-dot" data-step="3">3 · Kolommen</span>
-            </div>
-
-            <!-- Stap 1: PDF's -->
-            <div id="wizStep1">
-                <p style="font-size:0.9rem;">Upload de PDF's die je wilt scrapen. Je kunt er meerdere tegelijk uploaden — ze worden parallel geparsed.</p>
-                <div class="dropzone" id="wizDropzone" style="margin-top:1rem;">
-                    <strong>Sleep PDF's hierheen</strong> of klik om te selecteren.
-                </div>
-                <p class="hint" id="wizFileSummary">Nog geen PDF's geüpload.</p>
-                <div class="wiz-nav">
-                    <button class="btn btn-secondary" data-wiz="close">Sluiten</button>
-                    <button class="btn" id="wizNext1" disabled>Volgende →</button>
-                </div>
-            </div>
-
-            <!-- Stap 2: Opmaak -->
-            <div id="wizStep2" class="hidden">
-                <p style="font-size:0.9rem;">Hebben al je PDF's <strong>dezelfde opmaak</strong> (bijv. steeds dezelfde factuur-template), of <strong>verschilt de opmaak</strong> per PDF?</p>
-                <div class="layout-cards">
-                    <div class="pick-card" data-layout="same" id="layoutSameCard">
-                        <svg viewBox="0 0 64 48" aria-hidden="true">
-                            <rect x="6" y="8" width="34" height="36" rx="3" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <line x1="11" y1="16" x2="29" y2="16" stroke="#2a78d6" stroke-width="3"/>
-                            <line x1="11" y1="24" x2="35" y2="24" stroke="#c9c8c0" stroke-width="2.5"/>
-                            <line x1="11" y1="31" x2="35" y2="31" stroke="#c9c8c0" stroke-width="2.5"/>
-                            <rect x="24" y="2" width="34" height="36" rx="3" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <line x1="29" y1="10" x2="47" y2="10" stroke="#2a78d6" stroke-width="3"/>
-                            <line x1="29" y1="18" x2="53" y2="18" stroke="#c9c8c0" stroke-width="2.5"/>
-                            <line x1="29" y1="25" x2="53" y2="25" stroke="#c9c8c0" stroke-width="2.5"/>
-                        </svg>
-                        <div class="pick-title">Zelfde opmaak</div>
-                        <div class="pick-desc">Alle PDF's volgen hetzelfde sjabloon. Vaste plekken en gebieden werken goed.</div>
-                    </div>
-                    <div class="pick-card" data-layout="variable" id="layoutVarCard">
-                        <svg viewBox="0 0 64 48" aria-hidden="true">
-                            <rect x="6" y="8" width="34" height="36" rx="3" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <line x1="11" y1="16" x2="24" y2="16" stroke="#2a78d6" stroke-width="3"/>
-                            <line x1="11" y1="24" x2="35" y2="24" stroke="#c9c8c0" stroke-width="2.5"/>
-                            <circle cx="15" cy="34" r="4" fill="none" stroke="#c9c8c0" stroke-width="2"/>
-                            <rect x="24" y="2" width="34" height="36" rx="3" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <rect x="29" y="8" width="10" height="8" fill="none" stroke="#c9c8c0" stroke-width="2"/>
-                            <line x1="43" y1="12" x2="53" y2="12" stroke="#2a78d6" stroke-width="3"/>
-                            <line x1="29" y1="24" x2="53" y2="24" stroke="#c9c8c0" stroke-width="2.5"/>
-                            <line x1="29" y1="31" x2="45" y2="31" stroke="#c9c8c0" stroke-width="2.5"/>
-                        </svg>
-                        <div class="pick-title">Variabele opmaak</div>
-                        <div class="pick-desc">PDF's verschillen van elkaar. Zoeken op woorden/tekens en regex werken het best.</div>
-                    </div>
-                </div>
-                <div class="wiz-nav">
-                    <button class="btn btn-secondary" data-wiz="back1">← Terug</button>
-                    <button class="btn" id="wizNext2" disabled>Volgende →</button>
-                </div>
-            </div>
-
-            <!-- Stap 3: Kolommen via 'zoek op waarde' -->
-            <div id="wizStep3" class="hidden">
-                <p style="font-size:0.9rem;">
-                    <strong>Zoek op waarde:</strong> typ een waarde die je in de PDF ziet staan (bijv. een factuurnummer of datum).
-                    De tool zoekt hem op, herkent het label ervoor en maakt automatisch een extractieregel.
-                    In de bulk-preview zie je direct wat er in <em>elke</em> geüploade PDF gevonden wordt.
-                </p>
-                <div class="rule-body" style="margin-top:1rem;">
-                    <div class="field" style="min-width:200px;">
-                        <label>Voorbeeld-PDF</label>
-                        <select id="wizFileSelect"></select>
-                    </div>
-                    <div class="field" style="flex:1; min-width:180px;">
-                        <label>Waarde die je in de PDF ziet</label>
-                        <input type="text" id="wizValueInput" placeholder="bijv. 2026-001">
-                    </div>
-                    <button class="btn btn-small" id="wizSearchBtn">Zoek</button>
-                </div>
-                <div id="wizSearchResult"></div>
-                <div id="wizAddArea" class="hidden">
-                    <div class="rule-body" style="margin-top:0.75rem;">
-                        <div class="field" style="flex:1; min-width:180px;">
-                            <label>Kolomnaam</label>
-                            <input type="text" id="wizColName" placeholder="bijv. Factuurnummer">
-                        </div>
-                        <button class="btn btn-small" id="wizAddColBtn">+ Kolom toevoegen</button>
-                    </div>
-                </div>
-
-                <div class="wiz-divider">of kies zelf een methode</div>
-                <div class="cat-cards">
-                    <div class="pick-card" data-cat="after">
-                        <svg viewBox="0 0 64 48" aria-hidden="true">
-                            <rect x="8" y="4" width="48" height="40" rx="4" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <line x1="14" y1="15" x2="28" y2="15" stroke="#c9c8c0" stroke-width="3"/>
-                            <line x1="32" y1="15" x2="50" y2="15" stroke="#2a78d6" stroke-width="3"/>
-                            <line x1="14" y1="25" x2="24" y2="25" stroke="#c9c8c0" stroke-width="3"/>
-                            <line x1="28" y1="25" x2="50" y2="25" stroke="#2a78d6" stroke-width="3"/>
-                            <line x1="14" y1="35" x2="42" y2="35" stroke="#c9c8c0" stroke-width="3"/>
-                        </svg>
-                        <div class="pick-title">Na woord/teken</div>
-                        <div class="pick-desc">Pak de tekst die na een label of teken komt.</div>
-                    </div>
-                    <div class="pick-card" data-cat="between">
-                        <svg viewBox="0 0 64 48" aria-hidden="true">
-                            <rect x="8" y="4" width="48" height="40" rx="4" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <text x="14" y="32" fill="#2a78d6" font-size="22" font-family="monospace">(</text>
-                            <line x1="24" y1="25" x2="40" y2="25" stroke="#52514e" stroke-width="3"/>
-                            <text x="42" y="32" fill="#2a78d6" font-size="22" font-family="monospace">)</text>
-                        </svg>
-                        <div class="pick-title">Tussen tekens</div>
-                        <div class="pick-desc">Tekst tussen een start- en eindteken.</div>
-                    </div>
-                    <div class="pick-card" data-cat="regex">
-                        <svg viewBox="0 0 64 48" aria-hidden="true">
-                            <rect x="8" y="4" width="48" height="40" rx="4" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <text x="16" y="33" fill="#2a78d6" font-size="20" font-family="monospace">.*?</text>
-                        </svg>
-                        <div class="pick-title">Regex</div>
-                        <div class="pick-desc">Voor gevorderden: een eigen patroon.</div>
-                    </div>
-                    <div class="pick-card" data-cat="position">
-                        <svg viewBox="0 0 64 48" aria-hidden="true">
-                            <rect x="8" y="4" width="48" height="40" rx="4" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <line x1="8" y1="24" x2="56" y2="24" stroke="#e1e0d9" stroke-width="1"/>
-                            <line x1="32" y1="4" x2="32" y2="44" stroke="#e1e0d9" stroke-width="1"/>
-                            <circle cx="42" cy="16" r="5" fill="#2a78d6"/>
-                        </svg>
-                        <div class="pick-title">Vaste plek</div>
-                        <div class="pick-desc">Pagina + regel (bij zelfde opmaak).</div>
-                    </div>
-                    <div class="pick-card" data-cat="region">
-                        <svg viewBox="0 0 64 48" aria-hidden="true">
-                            <rect x="8" y="4" width="48" height="40" rx="4" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5"/>
-                            <rect x="30" y="10" width="20" height="12" fill="rgba(42,120,214,0.16)" stroke="#2a78d6" stroke-width="2" stroke-dasharray="4 3"/>
-                            <line x1="14" y1="30" x2="46" y2="30" stroke="#c9c8c0" stroke-width="3"/>
-                            <line x1="14" y1="38" x2="38" y2="38" stroke="#c9c8c0" stroke-width="3"/>
-                        </svg>
-                        <div class="pick-title">Gebied</div>
-                        <div class="pick-desc">Sleep een vak op de pagina.</div>
-                    </div>
-                </div>
-
-                <div class="wiz-nav">
-                    <button class="btn btn-secondary" data-wiz="back2">← Terug</button>
-                    <button class="btn" id="wizFinishBtn">Klaar ✓</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <footer class="site-footer">
-        PDF Scraper — alles draait lokaal in je browser, er wordt niets geüpload.
+        ParsePDF — alles draait lokaal in je browser, je bestanden blijven op jouw computer.
     </footer>
 
     <!-- pdf.js (Mozilla, Apache-2.0) — inline zodat dit bestand zelfstandig werkt -->
@@ -1636,6 +1567,32 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         var results = null; // { headers: [], rows: [][] }
         var nextFileId = 1;
         var nextRuleId = 1;
+        var downloadedOnce = false;
+
+        // Oude API-sleutel uit eerdere versies: altijd opruimen, er is geen sleutel meer.
+        try { localStorage.removeItem('pdfScraperClaudeKey'); } catch (e) {}
+
+        // Ingebed in het ParseLab-dashboard? Dan statistieken en navigatie melden.
+        var isEmbedded = false;
+        try { isEmbedded = window.self !== window.top || /[?&]embed=1/.test(location.search); } catch (e) { isEmbedded = true; }
+        function postToParent(msg) {
+            if (!isEmbedded) return;
+            try { window.parent.postMessage(Object.assign({ source: 'parselab-tool' }, msg), '*'); } catch (e) {}
+        }
+        var statsTimer = null;
+        function postStats() {
+            if (!isEmbedded) return;
+            clearTimeout(statsTimer);
+            statsTimer = setTimeout(function () {
+                postToParent({
+                    type: 'parselab:stats', tool: 'pdf',
+                    templates: Object.keys(loadTemplates()).length,
+                    documents: files.length,
+                    rows: results ? results.rows.length : 0,
+                    review: results ? reviewCount() : 0
+                });
+            }, 50);
+        }
 
         // ---------- Helpers ----------
         function $(id) { return document.getElementById(id); }
@@ -1914,7 +1871,81 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             }, 0);
         }
 
-        // ---------- Bewaarde documenten (IndexedDB, per categorie) ----------
+        // ---------- Soort document (factuur / bon / loonstrook / rapport) ----------
+        var KIND_TEMPLATE = { 'Factuur': 'Nederlandse factuur', 'Bon': 'Bon', 'Loonstrook': 'Loonstrook' };
+        function detectKind(doc) {
+            var t = ((doc && doc.pages && doc.pages[0] && doc.pages[0].text) || (doc && doc.text) || '').toLowerCase();
+            if (/loonstrook|salaris|bruto/.test(t)) return 'Loonstrook';
+            if (/factuur|invoice/.test(t)) return 'Factuur';
+            if (/kassabon|\bbon\b|\bpin\b/.test(t)) return 'Bon';
+            if (/\bbtw\b|totaal/.test(t)) return 'Factuur';
+            return 'Rapport';
+        }
+        function assignKind(f, kind) {
+            kind = createLabel(kind);
+            if (!kind) return;
+            f.kind = kind;
+            f.labels = [kind];
+            setAssignedLabels(f);
+            persistDocStorage(f);
+        }
+        var kindState = { file: null, asked: false };
+        function maybeAskKind(entries) {
+            if (kindState.asked) return;
+            var first = null;
+            for (var i = 0; i < entries.length; i++) { if (entries[i].status === 'ok') { first = entries[i]; break; } }
+            if (!first || !first.kind) return;
+            kindState.asked = true;
+            kindState.file = first;
+            $('kindTitle').textContent = 'Dit lijkt een ' + first.kind.toLowerCase() + '. Klopt dat?';
+            $('kindDocName').textContent = first.name;
+            $('kindOther').classList.add('hidden');
+            $('kindActions').classList.remove('hidden');
+            $('kindSelect').value = first.kind;
+            if ($('kindSelect').value !== first.kind) $('kindSelect').value = 'Rapport';
+            $('kindCustomWrap').classList.add('hidden');
+            $('kindModal').classList.add('open');
+        }
+        function kindConfirm(kind) {
+            var f = kindState.file;
+            $('kindModal').classList.remove('open');
+            if (f && kind && kind !== f.kind) {
+                assignKind(f, kind);
+                renderLabelBar();
+                renderFileList();
+                scheduleLive();
+            }
+            var finalKind = (f && f.kind) || kind;
+            suggestTemplateForKind(finalKind);
+            // Eerste upload gedaan: door naar stap 2 (aanwijzen)
+            showPage('define');
+        }
+        function suggestTemplateForKind(kind) {
+            var t = KIND_TEMPLATE[kind];
+            if (!t || rules.some(isConfiguredRule)) return;
+            applyTemplate(t, true);
+            showToast('Voorbeeldsjabloon \u201c' + t + '\u201d toegepast \u2014 controleer de kolommen', 'sparkles');
+        }
+        function initKindModal() {
+            $('kindYesBtn').addEventListener('click', function () { kindConfirm(kindState.file ? kindState.file.kind : null); });
+            $('kindNoBtn').addEventListener('click', function () {
+                $('kindActions').classList.add('hidden');
+                $('kindOther').classList.remove('hidden');
+            });
+            $('kindSelect').addEventListener('change', function () {
+                $('kindCustomWrap').classList.toggle('hidden', this.value !== '__other');
+                if (this.value === '__other') $('kindCustom').focus();
+            });
+            $('kindApplyBtn').addEventListener('click', function () {
+                var v = $('kindSelect').value;
+                if (v === '__other') v = $('kindCustom').value.trim();
+                if (!v) { $('kindCustom').focus(); return; }
+                kindConfirm(v);
+            });
+            $('kindCustom').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('kindApplyBtn').click(); } });
+        }
+
+        // ---------- Bewaarde documenten (IndexedDB) ----------
         var DOC_DB = 'pdfScraperDocs';
         function idbOpen() {
             return new Promise(function (res, rej) {
@@ -1942,6 +1973,38 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     tx.oncomplete = res;
                     tx.onerror = function () { rej(tx.error); };
                 });
+            });
+        }
+        function idbClear() {
+            return idbOpen().then(function (db) {
+                return new Promise(function (res, rej) {
+                    var tx = db.transaction('docs', 'readwrite');
+                    tx.objectStore('docs').clear();
+                    tx.oncomplete = res;
+                    tx.onerror = function () { rej(tx.error); };
+                });
+            });
+        }
+        function clearAllDocs() {
+            if (!confirm('Alle documenten en soorten uit je browser verwijderen?\nJe kolommen en sjablonen blijven staan.')) return;
+            files = [];
+            activeLabelFilter = {};
+            try { localStorage.removeItem(DOC_LABELS_KEY); localStorage.removeItem(DOC_ASSIGN_KEY); } catch (e) {}
+            var p = window.indexedDB ? idbClear() : Promise.resolve();
+            p['catch'](function () {}).then(function () {
+                results = null;
+                var ts = $('tableScroll'); if (ts) ts.style.display = 'none';
+                var re = $('resultsEmpty'); if (re) re.classList.remove('hidden');
+                var rt = $('reviewToggle'); if (rt) rt.classList.add('hidden');
+                renderFileList();
+                renderLabelBar();
+                refreshRegionFileSelect();
+                refreshWizard();
+                updateChips();
+                updateChecklist();
+                updateDownloadState();
+                setStatus('');
+                showToast('Alles verwijderd \u2014 er staat niets meer in je browser.');
             });
         }
         function idbAll() {
@@ -2005,6 +2068,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 try {
                     entry.doc = await parsePdf(rec.data.slice(0));
                     entry.status = 'ok';
+                    if ((entry.labels || []).length) entry.kind = entry.labels[0];
+                    else assignKind(entry, detectKind(entry.doc));
                     restored++;
                 } catch (e) {
                     entry.status = 'fout';
@@ -2018,7 +2083,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 updateChips();
                 updateChecklist();
                 scheduleLive();
-                setStatus(restored + ' bewaarde document(en) geladen uit je categorie\u00ebn.');
+                renderLabelBar();
+                setStatus(restored + ' bewaard(e) document(en) uit je browser geladen.');
             }
         }
 
@@ -2318,7 +2384,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             });
             if (pdfs.length === 0) return;
             if (!window.pdfjsLib) {
-                setStatus('pdf.js kon niet geladen worden (geen internetverbinding?). Herlaad de pagina.', true);
+                setStatus('De PDF-lezer kon niet geladen worden. Herlaad de pagina.', true);
                 return;
             }
             var entries = pdfs.map(function (f) {
@@ -2334,6 +2400,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     var buf = await entry.file.arrayBuffer();
                     entry.doc = await parsePdf(buf);
                     entry.status = 'ok';
+                    if ((entry.labels || []).length) entry.kind = entry.labels[0];
+                    else assignKind(entry, detectKind(entry.doc));
                 } catch (e) {
                     entry.status = 'fout';
                     entry.error = (e && e.message) ? e.message : String(e);
@@ -2346,14 +2414,18 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             refreshWizard();
             updateChips();
             updateChecklist();
+            renderLabelBar();
             scheduleLive();
-            maybeAutoOnboard();
+            maybeAskKind(entries);
         }
 
         function renderFileList() {
             closeLabelPop();
             var holder = $('fileList');
             holder.innerHTML = '';
+            postStats();
+            var clr = $('clearAllBtn');
+            if (clr) clr.disabled = files.length === 0;
             if (files.length === 0) {
                 holder.innerHTML = '<div class="empty-state">' + ico('inbox') +
                     '<p class="es-text">Nog geen documenten. Sleep je PDF\u2019s hierboven naar binnen \u2014 ze blijven op je computer.</p></div>';
@@ -2375,7 +2447,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 row.innerHTML = thumb + '<span class="fname">' + esc(f.name) + '</span>' +
                     '<span class="frow-labels"></span> ' + meta +
                     (f.stored ? ' <span class="frow-saved" title="Bewaard in je browser">' + ico('save', 'ico-sm') + '</span>' : '') +
-                    ' <button type="button" class="frow-tag" title="Labels toekennen">' + ico('tag', 'ico-sm') + '</button>' +
+                    ' <button type="button" class="frow-tag" title="Soort aanpassen">' + ico('tag', 'ico-sm') + '</button>' +
                     '<button type="button" class="frow-del" title="Verwijderen" data-fid="' + f.id + '">\u2715</button>';
                 var th = row.querySelector('.fthumb');
                 if (th) th.addEventListener('click', function () { openDocPreview(f); });
@@ -2385,11 +2457,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     openLabelPop(f, row);
                 });
                 row.querySelector('.frow-del').addEventListener('click', function () {
-                    if (f.stored) {
-                        if (confirm('\u201c' + f.name + '\u201d is bewaard in je browser. Ook uit de opslag verwijderen?')) {
-                            idbDel(f.name)['catch'](function () {});
-                        }
-                    }
+                    if (f.stored) idbDel(f.name)['catch'](function () {});
                     files = files.filter(function (x) { return x.id !== f.id; });
                     renderFileList();
                     refreshRegionFileSelect();
@@ -2546,11 +2614,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         var TYPE_LABELS = {
             after: 'Tekst na woord/teken',
             between: 'Tekst tussen twee tekens',
-            regex: 'Regex (patroon)',
+            regex: 'Eigen patroon (gevorderd)',
             position: 'Vaste plek (pagina/regel)',
             below: 'Waarde onder kolomkop',
             region: 'Gebied op pagina',
-            fixed: 'Vaste waarde (zelfde voor elke rij)'
+            fixed: 'Vaste waarde (zelfde voor elke regel)'
         };
 
         function summarizeRule(rule) {
@@ -2566,7 +2634,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     return (rule.startMarker || rule.endMarker)
                         ? 'tussen \u201c' + rule.startMarker + '\u201d en \u201c' + rule.endMarker + '\u201d' : todo;
                 case 'regex':
-                    return rule.pattern ? 'regex: ' + rule.pattern : todo;
+                    return rule.pattern ? 'eigen patroon' : todo;
                 case 'position':
                     return 'pagina ' + rule.posPage + ', regel ' + rule.posLine +
                         (rule.posWord >= 1 ? ', woord ' + rule.posWord : '');
@@ -2623,7 +2691,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             holder.innerHTML = '';
             if (rules.length === 0) {
                 holder.innerHTML = '<div class="empty-state">' + ico('columns') +
-                    '<p class="es-text">Nog geen kolommen. Laat ze herkennen uit je documenten, of voeg zelf een kolom toe.</p></div>';
+                    '<p class="es-text">Nog geen kolommen. Teken een vak met Gebied selecteren, kies een voorbeeldsjabloon, of laat de velden herkennen.</p></div>';
                 return;
             }
             rules.forEach(function (rule) { holder.appendChild(renderRuleCard(rule)); });
@@ -2678,7 +2746,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
             if (rule.type === 'after') {
                 body += fieldHtml('Zoek na dit woord/teken', '<input type="text" data-k="marker" value="' + esc(rule.marker) + '" placeholder="bijv. Factuurnummer:">');
-                body += fieldHtml('Neem tekst tot',
+                var stopHtml = fieldHtml('Neem tekst tot',
                     '<select data-k="stop">' +
                     '<option value="line"' + (rule.stop === 'line' ? ' selected' : '') + '>Einde regel</option>' +
                     '<option value="char"' + (rule.stop === 'char' ? ' selected' : '') + '>Bepaald teken</option>' +
@@ -2686,11 +2754,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     '<option value="nwords"' + (rule.stop === 'nwords' ? ' selected' : '') + '>Aantal woorden</option>' +
                     '</select>');
                 if (rule.stop === 'char') {
-                    body += fieldHtml('Stopteken', '<input type="text" data-k="stopChar" value="' + esc(rule.stopChar) + '" placeholder="bijv. ," style="width:90px;">');
+                    stopHtml += fieldHtml('Stopteken', '<input type="text" data-k="stopChar" value="' + esc(rule.stopChar) + '" placeholder="bijv. ," style="width:90px;">');
                 } else if (rule.stop === 'nchars' || rule.stop === 'nwords') {
-                    body += fieldHtml('Aantal', '<input type="number" data-k="stopCount" min="1" value="' + rule.stopCount + '" style="width:80px;">');
+                    stopHtml += fieldHtml('Aantal', '<input type="number" data-k="stopCount" min="1" value="' + rule.stopCount + '" style="width:80px;">');
                 }
-                extra += matchSelect + nthField + pageField + caseField;
+                extra += stopHtml + matchSelect + nthField + pageField + caseField;
             } else if (rule.type === 'below') {
                 body += fieldHtml('Kolomkop in het document', '<input type="text" data-k="marker" value="' + esc(rule.marker) + '" placeholder="bijv. Factuurnummer">');
                 extra += pageField + caseField;
@@ -2699,8 +2767,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 body += fieldHtml('Eindtekst/-teken', '<input type="text" data-k="endMarker" value="' + esc(rule.endMarker) + '" placeholder="bijv. )">');
                 extra += matchSelect + nthField + pageField + caseField;
             } else if (rule.type === 'regex') {
-                body += fieldHtml('Patroon (eerste groep = waarde)', '<input type="text" data-k="pattern" value="' + esc(rule.pattern) + '" placeholder="bijv. Totaal\\s*\u20ac?\\s*([\\d.,]+)" style="min-width:280px;">');
-                extra += matchSelect + nthField + pageField + caseField;
+                body += '<p class="hint" style="margin:0; flex:1 1 100%;">Het patroon staat onder \u201cToon het patroon (gevorderd)\u201d.</p>';
+                extra += fieldHtml('Patroon (eerste groep = waarde)', '<input type="text" data-k="pattern" value="' + esc(rule.pattern) + '" placeholder="bijv. Totaal\\s*\u20ac?\\s*([\\d.,]+)" style="min-width:280px;">') +
+                         matchSelect + nthField + pageField + caseField;
             } else if (rule.type === 'position') {
                 body += fieldHtml('Pagina', '<input type="number" data-k="posPage" min="1" value="' + rule.posPage + '" style="width:80px;">');
                 body += fieldHtml('Regel', '<input type="number" data-k="posLine" min="1" value="' + rule.posLine + '" style="width:80px;">');
@@ -2712,10 +2781,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                       rule.region.w.toFixed(1) + '% \u00d7 ' + rule.region.h.toFixed(1) + '%'
                     : 'Nog geen gebied geselecteerd';
                 body += '<div class="field"><label>Gebied</label>' +
-                        '<button type="button" class="btn btn-small btn-secondary" data-action="pick-region">Selecteer gebied\u2026</button></div>' +
+                        '<button type="button" class="btn btn-small btn-secondary" data-action="pick-region">Gebied selecteren\u2026</button></div>' +
                         '<span class="region-info' + (rule.region ? ' set' : '') + '">' + info + '</span>';
             } else if (rule.type === 'fixed') {
-                body += fieldHtml('Waarde (komt in elke rij)', '<input type="text" data-k="fixedValue" value="' + esc(rule.fixedValue) + '" placeholder="bijv. Import 2026" style="min-width:220px;">');
+                body += fieldHtml('Waarde (komt in elke regel)', '<input type="text" data-k="fixedValue" value="' + esc(rule.fixedValue) + '" placeholder="bijv. Import 2026" style="min-width:220px;">');
             }
             if (rule.type !== 'fixed') {
                 var expectOpts = Object.keys(EXPECT_LABELS).map(function (t) {
@@ -2726,8 +2795,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             }
             body += '</div>';
             if (extra) {
-                body += '<details class="transform-details more-opts">' +
-                        '<summary>Meer opties</summary>' +
+                var advOpenNow = rule.type === 'regex' && !rule.pattern;
+                body += '<details class="transform-details more-opts"' + (advOpenNow ? ' open' : '') + '>' +
+                        '<summary>Toon het patroon (gevorderd)</summary>' +
                         '<div class="rule-body" style="margin-top:0.75rem;">' + extra + '</div>' +
                         '</details>';
             }
@@ -3007,11 +3077,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         function openDetectModal(candidates, source) {
             detectState.candidates = candidates;
             detectState.source = source;
-            $('detectTitle').textContent = source === 'ai' ? '\u{1F916} Herkende velden (AI + automatisch)' : 'Herkende velden';
+            $('detectTitle').textContent = source === 'ai' ? 'Herkende velden (ParseLab + automatisch)' : 'Herkende velden';
             var okCount = activeFiles().length;
             $('detectInfo').textContent = candidates.length + ' velden gevonden in ' + okCount +
                 ' document(en), over alle pagina\u2019s. Standaard staat alles aan \u2014 vink af wat je niet nodig hebt.' +
-                (source === 'ai' ? ' Velden met een AI-badge zijn door AI herkend: controleer die extra.' : '');
+                (source === 'ai' ? ' Velden met een AI-badge zijn door ParseLab herkend: controleer die extra.' : '');
             $('detectAllToggle').checked = true;
             var list = $('detectList');
             list.innerHTML = '';
@@ -3054,7 +3124,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             renderRules();
             scheduleLive();
             setStatus(added + ' kolom(men) toegevoegd' +
-                (detectState.source === 'ai' ? ' (met AI herkend \u2014 controleer de waarden in de tabel)' : '') + '.');
+                (detectState.source === 'ai' ? ' (door ParseLab herkend \u2014 controleer de waarden in de tabel)' : '') + '.');
         }
 
         function autoDetectColumns() {
@@ -3065,41 +3135,40 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             }
             var candidates = collectFieldCandidates();
             if (candidates.length === 0) {
-                setStatus('Geen herkenbare velden gevonden. Probeer de onboarding (\u201czoek op waarde\u201d) of AI-herkenning.', true);
+                setStatus('Geen herkenbare velden gevonden. Wijs de velden zelf aan met Gebied selecteren.', true);
                 return;
             }
             openDetectModal(candidates, 'auto');
         }
 
-        // ---------- AI-structuurherkenning (optioneel, met waarschuwing) ----------
-        var AI_KEY_STORAGE = 'pdfScraperClaudeKey';
-
+        // ---------- Herkenning via ParseLab (opt-in per document, geen sleutel) ----------
+        var AI_UNAVAILABLE = 'Herkenning via ParseLab is nog niet beschikbaar in deze versie. Wijs de velden zelf aan met Gebied selecteren.';
+        function aiEndpoint() {
+            return (typeof window.PARSELAB_API === 'string' && window.PARSELAB_API) ? window.PARSELAB_API : '/api/parsepdf/detect';
+        }
         function aiStatus(msg, isErr) {
             var el = $('aiStatus');
             el.textContent = msg || '';
             el.className = 'status-line' + (isErr ? ' err' : '');
         }
-        function aiUpdateRunState() {
-            $('aiRunBtn').disabled = !($('aiConsent').checked && $('aiKey').value.trim() !== '');
-        }
         function openAiModal() {
-            if (!files.some(function (x) { return x.status === 'ok'; })) {
-                setStatus('Upload eerst een PDF om de structuur te kunnen herkennen.', true);
+            var f = activeFiles()[0];
+            if (!f) {
+                setStatus('Upload eerst een PDF om velden te kunnen herkennen.', true);
+                showToast('Upload eerst een PDF', 'alert');
                 return;
             }
-            var saved = '';
-            try { saved = localStorage.getItem(AI_KEY_STORAGE) || ''; } catch (e) {}
-            if (saved) { $('aiKey').value = saved; $('aiRemember').checked = true; }
+            $('aiDocName').textContent = 'Document: ' + f.name;
             aiStatus('');
-            aiUpdateRunState();
+            $('aiRunBtn').disabled = false;
             $('aiModal').classList.add('open');
         }
 
-        // AI-antwoorden kunnen afgekapt of net niet helemaal geldige JSON zijn;
+        // Antwoorden kunnen afgekapt of net niet helemaal geldige JSON zijn;
         // repareer door af te knippen na het laatste complete veld-object.
         function parseAiJson(txt) {
             var s = txt.indexOf('{');
-            if (s === -1) throw new Error('Onverwacht antwoord van de AI \u2014 probeer het opnieuw.');
+            if (s === -1) throw new Error('Onverwacht antwoord van ParseLab — probeer het opnieuw.');
             var e = txt.lastIndexOf('}');
             var raw = e > s ? txt.slice(s, e + 1) : txt.slice(s);
             try { return JSON.parse(raw); } catch (err) {}
@@ -3110,74 +3179,48 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 try { return JSON.parse(attempt); } catch (err2) {}
                 cut = raw.lastIndexOf('}', cut - 1);
             }
-            throw new Error('Het AI-antwoord was onleesbaar of afgekapt \u2014 probeer het opnieuw.');
+            throw new Error('Het antwoord van ParseLab was onleesbaar of afgekapt — probeer het opnieuw.');
         }
 
-        function buildAiPrompt(text) {
-            return 'Hieronder staat de tekst van een of meer documenten van hetzelfde soort. Identificeer ALLE gegevensvelden ' +
-                '(labels met een waarde) die je uit dit soort documenten zou willen extraheren \u2014 wees volledig, over alle pagina\u2019s en secties.\n\n' +
-                'Zo werken deze documenten:\n' +
-                '- Formulieren hebben vaak twee kolommen naast elkaar; op \u00e9\u00e9n tekstregel kunnen dus twee losse "Label : waarde"-paren staan. Behandel ze apart.\n' +
-                '- Labels kunnen over twee regels doorlopen ("Oorspronkelijke" + "ingangsdatum" = \u00e9\u00e9n label).\n' +
-                '- Tabellen hebben kolomkoppen met de waarden op de regels eronder.\n' +
-                '- Hetzelfde label kan in meerdere secties voorkomen (bijv. Straat bij klant \u00e9n bij verzekeringnemer); geef die velden een naam met de sectie erin.\n\n' +
-                'Antwoord met exact deze JSON-structuur en verder niets:\n' +
-                '{"velden":[{"naam":"<korte kolomnaam>","zoekNa":"<exacte tekst die direct voor de waarde staat, bijv. Factuurnummer:>","voorbeeld":"<de waarde uit dit document>","type":"<een van: phone,mobile,iban,email,date,amount,postcode,number,name,text>"}]}\n\n' +
-                'Regels:\n' +
-                '- "zoekNa" moet letterlijk en exact zo in de documenttekst voorkomen.\n' +
-                '- Maximaal 40 velden; alleen velden met een niet-lege waarde.\n' +
-                '- Kies "type" op basis van wat de waarde IS, zodat verkeerde inhoud er later uitgefilterd kan worden.\n\n' +
-                'Documenttekst:\n"""\n' + text + '\n"""';
+        // Het antwoord: {"velden":[{"naam","zoekNa","voorbeeld","type"}]} — direct als JSON,
+        // of verpakt zoals een messages-antwoord (content[].text) van de backend.
+        function aiFieldsFromResponse(data) {
+            if (typeof data === 'string') data = parseAiJson(data);
+            if (data && Array.isArray(data.velden)) return { velden: data.velden, truncated: !!data.truncated };
+            if (data && Array.isArray(data.fields)) return { velden: data.fields, truncated: !!data.truncated };
+            if (data && Array.isArray(data.content)) {
+                if (data.stop_reason === 'refusal') throw new Error('ParseLab kon dit document niet verwerken. Probeer een ander document.');
+                var txt = data.content.filter(function (b) { return b.type === 'text'; })
+                    .map(function (b) { return b.text; }).join('');
+                var parsed = parseAiJson(txt);
+                return { velden: Array.isArray(parsed.velden) ? parsed.velden : [], truncated: data.stop_reason === 'max_tokens' };
+            }
+            throw new Error(AI_UNAVAILABLE);
         }
 
         function runAiDetect() {
             var f = activeFiles()[0];
             if (!f) return;
-            var key = $('aiKey').value.trim();
-            try {
-                if ($('aiRemember').checked) localStorage.setItem(AI_KEY_STORAGE, key);
-                else localStorage.removeItem(AI_KEY_STORAGE);
-            } catch (e) {}
             var btn = $('aiRunBtn');
             btn.disabled = true;
-            aiStatus('Bezig met analyseren\u2026 de AI denkt uitgebreid na, dit kan 1 \u00e0 2 minuten duren.');
-            var okAll = activeFiles();
-            var okForAi = okAll.slice(0, 6);
-            var perDoc = Math.min(20000, Math.ceil(60000 / okForAi.length));
-            var text = okForAi.map(function (of, i) {
-                return '--- Document ' + (i + 1) + ': ' + of.name + ' ---\n' + of.doc.text.slice(0, perDoc);
-            }).join('\n\n');
-            fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'content-type': 'application/json',
-                    'x-api-key': key,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerous-direct-browser-access': 'true',
-                    'anthropic-beta': 'server-side-fallback-2026-07-01'
-                },
-                body: JSON.stringify({
-                    model: 'claude-opus-5',
-                    max_tokens: 16000,
-                    output_config: { effort: 'xhigh' },
-                    fallbacks: 'default',
-                    system: 'Je analyseert documenttekst voor een scraping-tool. Antwoord uitsluitend met geldige JSON, zonder toelichting of codeblokken.',
-                    messages: [{ role: 'user', content: buildAiPrompt(text) }]
-                })
-            }).then(function (resp) {
-                if (resp.status === 401 || resp.status === 403) throw new Error('API-sleutel ongeldig of geen toegang.');
-                if (resp.status === 429) throw new Error('API-limiet bereikt \u2014 probeer het over een minuut opnieuw.');
-                if (!resp.ok) throw new Error('De API gaf een fout (' + resp.status + ').');
-                return resp.json();
-            }).then(function (data) {
-                if (data.stop_reason === 'refusal') {
-                    throw new Error('De AI heeft dit verzoek geweigerd. Probeer een ander document.');
-                }
-                var txt = (data.content || []).filter(function (b) { return b.type === 'text'; })
-                    .map(function (b) { return b.text; }).join('');
-                var parsed = parseAiJson(txt);
-                var truncated = data.stop_reason === 'max_tokens';
-                var velden = Array.isArray(parsed.velden) ? parsed.velden : [];
+            aiStatus('Bezig met herkennen… dit kan even duren.');
+            var payload = { text: (f.doc.text || '').slice(0, 60000), fileName: f.name };
+            var req;
+            try {
+                req = fetch(aiEndpoint(), {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) { req = Promise.reject(e); }
+            req.then(function (resp) {
+                if (!resp.ok) throw new Error(AI_UNAVAILABLE);
+                return resp.text();
+            }).then(function (body) {
+                var data;
+                try { data = JSON.parse(body); } catch (e) { data = body; }
+                var r = aiFieldsFromResponse(data);
+                var velden = r.velden;
                 var okFiles = activeFiles();
                 var candidates = [];
                 velden.forEach(function (v) {
@@ -3205,20 +3248,21 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     if (!seen[nm]) { seen[nm] = 1; merged.push(c); }
                 });
                 merged.sort(function (a, b) { return b.count - a.count; });
-                if (merged.length === 0) throw new Error('Geen velden gevonden in de documenten.');
+                if (merged.length === 0) throw new Error('Geen velden gevonden in dit document.');
                 $('aiModal').classList.remove('open');
                 openDetectModal(merged, 'ai');
-                if (truncated) {
-                    setStatus('Let op: het AI-antwoord was afgekapt \u2014 mogelijk ontbreken er velden. Draai de AI-herkenning eventueel opnieuw.', true);
+                if (r.truncated) {
+                    setStatus('Let op: het antwoord was afgekapt — mogelijk ontbreken er velden. Probeer de herkenning eventueel opnieuw.', true);
                 }
-            }).catch(function (err) {
-                aiStatus((err && err.message) ? err.message : 'Er ging iets mis.', true);
+            })['catch'](function (err) {
+                var msg = (err && err.message && !(err instanceof TypeError)) ? err.message : AI_UNAVAILABLE;
+                aiStatus(msg, true);
             }).then(function () {
-                aiUpdateRunState();
+                btn.disabled = false;
             });
         }
 
-                // ---------- Extractie ----------
+        // ---------- Extractie ----------
         function findAll(hay, needle, caseSensitive) {
             var out = [];
             if (!needle) return out;
@@ -3465,11 +3509,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         function runScrape(silent) {
             var ready = activeFiles();
             if (ready.length === 0) {
-                if (!silent) setStatus('Upload eerst minimaal één PDF (die succesvol geparsed is).', true);
+                if (!silent) setStatus('Upload eerst minimaal \u00e9\u00e9n PDF (die goed gelezen is).', true);
                 return;
             }
             if (rules.length === 0) {
-                if (!silent) setStatus('Voeg eerst minimaal één kolom met een extractieregel toe.', true);
+                if (!silent) setStatus('Wijs eerst minimaal \u00e9\u00e9n kolom aan op stap 2.', true);
                 return;
             }
             var includeFilename = $('includeFilename').checked;
@@ -3480,23 +3524,87 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             var colMeta = (includeFilename ? [{ name: 'Bestandsnaam' }] : [])
                 .concat(includeLabels ? [{ name: 'Labels' }] : [])
                 .concat(rules.map(function (r) { return { expect: r.expect || 'auto', name: r.name || '' }; }));
+            var review = [], pages = [];
             var rows = ready.map(function (f) {
                 var row = includeFilename ? [f.name] : [];
-                if (includeLabels) row.push((f.labels || []).join(', '));
+                var flags = row.map(function () { return false; });
+                var pg = [];
+                if (includeLabels) { row.push((f.labels || []).join(', ')); flags.push(false); }
                 rules.forEach(function (rule) {
-                    row.push(evalRuleFinal(f.doc, rule));
+                    var v = evalRuleFinal(f.doc, rule);
+                    row.push(v);
+                    flags.push(isDoubtful(v, rule));
+                    var p = pageOfValue(f.doc, v, rule);
+                    if (p && pg.indexOf(p) === -1) pg.push(p);
                 });
+                review.push(flags);
+                pages.push(pg.sort(function (a, b) { return a - b; }));
                 return row;
             });
-            results = { headers: headers, rows: rows, meta: colMeta };
+            results = { headers: headers, rows: rows, meta: colMeta, review: review, pages: pages };
             renderResults();
-            $('exportCsvBtn').disabled = false;
-            $('exportXlsxBtn').disabled = !window.XLSX;
-            $('copyBtn').disabled = false;
-            setStatus(ready.length + ' PDF’s gescrapet, ' + rules.length + ' kolom(men).' +
-                (window.XLSX ? '' : ' (Excel-export niet beschikbaar: xlsx-library niet geladen)'));
+            updateDownloadState();
+            setStatus(ready.length + ' document' + (ready.length === 1 ? '' : 'en') + ' uitgelezen, ' + rules.length + ' kolom(men).' +
+                (window.XLSX ? '' : ' (Excel-download niet beschikbaar: xlsx-bibliotheek niet geladen)'));
             updateChips();
             updateChecklist();
+            postStats();
+        }
+
+        // Leeg of twijfelachtig? Dan markeren om na te kijken.
+        function isDoubtful(v, rule) {
+            if (v === '') return true;
+            if (v.length > 80) return true;
+            if (/[A-Za-z\u00C0-\u017E]{2,}\s*:\s*\S/.test(v)) return true; // bevat nog een volgend label
+            if (rule && rule.defaultValue && v === applyMapping(rule.defaultValue, rule)) return true;
+            return false;
+        }
+        function pageOfValue(doc, v, rule) {
+            if (!doc || !doc.pages) return 0;
+            if (rule && rule.type === 'region') return rule.regionPage || 1;
+            if (rule && rule.type === 'position') return rule.posPage || 1;
+            if (!v) return 0;
+            var needle = v.split('\n')[0].slice(0, 60);
+            if (!needle) return 0;
+            for (var i = 0; i < doc.pages.length; i++) {
+                if (doc.pages[i].text.indexOf(needle) !== -1) return i + 1;
+            }
+            return 0;
+        }
+        function reviewCount() {
+            if (!results || !results.review) return 0;
+            return results.review.filter(function (flags) { return flags.some(Boolean); }).length;
+        }
+        var reviewFilterOn = false;
+        function applyReviewFilter() {
+            var table = $('resultTable');
+            if (!table || !results) return;
+            var trs = table.querySelectorAll('tbody tr');
+            trs.forEach(function (tr) {
+                var isReview = tr.classList.contains('row-review');
+                tr.classList.toggle('row-hidden', reviewFilterOn && !isReview);
+            });
+            var btn = $('reviewToggle');
+            if (btn) {
+                var n = reviewCount();
+                btn.classList.toggle('hidden', n === 0);
+                btn.classList.toggle('active', reviewFilterOn);
+                btn.setAttribute('aria-pressed', reviewFilterOn ? 'true' : 'false');
+                $('reviewToggleText').textContent = reviewFilterOn
+                    ? 'Alle regels tonen'
+                    : n + (n === 1 ? ' regel' : ' regels') + ' om na te kijken';
+            }
+        }
+        function updateDownloadState() {
+            var has = !!results;
+            var csv = $('exportCsvBtn'), x = $('exportXlsxBtn'), c = $('copyBtn'), f = $('toFormBtn'), h = $('dlHint');
+            if (csv) csv.disabled = !has;
+            if (x) x.disabled = !has || !window.XLSX;
+            if (c) c.disabled = !has;
+            if (f) f.disabled = !has || !window.XLSX;
+            if (h) h.textContent = has
+                ? results.rows.length + (results.rows.length === 1 ? ' regel' : ' regels') + ' klaar om te downloaden.'
+                : 'Nog niets om te downloaden. Lees eerst je documenten uit op stap 3.';
         }
 
         // Kolomtype -> mini-icoon + rechts uitlijnen (§4.4)
@@ -3518,24 +3626,32 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             var meta = results.meta || [];
             var kinds = results.headers.map(function (h, i) { return colKind(meta[i] || { name: h }); });
             var nameCol = results.headers[0] === 'Bestandsnaam';
+            var pageAt = nameCol ? 1 : 0; // kolom "Pagina" (alleen in beeld, niet in de download)
+            var pageTh = '<th class="num"><span class="th-inner">' + ico('doc', 'ico-sm') + 'Pagina</span></th>';
             var html = '<thead><tr>' + results.headers.map(function (h, i) {
                 var k = kinds[i];
-                return '<th' + (k.num ? ' class="num"' : '') + '><span class="th-inner">' +
+                return (i === pageAt ? pageTh : '') + '<th' + (k.num ? ' class="num"' : '') + '><span class="th-inner">' +
                     (k.icon ? ico(k.icon, 'ico-sm') : '') + esc(h) + '</span></th>';
             }).join('') + '</tr></thead><tbody>';
-            results.rows.forEach(function (row) {
-                html += '<tr>' + row.map(function (c, i) {
-                    if (c === '') return '<td class="empty-cell" title="leeg"></td>';
+            results.rows.forEach(function (row, r) {
+                var flags = (results.review && results.review[r]) || [];
+                var pg = (results.pages && results.pages[r]) || [];
+                var pageTd = '<td class="num">' + (pg.length ? esc(pg.join(', ')) : '\u2013') + '</td>';
+                html += '<tr' + (flags.some(Boolean) ? ' class="row-review"' : '') + '>' + row.map(function (c, i) {
+                    var pre = i === pageAt ? pageTd : '';
+                    if (c === '') return pre + '<td class="empty-cell cell-review" title="leeg \u2014 nakijken"></td>';
                     if (i === 0 && nameCol) {
                         var t = thumbFor(c);
-                        return '<td><span class="cellname">' +
+                        return pre + '<td><span class="cellname">' +
                             (t ? '<img src="' + t + '" alt="">' : '') + esc(c) + '</span></td>';
                     }
-                    return '<td' + (kinds[i].num ? ' class="num"' : '') + '>' + esc(c) + '</td>';
+                    var cls = (kinds[i].num ? 'num' : '') + (flags[i] ? ' cell-review' : '');
+                    return pre + '<td' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + (flags[i] ? ' title="Twijfelachtig \u2014 nakijken"' : '') + '>' + esc(c) + '</td>';
                 }).join('') + '</tr>';
             });
             html += '</tbody>';
             table.innerHTML = html;
+            applyReviewFilter();
             $('tableScroll').style.display = 'block';
             var empty = $('resultsEmpty');
             if (empty) empty.classList.add('hidden');
@@ -3579,14 +3695,26 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             return s;
         }
 
+        function markDownloaded() {
+            downloadedOnce = true;
+            updateChecklist();
+        }
+        function setDlStatus(msg, isErr) {
+            var el = $('dlStatus');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.className = 'status-line' + (isErr ? ' err' : '');
+            el.style.marginTop = '0';
+        }
         function exportCsv() {
             if (!results) return;
-            var delim = $('csvDelimiter').value === 'tab' ? '\t' : $('csvDelimiter').value;
+            var delim = ';'; // Nederlandse CSV: altijd puntkomma, met UTF-8 BOM
             var lines = [results.headers].concat(results.rows).map(function (row) {
                 return row.map(function (c) { return csvEscape(c, delim); }).join(delim);
             });
             var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
             download(blob, exportName('csv'));
+            markDownloaded();
         }
 
         function exportXlsx() {
@@ -3595,6 +3723,26 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             var wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Resultaten');
             XLSX.writeFile(wb, exportName('xlsx'));
+            showToast(exportName('xlsx') + ' gedownload', 'download');
+            markDownloaded();
+        }
+
+        // Invullijst voor ParseForm: zelfde tabel als xlsx, en het dashboard gaat naar ParseForm
+        function sendToForm() {
+            if (!results || !window.XLSX) return;
+            var fileName = exportName('xlsx').replace(/\.xlsx$/, '') + '-invullijst.xlsx';
+            var ws = XLSX.utils.aoa_to_sheet([results.headers].concat(results.rows));
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Invullijst');
+            XLSX.writeFile(wb, fileName);
+            markDownloaded();
+            if (isEmbedded) {
+                postToParent({ type: 'parselab:open', view: 'form', section: 'install', payload: { fileName: fileName, rows: results.rows.length } });
+                setDlStatus('Invullijst gemaakt \u2014 ParseForm wordt geopend.');
+            } else {
+                showToast('Invullijst gedownload', 'download');
+                setDlStatus('Invullijst gedownload. Open ParseForm in het ParseLab-dashboard en kies dit bestand om een formulier in te vullen.');
+            }
         }
 
         function copyToClipboard() {
@@ -3603,9 +3751,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 return row.map(function (c) { return String(c).replace(/\t/g, ' ').replace(/\n/g, ' '); }).join('\t');
             }).join('\n');
             navigator.clipboard.writeText(tsv).then(function () {
-                setStatus('Resultaten gekopieerd naar klembord (plakken kan direct in Excel/Sheets).');
+                setDlStatus('Gekopieerd \u2014 plak nu in Excel of Sheets.');
+                showToast('Gekopieerd \u2014 plak in Excel of Sheets');
             }, function () {
-                setStatus('Kopiëren naar klembord mislukt.', true);
+                setDlStatus('Kopi\u00ebren naar klembord mislukt.', true);
             });
         }
 
@@ -3641,7 +3790,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             var cfg = {
                 version: 1,
                 includeFilename: $('includeFilename').checked,
-                csvDelimiter: $('csvDelimiter').value,
                 pageOpts: getPageOpts(),
                 rules: rules.map(function (r) {
                     var copy = Object.assign({}, r);
@@ -3650,21 +3798,20 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 })
             };
             var blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
-            download(blob, 'pdf-scraper-config.json');
+            download(blob, 'parsepdf-instellingen.json');
         }
 
         function loadConfig(json) {
             var cfg;
             try { cfg = JSON.parse(json); }
-            catch (e) { setStatus('Ongeldig configuratiebestand.', true); return; }
-            if (!cfg || !Array.isArray(cfg.rules)) { setStatus('Ongeldig configuratiebestand.', true); return; }
+            catch (e) { setStatus('Ongeldig instellingenbestand.', true); return; }
+            if (!cfg || !Array.isArray(cfg.rules)) { setStatus('Ongeldig instellingenbestand.', true); return; }
             rules = cfg.rules.map(function (r) { return Object.assign(newRule(), { open: false }, r, { id: nextRuleId++ }); });
             if (typeof cfg.includeFilename === 'boolean') $('includeFilename').checked = cfg.includeFilename;
-            if (cfg.csvDelimiter) $('csvDelimiter').value = cfg.csvDelimiter;
             if (cfg.pageOpts) { setPageOpts(cfg.pageOpts); schedulePageReparse(); }
             renderRules();
             scheduleLive();
-            setStatus('Configuratie geladen: ' + rules.length + ' kolom(men).');
+            setStatus('Instellingen geladen: ' + rules.length + ' kolom(men).');
         }
 
         // ---------- Gebied-selectie (modal) ----------
@@ -3806,28 +3953,76 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         function saveRegion() {
             if (!regionState.rule || !regionState.rect) return;
             var canvas = $('regionCanvas');
-            regionState.rule.region = {
+            var rule = regionState.rule;
+            rule.region = {
                 x: regionState.rect.x / canvas.width * 100,
                 y: regionState.rect.y / canvas.height * 100,
                 w: regionState.rect.w / canvas.width * 100,
                 h: regionState.rect.h / canvas.height * 100
             };
-            regionState.rule.regionPage = Math.max(1, parseInt($('regionPageInput').value, 10) || 1);
+            rule.regionPage = Math.max(1, parseInt($('regionPageInput').value, 10) || 1);
             $('regionModal').classList.remove('open');
+            if (defineState.pendingRegion === rule) {
+                defineState.pendingRegion = null;
+                dropPlaceholder();
+                rules.push(rule);
+            }
             renderRules();
+            scheduleLive();
+            showPage('define');
+            showDefinePreview(rule);
         }
 
-        // ---------- Templates (categorieën, bewaard in de browser) ----------
+        // ---------- Sjablonen (eigen: bewaard in de browser; voorbeeld: ingebouwd) ----------
         var TEMPLATE_KEY = 'pdfScraperTemplates';
         var activeTemplate = null;
+
+        // Ingebouwde voorbeeldsjablonen: zelfde structuur als een opgeslagen sjabloon,
+        // regels op basis van gangbare labels. Niet te verwijderen, niet te overschrijven.
+        function builtinRule(name, marker, expect) {
+            var r = newRule(name);
+            delete r.id;
+            r.name = name; r.type = 'after'; r.marker = marker; r.stop = 'line';
+            r.expect = expect || 'auto'; r.open = false;
+            return r;
+        }
+        var BUILTIN_TEMPLATES = {
+            'Nederlandse factuur': { builtin: true, includeFilename: true, rules: [
+                builtinRule('Factuurnummer', 'Factuurnummer', 'number'),
+                builtinRule('Factuurdatum', 'Factuurdatum', 'date'),
+                builtinRule('Vervaldatum', 'Vervaldatum', 'date'),
+                builtinRule('Totaal', 'Totaal', 'amount'),
+                builtinRule('Btw', 'Btw', 'none'),
+                builtinRule('KvK', 'KvK', 'number'),
+                builtinRule('IBAN', 'IBAN', 'iban')
+            ] },
+            'Bon': { builtin: true, includeFilename: true, rules: [
+                builtinRule('Datum', 'Datum', 'date'),
+                builtinRule('Totaal', 'Totaal', 'amount'),
+                builtinRule('Btw', 'Btw', 'none')
+            ] },
+            'Loonstrook': { builtin: true, includeFilename: true, rules: [
+                builtinRule('Periode', 'Periode', 'none'),
+                builtinRule('Werkgever', 'Werkgever', 'name'),
+                builtinRule('Bruto', 'Bruto', 'amount'),
+                builtinRule('Netto', 'Netto', 'amount')
+            ] }
+        };
 
         function loadTemplates() {
             try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY)) || {}; }
             catch (e) { return {}; }
         }
+        function getTemplate(name) {
+            return loadTemplates()[name] || BUILTIN_TEMPLATES[name] || null;
+        }
+        function allTemplateNames() {
+            var own = Object.keys(loadTemplates()).sort(function (a, b) { return a.localeCompare(b); });
+            return Object.keys(BUILTIN_TEMPLATES).concat(own);
+        }
         function storeTemplates(all) {
             try { localStorage.setItem(TEMPLATE_KEY, JSON.stringify(all)); return true; }
-            catch (e) { setStatus('Kon templates niet opslaan (browseropslag geblokkeerd).', true); return false; }
+            catch (e) { setStatus('Kon sjabloon niet opslaan (browseropslag geblokkeerd).', true); return false; }
         }
         function serializeRules() {
             return rules.map(function (r) {
@@ -3838,7 +4033,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         }
         function isConfiguredRule(r) { return !(r.type === 'after' && !r.marker); }
         function rulesMatchTemplate(name) {
-            var tpl = loadTemplates()[name];
+            var tpl = getTemplate(name);
             if (!tpl) return false;
             var strip = function (rs) {
                 return JSON.stringify(rs.map(function (r) {
@@ -3854,81 +4049,105 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         function renderTemplateChips() {
             updateChecklist();
             refreshWorkflowTemplates();
+            postStats();
             var all = loadTemplates();
             var holder = $('tmplChips');
             holder.innerHTML = '';
-            var names = Object.keys(all).sort(function (a, b) { return a.localeCompare(b); });
-            if (names.length === 0) {
-                holder.innerHTML = '<span class="hint" style="margin:0;">nog geen templates opgeslagen</span>';
-                return;
-            }
-            names.forEach(function (name) {
+            function chipFor(name, builtin) {
                 var chip = document.createElement('span');
-                chip.className = 'tmpl-chip' + (name === activeTemplate ? ' active' : '');
+                chip.className = 'tmpl-chip' + (builtin ? ' builtin' : '') + (name === activeTemplate ? ' active' : '');
                 var label = document.createElement('span');
                 label.textContent = name;
-                var x = document.createElement('button');
-                x.type = 'button';
-                x.className = 'tmpl-x';
-                x.title = 'Template verwijderen';
-                x.textContent = '\u2715';
                 chip.appendChild(label);
-                chip.appendChild(x);
+                if (builtin) chip.title = 'Voorbeeldsjabloon';
+                var x = null;
+                if (!builtin) {
+                    x = document.createElement('button');
+                    x.type = 'button';
+                    x.className = 'tmpl-x';
+                    x.title = 'Sjabloon verwijderen';
+                    x.textContent = '\u2715';
+                    chip.appendChild(x);
+                    x.addEventListener('click', function () {
+                        if (!confirm('Sjabloon \u201c' + name + '\u201d verwijderen?')) return;
+                        var cur = loadTemplates();
+                        delete cur[name];
+                        storeTemplates(cur);
+                        if (activeTemplate === name) activeTemplate = null;
+                        renderTemplateChips();
+                        setStatus('Sjabloon \u201c' + name + '\u201d verwijderd.');
+                    });
+                }
                 chip.addEventListener('click', function (e) {
-                    if (e.target === x) return;
+                    if (x && e.target === x) return;
                     applyTemplate(name);
                 });
-                x.addEventListener('click', function () {
-                    if (!confirm('Template \u201c' + name + '\u201d verwijderen?')) return;
-                    var cur = loadTemplates();
-                    delete cur[name];
-                    storeTemplates(cur);
-                    if (activeTemplate === name) activeTemplate = null;
-                    renderTemplateChips();
-                    setStatus('Template \u201c' + name + '\u201d verwijderd.');
-                });
-                holder.appendChild(chip);
-            });
+                return chip;
+            }
+            var groupB = document.createElement('span');
+            groupB.className = 'tmpl-group-label';
+            groupB.textContent = 'Voorbeeldsjablonen';
+            holder.appendChild(groupB);
+            Object.keys(BUILTIN_TEMPLATES).forEach(function (name) { holder.appendChild(chipFor(name, true)); });
+            var names = Object.keys(all).sort(function (a, b) { return a.localeCompare(b); });
+            var groupO = document.createElement('span');
+            groupO.className = 'tmpl-group-label';
+            groupO.style.marginLeft = '10px';
+            groupO.textContent = 'Eigen sjablonen';
+            holder.appendChild(groupO);
+            if (names.length === 0) {
+                var h = document.createElement('span');
+                h.className = 'hint';
+                h.style.margin = '0';
+                h.textContent = 'nog geen eigen sjablonen';
+                holder.appendChild(h);
+                return;
+            }
+            names.forEach(function (name) { holder.appendChild(chipFor(name, false)); });
         }
 
         function applyTemplate(name, force) {
-            var tpl = loadTemplates()[name];
+            var tpl = getTemplate(name);
             if (!tpl) return;
             var hasWork = rules.some(isConfiguredRule);
             var unsaved = !activeTemplate || !rulesMatchTemplate(activeTemplate);
             if (!force && hasWork && unsaved && !rulesMatchTemplate(name)) {
-                if (!confirm('Huidige kolommen vervangen door template \u201c' + name + '\u201d?\nNiet-opgeslagen wijzigingen gaan verloren.')) return;
+                if (!confirm('Huidige kolommen vervangen door sjabloon \u201c' + name + '\u201d?\nNiet-opgeslagen wijzigingen gaan verloren.')) return;
             }
             rules = (tpl.rules || []).map(function (r) {
                 return Object.assign(newRule(), { open: false }, r, { id: nextRuleId++ });
             });
             if (typeof tpl.includeFilename === 'boolean') $('includeFilename').checked = tpl.includeFilename;
-            if (tpl.csvDelimiter) $('csvDelimiter').value = tpl.csvDelimiter;
             if (tpl.pageOpts) { setPageOpts(tpl.pageOpts); schedulePageReparse(); }
             activeTemplate = name;
             $('tmplName').value = '';
+            hideDefinePreview();
             renderRules();
             renderTemplateChips();
             scheduleLive();
-            setStatus('Template \u201c' + name + '\u201d geladen (' + rules.length + ' kolommen).');
+            setStatus('Sjabloon \u201c' + name + '\u201d geladen (' + rules.length + ' kolommen).');
         }
 
         function saveTemplate() {
-            var name = $('tmplName').value.trim() || activeTemplate;
+            var name = $('tmplName').value.trim() || (activeTemplate && !BUILTIN_TEMPLATES[activeTemplate] ? activeTemplate : '');
             if (!name) {
-                setStatus('Geef je template eerst een naam (bijv. Inboedelpolis, AVP, Auto).', true);
+                setStatus('Geef je sjabloon eerst een naam (bijv. Facturen leverancier X).', true);
+                $('tmplName').focus();
+                return;
+            }
+            if (BUILTIN_TEMPLATES[name]) {
+                setStatus('\u201c' + name + '\u201d is een voorbeeldsjabloon \u2014 kies een eigen naam.', true);
                 $('tmplName').focus();
                 return;
             }
             if (rules.length === 0) {
-                setStatus('Er zijn nog geen kolommen om als template op te slaan.', true);
+                setStatus('Er zijn nog geen kolommen om als sjabloon op te slaan.', true);
                 return;
             }
             var all = loadTemplates();
             all[name] = {
                 rules: serializeRules(),
                 includeFilename: $('includeFilename').checked,
-                csvDelimiter: $('csvDelimiter').value,
                 pageOpts: getPageOpts(),
                 savedAt: new Date().toISOString()
             };
@@ -3936,14 +4155,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             activeTemplate = name;
             $('tmplName').value = '';
             renderTemplateChips();
-            setStatus('Template \u201c' + name + '\u201d opgeslagen (' + rules.length + ' kolommen).');
+            showToast('Sjabloon \u201c' + name + '\u201d opgeslagen', 'save');
+            setStatus('Sjabloon \u201c' + name + '\u201d opgeslagen (' + rules.length + ' kolommen).');
         }
 
         function exportName(ext) {
-            var base = 'pdf-scrape-resultaten';
+            var base = 'parsepdf-resultaten';
             if (activeTemplate) {
                 var slug = activeTemplate.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-                if (slug) base = 'scrape-' + slug;
+                if (slug) base = 'parsepdf-' + slug;
             }
             return base + '.' + ext;
         }
@@ -3953,6 +4173,22 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         var currentLang = 'nl';
         var TR = {
         en: {
+            'Uploaden': 'Upload', 'Aanwijzen': 'Point out', 'Controleren': 'Check', 'Downloaden': 'Download',
+            '1 \u00b7 Uploaden': '1 \u00b7 Upload', '2 \u00b7 Aanwijzen': '2 \u00b7 Point out', '3 \u00b7 Controleren': '3 \u00b7 Check', '4 \u00b7 Downloaden': '4 \u00b7 Download',
+            'Deze bestanden blijven op jouw computer.': 'These files stay on your computer.',
+            'Sleep je PDF\u2019s hierheen': 'Drop your PDFs here', 'of kies bestanden': 'or choose files', 'of kies een map': 'or choose a folder',
+            'Alles verwijderen': 'Remove everything', 'Gebied selecteren': 'Select region', 'Waarde die je in de PDF ziet': 'A value you see in the PDF',
+            'Zoek': 'Find', 'Velden herkennen': 'Detect fields', 'Laat ParseLab de velden herkennen': 'Let ParseLab detect the fields',
+            'Documenten uitlezen': 'Read documents', 'Download voor Excel': 'Download for Excel', 'Vul hiermee een formulier in': 'Fill in a form with this',
+            'Andere formaten': 'Other formats', 'Kopi\u00ebren \u2014 plak in Excel of Sheets': 'Copy \u2014 paste into Excel or Sheets',
+            'Dit voortaan automatisch doen': 'Do this automatically from now on', 'Sjablonen': 'Templates', 'Sjabloon opslaan': 'Save template',
+            'Voorbeeldsjablonen': 'Example templates', 'Eigen sjablonen': 'Your templates', 'nog geen eigen sjablonen': 'no own templates yet',
+            'Dit is goed': 'This is right', 'Niet dit, maar\u2026': 'Not this, but\u2026', 'Kolom weghalen': 'Remove column',
+            'Alleen op bepaalde pagina\u2019s': 'Only on certain pages', 'Gevorderd': 'Advanced', 'Toon het patroon (gevorderd)': 'Show the pattern (advanced)',
+            'Rondleiding in drie stappen': 'Three-step tour', 'Zo werkt het': 'How it works', 'Soorten': 'Types', 'Soort': 'Type',
+            'Documenten uitlezen': 'Read documents', '\ud83d\udcc4 Documenten uitlezen': '\ud83d\udcc4 Read documents',
+            'Ja': 'Yes', 'Nee': 'No', 'Nee, iets anders': 'No, something else', 'Opslaan': 'Save',
+            'Stuur dit document naar ParseLab voor herkenning? Alleen de tekst van dit document wordt verstuurd.': 'Send this document to ParseLab for detection? Only the text of this document is sent.',
             'Herken kolommen': 'Detect columns', 'Kolom': 'Column', 'AI herkennen': 'Detect with AI',
             'Meer': 'More', 'Meer opties': 'More options', 'Scrape documenten': 'Scrape documents',
             'Template opslaan': 'Save template', 'Label': 'Label', 'CSV': 'CSV', 'Excel': 'Excel',
@@ -3967,14 +4203,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             'Label verwijderen': 'Delete label', 'Nieuw label…': 'New label…', 'bijv. Facturen': 'e.g. Invoices',
             'Home': 'Home', 'Documenten': 'Documents', 'Kolommen & templates': 'Columns & templates',
             'Resultaten & export': 'Results & export', 'Automatiseren': 'Automate', 'Rondleiding': 'Guided tour',
-            '🔒 Alles draait lokaal in je browser. Alleen de optionele AI-herkenning stuurt tekst naar de Claude API — en waarschuwt je vooraf.':
-                '🔒 Everything runs locally in your browser. Only the optional AI detection sends text to the Claude API — and always warns you first.',
             'Haal data uit PDF\u2019s en zet die om naar CSV of Excel — volledig lokaal, jouw documenten verlaten je computer niet.':
                 'Extract data from PDFs and turn it into CSV or Excel — fully local, your documents never leave your computer.',
             'Rondleiding: zo werkt alles': 'Guided tour: how it all works',
             'De tool licht elk onderdeel op en legt het uit — in één minuut weet je alles.':
                 'The tool highlights each part and explains it — you\u2019ll know everything in a minute.',
-            'Start rondleiding': 'Start tour', 'Instel-wizard': 'Setup wizard', 'Aan de slag': 'Getting started',
             'Upload documenten': 'Upload documents',
             'Sleep één of meerdere PDF\u2019s naar binnen — ze worden direct verwerkt.': 'Drag in one or more PDFs — they are processed instantly.',
             'Maak kolommen': 'Create columns',
@@ -4043,10 +4276,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             'Voeg kolommen toe': 'Add columns', 'alle documenten': 'all documents', 'gevonden': 'found',
             'Structuur herkennen met AI': 'Detect structure with AI',
             'Let op: hiermee gebruik je AI.': 'Note: this uses AI.',
-            'De tekst van je eerste document wordt naar\n                de Claude API van Anthropic gestuurd om de structuur te herkennen. Je data verlaat daarmee\n                je computer. Gebruik dit niet voor gevoelige of persoonsgegevens als dat niet is toegestaan.':
-                'Your document text is sent to Anthropic\u2019s Claude API to detect the structure. Your data leaves your computer. Do not use this for sensitive or personal data if that is not allowed.',
-            'Claude API-sleutel': 'Claude API key', 'Sleutel onthouden in deze browser': 'Remember key in this browser',
-            'Ik begrijp dat mijn documenttekst naar de Claude API wordt gestuurd': 'I understand my document text is sent to the Claude API',
             'Herken structuur met AI': 'Detect structure with AI',
             'Gebied selecteren': 'Select region', 'Voorbeeld-PDF': 'Sample PDF', 'Toon pagina': 'Show page', 'Gebied opslaan': 'Save region',
             'In welke branche werk je?': 'Which industry do you work in?',
@@ -4073,8 +4302,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             'Één klik en de tool leest je documenten en stelt alle gevonden velden voor. Jij vinkt alleen af wat je niet nodig hebt.':
                 'One click: the tool reads your documents and proposes every field it finds. You only untick what you don\u2019t need.',
             'AI-herkenning (optioneel)': 'AI detection (optional)',
-            'Komt de automaat er niet uit? Laat AI meekijken. Let op: daarbij gaat documenttekst naar de Claude API — de tool waarschuwt altijd eerst.':
-                'Automatic detection not enough? Let AI take a look. Note: document text goes to the Claude API — the tool always warns you first.',
             'Elke kolom is een regeltje: klik erop om hem uit te klappen en aan te passen. Het groene chipje toont live wat er gevonden wordt.':
                 'Each column is a small rule: click to expand and edit it. The green chip shows live what is found.',
             'Scrapen & exporteren': 'Scrape & export',
@@ -4088,6 +4315,22 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             'Stop': 'Stop', 'Volgende \u203a': 'Next \u203a', '\u2039 Terug': '\u2039 Back', 'Klaar \u2713': 'Done \u2713'
         },
         de: {
+            'Uploaden': 'Hochladen', 'Aanwijzen': 'Markieren', 'Controleren': 'Pr\u00fcfen', 'Downloaden': 'Herunterladen',
+            '1 \u00b7 Uploaden': '1 \u00b7 Hochladen', '2 \u00b7 Aanwijzen': '2 \u00b7 Markieren', '3 \u00b7 Controleren': '3 \u00b7 Pr\u00fcfen', '4 \u00b7 Downloaden': '4 \u00b7 Herunterladen',
+            'Deze bestanden blijven op jouw computer.': 'Diese Dateien bleiben auf deinem Computer.',
+            'Sleep je PDF\u2019s hierheen': 'PDFs hierher ziehen', 'of kies bestanden': 'oder Dateien w\u00e4hlen', 'of kies een map': 'oder Ordner w\u00e4hlen',
+            'Alles verwijderen': 'Alles l\u00f6schen', 'Gebied selecteren': 'Bereich ausw\u00e4hlen', 'Waarde die je in de PDF ziet': 'Ein Wert aus der PDF',
+            'Zoek': 'Suchen', 'Velden herkennen': 'Felder erkennen', 'Laat ParseLab de velden herkennen': 'Felder von ParseLab erkennen lassen',
+            'Documenten uitlezen': 'Dokumente auslesen', 'Download voor Excel': 'F\u00fcr Excel herunterladen', 'Vul hiermee een formulier in': 'Damit ein Formular ausf\u00fcllen',
+            'Andere formaten': 'Andere Formate', 'Kopi\u00ebren \u2014 plak in Excel of Sheets': 'Kopieren \u2014 in Excel oder Sheets einf\u00fcgen',
+            'Dit voortaan automatisch doen': 'Ab jetzt automatisch machen', 'Sjablonen': 'Vorlagen', 'Sjabloon opslaan': 'Vorlage speichern',
+            'Voorbeeldsjablonen': 'Beispielvorlagen', 'Eigen sjablonen': 'Eigene Vorlagen', 'nog geen eigen sjablonen': 'noch keine eigenen Vorlagen',
+            'Dit is goed': 'Das passt', 'Niet dit, maar\u2026': 'Nicht das, sondern\u2026', 'Kolom weghalen': 'Spalte entfernen',
+            'Alleen op bepaalde pagina\u2019s': 'Nur auf bestimmten Seiten', 'Gevorderd': 'Erweitert', 'Toon het patroon (gevorderd)': 'Muster anzeigen (erweitert)',
+            'Rondleiding in drie stappen': 'Rundgang in drei Schritten', 'Zo werkt het': 'So funktioniert es', 'Soorten': 'Arten', 'Soort': 'Art',
+            '\ud83d\udcc4 Documenten uitlezen': '\ud83d\udcc4 Dokumente auslesen',
+            'Ja': 'Ja', 'Nee': 'Nein', 'Nee, iets anders': 'Nein, etwas anderes', 'Opslaan': 'Speichern',
+            'Stuur dit document naar ParseLab voor herkenning? Alleen de tekst van dit document wordt verstuurd.': 'Dieses Dokument zur Erkennung an ParseLab senden? Nur der Text dieses Dokuments wird gesendet.',
             'Herken kolommen': 'Spalten erkennen', 'Kolom': 'Spalte', 'AI herkennen': 'Mit KI erkennen',
             'Meer': 'Mehr', 'Meer opties': 'Mehr Optionen', 'Scrape documenten': 'Dokumente scrapen',
             'Template opslaan': 'Vorlage speichern', 'Label': 'Label', 'CSV': 'CSV', 'Excel': 'Excel',
@@ -4102,14 +4345,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             'Label verwijderen': 'Label l\u00f6schen', 'Nieuw label…': 'Neues Label…', 'bijv. Facturen': 'z. B. Rechnungen',
             'Home': 'Start', 'Documenten': 'Dokumente', 'Kolommen & templates': 'Spalten & Vorlagen',
             'Resultaten & export': 'Ergebnisse & Export', 'Automatiseren': 'Automatisieren', 'Rondleiding': 'Rundgang',
-            '🔒 Alles draait lokaal in je browser. Alleen de optionele AI-herkenning stuurt tekst naar de Claude API — en waarschuwt je vooraf.':
-                '🔒 Alles läuft lokal im Browser. Nur die optionale KI-Erkennung sendet Text an die Claude-API — und warnt vorher.',
             'Haal data uit PDF\u2019s en zet die om naar CSV of Excel — volledig lokaal, jouw documenten verlaten je computer niet.':
                 'Extrahiere Daten aus PDFs und wandle sie in CSV oder Excel um — komplett lokal, deine Dokumente verlassen deinen Computer nicht.',
             'Rondleiding: zo werkt alles': 'Rundgang: So funktioniert alles',
             'De tool licht elk onderdeel op en legt het uit — in één minuut weet je alles.':
                 'Das Tool hebt jeden Bereich hervor und erkl\u00e4rt ihn — in einer Minute wei\u00dft du alles.',
-            'Start rondleiding': 'Rundgang starten', 'Instel-wizard': 'Einrichtungs-Assistent', 'Aan de slag': 'Erste Schritte',
             'Upload documenten': 'Dokumente hochladen',
             'Sleep één of meerdere PDF\u2019s naar binnen — ze worden direct verwerkt.': 'Ziehe eine oder mehrere PDFs hinein — sie werden sofort verarbeitet.',
             'Maak kolommen': 'Spalten anlegen',
@@ -4175,8 +4415,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             'Voeg kolommen toe': 'Spalten hinzuf\u00fcgen', 'alle documenten': 'alle Dokumente', 'gevonden': 'gefunden',
             'Structuur herkennen met AI': 'Struktur mit KI erkennen',
             'Let op: hiermee gebruik je AI.': 'Achtung: Hiermit nutzt du KI.',
-            'Claude API-sleutel': 'Claude-API-Schl\u00fcssel', 'Sleutel onthouden in deze browser': 'Schl\u00fcssel in diesem Browser merken',
-            'Ik begrijp dat mijn documenttekst naar de Claude API wordt gestuurd': 'Ich verstehe, dass mein Dokumenttext an die Claude-API gesendet wird',
             'Herken structuur met AI': 'Struktur mit KI erkennen',
             'Gebied selecteren': 'Bereich ausw\u00e4hlen', 'Voorbeeld-PDF': 'Beispiel-PDF', 'Toon pagina': 'Seite anzeigen', 'Gebied opslaan': 'Bereich speichern',
             'In welke branche werk je?': 'In welcher Branche arbeitest du?',
@@ -4199,9 +4437,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             [/^(\d+) pagina\u2019s$/, '$1 pages'],
             [/^(\d+) van (\d+) pagina\u2019s$/, '$1 of $2 pages'],
             [/^(\d+) kolom\(men\) toegevoegd(.*)$/, '$1 column(s) added$2'],
-            [/^(\d+) PDF\u2019s gescrapet, (\d+) kolom\(men\)\.$/, '$1 PDFs scraped, $2 column(s).'],
-            [/^Template \u201c(.+)\u201d opgeslagen \((\d+) kolommen\)\.$/, 'Template \u201c$1\u201d saved ($2 columns).'],
-            [/^Template \u201c(.+)\u201d geladen \((\d+) kolommen\)\.$/, 'Template \u201c$1\u201d loaded ($2 columns).'],
+            [/^(\d+) documenten? uitgelezen, (\d+) kolom\(men\)\.$/, '$1 document(s) read, $2 column(s).'],
+            [/^(\d+) regels? om na te kijken$/, '$1 row(s) to review'],
+            [/^(\d+) regels? klaar om te downloaden\.$/, '$1 row(s) ready to download.'],
+            [/^Sjabloon \u201c(.+)\u201d opgeslagen \((\d+) kolommen\)\.$/, 'Template \u201c$1\u201d saved ($2 columns).'],
+            [/^Sjabloon \u201c(.+)\u201d geladen \((\d+) kolommen\)\.$/, 'Template \u201c$1\u201d loaded ($2 columns).'],
             [/^Pagina-selectie toegepast op (\d+) document\(en\)\.$/, 'Page selection applied to $1 document(s).'],
             [/^(\d+) velden gevonden in (\d+) document\(en\)(.*)$/, '$1 fields found in $2 document(s). Everything is on by default \u2014 untick what you don\u2019t need.'],
             [/^(\d+) van (\d+)$/, '$1 of $2']
@@ -4211,7 +4451,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             [/^(\d+) pagina\u2019s$/, '$1 Seiten'],
             [/^(\d+) van (\d+) pagina\u2019s$/, '$1 von $2 Seiten'],
             [/^(\d+) kolom\(men\) toegevoegd(.*)$/, '$1 Spalte(n) hinzugef\u00fcgt$2'],
-            [/^(\d+) PDF\u2019s gescrapet, (\d+) kolom\(men\)\.$/, '$1 PDFs gescrapt, $2 Spalte(n).'],
+            [/^(\d+) documenten? uitgelezen, (\d+) kolom\(men\)\.$/, '$1 Dokument(e) ausgelesen, $2 Spalte(n).'],
+            [/^(\d+) regels? om na te kijken$/, '$1 Zeile(n) zu pr\u00fcfen'],
+            [/^(\d+) regels? klaar om te downloaden\.$/, '$1 Zeile(n) bereit zum Herunterladen.'],
             [/^Pagina-selectie toegepast op (\d+) document\(en\)\.$/, 'Seitenauswahl auf $1 Dokument(e) angewendet.'],
             [/^(\d+) velden gevonden in (\d+) document\(en\)(.*)$/, '$1 Felder in $2 Dokument(en) gefunden. Standardm\u00e4\u00dfig ist alles ausgew\u00e4hlt.'],
             [/^(\d+) van (\d+)$/, '$1 von $2']
@@ -4275,6 +4517,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
         function initI18n() {
             $('langSelect').addEventListener('change', function () { setLang(this.value); });
+            // Ingebed: de taal volgt het dashboard
+            window.addEventListener('message', function (ev) {
+                var d = ev.data || {};
+                if (d.type === 'parselab:lang' && d.lang) setLang(d.lang);
+            });
             var stored = null;
             try { stored = localStorage.getItem(LANG_KEY); } catch (e) {}
             if (stored && stored !== 'nl') setLang(stored);
@@ -4288,26 +4535,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
         // ---------- Spotlight-rondleiding ----------
         var TOUR_STEPS = [
-            { page: 'home', sel: '.sidebar', title: 'Navigatie', pos: 'right',
-              text: 'Hiermee wissel je tussen de onderdelen. Groene vinkjes laten zien wat al af is.' },
-            { page: 'docs', sel: '#dropzone', title: 'Documenten uploaden',
-              text: 'Sleep hier \u00e9\u00e9n of meer PDF\u2019s naartoe. Alles wordt op je eigen computer verwerkt \u2014 er gaat niets naar internet.' },
-            { page: 'docs', sel: '#pageOptsBar', title: 'Pagina\u2019s kiezen',
-              text: 'Sla pagina\u2019s over: begin bijvoorbeeld vanaf pagina 2, stop bij de een-na-laatste, of pak alleen even of oneven pagina\u2019s.' },
-            { page: 'columns', sel: '.tmpl-bar', title: 'Templates',
-              text: 'Sla je kolommen per soort document op (bijv. Inboedelpolis, AVP, Auto) en wissel later met \u00e9\u00e9n klik.' },
-            { page: 'columns', sel: '#autoDetectBtn', title: 'Automatisch herkennen',
-              text: '\u00c9\u00e9n klik en de tool leest je documenten en stelt alle gevonden velden voor. Jij vinkt alleen af wat je niet nodig hebt.' },
-            { page: 'columns', sel: '#aiDetectBtn', title: 'AI-herkenning (optioneel)',
-              text: 'Komt de automaat er niet uit? Laat AI meekijken. Let op: daarbij gaat documenttekst naar de Claude API \u2014 de tool waarschuwt altijd eerst.' },
-            { page: 'columns', sel: '#rulesContainer', title: 'Kolommen',
-              text: 'Elke kolom is een regeltje: klik erop om hem uit te klappen en aan te passen. Het groene chipje toont live wat er gevonden wordt.' },
-            { page: 'results', sel: '#runBtn', title: 'Scrapen & exporteren',
-              text: 'Klik hier en alle documenten worden rijen in een tabel. Download daarna als CSV of Excel \u2014 waarden worden automatisch op patroon gecontroleerd.' },
-            { page: 'automate', sel: '#page-automate .tool-section', title: 'Automatiseren',
-              text: 'De snelste route voor terugkerend werk: kies een template, sleep bestanden erin en je download start vanzelf.' },
-            { page: 'home', sel: '#chkDocs', title: 'Aan de slag!',
-              text: 'Deze checklist houdt je voortgang bij. Start met documenten uploaden \u2014 veel scrapeplezier!' }
+            { page: 'upload', sel: '#dropzone', title: '1 \u00b7 Uploaden',
+              text: 'Sleep hier je PDF\u2019s naartoe of kies een map. Alles wordt op jouw computer verwerkt \u2014 deze bestanden blijven op jouw computer.' },
+            { page: 'define', sel: '#defineActions', title: '2 \u00b7 Aanwijzen',
+              text: 'Teken een vak om de waarde die je nodig hebt, of typ een waarde die je in de PDF ziet. ParsePDF laat direct zien wat er in je documenten gevonden wordt.' },
+            { page: 'download', sel: '#exportXlsxBtn', title: '3 \u00b7 Downloaden',
+              text: 'Kijk de tabel na op stap 3 en download hier voor Excel \u2014 of vul er direct een formulier mee in.' }
         ];
         var tourState = { i: 0 };
 
@@ -4386,70 +4619,29 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
         // ---------- Eerste-keer-onboarding ----------
         var FSOB_KEY = 'pdfScraperOnboarded';
-        var BRANCHE_KEY = 'pdfScraperBranche';
-        var fsobState = { step: 1, branche: null, start: 'wizard' };
-        var BRANCHE_TIPS = {
-            'Verzekeringen': 'bijv. Inboedelpolis',
-            'Accountancy & administratie': 'bijv. Jaarrekening',
-            'Juridisch & notariaat': 'bijv. Akte',
-            'Zorg': 'bijv. Declaratie',
-            'HR & recruitment': 'bijv. CV',
-            'Financieel advies': 'bijv. Hypotheekofferte',
-            'Overheid': 'bijv. Beschikking',
-            'Anders': 'bijv. Factuur'
-        };
-
-        function applyBrancheTip() {
-            var b = null;
-            try { b = localStorage.getItem(BRANCHE_KEY); } catch (e) {}
-            var tip = BRANCHE_TIPS[b];
-            if (tip) {
-                var el = $('tmplName');
-                if (el) el.placeholder = tip;
-            }
-        }
-
-        function fsobGoto(step) {
-            fsobState.step = step;
-            $('fsobStep1').classList.toggle('hidden', step !== 1);
-            $('fsobStep2').classList.toggle('hidden', step !== 2);
-            $('fsobBack').classList.toggle('hidden', step === 1);
-            $('fsobNext').innerHTML = step === 1 ? 'Verder &#8250;' : 'Aan de slag &#8250;';
-        }
+        var fsobState = { start: 'upload' };
+        // Oude branchekeuze uit eerdere versies opruimen: de soort wordt nu per document gevraagd.
+        try { localStorage.removeItem('pdfScraperBranche'); } catch (e) {}
 
         function fsobFinish(skipped) {
-            try {
-                localStorage.setItem(FSOB_KEY, '1');
-                if (fsobState.branche) localStorage.setItem(BRANCHE_KEY, fsobState.branche);
-            } catch (e) {}
-            applyBrancheTip();
+            try { localStorage.setItem(FSOB_KEY, '1'); } catch (e) {}
             $('fsOnboarding').classList.remove('open');
             if (skipped) return;
-            if (fsobState.start === 'wizard') openWizard();
-            else if (fsobState.start === 'home' || !fsobState.start) { showPage('home'); startTour(); }
-            else showPage(fsobState.start);
+            showPage('upload');
+            if (fsobState.start === 'tour') startTour();
         }
 
         function initFsOnboarding() {
-            document.querySelectorAll('[data-fsob-group]').forEach(function (group) {
-                var key = group.getAttribute('data-fsob-group');
-                group.querySelectorAll('.fsob-chip').forEach(function (chip) {
-                    chip.addEventListener('click', function () {
-                        group.querySelectorAll('.fsob-chip').forEach(function (c) {
-                            c.classList.toggle('selected', c === chip);
-                        });
-                        if (key === 'branche') fsobState.branche = chip.textContent.trim();
-                        else fsobState.start = chip.getAttribute('data-start') || 'home';
+            document.querySelectorAll('[data-fsob-group="start"] .fsob-chip').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    document.querySelectorAll('[data-fsob-group="start"] .fsob-chip').forEach(function (c) {
+                        c.classList.toggle('selected', c === chip);
                     });
+                    fsobState.start = chip.getAttribute('data-start') || 'upload';
                 });
             });
-            $('fsobNext').addEventListener('click', function () {
-                if (fsobState.step === 1) fsobGoto(2);
-                else fsobFinish(false);
-            });
-            $('fsobBack').addEventListener('click', function () { fsobGoto(1); });
+            $('fsobNext').addEventListener('click', function () { fsobFinish(false); });
             $('fsobSkip').addEventListener('click', function () { fsobFinish(true); });
-            applyBrancheTip();
             var seen = null;
             try { seen = localStorage.getItem(FSOB_KEY); } catch (e) {}
             if (!seen) $('fsOnboarding').classList.add('open');
@@ -4458,14 +4650,23 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         // ---------- App-navigatie, checklist en workflow ----------
         var workflowRan = false;
 
+        // Oude namen (home/docs/columns/results/automate) blijven werken
+        var PAGE_ALIAS = { home: 'upload', docs: 'upload', columns: 'define', results: 'check', automate: 'download' };
         function showPage(name) {
+            name = PAGE_ALIAS[name] || name;
+            if (!$('page-' + name)) name = 'upload';
             document.querySelectorAll('.app-page').forEach(function (p) {
                 p.classList.toggle('active', p.id === 'page-' + name);
             });
             document.querySelectorAll('.nav-item').forEach(function (n) {
                 n.classList.toggle('active', n.getAttribute('data-page') === name);
             });
-            if (name === 'automate') refreshWorkflowTemplates();
+            if (name === 'define') refreshWizard();
+            if (name === 'download') {
+                refreshWorkflowTemplates();
+                if (!results) runScrape(true);
+                updateDownloadState();
+            }
             closeMoreMenu();
             window.scrollTo(0, 0);
         }
@@ -4473,15 +4674,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         // Eén contextregel per pagina die de volgende stap voorstelt (§5.3)
         function nextStep(done) {
             var n = activeFiles().length;
-            if (!done.docs) return { page: 'docs', text: 'Begin hier: sleep je PDF\u2019s naar binnen' };
-            if (!done.cols) return { page: 'columns', text: n + ' document' + (n === 1 ? '' : 'en') + ' klaar \u2014 laat nu kolommen herkennen' };
-            if (!done.res) return { page: 'results', text: 'Kolommen staan klaar \u2014 scrape je documenten' };
-            if (!done.tmpl) return { page: 'columns', text: 'Sla je kolommen op als template voor de volgende keer' };
-            return { page: 'automate', text: 'Alles staat klaar \u2014 doe dit voortaan in \u00e9\u00e9n klik' };
+            if (!done.docs) return { page: 'upload', text: 'Begin hier: sleep je PDF\u2019s naar binnen' };
+            if (!done.cols) return { page: 'define', text: n + ' document' + (n === 1 ? '' : 'en') + ' klaar \u2014 wijs nu aan wat je nodig hebt' };
+            if (!done.res) return { page: 'check', text: 'Kolommen staan klaar \u2014 controleer de tabel' };
+            if (!done.dl) return { page: 'download', text: 'Tabel staat klaar \u2014 download voor Excel' };
+            return { page: 'download', text: 'Klaar \u2014 doe dit voortaan automatisch' };
         }
         function updateNextHints(done) {
             var step = nextStep(done);
-            ['hintHome', 'hintDocs', 'hintCols', 'hintRes', 'hintAuto'].forEach(function (id) {
+            ['hintDocs', 'hintCols', 'hintRes', 'hintDl'].forEach(function (id) {
                 var el = $(id);
                 if (!el) return;
                 var page = el.closest('.app-page');
@@ -4509,11 +4710,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             var done = {
                 docs: files.some(function (f) { return f.status === 'ok'; }),
                 cols: rules.some(isConfiguredRule),
-                tmpl: Object.keys(loadTemplates()).length > 0,
                 res: results !== null,
-                auto: workflowRan
+                dl: downloadedOnce || workflowRan
             };
-            var rows = { chkDocs: 'docs', chkCols: 'cols', chkTmpl: 'tmpl', chkRes: 'res', chkAuto: 'auto' };
+            var rows = { chkDocs: 'docs', chkCols: 'cols', chkRes: 'res', chkDl: 'dl' };
             Object.keys(rows).forEach(function (id) {
                 var el = $(id);
                 if (!el) return;
@@ -4527,7 +4727,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             });
             updateNextHints(done);
             slimBars();
-            var navs = { navCheckDocs: 'docs', navCheckCols: 'cols', navCheckRes: 'res' };
+            var navs = { navCheckDocs: 'docs', navCheckCols: 'cols', navCheckRes: 'res', navCheckDl: 'dl' };
             Object.keys(navs).forEach(function (id) {
                 var el = $(id);
                 if (el) el.classList.toggle('hidden', !done[navs[id]]);
@@ -4539,13 +4739,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             if (!sel) return;
             var current = sel.value;
             sel.innerHTML = '';
-            var names = Object.keys(loadTemplates()).sort(function (a, b) { return a.localeCompare(b); });
-            if (names.length === 0) {
-                var opt = document.createElement('option');
-                opt.value = '';
-                opt.textContent = 'Huidige kolommen (geen template)';
-                sel.appendChild(opt);
-            }
+            var names = allTemplateNames();
+            var opt0 = document.createElement('option');
+            opt0.value = '';
+            opt0.textContent = 'Huidige kolommen (geen sjabloon)';
+            sel.appendChild(opt0);
             names.forEach(function (name) {
                 var opt = document.createElement('option');
                 opt.value = name;
@@ -4576,17 +4774,17 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             var name = $('wfTemplate').value;
             if (name) applyTemplate(name, true);
             if (!rules.some(isConfiguredRule)) {
-                setWfStatus('Geen ingestelde kolommen \u2014 kies een template of stel eerst kolommen in.', true);
+                setWfStatus('Geen ingestelde kolommen \u2014 kies een sjabloon of wijs eerst kolommen aan.', true);
                 return;
             }
             runScrape(false);
-            if (!results) { setWfStatus('Scrapen is niet gelukt.', true); return; }
+            if (!results) { setWfStatus('Uitlezen is niet gelukt.', true); return; }
             var downloads = [];
             if ($('wfCsv').checked) { exportCsv(); downloads.push('CSV'); }
             if ($('wfXlsx').checked && window.XLSX) { exportXlsx(); downloads.push('Excel'); }
             workflowRan = true;
             updateChecklist();
-            setWfStatus('Klaar \u2014 ' + results.rows.length + ' rijen uit ' + ready.length + ' documenten' +
+            setWfStatus('Klaar \u2014 ' + results.rows.length + ' regels uit ' + ready.length + ' documenten' +
                 (downloads.length ? ', ' + downloads.join(' en ') + ' gedownload.' : '.'));
         }
 
@@ -4608,12 +4806,25 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             $('wfDropzone').addEventListener('drop', function (e) {
                 if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
             });
+            $('clearAllBtn').addEventListener('click', clearAllDocs);
+            $('pickFilesBtn').addEventListener('click', function (e) { e.stopPropagation(); $('fileInput').click(); });
+            $('pickDirBtn').addEventListener('click', function (e) { e.stopPropagation(); $('dirInput').click(); });
+            $('dirInput').addEventListener('change', function () {
+                addFiles(this.files);
+                this.value = '';
+            });
+            $('toFormBtn').addEventListener('click', sendToForm);
+            $('reviewToggle').addEventListener('click', function () {
+                reviewFilterOn = !reviewFilterOn;
+                applyReviewFilter();
+            });
             refreshWorkflowTemplates();
             updateChecklist();
+            updateDownloadState();
         }
 
-        // ---------- Onboarding wizard ----------
-        var wizState = { step: 1, layout: null, proposal: null, autoShown: false };
+        // ---------- Stap 2: aanwijzen (gebied, waarde, preview) ----------
+        var defineState = { rule: null, pendingRegion: null };
 
         function proposeRuleFromValue(doc, value) {
             var val = String(value || '').trim();
@@ -4663,40 +4874,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             return { rule: rule, page: c.page + 1, line: c.line + 1, label: before.trim() };
         }
 
-        function wizGoto(step) {
-            wizState.step = step;
-            [1, 2, 3].forEach(function (s) {
-                $('wizStep' + s).classList.toggle('hidden', s !== step);
-            });
-            document.querySelectorAll('.wiz-step-dot').forEach(function (dot) {
-                var s = parseInt(dot.getAttribute('data-step'), 10);
-                dot.classList.toggle('active', s === step);
-                dot.classList.toggle('done', s < step);
-            });
-            if (step === 3) refreshWizFileSelect();
+        function isPlaceholderRule(r) { return r.type === 'after' && !r.marker && /^Kolom /.test(r.name || ''); }
+        function dropPlaceholder() {
+            if (rules.length === 1 && isPlaceholderRule(rules[0])) rules = [];
         }
+        function nextColumnName() { return 'Kolom ' + (rules.length + 1); }
 
-        function openWizard() {
-            refreshWizard();
-            wizGoto(files.some(function (f) { return f.status === 'ok'; }) ? (wizState.layout ? 3 : 2) : 1);
-            $('wizardModal').classList.add('open');
-        }
-
+        // Documentkeuze bij "Waarde die je in de PDF ziet"
         function refreshWizard() {
-            var okFiles = files.filter(function (f) { return f.status === 'ok'; });
-            var summary = $('wizFileSummary');
-            if (summary) {
-                summary.textContent = okFiles.length === 0
-                    ? 'Nog geen PDF’s geüpload.'
-                    : okFiles.length + ' PDF’s klaar: ' + okFiles.map(function (f) { return f.name; }).join(', ');
-            }
-            var next1 = $('wizNext1');
-            if (next1) next1.disabled = okFiles.length === 0;
-            refreshWizFileSelect();
-        }
-
-        function refreshWizFileSelect() {
-            var sel = $('wizFileSelect');
+            var sel = $('valueFileSelect');
             if (!sel) return;
             var current = sel.value;
             sel.innerHTML = '';
@@ -4709,129 +4895,132 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             if (current) sel.value = current;
         }
 
-        function maybeAutoOnboard() {
-            if (wizState.autoShown) return;
-            if ($('wizardModal').classList.contains('open')) return;
-            var unconfigured = rules.length === 0 ||
-                (rules.length === 1 && rules[0].type === 'after' && !rules[0].marker);
-            if (unconfigured && files.some(function (f) { return f.status === 'ok'; })) {
-                wizState.autoShown = true;
-                openWizard();
+        // Standaardmanier: teken een vak. De regel komt pas in de lijst als het vak is gekozen.
+        function startRegionColumn(name) {
+            if (!files.some(function (f) { return f.status === 'ok'; })) {
+                setStatus('Upload eerst een PDF om een gebied te kunnen selecteren.', true);
+                showToast('Upload eerst een PDF', 'alert');
+                showPage('upload');
+                return;
             }
+            var rule = Object.assign(newRule(name || nextColumnName()), { type: 'region', open: false });
+            defineState.pendingRegion = rule;
+            openRegionModal(rule);
         }
 
-        function wizSearch() {
-            var fid = parseInt($('wizFileSelect').value, 10);
+        function showDefinePreview(rule) {
+            var panel = $('definePreview');
+            if (!panel) return;
+            defineState.rule = rule;
+            var docs = activeFiles().slice(0, 3);
+            var html = '<h3>Dit wordt gevonden</h3>' +
+                '<div class="rule-body" style="margin-top:0;"><div class="field" style="flex:1; min-width:160px;">' +
+                '<label>Kolomnaam</label><input type="text" id="previewName" value="' + esc(rule.name || '') + '"></div></div>' +
+                '<table class="wiz-preview-table"><tr><th>Document</th><th>Gevonden waarde</th></tr>';
+            docs.forEach(function (f) {
+                var v = '';
+                try { v = evalRuleFinal(f.doc, rule); } catch (e) { v = ''; }
+                html += '<tr><td>' + esc(f.name) + '</td><td class="' + (v ? 'ok-val' : 'no-val') + '">' +
+                    (v ? esc(v.replace(/\n/g, ' ')) : 'niets gevonden') + '</td></tr>';
+            });
+            html += '</table>' +
+                (activeFiles().length > 3 ? '<p class="hint">Eerste drie documenten; de tabel op stap 3 toont ze allemaal.</p>' : '') +
+                '<div class="preview-actions">' +
+                '<button type="button" class="btn" id="previewOkBtn">Dit is goed</button>' +
+                '<button type="button" class="btn btn-secondary" id="previewNotBtn">Niet dit, maar\u2026</button>' +
+                '<button type="button" class="fsob-skip" id="previewDropBtn">Kolom weghalen</button>' +
+                '</div>';
+            panel.innerHTML = html;
+            panel.classList.remove('hidden');
+            $('previewName').addEventListener('input', function () {
+                rule.name = this.value;
+                var card = document.querySelector('.rule-card[data-rid="' + rule.id + '"] .rule-title');
+                if (card) card.textContent = rule.name || 'Kolom';
+            });
+            $('previewName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); previewOk(); } });
+            $('previewOkBtn').addEventListener('click', previewOk);
+            $('previewNotBtn').addEventListener('click', previewNot);
+            $('previewDropBtn').addEventListener('click', previewDrop);
+            panel.scrollIntoView({ block: 'nearest' });
+        }
+        function hideDefinePreview() {
+            var panel = $('definePreview');
+            if (panel) { panel.classList.add('hidden'); panel.innerHTML = ''; }
+            defineState.rule = null;
+        }
+        function previewOk() {
+            var rule = defineState.rule;
+            if (!rule) return;
+            var nm = $('previewName') ? $('previewName').value.trim() : '';
+            rule.name = nm || rule.name || nextColumnName();
+            hideDefinePreview();
+            renderRules();
+            scheduleLive();
+            showToast('Kolom \u201c' + rule.name + '\u201d toegevoegd');
+        }
+        // "Niet dit, maar…": de gebruiker wijst de juiste waarde aan in het document (gebied)
+        function previewNot() {
+            var rule = defineState.rule;
+            if (!rule) return;
+            var nm = ($('previewName') ? $('previewName').value.trim() : '') || rule.name || nextColumnName();
+            if (rule.type !== 'region') {
+                var idx = rules.indexOf(rule);
+                var nr = Object.assign(newRule(nm), { name: nm, type: 'region', open: false });
+                if (idx !== -1) rules.splice(idx, 1, nr); else rules.push(nr);
+                rule = nr;
+            } else {
+                rule.name = nm;
+            }
+            hideDefinePreview();
+            renderRules();
+            openRegionModal(rule);
+        }
+        function previewDrop() {
+            var rule = defineState.rule;
+            if (!rule) return;
+            rules = rules.filter(function (r) { return r !== rule; });
+            hideDefinePreview();
+            renderRules();
+            scheduleLive();
+        }
+
+        // Alternatief: een waarde die je in de PDF ziet
+        function valueSearch() {
+            var fid = parseInt($('valueFileSelect').value, 10);
             var entry = files.find(function (f) { return f.id === fid && f.status === 'ok'; }) ||
                         files.find(function (f) { return f.status === 'ok'; });
-            var holder = $('wizSearchResult');
-            var value = $('wizValueInput').value.trim();
-            wizState.proposal = null;
-            $('wizAddArea').classList.add('hidden');
-            if (!entry || !value) {
-                holder.innerHTML = '<div class="wiz-notfound">Kies een PDF en typ eerst een waarde.</div>';
+            var value = $('valueInput').value.trim();
+            if (!entry) {
+                setStatus('Upload eerst een PDF.', true);
+                showToast('Upload eerst een PDF', 'alert');
+                showPage('upload');
                 return;
             }
+            if (!value) { $('valueInput').focus(); return; }
             var found = proposeRuleFromValue(entry.doc, value);
             if (!found) {
-                holder.innerHTML = '<div class="wiz-notfound">“' + esc(value) + '” is niet gevonden in ' + esc(entry.name) +
-                    '. Controleer de spelling of probeer een ander stukje tekst.</div>';
+                setStatus('\u201c' + value + '\u201d is niet gevonden in ' + entry.name + '. Controleer de spelling of probeer een ander stukje tekst.', true);
+                showToast('\u201c' + value + '\u201d niet gevonden \u2014 probeer Gebied selecteren', 'alert');
                 return;
             }
-            wizState.proposal = found;
-            var how = found.rule.type === 'after'
-                ? 'Methode: <strong>tekst na</strong> “' + esc(found.rule.marker) + '”' +
-                  (found.rule.stop === 'char' ? ' tot “' + esc(found.rule.stopChar) + '”' : ' tot einde regel')
-                : 'Methode: <strong>vaste plek</strong> (pagina ' + found.page + ', regel ' + found.line +
-                  (found.rule.posWord ? ', woord ' + found.rule.posWord : '') + ')' +
-                  (wizState.layout === 'variable' ? ' — let op: dit werkt het best als alle PDF’s dezelfde opmaak hebben.' : '');
-            var html = '<div class="wiz-found">Gevonden op pagina ' + found.page + ', regel ' + found.line +
-                (found.label ? ' — herkend label: “' + esc(found.label) + '”' : ' (geen label vóór de waarde)') +
-                '.<br>' + how + '</div>';
-            // Bulk-preview: wat gebeurt er in ELKE pdf?
-            html += '<table class="wiz-preview-table"><tr><th>PDF</th><th>Gevonden waarde</th></tr>';
-            files.filter(function (f) { return f.status === 'ok'; }).forEach(function (f) {
-                var v = '';
-                try { v = evalRule(f.doc, found.rule); } catch (e) { v = ''; }
-                html += '<tr><td>' + esc(f.name) + '</td><td class="' + (v ? 'ok-val' : 'no-val') + '">' +
-                    (v ? esc(v) : 'niets gevonden') + '</td></tr>';
-            });
-            html += '</table>';
-            holder.innerHTML = html;
-            $('wizAddArea').classList.remove('hidden');
-            if (found.label && !$('wizColName').value) {
-                $('wizColName').value = found.label.replace(/[:#\-–]\s*$/, '').trim();
-            }
-        }
-
-        function wizAddColumn() {
-            if (!wizState.proposal) return;
-            var name = $('wizColName').value.trim() || ('Kolom ' + (rules.length + 1));
-            var rule = Object.assign(wizState.proposal.rule, { name: name, id: nextRuleId++, open: false });
-            // Vervang de lege startkolom als die nog onaangeroerd is
-            if (rules.length === 1 && rules[0].type === 'after' && !rules[0].marker) rules = [];
+            var name = found.label ? found.label.replace(/[\s:#\-\u2013=\u20ac$%|]+$/, '').trim() : '';
+            if (!name || !isLabelLike(name)) name = nextColumnName();
+            var rule = Object.assign(found.rule, { name: name, open: false });
+            dropPlaceholder();
             rules.push(rule);
             renderRules();
             scheduleLive();
-            wizState.proposal = null;
-            $('wizValueInput').value = '';
-            $('wizColName').value = '';
-            $('wizAddArea').classList.add('hidden');
-            $('wizSearchResult').innerHTML =
-                '<div class="wiz-found">Kolom “' + esc(name) + '” toegevoegd (totaal: ' + rules.length +
-                '). Zoek nog een waarde voor de volgende kolom, of klik op <strong>Klaar</strong>.</div>';
+            $('valueInput').value = '';
+            showDefinePreview(rule);
         }
 
-        function initWizard() {
-            $('wizardOpenBtn').addEventListener('click', openWizard);
-            $('wizDropzone').addEventListener('click', function () { $('fileInput').click(); });
-            ['dragenter', 'dragover'].forEach(function (evt) {
-                $('wizDropzone').addEventListener(evt, function (e) { e.preventDefault(); this.classList.add('dragover'); });
+        function initDefine() {
+            $('addRegionBtn').addEventListener('click', function () { startRegionColumn(); });
+            $('valueSearchBtn').addEventListener('click', valueSearch);
+            $('valueInput').addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); valueSearch(); }
             });
-            ['dragleave', 'drop'].forEach(function (evt) {
-                $('wizDropzone').addEventListener(evt, function (e) { e.preventDefault(); this.classList.remove('dragover'); });
-            });
-            $('wizDropzone').addEventListener('drop', function (e) {
-                if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
-            });
-            document.querySelectorAll('[data-wiz="close"]').forEach(function (b) {
-                b.addEventListener('click', function () { $('wizardModal').classList.remove('open'); });
-            });
-            document.querySelector('[data-wiz="back1"]').addEventListener('click', function () { wizGoto(1); });
-            document.querySelector('[data-wiz="back2"]').addEventListener('click', function () { wizGoto(2); });
-            $('wizNext1').addEventListener('click', function () { wizGoto(2); });
-            $('wizNext2').addEventListener('click', function () { wizGoto(3); });
-            document.querySelectorAll('[data-layout]').forEach(function (card) {
-                card.addEventListener('click', function () {
-                    wizState.layout = card.getAttribute('data-layout');
-                    document.querySelectorAll('[data-layout]').forEach(function (c) {
-                        c.classList.toggle('selected', c === card);
-                    });
-                    $('wizNext2').disabled = false;
-                });
-            });
-            $('wizSearchBtn').addEventListener('click', wizSearch);
-            $('wizValueInput').addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') { e.preventDefault(); wizSearch(); }
-            });
-            $('wizAddColBtn').addEventListener('click', wizAddColumn);
-            document.querySelectorAll('[data-cat]').forEach(function (card) {
-                card.addEventListener('click', function () {
-                    var type = card.getAttribute('data-cat');
-                    var rule = Object.assign(newRule(), { type: type });
-                    if (rules.length === 1 && rules[0].type === 'after' && !rules[0].marker) rules = [];
-                    rules.push(rule);
-                    renderRules();
-                    $('wizSearchResult').innerHTML =
-                        '<div class="wiz-found">Kolom van het type “' + esc(TYPE_LABELS[type]) +
-                        '” toegevoegd. Vul de details straks in bij stap 2 op de pagina (na Klaar).</div>';
-                });
-            });
-            $('wizFinishBtn').addEventListener('click', function () {
-                $('wizardModal').classList.remove('open');
-                scheduleLive();
-                showPage('columns');
-            });
+            initKindModal();
         }
 
         // ---------- Event wiring ----------
@@ -4881,8 +5070,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         $('aiDetectBtn').addEventListener('click', openAiModal);
         $('aiCancelBtn').addEventListener('click', function () { $('aiModal').classList.remove('open'); });
         $('aiRunBtn').addEventListener('click', runAiDetect);
-        $('aiConsent').addEventListener('change', aiUpdateRunState);
-        $('aiKey').addEventListener('input', aiUpdateRunState);
         $('detectCancelBtn').addEventListener('click', function () { $('detectModal').classList.remove('open'); });
         $('detectAllToggle').addEventListener('change', function () {
             var on = this.checked;
@@ -4937,10 +5124,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         $('regionFileSelect').addEventListener('change', renderRegionPreview);
         $('regionCancelBtn').addEventListener('click', function () {
             $('regionModal').classList.remove('open');
+            if (defineState.pendingRegion === regionState.rule) defineState.pendingRegion = null;
         });
         $('regionSaveBtn').addEventListener('click', saveRegion);
         initRegionDrag();
-        initWizard();
+        initDefine();
         initAppShell();
         initFsOnboarding();
         initTour();
@@ -4954,6 +5142,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         renderTemplateChips();
         renderLabelBar();
         restoreStoredDocs();
+        postStats();
 
         // --- Designplan: menu, slimme balken, documentvoorbeeld ---
         (function () {
@@ -5019,6 +5208,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         renderFileList();
         updateChecklist();
 
+        // showPage blijft globaal bereikbaar (embed-blok onderaan en dashboard rekenen erop)
+        window.showPage = showPage;
+
         // Voor tests: interne API beschikbaar maken
         window.__pdfScraper = {
             parsePdf: parsePdf,
@@ -5034,7 +5226,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             transform: applyTransform,
             showPage: showPage,
             runWorkflow: runWorkflow,
-            startTour: startTour
+            startTour: startTour,
+            detectKind: detectKind,
+            getTemplate: getTemplate
         };
     })();
     </script>
@@ -5064,7 +5258,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     function post(msg) { try { window.parent.postMessage(Object.assign({ source:"parselab-tool" }, msg), "*"); } catch (e) {} }
     
     // Navigatie loopt via de zijbalk van het dashboard. Eigen zijbalk is verborgen.
-    function current() { var a = document.querySelector(".app-page.active"); return a ? a.id.replace(/^page-/, "") : "home"; }
+    function current() { var a = document.querySelector(".app-page.active"); return a ? a.id.replace(/^page-/, "") : "upload"; }
     function report() { post({ type:"parselab:section", section: current() }); }
     window.addEventListener("message", function (ev) {
       var d = ev.data || {};
