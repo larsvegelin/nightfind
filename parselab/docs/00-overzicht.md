@@ -18,7 +18,7 @@ Elk element krijgt vier regels: **Nu** (wat er staat), **Simpeler** (voor iemand
 |---|---|
 | 1. Eén taal | Toegepast in dashboard, extensie en ParsePDF (namen, woordenlijst, jargon achter "Gevorderd") |
 | 2. Web Store | Voorbereid: één knop "Toevoegen aan Chrome" in het dashboard (`CONFIG.webstoreUrl`), IT-route eronder; de vermelding zelf moet worden ingediend |
-| 3. Openbare sites vanuit het dashboard | Ontwerp in `parsescraper.md`; vraagt een serverbrowser en is niet gebouwd |
+| 3. Openbare sites vanuit het dashboard | Gebouwd: `server/server.js` + `tools/parsescraper.html` (echte browser op de server, roterende proxies, robots.txt, planning). De extensie blijft voor ingelogde pagina's |
 | 4. Geen API-sleutels in de browser | Toegepast: sleutelopslag verwijderd uit ParsePDF, herkenning loopt via een ParseLab-endpoint met opt-in per document |
 | 5. Minder rechten | Toegepast in `manifest.json`: sitetoegang per website na toestemming, `debugger` optioneel |
 

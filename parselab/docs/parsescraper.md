@@ -6,7 +6,7 @@ Basis: `tools/extension/` (`panel.js`, `background.js`, `manifest.json`, `mcp-se
 
 | Element | Status |
 |---|---|
-| Scraper vanuit de tool (serverbrowser, planning 's nachts) | Ontwerp hieronder; niet gebouwd, vraagt een backend |
+| Scraper vanuit de tool (serverbrowser, proxies, planning) | Gebouwd: `server/server.js` en `tools/parsescraper.html`, drie stappen Adres → Aanwijzen → Klaar, taken elk uur/dag/week op de server, Excel/CSV. Grenzen: alleen openbare pagina's, robots.txt, 2 s per website, geen captcha-omzeiling |
 | Eén stap Uitlezen met "Alleen dit, of de hele lijst?" en voorbeeld | Toegepast |
 | "Wat wil je hebben?" (tekst / link / afbeelding), "Maak er een getal van", "Eigen patroon" onder Gevorderd | Toegepast |
 | Doorladen bij scrollen zelf herkennen ("Alles ophalen?") | Toegepast |

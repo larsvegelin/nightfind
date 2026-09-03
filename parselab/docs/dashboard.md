@@ -4,6 +4,8 @@ Basis: `parselab/index.html`. Het dashboard is een prototype-shell met echte too
 
 ## Status van toepassing
 
+Sinds de minimalistische versie (geen voorbeelddata) zijn KPI-kaarten, recente rondes, bespaarde tijd, aandachtspunten en de verbruikskaart weg. Het overzicht is nu: vier ingangen plus je projecten. Elke tool opent direct in de werkbank; projecten (taken, sjablonen, overzichten) klappen uit in de zijbalk en zijn te benoemen, te openen en te hernoemen.
+
 Alle punten hieronder zijn toegepast in `index.html`, tenzij anders vermeld. Wat een backend nodig heeft, staat in de UI klaar en zegt dat eerlijk.
 
 | Element | Status |

@@ -4,57 +4,50 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>ParseLab Dashboard</title>
+<title>ParseLab</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231F3A5F'/%3E%3Crect x='9' y='9' width='14' height='14' rx='4' fill='%23F2F0E7'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
-  /* ===== Tokens — DESIGN-parselab.md, geen nieuwe kleuren ===== */
+  /* ===== Tokens — DESIGN-parselab.md ===== */
   :root {
     color-scheme: light;
     --navy:#1F3A5F; --navy-alt:#1A3253; --ink-deep:#16293F;
     --cream:#F2F0E7; --cream-white:#FBFAF6; --white:#FFFFFF;
     --on-dark:#F2F0E7; --on-dark-muted:rgba(242,240,231,.72); --on-dark-faint:rgba(242,240,231,.58); --on-dark-label:rgba(242,240,231,.48);
-    --ink:#16293F; --muted:#6B7A8C; --hairline:#E6E3D8; --fill-inactive:#D8D5C8; --dot-inactive:#B9C3CE;
+    --ink:#16293F; --muted:#6B7A8C; --hairline:#E6E3D8;
     --gold:#C9A961; --gold-tint:#EDE7D5; --blue:#2C6FA8; --blue-tint:#DCE8F2;
-    --chip-dark:rgba(242,240,231,.16); --track-dark:rgba(242,240,231,.18); --nav-active:rgba(242,240,231,.14);
+    --chip-dark:rgba(242,240,231,.16); --nav-active:rgba(242,240,231,.14);
     --shadow-light:0 18px 44px rgba(6,18,35,.10); --shadow-dark:0 24px 60px rgba(6,18,35,.28);
     --font:Poppins,-apple-system,"Segoe UI",system-ui,sans-serif;
     --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
-  html { scroll-behavior:smooth; }
   body { font-family:var(--font); -webkit-font-smoothing:antialiased; color:var(--ink); background:var(--cream-white); font-size:16px; line-height:1.55; }
   a { color:var(--ink); text-decoration:none; }
   button { font-family:inherit; font-size:inherit; color:inherit; cursor:pointer; border:0; background:none; }
   button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid var(--gold); outline-offset:3px; border-radius:14px; }
-  ::selection { background:var(--blue-tint); color:var(--ink-deep); }
   [hidden] { display:none !important; }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; } }
 
-  /* ===== Type ===== */
-  .caps { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; line-height:1.2; }
+  .caps { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; line-height:1.2; color:var(--muted); }
   .caps-nav { font-size:13px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
-  .num { font-size:34px; font-weight:700; line-height:1.1; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
-  .mono { font-family:var(--mono); font-size:13px; letter-spacing:.02em; line-height:1.5; }
-  .mono-12 { font-family:var(--mono); font-size:12px; letter-spacing:.02em; }
-  .mono-14 { font-family:var(--mono); font-size:14px; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+  .mono { font-family:var(--mono); font-size:13px; letter-spacing:.02em; }
+  .mono-12 { font-family:var(--mono); font-size:12px; letter-spacing:.02em; color:var(--muted); }
   .title-24 { font-size:24px; font-weight:600; line-height:1.25; letter-spacing:-.01em; text-wrap:balance; }
-  .muted { color:var(--muted); }
-  .body-muted { font-size:16px; line-height:1.55; color:var(--muted); text-wrap:pretty; }
   .note { font-size:15px; line-height:1.5; color:var(--muted); text-wrap:pretty; }
   .strong { font-weight:500; color:var(--ink); }
 
   /* ===== Shell ===== */
   .shell { display:grid; grid-template-columns:272px 1fr; min-height:100vh; }
-  .side { background:var(--navy); padding:32px 20px; display:flex; flex-direction:column; gap:32px; min-height:100vh; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .side { background:var(--navy); padding:32px 20px; display:flex; flex-direction:column; gap:32px; position:sticky; top:0; height:100vh; overflow-y:auto; }
   .logo { display:flex; align-items:center; gap:12px; padding:0 8px; border-radius:14px; }
   .logo-mark { width:26px; height:26px; border-radius:9px; background:var(--cream); display:block; flex:none; }
   .logo-word { font-size:19px; font-weight:600; letter-spacing:-.02em; color:var(--on-dark); }
   .group { display:flex; flex-direction:column; gap:6px; }
   .group-label { padding:0 8px 6px; color:var(--on-dark-label); }
-  .nav-item { display:flex; align-items:center; gap:12px; width:100%; text-align:left; font-size:16px; font-weight:500; border-radius:14px; padding:12px 14px; background:transparent; color:var(--on-dark-muted); transition:background 150ms ease-out; }
+  .nav-item { display:flex; align-items:center; gap:12px; width:100%; text-align:left; font-size:16px; font-weight:500; border-radius:14px; padding:12px 14px; color:var(--on-dark-muted); transition:background 150ms ease-out; }
   .nav-item:hover { background:rgba(242,240,231,.08); }
   .nav-item[aria-current="page"] { background:var(--nav-active); color:var(--on-dark); }
   .nav-item .label { flex:1; }
@@ -65,188 +58,105 @@
   .nav-sub-item[aria-current="page"] { background:var(--nav-active); color:var(--on-dark); }
   .nav-sub-item[disabled] { color:var(--on-dark-label); cursor:default; }
   .nav-sub-item[disabled]:hover { background:transparent; }
-  .nav-sub-item .idx { font-family:var(--mono); font-size:12px; letter-spacing:.02em; width:16px; flex:none; }
+  .nav-sub-item .idx { font-family:var(--mono); font-size:12px; width:16px; flex:none; }
   .nav-proj-label { padding:10px 14px 4px 52px; color:var(--on-dark-label); font-size:12px; letter-spacing:.06em; text-transform:uppercase; font-weight:500; }
-  .nav-sub-item.proj { padding-left:52px; font-weight:400; }
+  .nav-sub-item.proj { font-weight:400; }
   .nav-sub-item.proj .pdot { width:6px; height:6px; border-radius:999px; background:var(--gold); flex:none; }
   .nav-sub-item.proj span:not(.pdot) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .nav-sub-item.new { color:var(--on-dark-label); }
-  .launch { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; }
-  .launch button { display:flex; align-items:center; gap:14px; text-align:left; background:var(--navy); color:var(--on-dark); border-radius:20px; padding:20px 22px; box-shadow:var(--shadow-dark); transition:transform 150ms ease-out, filter 150ms ease-out; }
-  .launch button:hover { transform:translateY(-1px); filter:brightness(1.05); }
-  .launch .stack > span:first-child { font-size:18px; font-weight:600; }
-  .launch .stack > span:last-child { font-size:13px; color:var(--on-dark-muted); }
-  .launch .arrow { margin-left:auto; font-weight:600; }
-  .proj-row { display:grid; grid-template-columns:1.6fr 1fr auto auto; gap:12px; align-items:center; padding:12px 0; border-top:1px solid var(--hairline); }
-  .tool-card .actions { display:flex; gap:8px; flex-wrap:wrap; }
-  .tool-card .proj-mini { display:flex; flex-direction:column; gap:4px; }
-  .tool-card .proj-mini button { text-align:left; font-size:15px; color:var(--ink); display:flex; gap:8px; align-items:center; padding:4px 0; }
-  .tool-card .proj-mini button:hover { color:var(--blue); }
-  .tool-card .proj-mini .pdot { width:6px; height:6px; border-radius:999px; background:var(--gold); flex:none; }
   .dot { width:8px; height:8px; border-radius:999px; display:block; flex:none; }
   .tile { border-radius:9px; color:var(--ink-deep); font-family:var(--mono); display:flex; align-items:center; justify-content:center; flex:none; }
   .tile-26 { width:26px; height:26px; font-size:11px; }
   .tile-36 { width:36px; height:36px; border-radius:14px; font-size:13px; }
-  .tile-52 { width:52px; height:52px; border-radius:14px; font-size:16px; }
   .spacer { flex:1; }
-  .usage { background:var(--navy-alt); border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; }
-  .usage .caps { color:var(--on-dark-muted); }
-  .usage .num { color:var(--on-dark); }
-  .usage .note { color:var(--on-dark-muted); font-size:14px; }
-  .track { height:8px; border-radius:999px; background:var(--track-dark); overflow:hidden; }
-  .track > i { display:block; height:100%; background:var(--cream); border-radius:999px; transition:width 700ms ease-out; }
-  .usage .btn { align-self:flex-start; padding:11px 16px; font-size:15px; }
   .user-wrap { position:relative; }
   .user { display:flex; align-items:center; gap:12px; padding:8px; width:100%; text-align:left; border-radius:14px; transition:background 150ms ease-out; }
   .user:hover { background:rgba(242,240,231,.08); }
   .avatar { width:36px; height:36px; border-radius:999px; background:var(--gold); color:var(--ink-deep); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:none; }
   .user-name { font-size:15px; font-weight:500; color:var(--on-dark); }
-  .user-role { font-size:13px; color:var(--on-dark-muted); }
+  .user-mail { font-size:13px; color:var(--on-dark-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .menu { position:absolute; left:8px; right:8px; bottom:calc(100% + 8px); background:var(--white); border-radius:14px; box-shadow:var(--shadow-dark); padding:8px; display:flex; flex-direction:column; gap:2px; z-index:20; }
-  .menu button, .menu a { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; border-radius:9px; font-size:15px; font-weight:500; color:var(--ink); }
-  .menu button:hover, .menu a:hover { background:var(--cream); }
-  .menu .sep { height:1px; background:var(--hairline); margin:4px 0; }
-  .menu .note { padding:4px 12px 8px; font-size:13px; }
+  .menu button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; border-radius:9px; font-size:15px; font-weight:500; color:var(--ink); }
+  .menu button:hover { background:var(--cream); }
 
   .work { padding:32px 48px 64px; display:flex; flex-direction:column; gap:32px; max-width:1240px; width:100%; min-width:0; }
-  .topbar { display:flex; align-items:center; gap:24px; flex-wrap:wrap; position:relative; }
+  .topbar { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
   .topbar-text { display:flex; flex-direction:column; gap:6px; flex:1; min-width:240px; }
   .topbar-text .caps-nav { color:var(--muted); }
   .topbar-text h1 { font-size:34px; font-weight:700; letter-spacing:-.01em; line-height:1.1; text-wrap:balance; }
   .topbar-text .sub { font-size:16px; color:var(--muted); }
-  .topbar-actions { display:flex; align-items:center; gap:12px; position:relative; }
-  .search { background:var(--white); border-radius:14px; padding:13px 18px; font-size:15px; color:var(--ink); box-shadow:var(--shadow-light); min-width:280px; border:0; font-family:inherit; }
+  .topbar-actions { display:flex; align-items:center; gap:12px; }
+  .search { background:var(--white); border-radius:14px; padding:13px 18px; font-size:15px; color:var(--ink); box-shadow:var(--shadow-light); min-width:260px; border:0; font-family:inherit; }
   .search::placeholder { color:var(--muted); }
-  .action-menu { position:absolute; right:0; top:calc(100% + 8px); background:var(--white); border-radius:20px; box-shadow:var(--shadow-dark); padding:12px; display:flex; flex-direction:column; gap:4px; z-index:20; width:340px; }
-  .action-menu .caps { padding:8px 12px 4px; color:var(--muted); }
-  .action-menu button { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px; border-radius:14px; transition:background 150ms ease-out; }
-  .action-menu button:hover { background:var(--cream); }
-  .action-menu .stack > span:first-child { font-size:16px; font-weight:500; }
-  .action-menu .stack > span:last-child { font-size:13px; color:var(--muted); }
 
-  /* ===== Buttons ===== */
   .btn { display:inline-flex; align-items:center; gap:12px; font-size:16px; font-weight:600; line-height:1; border-radius:14px; padding:15px 24px; transition:transform 150ms ease-out, filter 150ms ease-out; white-space:nowrap; }
   .btn:hover { transform:translateY(-1px); filter:brightness(1.03); }
   .btn .arrow { transition:transform 150ms ease-out; }
   .btn:hover .arrow { transform:translateX(4px); }
   .btn-navy { background:var(--navy); color:var(--on-dark); }
-  .btn-cream { background:var(--cream); color:var(--ink-deep); }
   .btn-outline { background:var(--white); color:var(--navy); border:1px solid var(--navy); padding:14px 20px; }
   .btn-small { padding:10px 16px; font-size:15px; }
   .link { font-size:15px; font-weight:600; color:var(--blue); }
-  .link:hover { color:var(--blue); filter:brightness(.9); }
 
-  /* ===== Cards ===== */
   .card { background:var(--white); border-radius:20px; padding:28px; box-shadow:var(--shadow-light); display:flex; flex-direction:column; gap:16px; min-width:0; }
-  .card-navy { background:var(--navy); color:var(--on-dark); border-radius:20px; padding:28px; box-shadow:var(--shadow-light); display:flex; flex-direction:column; gap:14px; }
-  .card-navy .caps { color:var(--on-dark-muted); }
-  .card-navy .note { color:var(--on-dark-muted); }
   .card-head { display:flex; align-items:center; gap:12px; }
-  .card-head .caps { flex:1; color:var(--muted); }
+  .card-head .caps { flex:1; }
   .hairline { height:1px; background:var(--hairline); }
-  .card-btn { text-align:left; transition:filter 150ms ease-out; color:var(--ink); }
-  .card-btn:hover { filter:brightness(1.01); }
   .stack { display:flex; flex-direction:column; gap:2px; }
-  .lock { display:inline-flex; align-items:center; gap:8px; font-size:14px; }
+  .lock { display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--muted); }
   .lock .ico { width:16px; height:16px; flex:none; }
-
   .pill { display:inline-flex; align-items:center; border-radius:999px; padding:4px 12px; font-size:13px; font-weight:500; line-height:1.4; white-space:nowrap; }
   .pill-live { background:var(--blue-tint); color:var(--blue); }
   .pill-neutral { background:var(--cream); color:var(--ink-deep); }
-  .pill-delta { background:var(--blue-tint); color:var(--blue); font-weight:600; }
-  .pill-dark { background:var(--chip-dark); color:var(--on-dark); padding:6px 14px; }
 
   /* ===== Overzicht ===== */
-  .tools-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:24px; }
-  .tool-card { gap:14px; }
-  .tool-card .card-head { flex-wrap:wrap; row-gap:10px; }
-  .tool-card .card-head .caps { color:var(--muted); white-space:nowrap; }
-  .tool-card .card-head .pill { flex:none; flex-basis:100%; width:max-content; }
-  .tool-card .task { font-size:24px; font-weight:600; line-height:1.25; letter-spacing:-.01em; }
-  .tool-card .foot { display:flex; align-items:flex-end; gap:16px; }
-  .tool-card .foot .stack { flex:1; }
-  .tool-card .foot .caps { color:var(--muted); }
-  .tool-card .open { font-size:16px; font-weight:600; white-space:nowrap; }
-  .row-2 { display:grid; grid-template-columns:1.5fr 1fr; gap:24px; align-items:start; }
-  .stack-24 { display:flex; flex-direction:column; gap:24px; }
-
+  .launch { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px; }
+  .launch button { display:flex; align-items:center; gap:14px; text-align:left; background:var(--navy); color:var(--on-dark); border-radius:20px; padding:22px; box-shadow:var(--shadow-dark); transition:transform 150ms ease-out, filter 150ms ease-out; }
+  .launch button:hover { transform:translateY(-1px); filter:brightness(1.05); }
+  .launch .stack > span:first-child { font-size:18px; font-weight:600; }
+  .launch .stack > span:last-child { font-size:13px; color:var(--on-dark-muted); }
+  .launch .arrow { margin-left:auto; font-weight:600; }
   .table { display:flex; flex-direction:column; }
-  .thead, .tr { display:grid; align-items:center; gap:12px; }
-  .thead { font-family:var(--mono); font-size:12px; letter-spacing:.02em; color:var(--muted); padding-bottom:4px; }
-  .tr { padding:12px 0; border-top:1px solid var(--hairline); width:100%; text-align:left; color:var(--ink); }
-  button.tr { border-radius:0; transition:background 150ms ease-out; }
-  button.tr:hover { background:var(--cream-white); }
-  .cols-runs { grid-template-columns:1.6fr 1fr .8fr .9fr; }
-  .cols-list { grid-template-columns:1.7fr .9fr .7fr .7fr; }
-  .cols-files { grid-template-columns:1.8fr 1fr .8fr auto; }
+  .tr { display:grid; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--hairline); width:100%; text-align:left; color:var(--ink); }
+  .proj-row { grid-template-columns:1.6fr 1fr auto auto; }
+  .files-row { grid-template-columns:1.6fr 1fr auto; }
   .cell-main { display:flex; flex-direction:column; gap:2px; min-width:0; }
   .cell-main > span:first-child { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .cell-main .mono-12 { color:var(--muted); }
   .cell-tool { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--muted); }
-  .cell-text { font-size:15px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .cell-status { display:flex; flex-direction:column; gap:3px; align-items:flex-start; }
-  .cell-status .mono-12 { color:var(--muted); }
-
-  .bars { display:flex; align-items:flex-end; gap:8px; height:88px; }
-  .bar-col { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; align-items:center; }
-  .bar { width:100%; border-radius:8px 8px 4px 4px; flex:none; background:rgba(242,240,231,.35); transition:height 700ms ease-out; }
-  .bar.on { background:var(--cream); }
-  .bar-label { font-size:13px; font-weight:500; letter-spacing:.02em; color:var(--on-dark-muted); }
-
-  .alert { display:flex; gap:12px; align-items:flex-start; }
-  .alert .dot { margin-top:8px; }
-  .alert .stack { flex:1; }
-  .alert .stack > span:first-child { font-size:16px; font-weight:500; }
-  .alert .btn { margin-top:8px; align-self:flex-start; }
-
-  /* ===== Tool-detail ===== */
-  .tool-header { background:var(--navy); color:var(--on-dark); border-radius:20px; padding:32px; box-shadow:var(--shadow-dark); display:flex; align-items:center; gap:32px; flex-wrap:wrap; }
-  .tool-header .text { flex:1; min-width:260px; display:flex; flex-direction:column; gap:6px; }
-  .tool-header .title-24 { color:var(--on-dark); }
-  .tool-header .body-muted { color:var(--on-dark-muted); max-width:56ch; }
-  .tool-header .state { display:flex; flex-direction:column; gap:4px; margin-top:8px; }
-  .tool-header .lock { color:var(--on-dark-muted); }
-  .tool-header .lock.on { color:var(--on-dark); }
-  .tool-header .actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  .kpis { display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; }
-  .kpi { gap:10px; }
-  .kpi .note { font-size:15px; }
-  .kpi .btn { align-self:flex-start; margin-top:4px; }
-
-  .steps { display:flex; flex-direction:column; gap:16px; }
-  .step { display:flex; gap:14px; align-items:flex-start; }
-  .step-n { width:28px; height:28px; border-radius:9px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:none; }
-  .step .stack { flex:1; }
-  .step .stack > span:first-child { font-size:16px; font-weight:500; }
+  .empty { padding:8px 0; }
 
   /* ===== Werkbank ===== */
   .bench { padding:0; overflow:hidden; gap:0; }
-  .bench-head { display:flex; align-items:center; gap:12px; padding:20px 28px; border-bottom:1px solid var(--hairline); flex-wrap:wrap; }
-  .bench-head .caps { flex:1; color:var(--muted); }
   .bench-frame { width:100%; height:calc(100vh - 150px); min-height:720px; border:0; display:block; background:var(--cream-white); }
   .bench-body { padding:28px; display:grid; grid-template-columns:1.2fr 1fr; gap:32px; align-items:start; }
   .bench-actions { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
   .bench-note { background:var(--cream); border-radius:14px; padding:16px 20px; display:flex; flex-direction:column; gap:8px; }
-  .bench-note .mono { color:var(--ink-deep); word-break:break-all; }
   .bench-side { display:flex; flex-direction:column; gap:24px; }
-  .kv { display:grid; grid-template-columns:auto 1fr; gap:6px 16px; align-items:baseline; }
-  .kv .caps { color:var(--muted); }
+  .steps { display:flex; flex-direction:column; gap:14px; }
+  .step { display:flex; gap:14px; align-items:flex-start; }
+  .step-n { width:28px; height:28px; border-radius:9px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:none; }
+  .step .stack > span:first-child { font-size:16px; font-weight:500; }
   details.it { border-top:1px solid var(--hairline); padding-top:16px; }
   details.it summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; color:var(--muted); }
   details.it summary::-webkit-details-marker { display:none; }
   details.it summary::after { content:"+"; font-family:var(--mono); margin-left:auto; }
   details.it[open] summary::after { content:"−"; }
   details.it > div { display:flex; flex-direction:column; gap:16px; padding-top:16px; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:6px 16px; align-items:baseline; }
 
-  /* ===== Hulp & Bestanden ===== */
+  /* ===== Hulp ===== */
   .help-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:24px; }
   .help-card ol { padding-left:20px; display:flex; flex-direction:column; gap:8px; font-size:15px; color:var(--muted); }
   .help-card li span { color:var(--ink); font-weight:500; }
 
   /* ===== Modal ===== */
   .modal-bg { position:fixed; inset:0; background:rgba(6,18,35,.45); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px; }
-  .modal { background:var(--white); border-radius:20px; padding:28px; box-shadow:var(--shadow-dark); width:min(640px, 100%); display:flex; flex-direction:column; gap:16px; max-height:90vh; overflow:auto; }
+  .modal { background:var(--white); border-radius:20px; padding:28px; box-shadow:var(--shadow-dark); width:min(560px, 100%); display:flex; flex-direction:column; gap:16px; max-height:90vh; overflow:auto; }
   .modal .foot { display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
+  .field input { border:1px solid var(--hairline); border-radius:14px; padding:13px 16px; font-size:16px; font-family:inherit; color:var(--ink); background:var(--white); }
+  .field input:focus { outline:0; border-color:var(--blue); background:var(--blue-tint); }
 
   /* ===== Login ===== */
   .login { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
@@ -255,26 +165,18 @@
   .login-left p { font-size:19px; color:var(--on-dark-muted); max-width:46ch; }
   .login-right { display:flex; align-items:center; justify-content:center; padding:48px; }
   .login-card { width:min(440px, 100%); gap:20px; }
-  .field { display:flex; flex-direction:column; gap:6px; }
-  .field label { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
-  .field input { border:1px solid var(--hairline); border-radius:14px; padding:13px 16px; font-size:16px; font-family:inherit; color:var(--ink); background:var(--white); }
-  .field input:focus { outline:0; border-color:var(--blue); background:var(--blue-tint); }
   .login .btn { justify-content:center; }
-  .login .or { text-align:center; font-size:13px; color:var(--muted); }
 
-  /* ===== Responsive ===== */
-  @media (max-width: 1100px) { .kpis { grid-template-columns:1fr 1fr; } .row-2 { grid-template-columns:1fr; } .bench-body { grid-template-columns:1fr; } .help-grid { grid-template-columns:1fr; } .login { grid-template-columns:1fr; } .login-left { padding:40px 24px; } }
+  @media (max-width: 1100px) { .bench-body { grid-template-columns:1fr; } .help-grid { grid-template-columns:1fr; } .login { grid-template-columns:1fr; } .login-left { padding:40px 24px; } }
   @media (max-width: 860px) {
     .shell { grid-template-columns:1fr; }
-    .side { position:static; height:auto; min-height:0; padding:20px; gap:20px; }
+    .side { position:static; height:auto; padding:20px; gap:20px; }
     .side .spacer { display:none; }
     .work { padding:24px 20px 48px; }
-    .kpis { grid-template-columns:1fr; }
-    .cols-runs, .cols-list, .cols-files { grid-template-columns:1.6fr 1fr auto; }
-    .cols-runs > :nth-child(3), .cols-list > :nth-child(3), .cols-files > :nth-child(3) { display:none; }
     .bench-frame { height:80vh; min-height:560px; }
     .topbar-text h1 { font-size:28px; }
-    .action-menu { width:100%; }
+    .proj-row, .files-row { grid-template-columns:1fr auto; }
+    .proj-row > .cell-tool, .files-row > .cell-tool { display:none; }
   }
 </style>
 </head>
@@ -283,45 +185,27 @@
 
 <script>
 "use strict";
-
 /* =========================================================================
-   ParseLab Dashboard — app-shell voor ParseForm, ParseScraper, ParsePDF en ParseBoard.
-   Toegepast: docs/dashboard.md en docs/00-overzicht.md (woordenlijst, login via inloglink, Bestanden, Hulp,
-   "Wat wil je doen?", klikbare regels, extensie-detectie, sandbox-iframe met tellers via postMessage).
-   state.view = overview | files | help | form | scrape | pdf | board ; state.bench + state.section = de echte tool.
+   ParseLab — één schil voor ParseForm, ParseScraper, ParsePDF en ParseBoard.
+   Geen voorbeelddata: alles wat je ziet komt uit de tools zelf (projecten, taken, sjablonen, bestanden).
+   state.view = overview | files | help | form | scrape | pdf | board ; state.section = stap in de tool ; state.project = geopend project.
    ========================================================================= */
 
-/* --- Configuratie: vul in zodra er een backend of Web Store-vermelding is. --- */
-const CONFIG = {
-  webstoreUrl: "",            // Chrome Web Store-URL van de ParseLab-extensie; leeg = IT-route via zip
-  retentionDays: 30,          // bewaartermijn van bestanden met persoonsgegevens
-  minutesPerManualRow: 4,     // basis voor "Bespaarde tijd"
-  lang: "nl"
-};
+const CONFIG = { webstoreUrl: "", lang: "nl", apiBase: "" };
+const TONE = { form:{ tile:"#DCE8F2", dot:"#2C6FA8" }, scrape:{ tile:"#EDE7D5", dot:"#C9A961" }, pdf:{ tile:"#F2F0E7", dot:"#6B7A8C" }, board:{ tile:"#D8D5C8", dot:"#16293F" } };
 
-const TONE = {
-  form:   { tile:"#DCE8F2", dot:"#2C6FA8" },
-  scrape: { tile:"#EDE7D5", dot:"#C9A961" },
-  pdf:    { tile:"#F2F0E7", dot:"#6B7A8C" },
-  board:  { tile:"#D8D5C8", dot:"#16293F" }
-};
-const BLUE = "#2C6FA8";
-const LIVE = "pill-live", NEUTRAL = "pill-neutral";
-const WORKSPACE = { org:"Van Dijk Administratie", plan:"Pro", used:3240, limit:5000, reset:"1 oktober" };
-
-/* ---------- Sessie (dashboard.md "Inloggen en accounts"): inloglink per e-mail. Zonder backend is dit een lokale sessie. ---------- */
+/* ---------- sessie: inloglink per e-mail; zonder backend start de sessie op deze computer ---------- */
 const SESSION_KEY = "parselab-session";
 function readSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e) { return null; } }
 function writeSession(s) { try { if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSION_KEY); } catch (e) {} }
 function userFromEmail(email) {
+  const particles = ["de", "van", "der", "den", "het", "te", "ten", "ter", "op", "in"];
   const local = String(email).split("@")[0].replace(/[._-]+/g, " ").trim();
-  const particles = ["de", "van", "der", "den", "het", "te", "ten", "ter", "op", "in", "'t"];
   const name = local ? local.split(" ").map((w, i) => (i > 0 && particles.includes(w.toLowerCase())) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Gebruiker";
-  const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-  return { email, name, initials, role:"Administratie" };
+  return { email, name, initials: name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() };
 }
 
-/* ---------- Projecten: bewaarde eenheden van werk per tool (taak, sjabloon, overzicht). Tools melden ze via postMessage; het dashboard bewaart de lijst. ---------- */
+/* ---------- projecten: bewaarde eenheden van werk per tool; de tools melden ze via postMessage ---------- */
 const PROJECTS_KEY = "parselab-projects";
 function readProjects() { try { return JSON.parse(localStorage.getItem(PROJECTS_KEY) || "[]"); } catch (e) { return []; } }
 function writeProjects(list) { try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(list.slice(0, 200))); } catch (e) {} }
@@ -339,343 +223,161 @@ function syncProjects(tool, incoming) {
   writeProjects(list.sort((a, b) => String(b.updated).localeCompare(String(a.updated))));
 }
 function projectsOf(tool) { return readProjects().filter(x => x.tool === tool).sort((a, b) => String(b.updated).localeCompare(String(a.updated))); }
-function projectSection(t, pr) { return (t.bench && t.bench.projectSection) || t.sections[0].id; }
 
-/* ---------- Live gegevens uit de ingebedde tools: eerst via postMessage (parselab:stats), anders localStorage. ---------- */
+/* ---------- live tellers uit de tools (alleen via postMessage) ---------- */
 const stats = { pdf:null, board:null, scrape:null, extension:null };
-function readLiveData() {
-  const out = {};
-  if (stats.pdf) { out.pdfTemplates = stats.pdf.templates; out.pdfDocs = stats.pdf.documents; out.pdfReview = stats.pdf.review; }
-  else try {
-    const t = JSON.parse(localStorage.getItem("pdfScraperTemplates") || "null");
-    const list = Array.isArray(t) ? t : (t && typeof t === "object" ? Object.entries(t).map(([name, v]) => Object.assign({ name }, v)) : null);
-    if (list && list.length) {
-      out.pdfTemplates = list.length;
-      out.pdfRows = list.slice(0, 6).map(tpl => {
-        const fields = Array.isArray(tpl.columns) ? tpl.columns.length : Array.isArray(tpl.fields) ? tpl.fields.length : Array.isArray(tpl.rules) ? tpl.rules.length : null;
-        return { a:String(tpl.name || tpl.title || "Sjabloon"), sub:(fields != null ? nl(fields) + " velden" : "sjabloon") + " · op deze computer", b:String(tpl.docType || tpl.type || tpl.branche || "Document"), c:fields != null ? nl(fields) : "", status:"actief", cls:LIVE, section:"define" };
-      });
-    }
-  } catch (e) {}
-  if (stats.scrape) { out.scrapeTasks = stats.scrape.tasks; out.scrapeRunning = !!stats.scrape.running; }
-  if (stats.board) { out.boardSaved = !!stats.board.saved; out.boardFile = stats.board.fileName || null; out.boardColumns = stats.board.columns; out.boardTiles = stats.board.tiles; }
-  else try {
-    const c = JSON.parse(localStorage.getItem("paneel-config") || "null");
-    if (c && typeof c === "object") {
-      out.boardSaved = true; out.boardFile = c.fileName || null;
-      out.boardColumns = Array.isArray(c.columns) ? c.columns.length : null;
-      const k = Array.isArray(c.kpis) ? c.kpis.length : 0, g = Array.isArray(c.charts) ? c.charts.length : 0;
-      out.boardTiles = (k + g) || null;
-    }
-  } catch (e) {}
-  return out;
-}
 
-/* ---------- Tooldefinities: nieuwe software = één object erbij. ---------- */
+/* ---------- tools: nieuwe software = één object erbij ---------- */
 function toolDefs() {
-  const live = readLiveData();
   const ext = stats.extension;
   const extState = ext ? { text:"Extensie verbonden in deze browser · versie " + ext.version, on:true } : { text:"Extensie nog niet toegevoegd aan deze browser", on:false };
   return [
-    {
-      key:"form", name:"ParseForm", task:"Formulieren invullen", tagline:"Formulieren invullen vanuit een lijst", mark:"PF", tone:TONE.form,
-      body:"Vult formulieren en drukt knoppen in elk portaal, regel voor regel vanuit jouw lijst.",
-      status:"3 regels om na te kijken", statusCls:NEUTRAL, navMeta:"3 fouten",
-      headline:"1.842", headlineLabel:"Regels deze maand",
-      cta:"Nieuwe taak opnemen", unit:"taak", listLabel:"Taken", cols:["taak","portaal","regels"],
-      local:{ text:"Blijft op je computer: het invullen gebeurt in je eigen browser.", remote:"Naar ParseLab gaan alleen de stappen van je taak, nooit je lijst." },
+    { key:"form", name:"ParseForm", task:"Formulieren invullen", tagline:"Een portaal invullen vanuit je lijst", mark:"PF", tone:TONE.form,
+      projectWord:"taak", projectWords:"taken", projectSection:"install",
+      local:"Blijft op je computer: het invullen gebeurt in je eigen browser.",
       state:extState,
-      sections:[ { id:"install", label:"Extensie" } ], projectWord:"taak", projectWords:"taken",
-      kpis:[
-        { label:"Regels ingevuld", value:"1.842", delta:"+8,2%", note:"Deze maand, over 3 taken" },
-        { label:"Per regel", value:"11 sec", delta:"−2 sec", note:"Met de hand was dat ongeveer 4 minuten" },
-        { label:"Om na te kijken", value:"48", delta:"", note:"Regels die een taak heeft overgeslagen", action:{ label:"Bekijk regels", run:"r6" } }
-      ],
-      rows:[
-        { a:"Aangifte per relatienummer", sub:"12 velden · dagelijks", b:"Gemeenteportaal", c:"412", status:"actief", cls:LIVE, section:"install" },
-        { a:"Verhuizingen doorgeven", sub:"8 velden · per lijst", b:"Interne web-app", c:"236", status:"actief", cls:LIVE, section:"install" },
-        { a:"Polisgegevens bijwerken", sub:"6 velden · wekelijks", b:"Extranet", c:"188", status:"gepauzeerd", cls:NEUTRAL, section:"install" },
-        { a:"Contactcheck", sub:"4 velden · handmatig", b:"CRM", c:"74", status:"concept", cls:NEUTRAL, section:"install" }
-      ],
-      steps:[
-        { title:"Open het portaal", body:"Klik op het ParseLab-icoon rechtsboven in je browser. Het paneel blijft boven meldingen en pop-ups staan." },
-        { title:"Wijs de velden en knoppen aan", body:"Klik ze één keer aan. ParseLab onthoudt ze, ook na een refresh of een nieuw sessienummer." },
-        { title:"Laad je lijst", body:"Eén regel per formulier. De taak loopt de lijst af en stopt alleen bij een regel die aandacht vraagt." }
-      ],
-      tips:[ "Maak eerst je invullijst (Excel) vanuit het paneel; dan kloppen de kolomnamen meteen.", "Test met twee regels voordat je de hele lijst laadt." ],
-      exportName:"aangifte-week35.xlsx", exportMeta:"412 regels · 28 aug 09:12", exportKind:"xlsx",
-      bench:{ kind:"extension", benchLabel:"Extensie openen", panelTitle:"ParseForm werkt in je eigen browser",
-        intro:"Formulieren invullen gebeurt op de echte pagina van het portaal. Daarom is ParseForm een kleine toevoeging aan je browser. Eén keer toevoegen, daarna staat het ParseLab-icoon rechtsboven op elke pagina." }
-    },
-    {
-      key:"scrape", name:"ParseScraper", task:"Websites uitlezen", tagline:"Lijsten en prijzen van een website in Excel", mark:"PS", tone:TONE.scrape,
-      body:"Klik één item aan en haal de hele lijst van elke pagina op.",
-      status: live.scrapeRunning ? "1 ronde bezig" : (live.scrapeTasks ? nl(live.scrapeTasks) + (live.scrapeTasks === 1 ? " taak" : " taken") + " op de server" : "1 ronde bezig"), statusCls:NEUTRAL, navMeta: live.scrapeRunning ? "bezig" : (live.scrapeTasks != null ? "" : "1 bezig"),
-      headline:"24.106", headlineLabel:"Regels deze maand",
-      cta:"Nieuwe website uitlezen", unit:"taak", listLabel:"Taken", cols:["taak","website","regels"],
-      local:{ text:"Openbare websites leest de ParseLab-server uit, met wisselende proxies; je computer mag uit staan.", remote:"Pagina's waar je moet inloggen lees je uit met de extensie in je eigen browser; die gegevens blijven bij jou." },
+      sections:[ { id:"install", label:"Extensie" } ],
+      bench:{ kind:"extension", panelTitle:"ParseForm werkt in je eigen browser", intro:"Formulieren invullen gebeurt op de echte pagina van het portaal. Daarom is ParseForm een kleine toevoeging aan je browser. Eén keer toevoegen, daarna staat het ParseLab-icoon rechtsboven op elke pagina." },
+      steps:[ { title:"Open het portaal", body:"Klik op het ParseLab-icoon rechtsboven in je browser." }, { title:"Wijs de velden en knoppen aan", body:"Klik ze één keer aan. ParseLab onthoudt ze." }, { title:"Laad je lijst en klik op Start", body:"Eén regel per formulier. Elke regel krijgt een vinkje." } ] },
+    { key:"scrape", name:"ParseScraper", task:"Websites uitlezen", tagline:"Een lijst van een website in Excel", mark:"PS", tone:TONE.scrape,
+      projectWord:"taak", projectWords:"taken", projectSection:"done",
+      local:"Openbare websites leest de ParseLab-server uit; je computer mag uit staan. Ingelogde pagina's doe je met de extensie.",
       state:extState,
-      sections:[ { id:"url", label:"Adres" }, { id:"pick", label:"Aanwijzen" }, { id:"check", label:"Controleren" }, { id:"download", label:"Downloaden" }, { id:"install", label:"Extensie (ingelogd)" } ], numbered:true,
-      projectWord:"taak", projectWords:"taken",
-      kpis:[
-        { label:"Regels uitgelezen", value:"24.106", delta:"+19%", note:"Over 5 websites" },
-        { label:"Ronde bezig", value:"14 van 24", delta:"live", note:"Webshop-prijzen · nog ongeveer 2 minuten", action:{ label:"Bekijk voortgang", run:"r1" } },
-        { label:"Per ronde", value:"4 min", delta:"−40 sec", note:"Inclusief doorladen bij scrollen" }
-      ],
-      rows:[
-        { a:"Webshop-prijzen", sub:"6 stappen · dagelijks 07:00", b:"shop.example.nl", c:"24", status:"bezig", cls:NEUTRAL, section:"install" },
-        { a:"Concurrentie-assortiment", sub:"4 stappen · wekelijks", b:"3 websites", c:"1.204", status:"actief", cls:LIVE, section:"install" },
-        { a:"Voorraadstanden", sub:"5 stappen · elk uur", b:"leveranciersportaal", c:"486", status:"actief", cls:LIVE, section:"install" },
-        { a:"Vacatures regio", sub:"3 stappen · maandelijks", b:"2 websites", c:"92", status:"gepauzeerd", cls:NEUTRAL, section:"install" }
-      ],
-      steps:[
-        { title:"Plak een adres", body:"ParseLab haalt de pagina op via een proxy, ook als die pas na scrollen laadt." },
-        { title:"Klik één item aan", body:"De hele lijst wordt herkend; jij geeft de kolommen een naam." },
-        { title:"Controleer en download", body:"Als Excel, of laat het elk uur, elke dag of elke week opnieuw draaien." }
-      ],
-      tips:[ "Moet je inloggen op de website? Kies dan 'Extensie (ingelogd)' in de zijbalk.", "Een bewaarde taak draait op de server, ook als je computer uit staat." ],
-      exportName:"webshop-prijzen.xlsx", exportMeta:"24 regels · vandaag 07:04", exportKind:"xlsx",
-      bench:{ kind:"frame", src:"tools/parsescraper.html", benchLabel:"Website uitlezen", panelTitle:"ParseScraper", extensionSection:"install",
-        extPanelTitle:"Ingelogde portalen lees je uit met de extensie", projectSection:"check", intro:"Openbare websites leest ParseLab vanaf de server uit (stap 1 tot 4). Voor pagina's waar je moet inloggen werkt de extensie bovenop de pagina in je eigen browser; die gegevens verlaten je computer niet. ParseForm en ParseScraper zitten in dezelfde toevoeging." }
-    },
-    {
-      key:"pdf", name:"ParsePDF", task:"Documenten uitlezen", tagline:"Facturen, bonnen en rapporten als tabel", mark:"PP", tone:TONE.pdf,
-      body:"Haalt bedragen, datums en tabellen uit documenten en scans.",
-      status: live.pdfReview ? nl(live.pdfReview) + " regels om na te kijken" : (live.pdfTemplates != null ? nl(live.pdfTemplates) + " " + (live.pdfTemplates === 1 ? "sjabloon" : "sjablonen") : "2 sjablonen"),
-      statusCls:NEUTRAL, navMeta: live.pdfReview ? nl(live.pdfReview) + " nakijken" : "",
-      headline: live.pdfDocs != null ? nl(live.pdfDocs) : "1.284", headlineLabel: live.pdfDocs != null ? "Documenten hier" : "Documenten deze maand",
-      cta:"Documenten uploaden", unit:"sjabloon", listLabel:"Sjablonen", cols:["sjabloon","soort document","velden"],
-      local:{ text:"Blijft op je computer: je documenten worden in je browser gelezen en niet verstuurd.", remote:"Alleen als je dat per document aanvinkt, gaat de tekst naar ParseLab voor herkenning." },
+      sections:[ { id:"url", label:"Adres" }, { id:"pick", label:"Aanwijzen" }, { id:"done", label:"Klaar" }, { id:"install", label:"Extensie (ingelogd)" } ], numbered:true,
+      bench:{ kind:"frame", src:"tools/parsescraper.html", extensionSection:"install", extPanelTitle:"Ingelogde portalen lees je uit met de extensie", intro:"Openbare websites leest ParseLab vanaf de server uit. Voor pagina's waar je moet inloggen werkt de extensie in je eigen browser; die gegevens verlaten je computer niet." },
+      steps:[ { title:"Plak een adres", body:"ParseLab haalt de pagina op." }, { title:"Klik één item aan", body:"De hele lijst wordt herkend." }, { title:"Download of bewaar als taak", body:"Als Excel, of elke dag opnieuw op de server." } ] },
+    { key:"pdf", name:"ParsePDF", task:"Documenten uitlezen", tagline:"Facturen, bonnen en rapporten als tabel", mark:"PP", tone:TONE.pdf,
+      projectWord:"sjabloon", projectWords:"sjablonen", projectSection:"define",
+      local:"Blijft op je computer: je documenten worden in je browser gelezen en niet verstuurd.",
       sections:[ { id:"upload", label:"Uploaden" }, { id:"define", label:"Aanwijzen" }, { id:"check", label:"Controleren" }, { id:"download", label:"Downloaden" }, { id:"templates", label:"Sjablonen" } ], numbered:true,
-      projectWord:"sjabloon", projectWords:"sjablonen",
-      kpis:[
-        { label:"Documenten verwerkt", value:"1.284", delta:"+12,4%", note:"Waarvan 218 scans" },
-        { label:"Om na te kijken", value: live.pdfReview != null ? nl(live.pdfReview) : "40", delta:"", note:"Regels met een lege of twijfelachtige cel", action:{ label:"Bekijk regels", view:"pdf", section:"check" } },
-        { label:"Grootste stapel", value:"500", delta:"max", note:"In één keer verwerkt" }
-      ],
-      rows: live.pdfRows || [
-        { a:"Inkoopfacturen NL", sub:"7 velden", b:"Factuur", c:"7", status:"actief", cls:LIVE, section:"define" },
-        { a:"Bonnen mobiel", sub:"4 velden · scans", b:"Bon", c:"4", status:"actief", cls:LIVE, section:"define" },
-        { a:"Jaarrapporten", sub:"12 velden · tabellen", b:"Rapport", c:"12", status:"concept", cls:NEUTRAL, section:"define" }
-      ],
-      hasItems: !!live.pdfTemplates,
-      steps:[
-        { title:"Sleep je documenten", body:"Tot 500 tegelijk. Ze blijven op jouw computer." },
-        { title:"Wijs aan wat je nodig hebt", body:"Teken een vak om het bedrag of de datum. Of kies een voorbeeldsjabloon." },
-        { title:"Controleer en download", body:"Elke regel toont het document en de pagina. Download voor Excel." }
-      ],
-      tips:[ "Begin met het voorbeeldsjabloon 'Nederlandse factuur' en pas het aan.", "Regels om na te kijken staan bovenaan bij Controleren." ],
-      exportName:"inkoopfacturen-augustus.xlsx", exportMeta:"98 regels · 29 aug 16:40", exportKind:"xlsx",
-      bench:{ kind:"frame", src:"tools/parsepdf.html", benchLabel:"Documenten uitlezen", panelTitle:"ParsePDF", projectSection:"define" }
-    },
-    {
-      key:"board", name:"ParseBoard", task:"Overzichten maken", tagline:"Cijfers en grafieken die zichzelf bijwerken", mark:"PB", tone:TONE.board,
-      body:"Zet je uitgelezen gegevens om in cijfers en grafieken die zichzelf bijwerken.",
-      status: live.boardSaved ? "1 overzicht" : "nog geen overzicht", statusCls: live.boardSaved ? LIVE : NEUTRAL, navMeta:"",
-      headline: live.boardColumns != null ? nl(live.boardColumns) : "12", headlineLabel: live.boardColumns != null ? "Kolommen" : "Tegels",
-      cta:"Overzicht maken", unit:"overzicht", listLabel:"Overzichten", cols:["overzicht","bron","tegels"],
-      local:{ text:"Blijft op je computer: je bestand en je overzicht worden lokaal bewaard.", remote:"Delen als link gaat via je ParseLab-account, met een verloopdatum." },
+      bench:{ kind:"frame", src:"tools/parsepdf.html" },
+      steps:[ { title:"Sleep je documenten", body:"Ze blijven op jouw computer." }, { title:"Wijs aan wat je nodig hebt", body:"Teken een vak, of kies een sjabloon." }, { title:"Controleer en download", body:"Als Excel." } ] },
+    { key:"board", name:"ParseBoard", task:"Overzichten maken", tagline:"Cijfers en grafieken uit je bestand", mark:"PB", tone:TONE.board,
+      projectWord:"overzicht", projectWords:"overzichten", projectSection:"1",
+      local:"Blijft op je computer: je bestand en je overzicht worden lokaal bewaard.",
       sections:[ { id:"1", label:"Bron" }, { id:"2", label:"Typen" }, { id:"3", label:"Cijfers" }, { id:"4", label:"Onderdelen" }, { id:"5", label:"Weergave" }, { id:"6", label:"Overzicht" } ], numbered:true,
-      projectWord:"overzicht", projectWords:"overzichten",
-      kpis:[
-        { label:"Bijwerken", value:"per bestand", delta:"live", note:"Elk nieuw bestand schuift erin" },
-        { label:"Bronnen gekoppeld", value: live.boardSaved ? "1" : "0", delta:"", note: live.boardFile ? live.boardFile : "Koppel een ParsePDF-sjabloon of een bestand" },
-        { label:"Gedeeld als link", value:"0", delta:"", note:"Alleen-lezen delen met je team of accountant" }
-      ],
-      rows: live.boardSaved ? [
-        { a: live.boardFile || "Mijn overzicht", sub: nl(live.boardColumns || 0) + " kolommen · op deze computer", b:"Bestand", c: live.boardTiles != null ? String(live.boardTiles) : "", status:"actief", cls:LIVE, section:"6" }
-      ] : [
-        { a:"Omzet per maand", sub:"voorbeeld · webshop-bestellingen", b:"Voorbeeld", c:"6", status:"concept", cls:NEUTRAL, section:"1" },
-        { a:"Verzekeringsportefeuille", sub:"voorbeeld · polissen", b:"Voorbeeld", c:"8", status:"concept", cls:NEUTRAL, section:"1" }
-      ],
-      hasItems: !!live.boardSaved,
-      steps:[
-        { title:"Kies een bron", body:"Upload een bestand, of begin met de voorbeeldgegevens." },
-        { title:"Kies je cijfers", body:"Controleer de kolommen en kies cijfers en grafieken. Suggesties staan klaar." },
-        { title:"Sla op en deel", body:"Het overzicht blijft op je computer en is met één klik een Excel-bestand." }
-      ],
-      tips:[ "Gebruik een ParsePDF-sjabloon als bron, dan werkt het overzicht zichzelf bij.", "Elke tegel is met één klik een tabel." ],
-      exportName:"overzicht-per-maand.xlsx", exportMeta:"12 regels · gisteren 11:20", exportKind:"xlsx",
-      bench:{ kind:"frame", src:"tools/parseboard.html", benchLabel:"Overzicht maken", panelTitle:"ParseBoard", projectSection:"1" }
-    }
+      bench:{ kind:"frame", src:"tools/parseboard.html" },
+      steps:[ { title:"Kies een bron", body:"Je bestand of de voorbeeldgegevens." }, { title:"Kies je cijfers", body:"Suggesties staan klaar." }, { title:"Sla op", body:"Het overzicht blijft op je computer." } ] }
   ];
 }
 
-/* ---------- Rondes, bestanden en aandachtspunten. Volgende stap: uit echte uitvoeringen. ---------- */
-function overviewData(defs) {
-  const byKey = Object.fromEntries(defs.map(d => [d.key, d]));
-  const runs = [
-    { id:"r1", name:"Webshop-prijzen", when:"vandaag 07:04", tool:byKey.scrape, rows:"24", status:"bezig", progress:"14 van 24", cls:NEUTRAL, file:null },
-    { id:"r2", name:"Aangifte per relatienummer", when:"vandaag 06:30", tool:byKey.form, rows:"412", status:"klaar", cls:LIVE, file:"aangifte-week35.xlsx" },
-    { id:"r3", name:"Inkoopfacturen NL", when:"gisteren 16:40", tool:byKey.pdf, rows:"98", status:"klaar", cls:LIVE, file:"inkoopfacturen-augustus.xlsx", section:"download" },
-    { id:"r4", name:"Omzet per maand", when:"gisteren 11:20", tool:byKey.board, rows:"12", status:"klaar", cls:LIVE, file:"overzicht-per-maand.xlsx", section:"6" },
-    { id:"r5", name:"Voorraadstanden", when:"gisteren 14:00", tool:byKey.scrape, rows:"486", status:"klaar", cls:LIVE, file:"voorraadstanden.xlsx" },
-    { id:"r6", name:"Polisgegevens bijwerken", when:"29 aug 11:20", tool:byKey.form, rows:"188", status:"3 fouten", cls:NEUTRAL, file:"polisgegevens.xlsx",
-      errors:[ { row:41, text:"Het veld 'Toevoeging' stond niet op de pagina." }, { row:87, text:"Het veld 'Toevoeging' stond niet op de pagina." }, { row:152, text:"De knop 'Opslaan' reageerde niet binnen 20 seconden." } ] },
-    { id:"r7", name:"Bonnen mobiel", when:"28 aug 09:05", tool:byKey.pdf, rows:"218", status:"klaar", cls:LIVE, file:"bonnen-augustus.xlsx", section:"download" }
-  ];
-  const alerts = [
-    { dot:TONE.form.dot, title:"Polisgegevens bijwerken", body:"3 regels gestopt: het veld 'Toevoeging' ontbrak op de nieuwe pagina.", action:{ label:"Bekijk regels", run:"r6" } },
-    { dot:TONE.pdf.dot, title:"Sjabloon Jaarrapporten", body:"Nog een concept: 12 velden aangewezen, nog niet getest op een stapel.", action:{ label:"Test sjabloon", view:"pdf", section:"define" } }
-  ];
-  if (pct() >= 80) alerts.push({ dot:BLUE, title:"Verbruik op " + pct() + "%", body: nl(WORKSPACE.used) + " van " + nl(WORKSPACE.limit) + " handelingen deze maand gebruikt. Vanaf " + WORKSPACE.reset + " begin je opnieuw.", action:{ label:"Meer ruimte", view:"upgrade" } });
-  return {
-    runs,
-    bars:[ { h:38, label:"mrt" }, { h:52, label:"apr" }, { h:46, label:"mei" }, { h:68, label:"jun" }, { h:82, label:"jul", on:true }, { h:74, label:"aug" } ],
-    savedHours: nl(148) + " uur", savedNote:"Gerekend met " + CONFIG.minutesPerManualRow + " minuten per regel die je anders met de hand doet.",
-    alerts
-  };
-}
-
-/* ===== Helpers ===== */
-function nl(n) { return Number(n).toLocaleString("nl-NL"); }
-function pct() { return Math.min(100, Math.round(WORKSPACE.used / WORKSPACE.limit * 100)); }
+/* ===== helpers ===== */
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch])); }
 function pill(text, cls) { return text ? `<span class="pill ${cls}">${esc(text)}</span>` : ""; }
-function tile(tool, size) { return `<span class="tile tile-${size}" style="background:${tool.tone.tile}">${esc(tool.mark)}</span>`; }
+function tile(t, size) { return `<span class="tile tile-${size}" style="background:${t.tone.tile}">${esc(t.mark)}</span>`; }
 function dot(color) { return `<span class="dot" style="background:${color}"></span>`; }
 const LOCK_ICO = `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
-function lock(text, on) { return `<span class="lock ${on ? "on" : ""}">${LOCK_ICO}<span>${esc(text)}</span></span>`; }
+function lock(text) { return `<span class="lock">${LOCK_ICO}<span>${esc(text)}</span></span>`; }
 function greeting() { const h = new Date().getHours(); return h < 6 ? "Goedenacht" : h < 12 ? "Goedemorgen" : h < 18 ? "Goedemiddag" : "Goedenavond"; }
+function when(iso) { try { return new Date(iso).toLocaleString("nl-NL", { dateStyle:"short", timeStyle:"short" }); } catch (e) { return ""; } }
 
-/* ===== State & routing ===== */
+/* ===== state & routing: #view/section/project ===== */
 const VIEWS = ["overview", "files", "help", "form", "scrape", "pdf", "board"];
 const state = { view:"overview", bench:false, section:null, project:null, toolMax:null, query:"", menu:null, modal:null, user:null };
-
 function parseHash() {
-  const h = location.hash.replace(/^#\/?/, "");
-  const [view, sub, proj] = h.split("/");
+  const [view, sub, proj] = location.hash.replace(/^#\/?/, "").split("/");
   state.view = VIEWS.includes(view) ? view : "overview";
   const tool = toolDefs().find(d => d.key === state.view) || null;
-  state.bench = !!(tool && sub);
-  if (state.bench) { const ids = tool.sections.map(x => x.id); state.section = ids.includes(sub) ? sub : ids[0]; }
-  else state.section = null;
+  if (tool) { const ids = tool.sections.map(x => x.id); state.section = ids.includes(sub) ? sub : ids[0]; state.bench = true; }
+  else { state.bench = false; state.section = null; }
   state.project = proj ? decodeURIComponent(proj) : null;
 }
-/* go(view) = detail; go(view, true) = werkbank op de eerste sectie; go(view, "check") = werkbank op die sectie. */
-function go(view, bench, projectId) {
-  let sub = "";
-  if (bench === true) { const t = toolDefs().find(d => d.key === view); sub = t ? "/" + t.sections[0].id : ""; }
-  else if (typeof bench === "string") sub = "/" + bench;
+function go(view, section, projectId) {
+  const t = toolDefs().find(d => d.key === view);
+  const sub = t ? "/" + (section && t.sections.some(s => s.id === section) ? section : t.sections[0].id) : "";
   const target = "#" + view + sub + (projectId && sub ? "/" + encodeURIComponent(projectId) : "");
   state.menu = null; state.modal = null;
   if (location.hash === target) { parseHash(); render(); } else location.hash = target;
 }
-window.addEventListener("hashchange", () => {
-  const wasBench = state.bench, wasView = state.view;
-  parseHash();
-  if (state.view !== wasView) state.toolMax = null;
-  render();
-  if (!(wasBench && state.bench && state.view === wasView)) window.scrollTo({ top:0, behavior:"smooth" });
-});
+window.addEventListener("hashchange", () => { const wasView = state.view; parseHash(); if (state.view !== wasView) state.toolMax = null; render(); if (state.view !== wasView) window.scrollTo({ top:0 }); });
 
-/* ===== Render ===== */
+/* ===== render ===== */
 function render() {
   const root = document.getElementById("root");
   if (!state.user) { root.innerHTML = renderLogin(); bindLogin(); return; }
   if (!root.querySelector(".shell")) { root.innerHTML = renderShell(); bindShell(); }
+  const defs = toolDefs(), tool = defs.find(d => d.key === state.view) || null;
 
-  const defs = toolDefs();
-  const tool = defs.find(d => d.key === state.view) || null;
-
-  document.getElementById("nav-main").innerHTML =
-    navItem({ label:"Overzicht", key:"overview", meta:"", lead:dot("#F2F0E7") }) +
-    navItem({ label:"Bestanden", key:"files", meta:"", lead:dot("rgba(242,240,231,.5)") }) +
-    navItem({ label:"Hulp", key:"help", meta:"", lead:dot("rgba(242,240,231,.5)") });
-  document.getElementById("nav-tools").innerHTML = defs.map(d => navItem({ label:d.name, key:d.key, meta:d.navMeta, lead:tile(d, 26) }) + navSub(d)).join("");
-
-  const p = pct();
-  document.getElementById("usage").innerHTML = `
-    <div class="caps">Verbruik · ${esc(WORKSPACE.plan)}</div>
-    <div class="num">${nl(WORKSPACE.used)}</div>
-    <div class="track"><i style="width:${p}%"></i></div>
-    <div class="note">van ${nl(WORKSPACE.limit)} handelingen deze maand</div>
-    ${p >= 80 ? `<div class="note" style="color:var(--on-dark)">Bijna vol. Vanaf ${esc(WORKSPACE.reset)} begin je opnieuw.</div><button type="button" class="btn btn-cream" data-go="upgrade">Meer ruimte</button>` : ""}`;
+  document.getElementById("nav-main").innerHTML = navItem({ label:"Overzicht", key:"overview", lead:dot("#F2F0E7") }) + navItem({ label:"Bestanden", key:"files", lead:dot("rgba(242,240,231,.5)") }) + navItem({ label:"Hulp", key:"help", lead:dot("rgba(242,240,231,.5)") });
+  document.getElementById("nav-tools").innerHTML = defs.map(d => navItem({ label:d.name, key:d.key, meta:navMeta(d), lead:tile(d, 26) }) + navSub(d)).join("");
   document.getElementById("user-initials").textContent = state.user.initials;
   document.getElementById("user-name").textContent = state.user.name;
-  document.getElementById("user-role").textContent = state.user.role;
-  const um = document.getElementById("user-menu");
-  um.innerHTML = state.menu === "user" ? renderUserMenu() : ""; um.hidden = state.menu !== "user";
+  document.getElementById("user-mail").textContent = state.user.email;
+  const um = document.getElementById("user-menu"); um.innerHTML = state.menu === "user" ? renderUserMenu() : ""; um.hidden = state.menu !== "user";
 
-  const eyebrow = document.getElementById("top-eyebrow"), title = document.getElementById("top-title"), sub = document.getElementById("top-sub"), action = document.getElementById("top-action"), ext = document.getElementById("top-ext");
-  ext.hidden = true;
+  const eyebrow = document.getElementById("top-eyebrow"), title = document.getElementById("top-title"), sub = document.getElementById("top-sub"), action = document.getElementById("top-action");
   if (tool) {
-    eyebrow.textContent = tool.task; title.textContent = tool.name; sub.textContent = tool.tagline;
-    action.textContent = state.bench ? "Terug naar " + tool.name : tool.bench.benchLabel;
-    action.onclick = () => go(tool.key, !state.bench);
-    if (state.bench && tool.bench.kind === "frame") { ext.hidden = false; ext.href = tool.bench.src; }
-    document.title = tool.name + " · ParseLab";
+    const pr = state.project && readProjects().find(x => x.id === state.project);
+    eyebrow.textContent = tool.task; title.textContent = pr ? pr.name : tool.name; sub.textContent = pr ? tool.name + " · " + tool.projectWord : tool.tagline;
+    action.textContent = "Nieuwe " + tool.projectWord; action.onclick = () => { state.modal = { kind:"newproject", tool:tool.key }; render(); focusLater("np-name"); };
+    document.title = (pr ? pr.name + " · " : "") + tool.name + " · ParseLab";
   } else {
-    const heads = { files:["Bestanden", "Alles wat je hebt gedownload, van alle software, op datum."], help:["Hulp", "Zo werkt elke tool, in gewone taal."] };
-    const h = heads[state.view] || [greeting() + ", " + state.user.name.split(" ")[0], ""];
-    eyebrow.textContent = "Werkruimte · " + WORKSPACE.org; title.textContent = h[0]; sub.textContent = h[1];
-    action.textContent = "Wat wil je doen?"; action.onclick = toggleActionMenu;
-    document.title = (heads[state.view] ? h[0] + " · " : "") + "ParseLab Dashboard";
+    const heads = { files:["Bestanden", "Wat ParseLab voor je heeft uitgelezen."], help:["Hulp", "Zo werkt elke tool, in gewone taal."] };
+    const h = heads[state.view] || [greeting() + ", " + state.user.name.split(" ")[0], "Waar wil je mee verder?"];
+    eyebrow.textContent = "ParseLab"; title.textContent = h[0]; sub.textContent = h[1];
+    action.textContent = "Wat wil je doen?"; action.onclick = () => go("overview");
+    action.hidden = state.view === "overview";
+    document.title = (heads[state.view] ? h[0] + " · " : "") + "ParseLab";
   }
-  const am = document.getElementById("action-menu");
-  am.innerHTML = state.menu === "action" ? renderActionMenu(defs) : ""; am.hidden = state.menu !== "action";
+  action.hidden = state.view === "overview";
 
   const view = document.getElementById("view");
   const frame = view.querySelector("iframe.bench-frame");
   const q = state.query.trim();
-  if (q) {
-    view.innerHTML = renderSearch(defs, q);
-  } else if (tool && state.bench && frame && frame.dataset.tool === tool.key && !(tool.bench.extensionSection && state.section === tool.bench.extensionSection)) {
+  if (q) view.innerHTML = renderSearch(defs, q);
+  else if (tool && frame && frame.dataset.tool === tool.key && !(tool.bench.extensionSection && state.section === tool.bench.extensionSection)) {
     sendSection(frame, state.section);
     if (state.project && frame.dataset.project !== state.project) { frame.dataset.project = state.project; sendProject(frame, state.project); }
   } else {
-    view.innerHTML = tool ? (state.bench ? renderBench(tool) : renderTool(tool)) : state.view === "files" ? renderFiles(defs) : state.view === "help" ? renderHelp(defs) : renderOverview(defs);
+    view.innerHTML = tool ? renderBench(tool) : state.view === "files" ? renderFiles(defs) : state.view === "help" ? renderHelp(defs) : renderOverview(defs);
     const f = view.querySelector("iframe.bench-frame");
-    if (f) f.addEventListener("load", () => { if (f.dataset.ready === "1") return; f.dataset.ready = "1"; sendSection(f, state.section); try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:lang", lang:CONFIG.lang }, "*"); } catch (e) {} if (state.project) { f.dataset.project = state.project; sendProject(f, state.project); } });
+    if (f) f.addEventListener("load", () => initFrame(f));
+    if (state.view === "files") loadFiles();
   }
   document.getElementById("modal").innerHTML = state.modal ? renderModal(state.modal, defs) : "";
   bindActions();
   document.getElementById("search").value = state.query;
 }
+function navMeta(t) {
+  if (t.key === "scrape" && stats.scrape && stats.scrape.running) return "bezig";
+  if (t.key === "pdf" && stats.pdf && stats.pdf.review) return stats.pdf.review + " nakijken";
+  return "";
+}
+function focusLater(id) { setTimeout(() => { const i = document.getElementById(id); if (i) i.focus(); }, 50); }
 
 function renderShell() {
   return `
-  <div class="shell" id="app">
+  <div class="shell">
     <aside class="side" aria-label="Navigatie">
-      <a class="logo" href="#overview" title="Naar overzicht" aria-label="ParseLab, naar overzicht"><span class="logo-mark"></span><span class="logo-word">ParseLab</span></a>
-      <nav class="group" aria-label="Werkruimte"><div class="caps-nav group-label">Werkruimte</div><div id="nav-main" class="group"></div></nav>
-      <nav class="group" aria-label="Software"><div class="caps-nav group-label">Software</div><div id="nav-tools" class="group"></div></nav>
+      <a class="logo" href="#overview" title="Naar overzicht"><span class="logo-mark"></span><span class="logo-word">ParseLab</span></a>
+      <nav class="group"><div class="caps-nav group-label">Werkruimte</div><div id="nav-main" class="group"></div></nav>
+      <nav class="group"><div class="caps-nav group-label">Software</div><div id="nav-tools" class="group"></div></nav>
       <div class="spacer"></div>
-      <div class="usage" id="usage"></div>
       <div class="user-wrap">
         <div class="menu" id="user-menu" hidden></div>
-        <button type="button" class="user" id="user-btn" aria-haspopup="menu">
-          <span class="avatar" id="user-initials"></span>
-          <span class="stack" style="flex:1"><span class="user-name" id="user-name"></span><span class="user-role" id="user-role"></span></span>
-        </button>
+        <button type="button" class="user" id="user-btn"><span class="avatar" id="user-initials"></span><span class="stack" style="flex:1; min-width:0"><span class="user-name" id="user-name"></span><span class="user-mail" id="user-mail"></span></span></button>
       </div>
     </aside>
-    <main class="work" id="work">
+    <main class="work">
       <div class="topbar">
         <div class="topbar-text"><div class="caps-nav" id="top-eyebrow"></div><h1 id="top-title"></h1><div class="sub" id="top-sub"></div></div>
-        <div class="topbar-actions">
-          <a class="link" id="top-ext" target="_blank" rel="noopener" hidden>In nieuw tabblad openen →</a>
-          <input class="search" id="search" type="search" placeholder="Zoek een taak of bestand…" aria-label="Zoeken">
-          <button type="button" class="btn btn-navy" id="top-action"></button>
-          <div class="action-menu" id="action-menu" hidden></div>
-        </div>
+        <div class="topbar-actions"><input class="search" id="search" type="search" placeholder="Zoek een project…" aria-label="Zoeken"><button type="button" class="btn btn-navy" id="top-action"></button></div>
       </div>
-      <section id="view" aria-live="polite"></section>
+      <section id="view"></section>
     </main>
   </div>
   <div id="modal"></div>`;
 }
-
 function bindShell() {
   document.getElementById("search").addEventListener("input", e => { state.query = e.target.value; render(); });
   document.getElementById("user-btn").onclick = () => { state.menu = state.menu === "user" ? null : "user"; render(); };
-  document.addEventListener("click", e => { if (state.menu && !e.target.closest(".user-wrap, .topbar-actions")) { state.menu = null; render(); } });
+  document.addEventListener("click", e => { if (state.menu && !e.target.closest(".user-wrap")) { state.menu = null; render(); } });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && (state.menu || state.modal)) { state.menu = null; state.modal = null; render(); } });
-  askExtension();
+  const v = document.documentElement.dataset.parselabExtension; if (v) stats.extension = { version:v };
+  try { window.postMessage({ source:"parselab-dashboard", type:"parselab:ping" }, "*"); } catch (e) {}
 }
-function toggleActionMenu() { state.menu = state.menu === "action" ? null : "action"; render(); }
 
-/* ---------- Login ---------- */
+/* ---------- login ---------- */
 function renderLogin() {
   return `
   <div class="login">
@@ -683,7 +385,6 @@ function renderLogin() {
       <span class="logo" style="padding:0"><span class="logo-mark"></span><span class="logo-word">ParseLab</span></span>
       <h1>Documenten, websites en formulieren, zonder klikwerk.</h1>
       <p>Log in met je e-mailadres. Je krijgt een link, geen wachtwoord om te onthouden.</p>
-      <div class="mono" style="color:var(--on-dark-faint)">Gratis tot 50 handelingen per maand · geen creditcard nodig</div>
     </div>
     <div class="login-right">
       <form class="card login-card" id="login-form">
@@ -691,10 +392,6 @@ function renderLogin() {
         <div class="field"><label for="login-email">E-mailadres</label><input id="login-email" type="email" required placeholder="naam@kantoor.nl" autocomplete="email"></div>
         <button type="submit" class="btn btn-navy">Stuur mij een inloglink <span class="arrow">→</span></button>
         <div class="note" id="login-note" hidden></div>
-        <div class="or">of</div>
-        <button type="button" class="btn btn-outline" data-sso="Microsoft">Inloggen met Microsoft</button>
-        <button type="button" class="btn btn-outline" data-sso="Google">Inloggen met Google</button>
-        <div class="note">Op het abonnement Business vraagt ParseLab ook om een tweede stap: een code op je telefoon.</div>
       </form>
     </div>
   </div>`;
@@ -702,444 +399,221 @@ function renderLogin() {
 function bindLogin() {
   const form = document.getElementById("login-form"), note = document.getElementById("login-note");
   form.onsubmit = e => {
-    e.preventDefault();
-    const email = document.getElementById("login-email").value.trim();
-    if (!email) return;
-    /* Zonder backend wordt de link niet echt gestuurd; de sessie start direct op deze computer. */
-    note.hidden = false; note.innerHTML = `We hebben een inloglink gestuurd naar <span class="strong">${esc(email)}</span>. In deze proefversie ben je meteen ingelogd.`;
-    setTimeout(() => { state.user = userFromEmail(email); writeSession(state.user); render(); }, 900);
+    e.preventDefault(); const email = document.getElementById("login-email").value.trim(); if (!email) return;
+    note.hidden = false; note.innerHTML = `Inloglink gestuurd naar <span class="strong">${esc(email)}</span>. In deze versie ben je meteen ingelogd.`;
+    setTimeout(() => { state.user = userFromEmail(email); writeSession(state.user); render(); }, 700);
   };
-  form.querySelectorAll("[data-sso]").forEach(b => { b.onclick = () => { note.hidden = false; note.textContent = "Inloggen met " + b.getAttribute("data-sso") + " is nog niet gekoppeld in deze versie. Gebruik je e-mailadres."; }; });
 }
 
-/* ---------- Zijbalk ---------- */
+/* ---------- zijbalk ---------- */
 function navItem({ label, key, meta, lead }) {
-  const on = state.view === key;
-  return `<button type="button" class="nav-item" data-go="${key}" ${on ? 'aria-current="page"' : ""}>${lead}<span class="label">${esc(label)}</span>${meta ? `<span class="meta">${esc(meta)}</span>` : ""}</button>`;
+  return `<button type="button" class="nav-item" data-go="${key}" ${state.view === key ? 'aria-current="page"' : ""}>${lead}<span class="label">${esc(label)}</span>${meta ? `<span class="meta">${esc(meta)}</span>` : ""}</button>`;
 }
 function navSub(t) {
   if (state.view !== t.key) return "";
   const max = state.toolMax != null ? state.toolMax : Infinity;
   const projs = projectsOf(t.key).slice(0, 8);
   return `<div class="nav-sub">${t.sections.map((s, i) => {
-    const on = state.bench && state.section === s.id;
     const locked = t.key === "board" && (i + 1) > max;
-    return `<button type="button" class="nav-sub-item" data-section="${esc(s.id)}" ${on ? 'aria-current="page"' : ""} ${locked ? "disabled" : ""}>${t.numbered ? `<span class="idx">${i + 1}</span>` : ""}<span>${esc(s.label)}</span></button>`;
+    return `<button type="button" class="nav-sub-item" data-section="${esc(s.id)}" ${state.section === s.id ? 'aria-current="page"' : ""} ${locked ? "disabled" : ""}>${t.numbered ? `<span class="idx">${i + 1}</span>` : ""}<span>${esc(s.label)}</span></button>`;
   }).join("")}
-  <div class="nav-proj-label">${esc(t.projectWords || "projecten")}</div>
+  <div class="nav-proj-label">${esc(t.projectWords)}</div>
   ${projs.map(pr => `<button type="button" class="nav-sub-item proj" data-project="${esc(pr.id)}" ${state.project === pr.id ? 'aria-current="page"' : ""} title="${esc(pr.name)}"><span class="pdot"></span><span>${esc(pr.name)}</span></button>`).join("")}
-  <button type="button" class="nav-sub-item proj new" data-new-project="${t.key}"><span>+ Nieuwe ${esc(t.projectWord || "project")}</span></button>
+  <button type="button" class="nav-sub-item proj new" data-new-project="${t.key}"><span>+ Nieuwe ${esc(t.projectWord)}</span></button>
   </div>`;
 }
 function renderUserMenu() {
-  return `
-    <div class="note"><span class="strong">${esc(state.user.name)}</span><br>${esc(state.user.email)}</div>
-    <button type="button" data-modal="account">Account</button>
-    <button type="button" data-modal="team">Team</button>
-    <div class="sep"></div>
-    <button type="button" data-modal="sessions">Sessies en apparaten</button>
-    <button type="button" data-modal="extension">Verbonden extensie</button>
-    <div class="sep"></div>
-    <button type="button" id="logout">Uitloggen</button>`;
-}
-function renderActionMenu(defs) {
-  return `<div class="caps">Wat wil je doen?</div>` + defs.map(t => `
-    <button type="button" data-bench="${t.key}">${tile(t, 36)}<span class="stack"><span>${esc(t.task)}</span><span>${esc(t.tagline)} · ${esc(t.name)}</span></span></button>`).join("");
+  return `<button type="button" data-modal="account">Account</button><button type="button" data-modal="extension">Verbonden extensie</button><button type="button" id="logout">Uitloggen</button>`;
 }
 
-/* ---------- Overzicht ---------- */
+/* ---------- overzicht: kies waar je mee verder wilt, en je projecten ---------- */
 function renderOverview(defs) {
-  const ov = overviewData(defs);
   const all = readProjects().sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
   const byKey = Object.fromEntries(defs.map(d => [d.key, d]));
   return `
     <div style="display:flex; flex-direction:column; gap:32px;">
-      <div>
-        <div class="caps muted" style="margin-bottom:12px">Waar wil je mee verder?</div>
-        <div class="launch">
-          ${defs.map(t => `<button type="button" data-bench="${t.key}">${tile(t, 36)}<span class="stack"><span>${esc(t.task)}</span><span>${esc(t.tagline)}</span></span><span class="arrow">→</span></button>`).join("")}
-        </div>
+      <div class="launch">
+        ${defs.map(t => `<button type="button" data-bench="${t.key}">${tile(t, 36)}<span class="stack"><span>${esc(t.task)}</span><span>${esc(t.tagline)}</span></span><span class="arrow">→</span></button>`).join("")}
       </div>
-      <div class="tools-grid">
-        ${defs.map(t => { const pj = projectsOf(t.key).slice(0, 3); return `
-          <div class="card tool-card">
-            <div class="card-head">${tile(t, 36)}<span class="caps">${esc(t.name)}</span>${pill(t.status, t.statusCls)}</div>
-            <div class="task">${esc(t.task)}</div>
-            ${pj.length ? `<div class="proj-mini">${pj.map(pr => `<button type="button" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}"><span class="pdot"></span><span>${esc(pr.name)}</span></button>`).join("")}</div>` : `<div class="body-muted">${esc(t.body)}</div>`}
-            <div class="hairline"></div>
-            <div class="actions"><button type="button" class="btn btn-navy btn-small" data-bench="${t.key}">${esc(t.cta)}</button><button type="button" class="btn btn-outline btn-small" data-new-project="${t.key}">Nieuwe ${esc(t.projectWord || "project")}</button><button type="button" class="link" data-go="${t.key}" style="margin-left:auto">Details →</button></div>
-          </div>`; }).join("")}
-      </div>
-      ${all.length ? `
       <div class="card">
-        <div class="card-head"><div class="caps">Je ${esc("projecten")}</div><span class="note">${all.length} in totaal</span></div>
-        <div class="table">
-          ${all.slice(0, 8).map(pr => { const t = byKey[pr.tool]; if (!t) return ""; return `
-          <div class="proj-row">
-            <div class="cell-main"><span>${esc(pr.name)}</span><span class="mono-12">${esc(t.projectWord || "project")} · ${pr.updated ? esc(new Date(pr.updated).toLocaleString("nl-NL", { dateStyle:"short", timeStyle:"short" })) : ""}</span></div>
+        <div class="card-head"><div class="caps">Je projecten</div>${all.length ? `<span class="note">${all.length}</span>` : ""}</div>
+        ${all.length ? `<div class="table">${all.slice(0, 12).map(pr => { const t = byKey[pr.tool]; if (!t) return ""; return `
+          <div class="tr proj-row">
+            <div class="cell-main"><span>${esc(pr.name)}</span><span class="mono-12">${esc(t.projectWord)}${pr.updated ? " · " + esc(when(pr.updated)) : ""}</span></div>
             <div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div>
             <button type="button" class="btn btn-outline btn-small" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>
             <button type="button" class="link" data-edit-project="${esc(pr.id)}">Naam</button>
-          </div>`; }).join("")}
-        </div>
-      </div>` : ""}
-      <div class="row-2">
-        <div class="card">
-          <div class="card-head"><div class="caps">Laatste rondes</div><a class="link" href="#files">Alle bestanden →</a></div>
-          <div class="table">
-            <div class="thead cols-runs"><div>taak</div><div>software</div><div>regels</div><div>status</div></div>
-            ${ov.runs.map(r => runRow(r)).join("")}
-          </div>
-        </div>
-        <div class="stack-24">
-          <div class="card-navy">
-            <div class="caps">Bespaarde tijd</div>
-            <div class="num">${esc(ov.savedHours)}</div>
-            <div class="bars">${ov.bars.map(b => `<div class="bar-col"><div class="bar ${b.on ? "on" : ""}" style="height:${b.h}%"></div><div class="bar-label">${esc(b.label)}</div></div>`).join("")}</div>
-            <div class="note">${esc(ov.savedNote)}</div>
-          </div>
-          <div class="card" style="gap:18px;">
-            <div class="caps muted">Vraagt aandacht</div>
-            ${ov.alerts.map(a => `<div class="alert">${dot(a.dot)}<div class="stack"><span>${esc(a.title)}</span><span class="note">${esc(a.body)}</span>${actionBtn(a.action, "btn btn-outline btn-small")}</div></div>`).join("")}
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-function runRow(r) {
-  return `
-    <button type="button" class="tr cols-runs" data-run="${r.id}" title="${esc(r.status === "klaar" ? "Bestand downloaden" : r.errors ? "Fouten bekijken" : "Voortgang bekijken")}">
-      <div class="cell-main"><span>${esc(r.name)}</span><span class="mono-12">${esc(r.when)}</span></div>
-      <div class="cell-tool">${dot(r.tool.tone.dot)}<span>${esc(r.tool.name)}</span></div>
-      <div class="mono-14">${esc(r.rows)}</div>
-      <div class="cell-status">${pill(r.status, r.cls)}${r.progress ? `<span class="mono-12">${esc(r.progress)}</span>` : ""}</div>
-    </button>`;
-}
-function actionBtn(a, cls) {
-  if (!a) return "";
-  if (a.run) return `<button type="button" class="${cls}" data-run="${esc(a.run)}">${esc(a.label)}</button>`;
-  if (a.view === "upgrade") return `<button type="button" class="${cls}" data-go="upgrade">${esc(a.label)}</button>`;
-  if (a.view) return `<button type="button" class="${cls}" data-bench="${esc(a.view)}" data-bench-section="${esc(a.section || "")}">${esc(a.label)}</button>`;
-  return "";
-}
-
-/* ---------- Tooldetail ---------- */
-function renderTool(t) {
-  return `
-    <div style="display:flex; flex-direction:column; gap:32px;">
-      <div class="tool-header">
-        ${tile(t, 52)}
-        <div class="text">
-          <div class="title-24">${esc(t.name)}</div>
-          <div class="body-muted">${esc(t.body)}</div>
-          <div class="state">${t.state ? lock(t.state.text, t.state.on) : ""}${lock(t.local.text, true)}${lock(t.local.remote, false)}</div>
-        </div>
-        <div class="actions">${pill(t.status, "pill-dark")}<button type="button" class="btn btn-cream" data-bench="${t.key}">${esc(t.cta)} <span class="arrow">→</span></button></div>
-      </div>
-      <div class="kpis">
-        ${t.kpis.map(k => `
-          <div class="card kpi">
-            <div class="card-head"><div class="caps">${esc(k.label)}</div>${pill(k.delta, "pill-delta")}</div>
-            <div class="num">${esc(k.value)}</div>
-            <div class="note">${esc(k.note)}</div>
-            ${actionBtn(k.action, "btn btn-outline btn-small")}
-          </div>`).join("")}
-      </div>
-      <div class="row-2">
-        <div class="card">
-          <div class="card-head"><div class="caps">${esc(t.listLabel)}</div><button type="button" class="link" data-bench="${t.key}">Nieuwe ${esc(t.unit)} →</button></div>
-          <div class="table">
-            <div class="thead cols-list"><div>${esc(t.cols[0])}</div><div>${esc(t.cols[1])}</div><div>${esc(t.cols[2])}</div><div>status</div></div>
-            ${t.rows.map(r => `
-              <button type="button" class="tr cols-list" data-bench="${t.key}" data-bench-section="${esc(r.section || "")}" title="Openen in ${esc(t.name)}">
-                <div class="cell-main"><span>${esc(r.a)}</span><span class="mono-12">${esc(r.sub)}</span></div>
-                <div class="cell-text">${esc(r.b)}</div>
-                <div class="mono-14">${esc(r.c)}</div>
-                <div>${pill(r.status, r.cls)}</div>
-              </button>`).join("")}
-          </div>
-        </div>
-        <div class="stack-24">
-          ${t.hasItems ? `
-          <div class="card">
-            <div class="caps muted">Tips</div>
-            <div class="steps">${t.tips.map(x => `<div class="step"><span class="step-n">✓</span><div class="stack"><span class="note">${esc(x)}</span></div></div>`).join("")}</div>
-          </div>` : `
-          <div class="card">
-            <div class="caps muted">Zo werkt het hier</div>
-            <div class="steps">${t.steps.map((s, i) => `<div class="step"><span class="step-n">${i + 1}</span><div class="stack"><span>${esc(s.title)}</span><span class="note">${esc(s.body)}</span></div></div>`).join("")}</div>
-            <div><button type="button" class="link" data-bench="${t.key}">Begin met stap 1 →</button></div>
-          </div>`}
-          <div class="card" style="gap:12px;">
-            <div class="caps muted">Laatste bestand</div>
-            <div class="title-24">${esc(t.exportName)}</div>
-            <div class="mono muted">${esc(t.exportMeta)} · in je map Downloads/ParseLab</div>
-            <div class="note">Wordt na ${CONFIG.retentionDays} dagen verwijderd. Instelbaar per werkruimte onder Account.</div>
-            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;">
-              <button type="button" class="btn btn-outline" data-file="${esc(t.exportName)}">Download opnieuw</button>
-              ${t.exportKind === "xlsx" ? `<button type="button" class="btn btn-outline" data-file="${esc(t.exportName)}" data-open="excel">Open in Excel</button>` : ""}
-            </div>
-          </div>
-        </div>
+          </div>`; }).join("")}</div>` :
+        `<div class="note empty">Nog geen projecten. Kies hierboven waar je mee wilt beginnen; wat je bewaart komt hier te staan.</div>`}
       </div>
     </div>`;
 }
 
-/* ---------- Werkbank ---------- */
+/* ---------- werkbank: de tool zelf, of het extensiepaneel ---------- */
 function renderBench(t) {
   let b = t.bench;
   const extPanel = b.kind === "extension" || (b.extensionSection && state.section === b.extensionSection);
-  if (!extPanel) {
-    return `<div class="card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" loading="eager" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
-  }
-  b = Object.assign({}, b, { panelTitle: b.extPanelTitle || b.panelTitle });
-  const store = CONFIG.webstoreUrl, ext = stats.extension;
+  if (!extPanel) return `<div class="card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
+  const store = CONFIG.webstoreUrl, ext = stats.extension, title = b.extPanelTitle || b.panelTitle;
   return `
     <div class="card bench">
-      <div class="bench-head">${tile(t, 36)}<div class="caps">${esc(b.panelTitle)}</div><button type="button" class="link" data-go="${t.key}">Sluiten</button></div>
       <div class="bench-body">
         <div style="display:flex; flex-direction:column; gap:24px;">
-          <div class="title-24" style="max-width:26ch;">${esc(b.panelTitle)}</div>
-          <div class="body-muted" style="max-width:56ch;">${esc(b.intro)}</div>
-          ${ext ? `<div class="bench-note">${lock("Extensie verbonden in deze browser · versie " + ext.version, true)}<span class="note">Open een website en klik op het ParseLab-icoon rechtsboven. Klaar.</span></div>` : `
+          <div class="title-24" style="max-width:26ch;">${esc(title)}</div>
+          <div class="note" style="max-width:56ch; font-size:16px;">${esc(b.intro)}</div>
+          ${ext ? `<div class="bench-note">${lock("Extensie verbonden in deze browser · versie " + ext.version)}<span class="note">Open een website en klik op het ParseLab-icoon rechtsboven.</span></div>` : `
           <div class="bench-actions">
             ${store ? `<a class="btn btn-navy" href="${esc(store)}" target="_blank" rel="noopener">Toevoegen aan Chrome <span class="arrow">→</span></a>` : `<button type="button" class="btn btn-navy" id="toggle-it">Toevoegen aan Chrome <span class="arrow">→</span></button>`}
             <a class="btn btn-outline" href="#help">Handleiding</a>
           </div>
-          <div class="note">Zo zie je dat het werkt: het ParseLab-icoon staat rechtsboven in je browser. Zet het vast met het punaise-icoon, dan blijft het zichtbaar.</div>
-          ${store ? "" : `<div class="note">De vermelding in de Chrome Web Store is er nog niet. Tot die tijd voegt IT-beheer de toevoeging toe via de route hieronder.</div>`}`}
+          <div class="note">Daarna staat het ParseLab-icoon rechtsboven in je browser. Zet het vast met de punaise.</div>
+          ${store ? "" : `<div class="note">De Chrome Web Store-vermelding is er nog niet; tot die tijd voegt IT-beheer de toevoeging toe via de route hieronder.</div>`}`}
           <details class="it" id="it-details">
             <summary>Voor IT-beheer</summary>
             <div>
               <div class="steps">
-                <div class="step"><span class="step-n">1</span><div class="stack"><span>Download het pakket</span><span class="note">Pak de zip uit in een map die blijft staan, bijvoorbeeld Documenten/ParseLab/extensie.</span></div></div>
-                <div class="step"><span class="step-n">2</span><div class="stack"><span>Laad het in Chrome, Edge of Brave</span><span class="note">Ga naar chrome://extensions, zet Ontwikkelaarsmodus aan en kies Uitgepakte extensie laden.</span></div></div>
-                <div class="step"><span class="step-n">3</span><div class="stack"><span>Zet het icoon vast</span><span class="note">Klik op het puzzelstukje rechtsboven en op de punaise bij ParseLab.</span></div></div>
+                <div class="step"><span class="step-n">1</span><div class="stack"><span>Download het pakket</span><span class="note">Pak de zip uit in een map die blijft staan.</span></div></div>
+                <div class="step"><span class="step-n">2</span><div class="stack"><span>Laad het in Chrome, Edge of Brave</span><span class="note">chrome://extensions → Ontwikkelaarsmodus aan → Uitgepakte extensie laden.</span></div></div>
               </div>
-              <div class="bench-actions">
-                <a class="btn btn-outline" href="tools/parselab-extension.zip" download="parselab-extension.zip">Download pakket (zip)</a>
-                <a class="btn btn-outline" href="tools/extension/README.md" target="_blank" rel="noopener">Technische notities</a>
-              </div>
-              <div class="kv">
-                <span class="caps">Versie</span><span class="mono">1.18.0 · manifest v3</span>
-                <span class="caps">Browsers</span><span class="mono">Chrome · Edge · Brave</span>
-                <span class="caps">Rechten</span><span class="mono">activeTab · storage · downloads · sitetoegang per website, alleen na toestemming</span>
-                <span class="caps">Gegevens</span><span class="mono">0 bytes verlaten je computer</span>
-                <span class="caps">Agent-koppeling</span><span class="mono">MCP-server in het pakket (mcp-server/), standaard uit, met gedeeld geheim</span>
-              </div>
+              <div class="bench-actions"><a class="btn btn-outline" href="tools/parselab-extension.zip" download="parselab-extension.zip">Download pakket (zip)</a><a class="btn btn-outline" href="tools/extension/README.md" target="_blank" rel="noopener">Technische notities</a></div>
+              <div class="kv"><span class="caps">Rechten</span><span class="mono">activeTab · storage · downloads · sitetoegang per website na toestemming</span><span class="caps">Gegevens</span><span class="mono">0 bytes verlaten je computer</span></div>
             </div>
           </details>
         </div>
         <div class="bench-side">
-          <div class="bench-note"><span class="caps muted">Zo begin je</span>${t.steps.map((s, i) => `<span class="note"><span class="strong">${i + 1}. ${esc(s.title)}.</span> ${esc(s.body)}</span>`).join("")}</div>
-          <div class="bench-note"><span class="caps muted">Wat blijft waar</span>${lock(t.local.text, true)}${lock(t.local.remote, false)}</div>
+          <div class="bench-note"><span class="caps">Zo begin je</span>${t.steps.map((s, i) => `<span class="note"><span class="strong">${i + 1}. ${esc(s.title)}.</span> ${esc(s.body)}</span>`).join("")}</div>
+          <div class="bench-note">${lock(t.local)}</div>
         </div>
       </div>
     </div>`;
 }
-
-/* ---------- Bestanden ---------- */
-function renderFiles(defs) {
-  const files = overviewData(defs).runs.filter(r => r.file);
-  return `
-    <div class="card">
-      <div class="card-head"><div class="caps">Alle bestanden</div><span class="note">Worden na ${CONFIG.retentionDays} dagen verwijderd</span></div>
-      <div class="table">
-        <div class="thead cols-files"><div>bestand</div><div>software</div><div>regels</div><div></div></div>
-        ${files.map(f => `
-          <div class="tr cols-files">
-            <div class="cell-main"><span>${esc(f.file)}</span><span class="mono-12">${esc(f.when)} · Downloads/ParseLab</span></div>
-            <div class="cell-tool">${dot(f.tool.tone.dot)}<span>${esc(f.tool.name)}</span></div>
-            <div class="mono-14">${esc(f.rows)}</div>
-            <div style="display:flex; gap:8px;"><button type="button" class="btn btn-outline btn-small" data-file="${esc(f.file)}">Download</button><button type="button" class="btn btn-outline btn-small" data-file="${esc(f.file)}" data-open="excel">Open in Excel</button></div>
-          </div>`).join("")}
-      </div>
-    </div>`;
+function initFrame(f) {
+  if (f.dataset.ready === "1") return; f.dataset.ready = "1";
+  sendSection(f, state.section);
+  try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:lang", lang:CONFIG.lang }, "*"); } catch (e) {}
+  if (state.project) { f.dataset.project = state.project; sendProject(f, state.project); }
 }
 
-/* ---------- Hulp: gebruikershandleiding van één pagina ---------- */
+/* ---------- bestanden: alleen wat er echt is (uitvoeringen van de server) ---------- */
+function renderFiles() {
+  return `<div class="card"><div class="card-head"><div class="caps">Uitgelezen websites</div></div><div id="files-list" class="note">Laden…</div></div>
+    <div class="card" style="margin-top:24px"><div class="caps">ParsePDF en ParseBoard</div><div class="note">Die bestanden gaan rechtstreeks naar je map Downloads; ze worden niet bewaard door ParseLab.</div></div>`;
+}
+async function loadFiles() {
+  const el = document.getElementById("files-list"); if (!el) return;
+  try {
+    const res = await fetch(CONFIG.apiBase + "/api/scrape/tasks"); if (!res.ok) throw new Error();
+    const tasks = (await res.json()).filter(t => t.lastRunId && t.lastStatus !== "fout");
+    const t = toolDefs().find(x => x.key === "scrape");
+    el.className = "table";
+    el.innerHTML = tasks.length ? tasks.map(x => `<div class="tr files-row"><div class="cell-main"><span>${esc(x.name)}</span><span class="mono-12">${esc(when(x.lastRun))} · ${x.lastRows || 0} regels</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>ParseScraper</span></div><a class="btn btn-outline btn-small" href="${CONFIG.apiBase}/api/scrape/runs/${esc(x.lastRunId)}.xlsx">Excel</a></div>`).join("") : `<div class="note empty">Nog geen uitgelezen websites.</div>`;
+  } catch (e) { el.className = "note"; el.textContent = "De ParseLab-server is niet bereikbaar. Start hem met: node server/server.js"; }
+}
+
+/* ---------- hulp ---------- */
 function renderHelp(defs) {
   const guides = {
-    form:[ ["Voeg ParseLab toe aan je browser", "één keer, via Toevoegen aan Chrome of via IT-beheer."], ["Open het portaal", "en klik op het ParseLab-icoon rechtsboven."], ["Klik op Invullen", "en wijs het formulier of het veld aan."], ["Maak je invullijst (Excel)", "vul hem in en laad hem in het paneel."], ["Klik op Start", "en kijk mee: elke regel krijgt een vinkje."] ],
-    scrape:[ ["Open de website", "en klik op het ParseLab-icoon."], ["Klik op Uitlezen", "en klik één item van de lijst aan."], ["Kies 'de hele lijst'", "als je alles wilt hebben."], ["Klik op Start", "en download het bestand voor Excel."] ],
-    pdf:[ ["Sleep je documenten", "naar ParsePDF. Ze blijven op je computer."], ["Kies een voorbeeldsjabloon", "of teken een vak om het bedrag of de datum."], ["Controleer", "de regels om na te kijken staan bovenaan."], ["Download voor Excel", "of vul er meteen een formulier mee in."] ],
-    board:[ ["Kies een bron", "je bestand, een ParsePDF-sjabloon of de voorbeeldgegevens."], ["Kies je cijfers", "de suggesties staan klaar."], ["Sla op", "en download of deel je overzicht."] ]
+    form:[ ["Voeg ParseLab toe aan je browser", "één keer."], ["Open het portaal", "en klik op het ParseLab-icoon rechtsboven."], ["Klik op Invullen", "en wijs het formulier of het veld aan."], ["Maak je invullijst (Excel)", "vul hem in en laad hem."], ["Klik op Start", "elke regel krijgt een vinkje."] ],
+    scrape:[ ["Plak het adres", "van de pagina met de lijst."], ["Klik één item aan", "en kies 'de hele lijst'."], ["Download voor Excel", "of bewaar als taak die elke dag draait."], ["Moet je inloggen?", "kies dan 'Extensie (ingelogd)'."] ],
+    pdf:[ ["Sleep je documenten", "naar ParsePDF. Ze blijven op je computer."], ["Kies een sjabloon", "of teken een vak om het bedrag of de datum."], ["Controleer", "de regels om na te kijken staan bovenaan."], ["Download voor Excel", "."] ],
+    board:[ ["Kies een bron", "je bestand of de voorbeeldgegevens."], ["Kies je cijfers", "de suggesties staan klaar."], ["Sla op", "en download je overzicht."] ]
   };
-  return `
-    <div class="help-grid">
-      ${defs.map(t => `
-        <div class="card help-card">
-          <div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)}</div><button type="button" class="link" data-bench="${t.key}">Openen →</button></div>
-          <div class="title-24">${esc(t.task)}</div>
-          <ol>${guides[t.key].map(([a, b]) => `<li><span>${esc(a)}</span> ${esc(b)}</li>`).join("")}</ol>
-          <div class="hairline"></div>
-          ${lock(t.local.text, true)}
-        </div>`).join("")}
-      <div class="card help-card">
-        <div class="caps muted">Woorden die je overal tegenkomt</div>
-        <ol>
-          <li><span>Taak</span> een opgeslagen reeks stappen die ParseLab voor je herhaalt.</li>
-          <li><span>Ronde</span> één uitvoering van een taak, bijvoorbeeld over een hele lijst.</li>
-          <li><span>Regel</span> één rij in je lijst of bestand.</li>
-          <li><span>Sjabloon</span> de velden die je één keer hebt aangewezen in een document.</li>
-          <li><span>Handeling</span> één ingevulde, uitgelezen of verwerkte regel; hiermee telt je verbruik.</li>
-        </ol>
-      </div>
-      <div class="card help-card">
-        <div class="caps muted">Hulp nodig?</div>
-        <div class="note">Mail naar <span class="strong">hulp@parselab.nl</span> met de naam van de taak en het tijdstip. We kunnen niet meekijken in je bestanden; die blijven op jouw computer.</div>
-      </div>
-    </div>`;
+  return `<div class="help-grid">${defs.map(t => `
+    <div class="card help-card">
+      <div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)}</div><button type="button" class="link" data-bench="${t.key}">Openen →</button></div>
+      <div class="title-24">${esc(t.task)}</div>
+      <ol>${guides[t.key].map(([a, b]) => `<li><span>${esc(a)}</span> ${esc(b)}</li>`).join("")}</ol>
+      <div class="hairline"></div>${lock(t.local)}
+    </div>`).join("")}
+    <div class="card help-card"><div class="caps">Woorden</div><ol><li><span>Taak</span> stappen die ParseLab voor je herhaalt.</li><li><span>Sjabloon</span> de velden die je één keer hebt aangewezen in een document.</li><li><span>Overzicht</span> cijfers en grafieken uit een bestand.</li><li><span>Regel</span> één rij in je lijst of bestand.</li></ol></div>
+  </div>`;
 }
 
-/* ---------- Zoeken over alle software ---------- */
+/* ---------- zoeken in projecten ---------- */
 function renderSearch(defs, q) {
-  const lq = q.toLowerCase();
-  const hits = [];
-  defs.forEach(t => t.rows.forEach(r => { if ((r.a + " " + r.b + " " + r.sub).toLowerCase().includes(lq)) hits.push({ kind:t.unit, name:r.a, sub:r.sub, tool:t, section:r.section }); }));
-  overviewData(defs).runs.forEach(r => { if ((r.name + " " + (r.file || "")).toLowerCase().includes(lq)) hits.push({ kind:"ronde", name:r.name, sub:r.when + (r.file ? " · " + r.file : ""), tool:r.tool, run:r.id }); });
-  return `
-    <div class="card">
-      <div class="card-head"><div class="caps">Zoekresultaten voor “${esc(q)}”</div><button type="button" class="link" id="clear-search">Wissen</button></div>
-      <div class="table">
-        <div class="thead cols-runs"><div>naam</div><div>software</div><div>soort</div><div></div></div>
-        ${hits.length ? hits.map(h => `
-          <button type="button" class="tr cols-runs" ${h.run ? `data-run="${h.run}"` : `data-bench="${h.tool.key}" data-bench-section="${esc(h.section || "")}"`}>
-            <div class="cell-main"><span>${esc(h.name)}</span><span class="mono-12">${esc(h.sub)}</span></div>
-            <div class="cell-tool">${dot(h.tool.tone.dot)}<span>${esc(h.tool.name)}</span></div>
-            <div class="cell-text">${esc(h.kind)}</div>
-            <div class="link">Openen →</div>
-          </button>`).join("") : `<div class="tr note">Niets gevonden. Probeer een ander woord.</div>`}
-      </div>
-    </div>`;
+  const lq = q.toLowerCase(), byKey = Object.fromEntries(defs.map(d => [d.key, d]));
+  const hits = readProjects().filter(pr => pr.name.toLowerCase().includes(lq) && byKey[pr.tool]);
+  return `<div class="card"><div class="card-head"><div class="caps">Zoekresultaten voor “${esc(q)}”</div><button type="button" class="link" id="clear-search">Wissen</button></div>
+    <div class="table">${hits.length ? hits.map(pr => { const t = byKey[pr.tool]; return `<div class="tr proj-row"><div class="cell-main"><span>${esc(pr.name)}</span><span class="mono-12">${esc(t.projectWord)}</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div><button type="button" class="btn btn-outline btn-small" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button><span></span></div>`; }).join("") : `<div class="note empty">Niets gevonden.</div>`}</div></div>`;
 }
 
-/* ---------- Modals: ronde-detail, account, team, sessies, extensie, upgrade, bestand ---------- */
+/* ---------- dialogen ---------- */
 function renderModal(m, defs) {
   let body = "";
-  if (m.run) {
-    const r = overviewData(defs).runs.find(x => x.id === m.run);
-    if (!r) return "";
-    body = `
-      <div class="card-head">${tile(r.tool, 36)}<div class="caps">${esc(r.tool.name)} · ${esc(r.when)}</div>${pill(r.status, r.cls)}</div>
-      <div class="title-24">${esc(r.name)}</div>
-      <div class="note">${esc(r.rows)} regels${r.progress ? " · " + esc(r.progress) + " gedaan" : ""}</div>
-      ${r.errors ? `<div class="table"><div class="thead" style="grid-template-columns:auto 1fr"><div>regel</div><div>wat er gebeurde</div></div>${r.errors.map(e => `<div class="tr" style="grid-template-columns:auto 1fr"><div class="mono-14">${e.row}</div><div class="note">${esc(e.text)}</div></div>`).join("")}</div>
-        <div class="note">Wijs het veld opnieuw aan in het paneel en start de taak alleen voor deze regels.</div>` : ""}
-      <div class="foot">
-        ${r.file ? `<button type="button" class="btn btn-outline" data-file="${esc(r.file)}">Download ${esc(r.file)}</button>` : ""}
-        <button type="button" class="btn btn-navy" data-bench="${r.tool.key}" data-bench-section="${esc(r.section || "")}">Openen in ${esc(r.tool.name)}</button>
-      </div>`;
-  } else if (m.kind === "account") {
-    body = `<div class="title-24">Account</div><div class="kv"><span class="caps">Naam</span><span>${esc(state.user.name)}</span><span class="caps">E-mail</span><span>${esc(state.user.email)}</span><span class="caps">Werkruimte</span><span>${esc(WORKSPACE.org)}</span><span class="caps">Abonnement</span><span>${esc(WORKSPACE.plan)}</span><span class="caps">Bestanden bewaren</span><span>${CONFIG.retentionDays} dagen</span></div><div class="foot"><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
-  } else if (m.kind === "team") {
-    body = `<div class="title-24">Team</div><div class="note">Je bent de enige gebruiker in ${esc(WORKSPACE.org)}. Collega's uitnodigen kan zodra accounts aan een backend hangen.</div><div class="foot"><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
-  } else if (m.kind === "sessions") {
-    body = `<div class="title-24">Sessies en apparaten</div><div class="table"><div class="tr" style="grid-template-columns:1fr auto"><div class="cell-main"><span>Deze browser</span><span class="mono-12">${esc(navigator.userAgent.split(") ")[0].replace("(", "· "))}</span></div><div>${pill("actief", LIVE)}</div></div></div><div class="foot"><button type="button" class="btn btn-outline" id="logout-all">Overal uitloggen</button><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
-  } else if (m.kind === "extension") {
-    const ext = stats.extension;
-    body = `<div class="title-24">Verbonden extensie</div>${ext ? `<div class="note">${lock("ParseLab-extensie versie " + ext.version + " is verbonden in deze browser.", true)}</div><div class="note">Loskoppelen doe je in de browser zelf: chrome://extensions → ParseLab → Verwijderen.</div>` : `<div class="note">In deze browser is nog geen ParseLab-extensie gevonden.</div>`}<div class="foot"><button type="button" class="btn btn-outline" data-bench="form">Extensie openen</button><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
-  } else if (m.kind === "upgrade") {
-    body = `<div class="title-24">Meer ruimte</div><div class="note">Je zit op ${pct()}% van ${nl(WORKSPACE.limit)} handelingen. Business geeft 25.000 handelingen per maand en teamrechten. Jaarlijks betalen scheelt 20%.</div><div class="foot"><button type="button" class="btn btn-outline" data-close>Later</button><a class="btn btn-navy" href="mailto:hulp@parselab.nl?subject=Upgrade%20naar%20Business">Vraag upgrade aan</a></div>`;
-  } else if (m.kind === "newproject") {
+  if (m.kind === "newproject") {
     const t = defs.find(x => x.key === m.tool);
-    body = `<div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)}</div></div><div class="title-24">Nieuwe ${esc(t.projectWord || "project")}</div>
-      <form id="np-form" class="field"><label for="np-name">Naam</label><input id="np-name" type="text" placeholder="Bijv. ${esc(t.key === "scrape" ? "Webshop-prijzen" : t.key === "pdf" ? "Inkoopfacturen" : t.key === "board" ? "Omzet per maand" : "Aangifte per relatienummer")}" required autofocus></form>
-      <div class="note">${esc(t.key === "scrape" ? "Je geeft de taak een naam en plakt daarna het webadres. ParseLab bewaart de taak op de server, zodat je hem later opnieuw kunt starten." : t.key === "pdf" ? "Je geeft het sjabloon een naam en wijst daarna de kolommen aan. Het sjabloon staat hier in de zijbalk." : t.key === "board" ? "Je geeft het overzicht een naam en kiest daarna een bron." : "Je geeft de taak een naam; de stappen neem je op in de extensie op het portaal zelf.")}</div>
+    const hints = { scrape:"Geef de taak een naam en plak daarna het webadres.", pdf:"Geef het sjabloon een naam en wijs daarna de kolommen aan.", board:"Geef het overzicht een naam en kies daarna een bron.", form:"Geef de taak een naam; de stappen neem je op in de extensie op het portaal zelf." };
+    body = `<div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)}</div></div><div class="title-24">Nieuwe ${esc(t.projectWord)}</div>
+      <form id="np-form" class="field"><label for="np-name">Naam</label><input id="np-name" type="text" required></form>
+      <div class="note">${esc(hints[t.key])}</div>
       <div class="foot"><button type="button" class="btn btn-outline" data-close>Annuleren</button><button type="button" class="btn btn-navy" id="np-save">Starten <span class="arrow">→</span></button></div>`;
   } else if (m.kind === "project") {
     const pr = readProjects().find(x => x.id === m.id); if (!pr) return "";
     const t = defs.find(x => x.key === pr.tool);
-    body = `<div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)} · ${esc(t.projectWord || "project")}</div></div>
+    body = `<div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)} · ${esc(t.projectWord)}</div></div>
       <form id="ep-form" class="field"><label for="ep-name">Naam</label><input id="ep-name" type="text" value="${esc(pr.name)}" required></form>
-      <div class="note">Bewaard ${pr.updated ? esc(new Date(pr.updated).toLocaleString("nl-NL", { dateStyle:"long", timeStyle:"short" })) : ""}${pr.synced ? " · beheerd door " + esc(t.name) : ""}</div>
-      <div class="foot"><button type="button" class="btn btn-outline" id="ep-delete">Verwijderen uit lijst</button><button type="button" class="btn btn-outline" id="ep-save">Naam bewaren</button><button type="button" class="btn btn-navy" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen <span class="arrow">→</span></button></div>`;
-  } else if (m.kind === "download") {
-    body = `<div class="title-24">${esc(m.file)}</div><div class="note">${m.open === "excel" ? "Openen in Excel" : "Opnieuw downloaden"} werkt zodra bestanden aan je ParseLab-account hangen. In deze versie staat het bestand in je map Downloads/ParseLab op de computer waar je het hebt gemaakt.</div><div class="foot"><button type="button" class="btn btn-navy" data-close>Begrepen</button></div>`;
+      <div class="foot"><button type="button" class="btn btn-outline" id="ep-delete">Uit lijst halen</button><button type="button" class="btn btn-outline" id="ep-save">Naam bewaren</button><button type="button" class="btn btn-navy" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen <span class="arrow">→</span></button></div>`;
+  } else if (m.kind === "account") {
+    body = `<div class="title-24">Account</div><div class="kv"><span class="caps">Naam</span><span>${esc(state.user.name)}</span><span class="caps">E-mail</span><span>${esc(state.user.email)}</span></div><div class="foot"><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
+  } else if (m.kind === "extension") {
+    const ext = stats.extension;
+    body = `<div class="title-24">Verbonden extensie</div><div class="note">${ext ? "ParseLab-extensie versie " + esc(ext.version) + " is verbonden in deze browser. Loskoppelen: chrome://extensions → ParseLab → Verwijderen." : "In deze browser is nog geen ParseLab-extensie gevonden."}</div><div class="foot"><button type="button" class="btn btn-outline" data-bench="form">Extensie toevoegen</button><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
   }
   return `<div class="modal-bg" data-close-bg><div class="modal" role="dialog" aria-modal="true">${body}</div></div>`;
 }
 
-/* ---------- Koppelingen met de ingebedde tools en de extensie ---------- */
-function sendProject(frame, id) {
-  const pr = readProjects().find(x => x.id === id) || (id.startsWith("new:") ? { id, name: id.slice(4), payload:{}, isNew:true } : null);
-  if (!frame || !pr) return;
-  try { frame.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:load-project", project: pr }, "*"); } catch (e) {}
-}
+/* ---------- koppeling met de tools en de extensie ---------- */
 function sendSection(frame, section) { if (!frame || !section) return; try { frame.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:nav", section }, "*"); } catch (e) {} }
-function askExtension() {
-  const v = document.documentElement.dataset.parselabExtension;
-  if (v) stats.extension = { version:v };
-  try { window.postMessage({ source:"parselab-dashboard", type:"parselab:ping" }, "*"); } catch (e) {}
+function sendProject(frame, id) {
+  const pr = readProjects().find(x => x.id === id) || (id.startsWith("new:") ? { id, name:id.slice(4), payload:{}, isNew:true } : null);
+  if (!frame || !pr) return;
+  try { frame.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:load-project", project:pr }, "*"); } catch (e) {}
 }
 window.addEventListener("message", ev => {
   const d = ev.data || {};
-  if (d.source === "parselab-extension" && d.type === "parselab:extension") {
-    if (!stats.extension || stats.extension.version !== d.version) { stats.extension = { version:String(d.version || "") }; if (state.user) render(); }
-    return;
-  }
+  if (d.source === "parselab-extension" && d.type === "parselab:extension") { if (!stats.extension || stats.extension.version !== d.version) { stats.extension = { version:String(d.version || "") }; if (state.user) render(); } return; }
   if (d.source !== "parselab-tool") return;
-  if (d.type === "parselab:stats" && d.tool) { stats[d.tool] = d; if (state.user) { renderNavOnly(); if (!state.bench) render(); } return; }
+  if (d.type === "parselab:stats" && d.tool) { stats[d.tool] = d; if (state.user) renderNavOnly(); return; }
   if (d.type === "parselab:projects" && d.tool) { syncProjects(d.tool, d.list); if (state.user) { renderNavOnly(); if (!state.bench) render(); } return; }
   if (d.type === "parselab:project" && d.tool && d.id) {
     upsertProject({ id:d.id, tool:d.tool, name:String(d.name || "Zonder naam").slice(0, 80), payload:d.payload || {}, synced:false });
-    if (d.open && state.view === d.tool && state.bench) { state.project = d.id; history.replaceState(null, "", "#" + d.tool + "/" + state.section + "/" + encodeURIComponent(d.id)); const f = document.querySelector("iframe.bench-frame"); if (f) f.dataset.project = d.id; }
-    if (state.user) renderNavOnly(); return;
+    if (d.open && state.view === d.tool) { state.project = d.id; history.replaceState(null, "", "#" + d.tool + "/" + state.section + "/" + encodeURIComponent(d.id)); const f = document.querySelector("iframe.bench-frame"); if (f) f.dataset.project = d.id; }
+    if (state.user) { renderNavOnly(); renderTop(); } return;
   }
-  if (d.type === "parselab:open" && d.view) { go(d.view, d.section || true); return; }
+  if (d.type === "parselab:open" && d.view) { go(d.view, d.section); return; }
   if (d.type !== "parselab:section" && d.type !== "parselab:ready") return;
-  const tool = toolDefs().find(t => t.key === state.view);
-  if (!tool || !state.bench) return;
-  /* Eerste levensteken van de tool: sectie, taal en project sturen (niet wachten op het load-event, dat kan hangen op fonts). */
+  const tool = toolDefs().find(t => t.key === state.view); if (!tool) return;
   const fr = document.querySelector("iframe.bench-frame");
-  if (fr && fr.contentWindow === ev.source && fr.dataset.ready !== "1") {
-    fr.dataset.ready = "1";
-    if (state.section && String(d.section) !== state.section) sendSection(fr, state.section);
-    try { fr.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:lang", lang:CONFIG.lang }, "*"); } catch (e) {}
-    if (state.project && fr.dataset.project !== state.project) { fr.dataset.project = state.project; sendProject(fr, state.project); }
-  }
+  if (fr && fr.contentWindow === ev.source && fr.dataset.ready !== "1") { initFrame(fr); if (d.section && String(d.section) !== state.section) sendSection(fr, state.section); }
   if (d.type === "parselab:ready") return;
   if (d.max != null) state.toolMax = d.max;
-  if (d.section && tool.sections.some(s => s.id === String(d.section))) {
-    state.section = String(d.section);
-    history.replaceState(null, "", "#" + tool.key + "/" + state.section + (state.project ? "/" + encodeURIComponent(state.project) : ""));
-  }
+  if (d.section && tool.sections.some(s => s.id === String(d.section))) { state.section = String(d.section); history.replaceState(null, "", "#" + tool.key + "/" + state.section + (state.project ? "/" + encodeURIComponent(state.project) : "")); }
   renderNavOnly();
 });
-function renderNavOnly() {
-  const el = document.getElementById("nav-tools"); if (!el) return;
-  el.innerHTML = toolDefs().map(t => navItem({ label:t.name, key:t.key, meta:t.navMeta, lead:tile(t, 26) }) + navSub(t)).join("");
-  bindNav();
-}
-window.addEventListener("storage", () => { if (state.user && !state.bench) render(); });
+function renderNavOnly() { const el = document.getElementById("nav-tools"); if (!el) return; el.innerHTML = toolDefs().map(t => navItem({ label:t.name, key:t.key, meta:navMeta(t), lead:tile(t, 26) }) + navSub(t)).join(""); bindNav(); }
+function renderTop() { const tool = toolDefs().find(d => d.key === state.view); const pr = state.project && readProjects().find(x => x.id === state.project); if (tool && pr) { document.getElementById("top-title").textContent = pr.name; document.getElementById("top-sub").textContent = tool.name + " · " + tool.projectWord; } }
 
 function bindNav() {
-  document.querySelectorAll("[data-go]").forEach(el => { el.onclick = () => { const v = el.getAttribute("data-go"); if (v === "upgrade") { state.modal = { kind:"upgrade" }; state.menu = null; render(); } else go(v, false); }; });
-  document.querySelectorAll(".nav-sub-item[data-section]").forEach(el => { el.onclick = () => { if (!el.disabled) go(state.view, el.getAttribute("data-section")); }; });
-  document.querySelectorAll(".nav-sub-item[data-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === state.view); go(state.view, projectSection(t), el.getAttribute("data-project")); }; });
-  document.querySelectorAll(".nav-sub-item[data-new-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"newproject", tool:el.getAttribute("data-new-project") }; render(); setTimeout(() => { const i = document.getElementById("np-name"); if (i) i.focus(); }, 50); }; });
+  document.querySelectorAll("[data-go]").forEach(el => { el.onclick = () => go(el.getAttribute("data-go")); });
+  document.querySelectorAll(".nav-sub-item[data-section]").forEach(el => { el.onclick = () => { if (!el.disabled) go(state.view, el.getAttribute("data-section"), state.project); }; });
+  document.querySelectorAll("[data-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === state.view); go(state.view, t.projectSection, el.getAttribute("data-project")); }; });
+  document.querySelectorAll("[data-new-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"newproject", tool:el.getAttribute("data-new-project") }; render(); focusLater("np-name"); }; });
 }
 function bindActions() {
   bindNav();
-  document.querySelectorAll("[data-bench]").forEach(el => { el.onclick = () => { const s = el.getAttribute("data-bench-section"); go(el.getAttribute("data-bench"), s ? s : true); }; });
-  document.querySelectorAll("[data-run]").forEach(el => { el.onclick = () => { state.modal = { run:el.getAttribute("data-run") }; state.menu = null; render(); }; });
-  document.querySelectorAll("[data-file]").forEach(el => { el.onclick = () => { state.modal = { kind:"download", file:el.getAttribute("data-file"), open:el.getAttribute("data-open") }; render(); }; });
+  document.querySelectorAll("[data-bench]").forEach(el => { el.onclick = () => go(el.getAttribute("data-bench")); });
+  document.querySelectorAll("[data-open-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === el.getAttribute("data-open-tool")); go(t.key, t.projectSection, el.getAttribute("data-open-project")); }; });
+  document.querySelectorAll("[data-edit-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"project", id:el.getAttribute("data-edit-project") }; render(); }; });
   document.querySelectorAll("[data-modal]").forEach(el => { el.onclick = () => { state.modal = { kind:el.getAttribute("data-modal") }; state.menu = null; render(); }; });
   document.querySelectorAll("[data-close]").forEach(el => { el.onclick = () => { state.modal = null; render(); }; });
   document.querySelectorAll("[data-close-bg]").forEach(el => { el.onclick = e => { if (e.target === el) { state.modal = null; render(); } }; });
-  document.querySelectorAll("[data-open-project]").forEach(el => { el.onclick = () => { const id = el.getAttribute("data-open-project"), t = toolDefs().find(x => x.key === el.getAttribute("data-open-tool")); state.modal = null; state.menu = null; go(t.key, projectSection(t), id); }; });
-  document.querySelectorAll(".nav-sub-item[data-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === state.view); go(state.view, projectSection(t), el.getAttribute("data-project")); }; });
-  document.querySelectorAll("[data-new-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"newproject", tool:el.getAttribute("data-new-project") }; state.menu = null; render(); setTimeout(() => { const i = document.getElementById("np-name"); if (i) i.focus(); }, 50); }; });
-  document.querySelectorAll("[data-edit-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"project", id:el.getAttribute("data-edit-project") }; render(); }; });
   const np = document.getElementById("np-save"); if (np) { const start = () => { const name = (document.getElementById("np-name").value || "").trim(); if (!name) return; const t = toolDefs().find(x => x.key === state.modal.tool); state.modal = null; go(t.key, t.sections[0].id, "new:" + name); }; np.onclick = start; document.getElementById("np-form").onsubmit = e => { e.preventDefault(); start(); }; }
   const eps = document.getElementById("ep-save"); if (eps) { const save = () => { const name = (document.getElementById("ep-name").value || "").trim(); if (!name) return; upsertProject({ id:state.modal.id, name }); state.modal = null; render(); }; eps.onclick = save; document.getElementById("ep-form").onsubmit = e => { e.preventDefault(); save(); }; }
   const epd = document.getElementById("ep-delete"); if (epd) epd.onclick = () => { deleteProject(state.modal.id); state.modal = null; render(); };
   const it = document.getElementById("toggle-it"); if (it) it.onclick = () => { const d = document.getElementById("it-details"); d.open = true; d.scrollIntoView({ behavior:"smooth", block:"start" }); };
   const cs = document.getElementById("clear-search"); if (cs) cs.onclick = () => { state.query = ""; render(); };
-  const lo = document.getElementById("logout"); if (lo) lo.onclick = logout;
-  const la = document.getElementById("logout-all"); if (la) la.onclick = logout;
+  const lo = document.getElementById("logout"); if (lo) lo.onclick = () => { state.user = null; state.menu = null; state.modal = null; writeSession(null); location.hash = "#overview"; render(); };
 }
-function logout() { state.user = null; state.menu = null; state.modal = null; writeSession(null); location.hash = "#overview"; render(); }
 
 state.user = readSession();
 parseHash();
