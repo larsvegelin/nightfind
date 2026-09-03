@@ -2,6 +2,30 @@
 
 Basis: de browserextensie in `tools/extension/` (`panel.js`, `background.js`, `manifest.json`, `README.md`). ParseForm en ParseScraper zijn technisch één extensie ("WebTool Scraper"); dit bestand gaat over alles wat met invullen en klikken te maken heeft. Het scrapen staat in `parsescraper.md`.
 
+## Status van toepassing
+
+| Element | Status |
+|---|---|
+| Web Store in plaats van zip | Voorbereid: dashboardknop "Toevoegen aan Chrome" (`CONFIG.webstoreUrl`), IT-route met zip eronder; de vermelding zelf moet worden ingediend |
+| Rechten: `activeTab` in plaats van `<all_urls>`, `debugger` optioneel, geen `tabs`; sitetoegang per website na toestemming | Toegepast (`manifest.json`, `background.js`) |
+| Sneltoets niet meer dé ingang; welkomstpagina "Hier zit ParseLab", icoon vastzetten | Toegepast (`welcome.html`); automatisch vastzetten kan Chrome niet |
+| Paneel alleen terug op sites met een bewaarde taak, met kleine hoekknop | Toegepast |
+| Chatbalk ingeklapt onder Gevorderd; drie snelknoppen | Toegepast |
+| Vier hoofdstappen Invullen / Klikken / Uitlezen / Wachten, rest onder "Meer" | Toegepast; Invullen herkent zelf veld, datum, keuzelijst of formulier |
+| Voorbeeldwaarde uit regel 1 bij Formulier vullen | Toegepast |
+| Kolom kiezen uit de kolomkoppen; "Lege cel? Veld blijft zoals het is." | Toegepast |
+| Datums: gangbare notaties, "Ik herken 'X' als datum ✓" | Toegepast |
+| Variabelen en rekenen alleen onder Gevorderd | Toegepast |
+| Wachten = slim wachten; Voorwaarde = vinkje "Alleen als dit er is" | Toegepast |
+| "Start · N regels" en eindsamenvatting | Toegepast |
+| Invullijst als Excel (.xlsx), upload van xlsx en csv | Toegepast |
+| Automatische koppelingscheck vóór Start met "Wijs het opnieuw aan →" | Toegepast |
+| Taken bewaren zonder lijstdata | Toegepast; opslaan bij het account wacht op een backend |
+| Instellingen en Gevorderd gescheiden; "sla over en ga door (aanbevolen)" | Toegepast |
+| Taalkiezer in Instellingen | Toegepast |
+| Webhook alleen https, met bevestiging, onder Gevorderd | Toegepast |
+| Toestemming per portaal bij de eerste ronde; logboek per ronde | Toegepast (`pl-consent`, `pl-log`) |
+
 ## Installatie en toegang
 
 ### Installeren via zip en ontwikkelaarsmodus

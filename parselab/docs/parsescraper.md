@@ -2,6 +2,24 @@
 
 Basis: `tools/extension/` (`panel.js`, `background.js`, `manifest.json`, `mcp-server/`). Alles wat over invullen gaat staat in `parseform.md`; hier gaat het over uitlezen, exporteren en de vraag of dit vanuit het dashboard kan in plaats van als extensie.
 
+## Status van toepassing
+
+| Element | Status |
+|---|---|
+| Scraper vanuit de tool (serverbrowser, planning 's nachts) | Ontwerp hieronder; niet gebouwd, vraagt een backend |
+| Eén stap Uitlezen met "Alleen dit, of de hele lijst?" en voorbeeld | Toegepast |
+| "Wat wil je hebben?" (tekst / link / afbeelding), "Maak er een getal van", "Eigen patroon" onder Gevorderd | Toegepast |
+| Doorladen bij scrollen zelf herkennen ("Alles ophalen?") | Toegepast |
+| Cookiemeldingen automatisch sluiten (instelling) | Toegepast |
+| Bewijskopie (afbeelding/PDF); `debugger` pas bij de eerste PDF-stap | Toegepast |
+| "Download alle PDF's op deze pagina" als één klik | Toegepast |
+| Downloadmap `ParseLab`, "Sorteer bestanden in mappen op:" | Toegepast |
+| Excel standaard, andere formaten apart, geen BOM/`;` zichtbaar | Toegepast |
+| Resttijd en één eindmelding | Toegepast |
+| Webhook alleen https met bevestiging | Toegepast |
+| MCP: uit het gebruikerspaneel, gedeeld geheim, alleen bij open paneel, status + Stop, logboek | Toegepast (`PARSELAB_MCP_TOKEN`, hello/hello_ok) |
+| Installatie en rechten | Toegepast, zie `parseform.md` |
+
 ## Scraper vanuit de tool in plaats van een extensie
 
 ### Waarom de extensie nu nodig is

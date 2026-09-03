@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "WebTool Scraper",
-  "version": "1.17.0",
-  "description": "Klik-en-scrape op elke pagina: pak waarden, herken lijsten automatisch (Octoparse-stijl), vul formulieren en exporteer naar JSON/CSV.",
-  "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "debugger"],
-  "host_permissions": ["<all_urls>"],
+  "name": "ParseLab — ParseForm & ParseScraper",
+  "version": "1.18.0",
+  "description": "Formulieren laten invullen vanuit een lijst en websites uitlezen naar Excel — rechtstreeks in je eigen browser, niets gaat naar buiten.",
+  "permissions": ["activeTab", "scripting", "storage", "downloads"],
+  "optional_permissions": ["debugger"],
+  "optional_host_permissions": ["<all_urls>"],
   "action": {
-    "default_title": "WebTool Scraper — klik om te openen",
+    "default_title": "ParseLab — klik om te openen",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -24,15 +25,14 @@
   "commands": {
     "toggle-panel": {
       "suggested_key": { "default": "Alt+Shift+S" },
-      "description": "WebTool Scraper-paneel aan/uit"
+      "description": "ParseLab-paneel aan/uit"
     }
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["panel.js"],
-      "css": ["panel.css"],
-      "run_at": "document_idle"
+      "matches": ["http://localhost/*", "http://127.0.0.1/*", "https://*.parselab.nl/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
     }
   ]
 }

@@ -22,6 +22,7 @@
 /* Bij printen (ook automatisch naar PDF) het scraper-paneel + overlays nooit tonen. */
 @media print {
     #wt-scraper-host,
+    #wt-badge,
     .wt-ovl,
     .wt-mark,
     #wt-list-layer,

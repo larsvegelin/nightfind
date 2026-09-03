@@ -1,201 +1,156 @@
-# WebTool Scraper — browserextensie
+# ParseLab — handleiding
 
-Klik-en-scrape op **elke** website, rechtstreeks op de echte pagina — geen proxy
-of render-server nodig. De extensie draait in je browser bovenop de pagina die je
-bekijkt, dus JavaScript is al uitgevoerd en alles werkt overal (webshops, web-apps).
+ParseLab is een kleine uitbreiding voor Chrome (en Edge). Hij doet twee dingen, allebei in je eigen
+browser, op de pagina die je zelf open hebt:
 
-## Strakke bediening
+- **ParseForm — formulieren laten invullen.** Je maakt een lijst in Excel, ParseLab vult het
+  formulier op de website regel voor regel in en drukt op Opslaan. Handig voor portalen en
+  extranetten waar je anders 30 keer hetzelfde intypt.
+- **ParseScraper — websites uitlezen.** Klik op een prijs, een naam of één regel van een lijst, en je
+  krijgt alles netjes in een Excel-bestand.
 
-Onder in het paneel staat één vaste knoppenrij, zonder ruis:
+Er gaat niets naar buiten: geen server, geen account, geen kopie van je gegevens. Alles blijft op
+je computer.
 
-- **▶ Start** · **⏸ Pauze** · **■ Stop** — pauzeer een lopende run en hervat later precies waar je
-  was (de voortgang blijft bewaard, ook na een paginawissel).
-- **⤒ Upload data** — kies je CSV. **⬇ Download uitkomst** — de resultaten als CSV. **💾 Bewaar flow**.
-- Al het extra (herhaal, foutafhandeling, downloadmap/submap, andere exportformaten, presets, thema,
-  import/export) zit netjes onder **⚙ Meer opties**, ingeklapt.
+## Installeren
 
-Dropdowns van moderne web-apps (o.a. **MudBlazor**, en algemene ARIA-comboboxen) worden nu correct
-ingevuld: de tool opent de lijst en kiest de juiste optie op naam.
+**Via de winkel (aanbevolen):** open de ParseLab-pagina in de Chrome Web Store en klik op
+*Toevoegen aan Chrome*. Updates komen dan vanzelf. Staat ParseLab (nog) niet in de winkel, dan
+regelt IT-beheer de installatie; zie helemaal onderaan.
 
-### Dropdown als eigen stap
+Na het installeren opent één keer een pagina "Hier zit ParseLab". Zet het icoon vast: klik
+rechtsboven op het puzzelstukje 🧩, zoek ParseLab en klik op de punaise 📌. Vanaf dan staat het
+ParseLab-icoon altijd rechtsboven.
 
-Een dropdown is geen gewoon invoerveld, dus die heeft een **eigen stap: 🔽 Dropdown**. Klik de stap,
-wijs de dropdown/keuzelijst op de pagina aan (klik gerust op het pijltje of het label — de tool pakt
-automatisch het echte veld eronder, niet "body"), en de stap krijgt standaard `{{kolomnaam}}`. Bij het
-draaien opent de tool de lijst en kiest de optie die bij de CSV-waarde past. De dropdown-kolom komt ook
-gewoon in **⬇ CSV-sjabloon van invoervelden** te staan, naast je andere velden.
+ParseLab vraagt géén toegang tot al je websites. Hij krijgt pas toegang tot een site op het moment
+dat jij daar op het icoon klikt.
 
-Tip: tijdens het aanwijzen wordt de pagina geblokkeerd, zodat een dropdown niet opengaat of een
-overlay je klik opvangt — daardoor pakt de tool altijd het juiste element.
+## Zo werkt het
 
-### Datum- en gemaskeerde velden (o.a. MudBlazor MudDatePicker)
+1. **Open de pagina** waar je wilt werken en klik op het ParseLab-icoon. Het paneel verschijnt op
+   de pagina. (Sluiten: ✕ rechtsboven in het paneel.)
+2. **Wijs aan wat er moet gebeuren.** Klik op *+ Stap toevoegen* en kies:
+   - **Invullen** — klik het veld, de keuzelijst of het hele formulier. ParseLab ziet zelf of het een
+     tekstveld, datum of keuzelijst is.
+   - **Klikken** — klik op de knop die ingedrukt moet worden (Opslaan, Volgende…).
+   - **Uitlezen** — klik op een tekst, prijs of één regel van een lijst. ParseLab vraagt dan:
+     *Alleen dit, of de hele lijst?* en laat zien wat er meekomt.
+   - **Wachten** — wacht tot de pagina klaar is (of een vaste tijd).
+   Onder *Meer* staan de minder vaak gebruikte stappen, elk met één zin uitleg: een bewijskopie
+   van de pagina bewaren (afbeelding of PDF), alle PDF's op een pagina downloaden, tekst typen,
+   een toets indrukken, de muis ergens boven houden, scrollen.
+   Bovenaan het paneel staan ook drie snelknoppen: *Iets invullen*, *Ergens op klikken*, *Even wachten*.
+3. **Klik op Start.** Bij het invullen upload je eerst je lijst; de Start-knop laat zien hoeveel
+   regels er gaan lopen ("Start · 24 regels"). Na afloop zie je één samenvatting:
+   "24 regels gedaan, 3 om na te kijken".
 
-Een gemaskeerd veld (bv. een datumveld met `placeholder="dd-MM-yyyy"`) bouwt zijn waarde op uit
-toetsaanslagen; in één keer de waarde zetten geeft rommel (je zag bv. `01-01-1983`). De tool **typt
-zulke velden nu teken voor teken** en voert bij een datummasker alleen de cijfers in — het masker zet
-zelf de streepjes ertussen. Geef de datum gewoon als `30-11-2002` (of `30/11/2002`); een gewoon
-`<input type="date">` wordt automatisch naar `2002-11-30` omgezet.
+### Je lijst maken (ParseForm)
 
-Zie je een datumveld als **3 kolommen** in het formulier-sjabloon? Gebruik dan de losse **✎ Veld
-invullen**-stap en wijs precies het datumveld aan — dat geeft één nette datumkolom, in plaats van het
-hele formulier te lezen.
+Klik op **Maak mijn invullijst (Excel)**. ParseLab maakt een Excel-bestand met precies één kolom
+per veld dat je hebt aangewezen. Vul dat in Excel in en klik op **Lijst uploaden**. Excel (.xlsx)
+en CSV werken allebei.
 
-## Wat het kan
+- Bij elke *Invullen*-stap kies je uit de kolomkoppen van je lijst: *Welke kolom hoort hier?*
+- Lege cel? Het veld blijft zoals het is.
+- Datums mag je schrijven zoals je gewend bent: 30-11-2002, 30/11/2002 of 2002-11-30. Bij het
+  inlezen zegt ParseLab: "Ik herken 'Geboortedatum' als datum ✓".
+- Bij een formulier zie je per veld een voorbeeldwaarde uit de eerste regel van je lijst, zodat je
+  vóór het starten ziet dat het klopt.
 
-Eén **flow-builder**: bouw een reeks stappen door elkaar heen — scrapen, formulier
-vullen en knoppen drukken — en draai die één keer of per CSV-rij.
+### Uitlezen (ParseScraper)
 
-- **🗨 Bouw met opdrachten** — een chatbalk boven in het paneel: typ in gewone taal wat je
-  wilt (bv. `scrape de prijs`, `vul veld met {{Naam}}`, `klik Opslaan`, `wacht 2s`,
-  `screenshot`, `herhaal 5`, `map shirts`, `submap per relatienummer`, `start`) en de stappen
-  worden voor je gemaakt. Voor scrape/klik/veld wijs je daarna nog even het doel op de pagina
-  aan. Werkt volledig lokaal — geen AI-server of sleutel nodig. Typ `help` voor alle opdrachten.
-- **+ Stap toevoegen** → kies wat je wilt en selecteer het op de pagina:
-  - **🔎 Element scrapen** — klik precies één element (cel, waarde, tekst, link, afbeelding).
-  - **📋 Lijst scrapen** — klik één item van een lijst/tabel → de hele lijst wordt herkend.
-  - **✎ Formulier vullen** — klik het formulier; de waarden komen per rij uit je CSV.
-    In de stap zie je een **aanvinklijst van alle velden** — vink uit welke je *niet* wilt
-    (bv. alleen de bovenste 3 aanhouden). Alleen de aangevinkte velden komen in het CSV-sjabloon
-    en worden gevuld; de rest laat de tool met rust. Knopjes **alle/geen** om snel te schakelen.
-    Het **CSV-sjabloon** wordt met `;` geschreven zodat Nederlandse Excel de kolommen netjes splitst.
-  - **👆 Knop drukken** — klik de knop die ingedrukt moet worden (Opslaan, Volgende…).
-  - **⏱ Wachten** — een pauze tussen stappen (ook via de **+ pauze**-knopjes).
-  - **📸 Screenshot** — legt de zichtbare pagina vast en bewaart als PNG (ons paneel
-    staat niet in de foto).
-  - **🖨 Print** — drukt de pagina automatisch af naar **PDF** (Chrome's eigen
-    print-engine, geen dialoog) en bewaart hem in de map.
-  - **⌨ Typ tekst / Toets** — typ in een veld (optioneel Enter), of stuur een losse toets.
-  - **🖱 Hover / ↕ Scroll / ↕ Scroll & laad** — voor inhoud die pas verschijnt bij hover of scrollen (incl. oneindig scrollen).
-  - **⏳ Wacht op element** — wacht tot iets geladen is (met time-out), slimmer dan een vaste pauze.
-  - **❓ Voorwaarde** — doe de volgende stap(pen) alleen als een element bestaat/tekst bevat (bv. cookie-melding wegklikken), anders overslaan of stoppen.
-  - **⬇ Bestanden** — download alle `img`/PDF-links die op een patroon matchen naar je map.
-  - **🔗 Webhook** — POST de huidige rij naar een URL (bv. een Google Apps Script of eigen endpoint).
-- **Scrape-opties** — per element-scrape geef je een **kolomnaam** (elk gescrapet element wordt een
-  eigen kolom in je export — vul bv. `Premie18`, `Premie30`), kies je het **attribuut**
-  (text/href/src/alt/…) en een **opschoning** (trim, alleen het getal, of een regex met capture-group).
-- **Export-encoding** — CSV wordt met een UTF-8 BOM en `;` als scheidingsteken weggeschreven, zodat
-  Nederlandse Excel de kolommen splitst en `€`/accenten goed toont (geen `â‚¬` meer).
-- **Variabelen bij invullen** — `{{Naam}}` en rekenen zoals `{{Prijs*1.21}}` (zie ook Typ-stap).
-- **Robuustheid** — per run een **retry**-aantal en een **bij-fout**-keuze (overslaan of stoppen).
-- **Downloadmap** — stel een map in Downloads in (standaard `webtool`); screenshots, print-PDF's,
-  gedownloade bestanden én je export (JSON/CSV/**Excel**/**ZIP**) komen daar automatisch in terecht.
-- **Flow beheren** — meerdere flows per site opslaan met een naam, snel wisselen, en de flow
-  **exporteren/importeren** als bestand.
-- **Veld invullen** — een losse stap om één invoerveld (input/select/checkbox) een waarde te geven,
-  met variabelen/factor (`{{kolom}}`, `{{Prijs*1.21}}`), naast het hele-formulier-vullen.
-  - **Kolomnaam zelf kiezen** — in de stap staat een **kolom**-veld. Heeft het veld geen nette naam
-    (bv. MudBlazor `mudinput828389`), dan krijgt het een generieke naam (`veld1`) die je hernoemt naar
-    bv. `postcode`. Die naam is meteen de kolomkop in je CSV-sjabloon.
-  - **Uit de CSV** — laad je CSV (bij *Meer opties*) en kies in de stap een **CSV-kolom** uit de
-    keuzelijst; de flow draait dan één keer per rij (5 regels = 5×), telkens met de waarde uit die rij.
-  - **Datum in één kolom** — een datumveld (ook MudBlazor MudDatePicker met masker `dd-MM-yyyy`) is
-    één invoerveld en dus **één kolom**; geef de datum als `30-11-2002`. Kalender-popovers worden bij
-    het lezen van een formulier overgeslagen, zodat één datum niet als 3 kolommen verschijnt.
-  - **Leeg = overslaan** (standaard aan) — is de cel voor die rij leeg (bv. een niet-verplicht veld
-    zoals *Toevoeging*), dan laat de tool dat veld met rust en maakt het niet leeg. Zet je het uit,
-    dan wordt het veld bij een lege cel juist gewist.
-- **Submap per kolom** — vul een kolomnaam in (bv. `relatienummer`) om per unieke waarde een eigen
-  submap te maken; alle downloads van die rij gaan daarheen en de waarde komt in je resultaten.
-  Zo krijgt elk relatienummer (ook met meerdere producten/regels) zijn eigen mapje.
-- **Meertalig** — taalkiezer rechtsboven (Nederlands, English, Deutsch, Français, Español); de tool
-  kiest standaard je browsertaal.
-- **Uiterlijk & sneltoets** — licht/**donker thema**, paneel links/rechts, en het paneel togglen
-  met **Alt+Shift+S**.
-- **Variabelen bij invullen** — in een CSV-cel kun je een eerder gescrapete waarde of
-  kolom gebruiken met <code>{{Naam}}</code>, en rekenen met een factor, bv.
-  <code>{{Prijs*1.21}}</code> of <code>{{aantal+1}}</code>.
-- **CSV-sjabloon van invoervelden (centraal)** — onder *Data voor invullen* zit de knop
-  **⬇ CSV-sjabloon van invoervelden**. Die maakt één CSV met een **kolomkop per invoerveld**
-  uit je hele flow: alle aangevinkte velden van *Formulier vullen* én elke *Veld invullen*-stap.
-  Kies je 3 velden, dan krijg je 3 kolomkoppen (met `;` zodat NL-Excel ze splitst). Vul het in
-  en upload het op dezelfde plek → de flow draait één keer per rij. Een *Veld invullen*-stap
-  krijgt standaard `{{veldnaam}}` als waarde, zodat de kolomnaam meteen klopt.
-- **CSV met leesbare koppen** — de 📄-knop bij een *Formulier vullen*-stap geeft een sjabloon van
-  alleen die stap; de centrale knop hierboven combineert alle stappen in één sjabloon.
-- **Flowchart** — toont de hele reeks stappen zodat je hem makkelijk volgt.
-- **Herordenen/hernoemen/verwijderen** van stappen, **Bewaar/Laad** de flow per site.
-- **Exporteren** — resultaten naar JSON, CSV of klembord.
+Bij elke *Uitlezen*-stap kies je *Wat wil je hebben?*: de tekst, de link of de afbeelding. Met het
+vinkje *Maak er een getal van* wordt "€ 49,95" netjes 49,95. **Download bestand** geeft een
+Excel-bestand; andere formaten staan onder Gevorderd.
 
-## MCP-koppeling (AI-agent stuurt de tool aan)
+### Handig om te weten
 
-Wil je dit vanuit een AI-agent (bv. Claude) aansturen — *"haal de velden op, hier zijn 30
-records, voer ze in"* — dan zit er een MCP-server in [`mcp-server/`](mcp-server/README.md).
-Die biedt tools aan (`read_fields`, `fill_records`) en voert ze uit in **jouw ingelogde
-tabblad** via een lokale WebSocket-bridge (alleen `localhost`, geen wachtwoorden nodig).
-Zet de koppeling aan met de knop **MCP-koppeling** onder *Meer opties*. Zie de
-[mcp-server/README](mcp-server/README.md) voor installatie en het koppelen aan Claude.
-Automatiseren op een extranet met klantgegevens moet door de beheerder zijn toegestaan.
+- **Controleer koppelingen** kijkt of alle aangewezen velden en knoppen nog op de pagina staan. Dit
+  gebeurt ook automatisch vóór Start; als er iets mist zie je bijvoorbeeld: "Het veld 'Toevoeging'
+  staat niet meer op deze pagina. Wijs het opnieuw aan →".
+- **Alleen als dit er is** — een vinkje op elke stap: de stap wordt dan overgeslagen als het
+  aangewezen element ontbreekt (bijvoorbeeld een melding die niet altijd verschijnt).
+- **Cookiemeldingen** worden bij de start van een ronde automatisch weggeklikt. Uitzetten kan onder
+  Instellingen.
+- **Bewaar taak** bewaart alleen de stappen voor deze site — nooit je lijst. Daarna komt ParseLab
+  op deze site vanzelf terug na een paginawissel, zodat een ronde doorloopt. Is het paneel dicht,
+  dan zie je op zo'n site alleen een kleine knop *ParseLab* rechtsonder; één klik opent het paneel.
+  *Taak van deze site wissen* (onder Gevorderd) zet dat weer uit.
+- Laadt een lijst verder als je scrolt? Dan vraagt ParseLab bij *Uitlezen*: "Deze lijst laadt verder
+  als je scrolt. Alles ophalen?" en scrolt eerst naar onderen tot alles er staat.
+- **Pauze en Stop** werken altijd; na Pauze gaat *Hervat* verder waar je was, ook na een paginawissel.
+- Tijdens een ronde zie je de voortgang en een schatting: "nog ongeveer 3 minuten".
+- Bij de eerste ronde op een nieuwe website vraagt ParseLab één keer: "Je gaat automatisch invullen
+  op portaal.example.nl. Mag dat van je organisatie?" Onder Gevorderd → Logboek staan de laatste
+  rondes (site, tijd, aantal regels), zodat een kantoor kan verantwoorden wat er is gedaan.
 
-## Installeren (voor jezelf / testen)
+### Instellingen en Gevorderd
 
-1. Open in Chrome (of Edge/Brave): `chrome://extensions`
-2. Zet rechtsboven **Ontwikkelaarsmodus** aan.
-3. Klik **Uitgepakte extensie laden** en kies deze map (`extension`).
-4. De extensie verschijnt met een blauw **W**-icoon. Zet hem eventueel vast (pin).
-
-## Gebruiken
-
-1. Ga naar een willekeurige website.
-2. Klik op het **W**-icoon in de werkbalk → het paneel verschijnt rechtsboven.
-3. Klik **+ Stap toevoegen** en kies wat je wilt (scrapen / formulier vullen / knop
-   drukken / wachten), en selecteer het doel op de pagina. Voeg pauzes in met de
-   **+ pauze**-knopjes tussen de stappen.
-4. Draai de flow (eenmalig of per CSV-rij, met herhaal-opties), of exporteer naar CSV.
-
-**Onthoudt velden op HTML-structuur (ook na refresh):** moderne web-apps (o.a. MudBlazor) geven velden
-bij elke pagina-load een nieuw willekeurig id (`mudinput828389` → `mudinputXYZ`). De tool koppelt daarom
-**niet op naam of id**, maar op **HTML-structuur** — een structuurpad (tag + positie, bv. `#form>div>input`),
-het veldtype en de stabiele klassen, plus de opgeslagen **HTML** als extra herkenning. Na een refresh of
-navigatie worden de velden zo nog steeds gevonden en ingevuld. Beweeg met de muis over de veld-stap (🔎)
-om de opgeslagen HTML te zien.
-
-- **🎯 per stap** — klik het richtkruisje bij een stap om het gekoppelde element op de pagina te tonen
-  met een **blauwe omlijning** (het scrollt er ook naartoe).
-- **🔗 Check koppelingen** — knop bij de stappen die controleert of elk gekoppeld veld/knop op de huidige
-  pagina te vinden is; je krijgt **goed** (groene ✓ per stap) of **fout** (rode ✗ + welke stappen).
-- **CSV blijft bewaard** (meteen opgeslagen na uploaden), en met **✕ CSV wissen** maak je 'm leeg voor een
-  nieuwe. Meerdere regels = één ronde per regel (5 relaties = 5×).
-- **Start begint altijd bij het begin**; een run die is blijven hangen (tab gesloten/gecrasht) wordt niet
-  meer half hervat.
-- Bij invullen wordt het veld **altijd eerst leeggemaakt** voordat de nieuwe waarde erin gaat.
-- **Blijft klikbaar boven modals** — opent de pagina een modaal met een schermvullende overlay (o.a.
-  MudBlazor `.mud-overlay`), dan zou die bij gelijke z-index de klikken opvangen. Het paneel wordt
-  daarom via de **Popover-API in de browser-top-layer** gezet: dat staat gegarandeerd boven élke
-  page-overlay, ongeacht z-index of DOM-volgorde, en blijft klikbaar. (In een oude browser zonder
-  Popover-API valt hij terug op "laatste in de DOM".)
-
-**Blijft open bij navigatie:** zodra je het paneel opent blijft het "aan" — het
-verschijnt automatisch op elke volgende pagina die je bezoekt, zodat je je stappen
-kunt blijven volgen. Je flow (stappen, CSV, instellingen) wordt per website bewaard
-en teruggezet. Klik op **✕** om het paneel te sluiten en het automatisch openen te
-stoppen; klik het **W**-icoon om het weer aan te zetten.
-
-**Loopt door over paginawissels:** een lopende run gaat automatisch verder na een
-paginanavigatie (bv. een stap die op "Volgende" drukt en een nieuwe pagina laadt) —
-de voortgang wordt bewaard en op de nieuwe pagina wordt de flow bij de volgende stap
-hervat. Je ziet de voortgang live: een **✓** bij elke voltooide stap en een teller
-met balk (**"2/5 voltooid"**). Bouw je flow zo op dat elke stap-selector bestaat op de
-pagina waar die stap draait.
-
-## Publiceren in de Chrome Web Store (optioneel)
-
-Zo kunnen anderen hem in één klik installeren en link je ernaar vanaf je website:
-
-1. Maak een zip van de inhoud van deze map (niet de map zelf):
-   `cd extension && zip -r ../webtool-scraper.zip .`
-2. Ga naar het [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)
-   (eenmalig $5 registratie), upload de zip, vul de winkelvermelding in en dien in.
-3. Na goedkeuring krijg je een winkel-URL; zet daar op je Webflow-site een knop
-   naartoe ("Installeer de scraper").
-
-## Firefox
-
-Firefox gebruikt bijna hetzelfde formaat. Voor een Firefox-versie is een kleine
-aanpassing nodig (`browser_specific_settings` + `background.scripts`); vraag erom
-als je die nodig hebt.
+- **Instellingen:** donker/licht, paneel links of rechts, taal (Nederlands, English, Deutsch,
+  Français, Español), cookiemeldingen automatisch sluiten, en de map in Downloads (standaard
+  `Downloads/ParseLab`) waar bestanden en bewijskopieën terechtkomen.
+- **Gevorderd:** de taak herhalen, pauze tussen regels, *Als een regel niet lukt: sla over en ga
+  door (aanbevolen)*, opnieuw proberen, bestanden sorteren in mappen op een kolom, andere
+  bestandsformaten (CSV, JSON, ZIP, kopiëren), doorsturen naar een eigen internetadres (alleen
+  https, met bevestiging), taken opslaan en laden als bestand, de opdrachtenbalk (typen wat je
+  wilt), het logboek en het onderdeel *Voor IT-beheer*.
 
 ## Privacy
 
-De extensie stuurt niets naar een server. Alles gebeurt lokaal in je browser.
-Dankzij `activeTab` heeft hij pas toegang tot een pagina op het moment dat jíj op
-het icoon klikt.
+Niets verlaat je computer. ParseLab heeft geen server en geen account. Je lijst en de ingevulde
+waarden worden nooit in een taak bewaard. Alleen als je zelf *Doorsturen (webhook)* instelt gaat er
+iets naar een adres dat jij kiest, en dan alleen via https en na een bevestiging waarin je de
+eerste regel ziet.
+
+Automatisch invullen op een extranet of portaal van een ander (bijvoorbeeld met klantgegevens)
+moet zijn toegestaan door de eigenaar of beheerder van dat systeem. ParseLab vraagt dat één keer
+per site aan jou en houdt een logboek bij.
+
+---
+
+## Voor IT-beheer
+
+**Installeren zonder winkel.** Pak de zip uit, open `chrome://extensions`, zet *Ontwikkelaarsmodus*
+aan en kies *Uitgepakte extensie laden* → de map `extension`. Bij een update: map vervangen en op
+↻ klikken. Voor een hele organisatie is een beleidsregel (`ExtensionInstallForcelist`) met het
+store-id netter.
+
+**Rechten (manifest v3).**
+- Vast: `activeTab`, `scripting`, `storage`, `downloads`. Er is géén `host_permissions: <all_urls>`
+  en géén content-script op alle pagina's. Het paneel wordt pas in een tabblad geladen na een klik
+  op het icoon (of de sneltoets Alt+Shift+S).
+- Optioneel, per site: `optional_host_permissions: <all_urls>`. Bij *Bewaar taak* of *Start* vraagt
+  ParseLab toegang tot precies die origin (bv. `https://portaal.example.nl/*`) en registreert het
+  paneel daar als content-script, zodat een lopende ronde en het paneel terugkomen na een
+  paginawissel. Bij ✕ sluiten of *Taak van deze site wissen* wordt die registratie én de toegang
+  weer verwijderd.
+- Optioneel: `debugger` — alleen nodig voor de PDF-bewijskopie (Chrome's `Page.printToPDF`). Wordt pas
+  gevraagd bij de eerste PDF-stap, met uitleg. De afbeelding-bewijskopie heeft dit recht niet nodig.
+- Dashboard-detectie: een klein script `bridge.js` draait uitsluitend op `http://localhost/*`,
+  `http://127.0.0.1/*` en `https://*.parselab.nl/*`. Het zet `data-parselab-extension="<versie>"` op
+  het `<html>`-element en stuurt `postMessage({ source:"parselab-extension", type:"parselab:extension", version })`;
+  het antwoordt op `{ source:"parselab-dashboard", type:"parselab:ping" }`.
+
+**Opslag.** Alles in `chrome.storage.local`: taken per site (`wt-flow-<host>`, `wt-presets-<host>`;
+alleen stappen), de geüploade lijst apart per site (`pl-csv-<host>`), instellingen (`pl-folder`,
+`pl-cookies`, `wt-dark`, `wt-side`, `wt-lang`), toestemming per site (`pl-consent`), en het logboek
+`pl-log` (max. 200 regels: host, start, einde, regels, fouten, bron).
+
+**Hoe velden worden teruggevonden.** Moderne web-apps (MudBlazor, React) geven velden bij elke
+pagina-load een nieuw id. ParseLab bewaart daarom per stap een structuurpad (tag + positie,
+verankerd op een stabiel id) plus een vingerafdruk (type, stabiele klassen, placeholder, HTML). Bij
+het uitvoeren wordt eerst het pad geprobeerd en anders de best passende kandidaat. Datum- en
+gemaskeerde velden worden teken voor teken getypt; keuzelijsten (ook MudBlazor/ARIA-comboboxen)
+worden geopend en op naam gekozen.
+
+**Eigen patroon.** Onder Gevorderd kan per *Uitlezen*-stap een reguliere expressie worden ingevuld
+(eerste capture-group wint). In cellen van de lijst mag `{{Kolom*1.21}}` staan om te rekenen.
+
+**Bestanden.** CSV wordt met UTF-8 BOM en `;` geschreven (Nederlandse Excel); Excel via een eigen
+minimale xlsx-writer/-reader (inline strings; datumopmaak uit `styles.xml` wordt herkend).
+
+**Agent-koppeling (MCP).** Standaard uit. Onder Gevorderd → *Voor IT-beheer* zet je de koppeling aan;
+de extensie toont een code van zes groepen. Die code zet je in `PARSELAB_MCP_TOKEN` voor de lokale
+MCP-server in `mcp-server/` (zie de README daar). De extensie verbindt alleen zolang het paneel open
+is, stuurt als eerste bericht `{type:"hello", token}` en voert pas opdrachten uit na `hello_ok`. Het
+paneel toont "Verbonden met een agent" met een Stop-knop; elke `fill_records` wordt gelogd.
