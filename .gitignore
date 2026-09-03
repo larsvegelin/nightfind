@@ -35,3 +35,8 @@ Temporary Items
 # Old files
 *_old.html
 clubs_old.html
+
+# ParseLab server: lokale proxies en uitvoeringen horen niet in git
+parselab/server/proxies.txt
+parselab/server/data/
+parselab/server/node_modules/

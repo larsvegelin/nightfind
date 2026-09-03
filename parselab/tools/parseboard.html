@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Paneel</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&display=swap">
 </head>
 <body>
 <style>
@@ -1922,8 +1922,22 @@ render();
                tiles: c ? ((Array.isArray(c.kpis) ? c.kpis.length : 0) + (Array.isArray(c.charts) ? c.charts.length : 0)) : null });
       } catch (e) {}
     }
-    // Taal van het dashboard volgen (ParseBoard is eentalig Nederlands; bericht wordt geaccepteerd en genegeerd).
-    window.addEventListener("message", function (ev) { var d = ev.data || {}; if (d.type === "parselab:lang") { /* nl only */ } });
+    // Projecten = het opgeslagen overzicht. Openen = "Open mijn dashboard".
+    function syncProjects() {
+      try { var c = JSON.parse(localStorage.getItem("paneel-config") || "null");
+        post({ type: "parselab:projects", tool: "board", list: c ? [{ id: "board:saved", name: c.fileName || "Mijn overzicht", payload: { saved: true }, updated: c.savedAt || null }] : [] }); } catch (e) {}
+    }
+    syncProjects();
+    var _setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { _setItem.apply(this, arguments); if (k === "paneel-config") setTimeout(syncProjects, 0); };
+    var _removeItem = Storage.prototype.removeItem;
+    Storage.prototype.removeItem = function (k) { _removeItem.apply(this, arguments); if (k === "paneel-config") setTimeout(syncProjects, 0); };
+    window.addEventListener("message", function (ev) {
+      var d = ev.data || {};
+      if (d.type === "parselab:load-project" && d.project) {
+        try { if (d.project.payload && d.project.payload.saved) { goto(1); var b = document.querySelector("#loadCfgBtn"); if (b) b.click(); } else { goto(1); } } catch (e) {}
+      }
+    });
     window.addEventListener("message", function (ev) {
       var d = ev.data || {};
       if (d.type !== "parselab:nav" || !d.section) return;
@@ -1935,6 +1949,7 @@ render();
       render = function () { _render.apply(this, arguments); report(); };
     } catch (e) {}
     window.addEventListener("load", report);
+    try { report(); post({ type:"parselab:ready", tool:"board" }); } catch (e) {}
   })();
 </script>
 </body>

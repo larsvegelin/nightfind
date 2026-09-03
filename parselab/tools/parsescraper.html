@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ParseScraper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+  :root { color-scheme:light; --navy:#1F3A5F; --ink:#16293F; --muted:#6B7A8C; --cream:#F2F0E7; --page:#FBFAF6; --white:#FFFFFF; --hairline:#E6E3D8; --blue:#2C6FA8; --blue-tint:#DCE8F2; --gold:#C9A961; --gold-tint:#EDE7D5; --shadow:0 18px 44px rgba(6,18,35,.10); --font:Poppins,-apple-system,"Segoe UI",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--font); background:var(--page); color:var(--ink); font-size:16px; line-height:1.55; }
+  button, input, select { font-family:inherit; font-size:inherit; color:inherit; }
+  button { cursor:pointer; border:0; background:none; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid var(--gold); outline-offset:3px; border-radius:14px; }
+  [hidden] { display:none !important; }
+  .layout { display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+  html.parselab-embed .layout { grid-template-columns:1fr; }
+  aside.sidebar { background:var(--white); border-right:1px solid var(--hairline); padding:28px 20px; display:flex; flex-direction:column; gap:8px; }
+  html.parselab-embed aside.sidebar { display:none; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:600; font-size:19px; padding:0 8px 16px; }
+  .brand i { width:26px; height:26px; border-radius:9px; background:var(--gold-tint); display:inline-flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:11px; font-style:normal; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:14px; color:var(--muted); font-weight:500; cursor:pointer; }
+  .nav-item.active { background:var(--cream); color:var(--ink); }
+  .nav-item .n { font-family:var(--mono); font-size:12px; width:16px; }
+  main { padding:32px 40px 64px; display:flex; flex-direction:column; gap:24px; max-width:1240px; width:100%; }
+  html.parselab-embed main { padding:24px 28px 48px; }
+  h1 { font-size:24px; font-weight:600; letter-spacing:-.01em; line-height:1.25; }
+  .sub { color:var(--muted); font-size:16px; max-width:64ch; }
+  .card { background:var(--white); border-radius:20px; padding:24px 28px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .caps { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
+  .note { font-size:15px; color:var(--muted); }
+  .mono { font-family:var(--mono); font-size:13px; letter-spacing:.02em; }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; gap:10px; font-weight:600; border-radius:14px; padding:13px 20px; line-height:1; transition:transform 150ms ease-out, filter 150ms ease-out; white-space:nowrap; }
+  .btn:hover { transform:translateY(-1px); filter:brightness(1.03); }
+  .btn:disabled { opacity:.5; cursor:default; transform:none; }
+  .btn-navy { background:var(--navy); color:var(--cream); }
+  .btn-outline { background:var(--white); color:var(--navy); border:1px solid var(--navy); padding:12px 18px; }
+  .btn-small { padding:9px 14px; font-size:15px; }
+  .link { color:var(--blue); font-weight:600; font-size:15px; }
+  .field { display:flex; flex-direction:column; gap:6px; flex:1; min-width:220px; }
+  .field label { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
+  input[type=text], input[type=url], select, input[type=number] { border:1px solid var(--hairline); border-radius:14px; padding:12px 16px; background:var(--white); width:100%; }
+  input:focus { outline:0; border-color:var(--blue); background:var(--blue-tint); }
+  .check { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--ink); }
+  .pill { display:inline-flex; border-radius:999px; padding:4px 12px; font-size:13px; font-weight:500; }
+  .pill-live { background:var(--blue-tint); color:var(--blue); }
+  .pill-neutral { background:var(--cream); color:var(--ink); }
+  .lock { display:inline-flex; gap:8px; align-items:center; font-size:14px; color:var(--muted); }
+  .msg { border-radius:14px; padding:12px 16px; background:var(--cream); font-size:15px; }
+  .msg.err { background:#F2F0E7; color:var(--ink); border-left:4px solid var(--gold); }
+  .steps { display:flex; flex-direction:column; gap:12px; }
+  .step { display:flex; gap:12px; align-items:flex-start; font-size:15px; color:var(--muted); }
+  .step b { color:var(--ink); font-weight:500; }
+  .step i { width:26px; height:26px; border-radius:9px; background:var(--cream); display:inline-flex; align-items:center; justify-content:center; font-style:normal; font-weight:600; font-size:13px; flex:none; color:var(--ink); }
+  /* aanwijzen */
+  .pick-wrap { display:grid; grid-template-columns:1.6fr 1fr; gap:24px; align-items:start; }
+  @media (max-width:1100px) { .pick-wrap { grid-template-columns:1fr; } }
+  .frame-box { border:1px solid var(--hairline); border-radius:14px; overflow:hidden; background:#fff; position:relative; }
+  .frame-box iframe { width:100%; height:calc(100vh - 330px); min-height:520px; border:0; display:block; }
+  .frame-bar { display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--hairline); font-size:14px; color:var(--muted); }
+  .frame-bar .mono { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .ask { position:absolute; left:16px; right:16px; bottom:16px; background:var(--white); border-radius:14px; padding:14px 16px; box-shadow:0 24px 60px rgba(6,18,35,.28); display:flex; flex-direction:column; gap:10px; }
+  .ask .ex { font-size:14px; color:var(--muted); font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  table { width:100%; border-collapse:collapse; font-size:15px; }
+  th { text-align:left; font-family:var(--mono); font-size:12px; font-weight:400; color:var(--muted); padding:6px 8px 8px 0; }
+  td { padding:9px 8px 9px 0; border-top:1px solid var(--hairline); vertical-align:top; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  td.num, th.num { font-family:var(--mono); font-size:14px; }
+  td.empty { background:var(--gold-tint); }
+  .cols { display:flex; flex-direction:column; gap:10px; }
+  .col { display:grid; grid-template-columns:auto 1fr auto auto; gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--hairline); }
+  .col input[type=text] { padding:8px 12px; border-radius:9px; }
+  .col select { padding:8px 10px; border-radius:9px; width:auto; }
+  .col .ex { font-size:13px; color:var(--muted); grid-column:2 / span 3; font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tasks .tr { display:grid; grid-template-columns:1.5fr 1fr auto auto; gap:12px; align-items:center; padding:10px 0; border-top:1px solid var(--hairline); }
+  .tasks .name { font-weight:500; }
+  .tasks .meta { font-size:13px; color:var(--muted); font-family:var(--mono); }
+  .hl { outline:2px solid #2C6FA8 !important; outline-offset:2px; background:rgba(44,111,168,.10) !important; cursor:crosshair !important; }
+  .hl-item { outline:2px dashed #C9A961 !important; outline-offset:2px; }
+  .table-wrap { overflow-x:auto; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:6px 16px; font-size:15px; }
+  .kv .caps { align-self:center; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><i>PS</i>ParseScraper</div>
+    <div class="nav-item active" data-page="url"><span class="n">1</span>Adres</div>
+    <div class="nav-item" data-page="pick"><span class="n">2</span>Aanwijzen</div>
+    <div class="nav-item" data-page="check"><span class="n">3</span>Controleren</div>
+    <div class="nav-item" data-page="download"><span class="n">4</span>Downloaden</div>
+    <div style="flex:1"></div>
+    <div class="note" style="padding:0 8px">Leest openbare websites uit vanaf de ParseLab-server. Voor pagina's waar je moet inloggen gebruik je de ParseLab-extensie in je eigen browser.</div>
+  </aside>
+  <main>
+    <!-- Stap 1 -->
+    <section class="app-page active" id="page-url">
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:24px;"><h1>Welke pagina wil je uitlezen?</h1><div class="sub">Plak het adres van de pagina met de lijst die je nodig hebt: producten, vacatures, adressen, prijzen. ParseLab haalt de pagina op, jij klikt één item aan.</div></div>
+      <div class="card">
+        <div class="row">
+          <div class="field"><label for="url">Webadres</label><input id="url" type="url" placeholder="https://www.voorbeeld.nl/producten" autocomplete="off"></div>
+          <div style="align-self:flex-end"><button class="btn btn-navy" id="fetch">Pagina ophalen →</button></div>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="use-proxy" checked> Via een ParseLab-proxy ophalen <span class="note" id="proxy-note"></span></label>
+        </div>
+        <div id="fetch-msg" hidden></div>
+        <div class="lock">🔒 ParseLab leest alleen wat zonder inloggen zichtbaar is, respecteert robots.txt en wacht netjes tussen twee pagina's. Lees alleen uit wat je zelf mag gebruiken.</div>
+      </div>
+      <div class="card" style="margin-top:24px">
+        <div class="caps">Zo werkt het</div>
+        <div class="steps">
+          <div class="step"><i>1</i><span><b>Plak een adres.</b> ParseLab opent de pagina op de server, ook als die pas na scrollen of klikken laadt.</span></div>
+          <div class="step"><i>2</i><span><b>Klik één item aan.</b> De hele lijst wordt herkend; jij geeft de kolommen een naam.</span></div>
+          <div class="step"><i>3</i><span><b>Controleer en download.</b> Als Excel, of laat het elke dag of week opnieuw draaien terwijl je computer uit staat.</span></div>
+        </div>
+        <div class="note">Vraagt de pagina om inloggen, of staat er een captcha? Dan zie je dat bij het ophalen. Gebruik dan de ParseLab-extensie in je eigen browser.</div>
+      </div>
+    </section>
+
+    <!-- Stap 2 -->
+    <section class="app-page" id="page-pick" hidden>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:24px;"><h1>Klik één item aan</h1><div class="sub">Klik in de pagina op één regel of één product uit de lijst. ParseLab zoekt de rest erbij.</div></div>
+      <div class="pick-wrap">
+        <div class="frame-box">
+          <div class="frame-bar"><span class="pill pill-neutral" id="mode-pill">Klik een item</span><span class="mono" id="frame-url"></span><button class="btn btn-outline btn-small" id="mode-next">Volgende-knop aanwijzen</button></div>
+          <iframe id="snap" sandbox="allow-same-origin" title="Opgehaalde pagina"></iframe>
+          <div class="ask" id="ask" hidden>
+            <div><b>Alleen dit, of de hele lijst?</b></div>
+            <div class="ex" id="ask-ex"></div>
+            <div class="row"><button class="btn btn-navy btn-small" id="ask-list">De hele lijst</button><button class="btn btn-outline btn-small" id="ask-one">Alleen dit</button><button class="btn btn-small link" id="ask-cancel">Annuleren</button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="caps">Wat je krijgt</div>
+          <div id="pick-empty" class="note">Nog niets aangewezen. Klik in de pagina op één item uit de lijst.</div>
+          <div id="pick-info" hidden>
+            <div class="row"><span class="pill pill-live" id="count-pill"></span><span class="note" id="item-note"></span></div>
+            <div class="cols" id="cols"></div>
+            <div class="row" style="margin-top:8px">
+              <label class="check"><input type="checkbox" id="scroll"> De lijst laadt verder als je scrolt</label>
+            </div>
+            <div class="row">
+              <div class="field" style="min-width:160px"><label for="pages">Pagina's</label><input id="pages" type="number" min="1" max="25" value="1"></div>
+              <div class="note" id="next-note">Meerdere pagina's? Klik op "Volgende-knop aanwijzen" en klik daarna op de volgende-knop in de pagina.</div>
+            </div>
+            <div class="row" style="margin-top:8px"><button class="btn btn-navy" id="to-check">Controleren →</button><button class="btn btn-outline" id="pick-reset">Opnieuw aanwijzen</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stap 3 -->
+    <section class="app-page" id="page-check" hidden>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:24px;"><h1>Controleren</h1><div class="sub">ParseLab leest de pagina('s) nu echt uit vanaf de server. Lege cellen zijn gemarkeerd.</div></div>
+      <div class="card">
+        <div class="row"><span class="pill pill-neutral" id="check-pill">Nog niet uitgelezen</span><span class="note" id="check-note"></span><span style="flex:1"></span><button class="btn btn-navy" id="run">Nu uitlezen →</button></div>
+        <div id="check-msg" hidden></div>
+        <div class="table-wrap" id="check-table"></div>
+        <div class="row" id="check-actions" hidden><button class="btn btn-navy" id="to-download">Downloaden →</button><button class="btn btn-outline" id="back-pick">Terug naar aanwijzen</button></div>
+      </div>
+    </section>
+
+    <!-- Stap 4 -->
+    <section class="app-page" id="page-download" hidden>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:24px;"><h1>Downloaden</h1><div class="sub">Download het bestand, of laat ParseLab dit voortaan automatisch doen.</div></div>
+      <div class="card">
+        <div class="caps">Bestand</div>
+        <div id="dl-empty" class="note">Nog geen uitvoering. Ga terug naar Controleren en klik op "Nu uitlezen".</div>
+        <div id="dl-info" hidden>
+          <div class="kv"><span class="caps">Regels</span><span id="dl-rows"></span><span class="caps">Pagina's</span><span id="dl-pages"></span><span class="caps">Via proxy</span><span id="dl-proxy"></span></div>
+          <div class="row" style="margin-top:12px"><a class="btn btn-navy" id="dl-xlsx" href="#">Download voor Excel</a><a class="btn btn-outline" id="dl-csv" href="#">Andere formaten: CSV</a><button class="btn btn-outline" id="dl-board">Gebruik als bron in ParseBoard</button></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:24px">
+        <div class="caps">Dit voortaan automatisch doen</div>
+        <div class="row">
+          <div class="field"><label for="task-name">Naam van de taak</label><input id="task-name" type="text" placeholder="Bijv. Webshop-prijzen"></div>
+          <div class="field" style="max-width:220px"><label for="task-schedule">Hoe vaak</label><select id="task-schedule"><option value="nu">Alleen als ik het vraag</option><option value="uur">Elk uur</option><option value="dag">Elke dag</option><option value="week">Elke week</option></select></div>
+          <div style="align-self:flex-end"><button class="btn btn-navy" id="task-save">Taak bewaren</button></div>
+        </div>
+        <div class="note">Een bewaarde taak draait op de ParseLab-server, ook als je computer uit staat. Het resultaat staat hier en in het dashboard onder Bestanden.</div>
+        <div id="task-msg" hidden></div>
+      </div>
+      <div class="card" style="margin-top:24px">
+        <div class="caps">Bewaarde taken</div>
+        <div class="tasks" id="tasks"><div class="note">Nog geen bewaarde taken.</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+"use strict";
+/* ParseScraper — Website uitlezen vanaf de ParseLab-server (server/server.js). Zelfde stappen als ParsePDF: Adres → Aanwijzen → Controleren → Downloaden. */
+const $ = s => document.querySelector(s);
+const API = (window.PARSELAB_API_BASE || "") + "/api/scrape";
+const state = window.plState = { page: "url", snapshot: null, rule: null, run: null, mode: "item", proxies: 0, token: sessionStorage.getItem("parselab-token") || "" };
+const EMBED = (() => { try { return window.self !== window.top || /[?&]embed=1/.test(location.search); } catch (e) { return true; } })();
+if (EMBED) document.documentElement.classList.add("parselab-embed");
+
+/* ---------- navigatie ---------- */
+function showPage(name) {
+  state.page = name;
+  document.querySelectorAll(".app-page").forEach(p => { const on = p.id === "page-" + name; p.hidden = !on; p.classList.toggle("active", on); });
+  document.querySelectorAll(".nav-item[data-page]").forEach(n => n.classList.toggle("active", n.dataset.page === name));
+  window.scrollTo(0, 0); post({ type: "parselab:section", section: name });
+}
+window.showPage = showPage;
+document.querySelectorAll(".nav-item[data-page]").forEach(n => n.onclick = () => showPage(n.dataset.page));
+function post(msg) { if (!EMBED) return; try { window.parent.postMessage(Object.assign({ source: "parselab-tool" }, msg), "*"); } catch (e) {} }
+window.addEventListener("message", ev => {
+  const d = ev.data || {};
+  if (d.type === "parselab:nav" && d.section) showPage(d.section);
+  if (d.type === "parselab:load-project" && d.project) loadProject(d.project);
+});
+/* Projecten = bewaarde taken op de server. Het dashboard toont ze in de zijbalk en opent ze hier. */
+function syncProjects() { post({ type: "parselab:projects", tool: "scrape", list: (state.tasks || []).map(t => ({ id: "scrape:" + t.id, name: t.name, payload: { taskId: t.id }, updated: t.lastRun || t.created })) }); }
+async function loadProject(pr) {
+  try { await loadProjectInner(pr); } catch (e) { console.error("ParseScraper: project openen mislukt", e); msg($("#fetch-msg"), "Dit project kon niet worden geopend: " + e.message, true); showPage("url"); }
+}
+async function loadProjectInner(pr) {
+  if (pr.payload && pr.payload.taskId) {
+    const t = (state.tasks || await api("/tasks").catch(() => [])).find(x => x.id === pr.payload.taskId);
+    if (!t) { msg($("#fetch-msg"), "Deze taak staat niet meer op de server.", true); showPage("url"); return; }
+    $("#url").value = t.url; $("#task-name").value = t.name; $("#task-schedule").value = t.schedule || "nu"; $("#pages").value = t.pages || 1; $("#use-proxy").checked = t.proxy !== false;
+    state.snapshot = { url: t.url, html: "" }; state.rule = Object.assign({ count: 0 }, t.rule, { columns: t.rule.columns.map(c => Object.assign({ samples: [] }, c)) }); state.currentTask = t;
+    renderRule(); $("#count-pill").textContent = "Bewaarde taak"; showPage("check");
+    $("#check-note").textContent = "Klik op “Nu uitlezen” om de taak “" + t.name + "” opnieuw te draaien.";
+    if (t.lastRunId && t.lastStatus !== "fout") { try { state.run = await api("/runs/" + t.lastRunId); renderRun(); $("#check-note").textContent = "Laatste uitvoering van “" + t.name + "”. Klik op “Nu uitlezen” voor een nieuwe."; } catch (e) {} }
+  } else {
+    if (pr.name) $("#task-name").value = pr.name;
+    showPage("url"); $("#url").focus();
+  }
+}
+function stats() { post({ type: "parselab:stats", tool: "scrape", tasks: (state.tasks || []).length, rows: state.run ? state.run.rows.length : 0, running: !!state.busy }); }
+
+/* ---------- API ---------- */
+async function api(path, opts) {
+  const headers = { "content-type": "application/json" }; if (state.token) headers["x-parselab-token"] = state.token;
+  let res; try { res = await fetch(API + path, Object.assign({ headers }, opts || {})); } catch (e) { throw new Error("De ParseLab-server is niet bereikbaar. Start hem met: node server/server.js"); }
+  const isJson = (res.headers.get("content-type") || "").includes("json");
+  const body = isJson ? await res.json() : null;
+  if (res.status === 401) { const t = prompt("De ParseLab-server vraagt een toegangscode:"); if (t) { state.token = t; sessionStorage.setItem("parselab-token", t); return api(path, opts); } }
+  if (!res.ok) throw new Error(body && body.error || "Er ging iets mis (" + res.status + ")");
+  return body;
+}
+function msg(el, text, err) { el.hidden = !text; el.className = "msg" + (err ? " err" : ""); el.textContent = text || ""; }
+
+/* ---------- stap 1: ophalen ---------- */
+api("/status").then(s => { state.proxies = (s.proxies || []).length; $("#proxy-note").textContent = state.proxies ? "(" + state.proxies + " beschikbaar)" : "(geen proxies ingesteld; rechtstreeks vanaf de server)"; if (!state.proxies) $("#use-proxy").checked = false; loadTasks(); }).catch(() => { $("#proxy-note").textContent = "(server niet bereikbaar)"; });
+$("#fetch").onclick = async () => {
+  const u = $("#url").value.trim(); if (!u) return;
+  $("#fetch").disabled = true; msg($("#fetch-msg"), "Pagina ophalen… dit duurt een paar seconden.");
+  try {
+    const snap = await api("/snapshot", { method: "POST", body: JSON.stringify({ url: u, proxy: $("#use-proxy").checked }) });
+    state.snapshot = snap; state.rule = null; state.run = null;
+    msg($("#fetch-msg"), "");
+    loadSnapshot(snap); showPage("pick");
+  } catch (e) { msg($("#fetch-msg"), e.message, true); }
+  $("#fetch").disabled = false;
+};
+$("#url").addEventListener("keydown", e => { if (e.key === "Enter") $("#fetch").click(); });
+
+/* ---------- stap 2: aanwijzen in de opgeschoonde pagina ---------- */
+const frame = $("#snap");
+function loadSnapshot(snap) {
+  $("#frame-url").textContent = snap.url; $("#pick-empty").hidden = false; $("#pick-info").hidden = true; setMode("item");
+  frame.srcdoc = snap.html;
+  frame.onload = () => {
+    const doc = frame.contentDocument; if (!doc) return;
+    const style = doc.createElement("style"); style.textContent = ".pl-hl{outline:2px solid #2C6FA8!important;outline-offset:2px;background:rgba(44,111,168,.10)!important;cursor:crosshair!important}.pl-item{outline:2px dashed #C9A961!important;outline-offset:2px}a{cursor:crosshair!important}"; doc.head.appendChild(style);
+    let hover = null;
+    doc.addEventListener("mouseover", e => { if (hover) hover.classList.remove("pl-hl"); hover = e.target; if (hover && hover.classList) hover.classList.add("pl-hl"); }, true);
+    doc.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); onPick(e.target); }, true);
+    doc.addEventListener("submit", e => e.preventDefault(), true);
+  };
+}
+function setMode(m) { state.mode = m; $("#mode-pill").textContent = m === "next" ? "Klik op de volgende-knop" : "Klik een item"; $("#mode-next").textContent = m === "next" ? "Terug naar item aanwijzen" : "Volgende-knop aanwijzen"; }
+$("#mode-next").onclick = () => setMode(state.mode === "next" ? "item" : "next");
+
+/* selectors */
+const GENERATED = /\d{3,}|^(css|sc|jss|emotion|chakra|mui)-|^_/i;
+function classes(el) { return [...(el.classList || [])].filter(c => !GENERATED.test(c) && !/^pl-/.test(c) && c.length < 40).slice(0, 3); }
+function sig(el) { return el.tagName.toLowerCase() + (classes(el).length ? "." + classes(el).sort().join(".") : ""); }
+function selSig(el) { return el.tagName.toLowerCase() + classes(el).map(c => "." + CSS.escape(c)).join(""); }
+function pathTo(el, root) {
+  const parts = []; let cur = el;
+  while (cur && cur !== root && cur.nodeType === 1 && cur.tagName !== "BODY" && cur.tagName !== "HTML") {
+    if (cur.id && !GENERATED.test(cur.id)) { parts.unshift("#" + CSS.escape(cur.id)); return parts.join(" > "); }
+    let s = selSig(cur);
+    const par = cur.parentElement;
+    if (par) { const same = [...par.children].filter(c => sig(c) === sig(cur)); if (same.length > 1) s += ":nth-of-type(" + ([...par.children].filter(c => c.tagName === cur.tagName).indexOf(cur) + 1) + ")"; }
+    parts.unshift(s); cur = par;
+    if (parts.length > 8) break;
+  }
+  return parts.join(" > ");
+}
+function findList(el) {
+  let cur = el;
+  for (let depth = 0; depth < 10 && cur && cur.parentElement && cur.tagName !== "BODY"; depth++) {
+    const par = cur.parentElement, same = [...par.children].filter(c => sig(c) === sig(cur) && (c.innerText || "").trim());
+    if (same.length >= 3) return { item: cur, container: par, siblings: same };
+    cur = par;
+  }
+  return null;
+}
+function relSel(el, item) {
+  const parts = []; let cur = el;
+  while (cur && cur !== item) {
+    let s = selSig(cur); const par = cur.parentElement;
+    if (par) { const same = [...par.children].filter(c => c.tagName === cur.tagName); if (same.length > 1 && classes(cur).length === 0) s += ":nth-of-type(" + (same.indexOf(cur) + 1) + ")"; }
+    parts.unshift(s); cur = par;
+  }
+  return parts.join(" > ");
+}
+function leafCandidates(item) {
+  const out = [];
+  item.querySelectorAll("*").forEach(n => {
+    if (["SCRIPT", "STYLE", "SVG", "PATH", "BR"].includes(n.tagName)) return;
+    const own = [...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim());
+    if (n.tagName === "IMG" && (n.currentSrc || n.src)) out.push({ el: n, attr: "src", text: n.alt || "afbeelding" });
+    else if (own && (n.innerText || "").trim() && (n.innerText || "").length < 300) out.push({ el: n, attr: "text", text: (n.innerText || "").trim() });
+    if (n.tagName === "A" && n.href && !own && n.querySelector("img") === null && (n.innerText || "").trim()) out.push({ el: n, attr: "text", text: (n.innerText || "").trim() });
+  });
+  if (!out.length && (item.innerText || "").trim()) out.push({ el: item, attr: "text", text: (item.innerText || "").trim() });
+  return out.slice(0, 40);
+}
+function humanName(el, i) {
+  const c = classes(el).find(x => /[a-z]{3,}/i.test(x));
+  const raw = el.getAttribute("aria-label") || el.getAttribute("title") || el.getAttribute("itemprop") || (c ? c.replace(/[-_]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2") : "") || (el.tagName === "IMG" ? "afbeelding" : el.tagName === "A" ? "link" : "");
+  const map = { price: "prijs", title: "titel", name: "naam", desc: "omschrijving", description: "omschrijving", img: "afbeelding", image: "afbeelding", date: "datum", location: "plaats", city: "plaats", company: "bedrijf", link: "link" };
+  let n = raw.trim().toLowerCase(); Object.keys(map).forEach(k => { if (n.includes(k)) n = map[k]; });
+  return n ? n.charAt(0).toUpperCase() + n.slice(1) : "Kolom " + (i + 1);
+}
+const looksNumber = v => /^\s*(€|eur|\$)?\s*-?\d{1,3}([.,]\d{3})*([.,]\d+)?\s*(€|eur|%|,-)?\s*$/i.test(String(v || ""));
+let pending = null;
+function onPick(target) {
+  if (!target || !target.tagName) return;
+  if (state.mode === "next") {
+    const a = target.closest("a, button"); if (!a) return;
+    state.rule = state.rule || { item: "", columns: [] }; state.rule.next = { selector: pathTo(a, frame.contentDocument.body), text: (a.innerText || "").trim() };
+    $("#next-note").textContent = "Volgende-knop: “" + (state.rule.next.text || "zonder tekst") + "”. Kies hiernaast hoeveel pagina's ParseLab mag volgen."; if (+$("#pages").value < 2) $("#pages").value = 5;
+    setMode("item"); return;
+  }
+  const list = findList(target);
+  pending = { target, list };
+  $("#ask-ex").textContent = list ? list.siblings.length + " vergelijkbare items gevonden · bijv. “" + (list.siblings[0].innerText || "").trim().slice(0, 80) + "”" : "Geen lijst rondom dit item gevonden; je krijgt alleen dit.";
+  $("#ask-list").disabled = !list; $("#ask").hidden = false;
+}
+$("#ask-cancel").onclick = () => { $("#ask").hidden = true; pending = null; };
+$("#ask-one").onclick = () => { $("#ask").hidden = true; buildRule(pending.target, null); };
+$("#ask-list").onclick = () => { $("#ask").hidden = true; buildRule(pending.target, pending.list); };
+function buildRule(target, list) {
+  const doc = frame.contentDocument, body = doc.body;
+  doc.querySelectorAll(".pl-item").forEach(n => n.classList.remove("pl-item"));
+  let rule;
+  if (list) {
+    const itemSel = pathTo(list.container, body) + " > " + selSig(list.item);
+    const all = [...doc.querySelectorAll(itemSel)]; all.forEach(n => n.classList.add("pl-item"));
+    const cands = leafCandidates(list.item), seen = new Set(), columns = [];
+    cands.forEach((c, i) => {
+      const sel = relSel(c.el, list.item); const key = sel + "|" + c.attr; if (seen.has(key)) return; seen.add(key);
+      const hits = all.filter(it => it.querySelector(sel)); if (hits.length < Math.max(2, all.length * 0.4)) return;
+      const samples = all.slice(0, 6).map(it => { const e = it.querySelector(sel); return e ? (c.attr === "src" ? (e.currentSrc || e.src) : (e.innerText || "").trim()) : ""; });
+      columns.push({ name: humanName(c.el, columns.length), selector: sel, attr: c.attr, number: c.attr === "text" && samples.filter(Boolean).every(looksNumber) && samples.some(Boolean), off: false, samples, isLink: c.el.tagName === "A" || !!c.el.closest("a[href]") });
+    });
+    const uniq = []; columns.forEach(c => { if (!uniq.some(u => u.samples.join("|") === c.samples.join("|"))) uniq.push(c); });
+    rule = { item: itemSel, columns: uniq.slice(0, 12), scroll: false, next: state.rule && state.rule.next || null, count: all.length };
+    if (rule.columns.some(c => c.isLink) && !rule.columns.some(c => c.attr === "href")) { const l = rule.columns.find(c => c.isLink); rule.columns.push({ name: "Link", selector: l.selector, attr: "href", number: false, off: false, samples: all.slice(0, 6).map(it => { const e = it.querySelector(l.selector); const a = e && (e.tagName === "A" ? e : e.closest("a[href]")); return a ? a.href : ""; }) }); }
+  } else {
+    const sel = pathTo(target, body); target.classList.add("pl-item");
+    rule = { item: "", columns: [{ name: humanName(target, 0), selector: sel, attr: target.tagName === "IMG" ? "src" : "text", number: looksNumber(target.innerText), off: false, samples: [target.tagName === "IMG" ? target.src : (target.innerText || "").trim()] }], scroll: false, next: null, count: 1 };
+  }
+  state.rule = rule; renderRule();
+}
+function renderRule() {
+  const r = state.rule; $("#pick-empty").hidden = true; $("#pick-info").hidden = false;
+  $("#count-pill").textContent = r.item ? r.count + " items gevonden" : "Alleen dit item";
+  $("#item-note").textContent = r.item ? "Geef de kolommen een naam. Zet uit wat je niet nodig hebt." : "";
+  $("#scroll").checked = !!r.scroll;
+  $("#cols").innerHTML = r.columns.map((c, i) => `
+    <div class="col">
+      <input type="checkbox" data-i="${i}" data-f="off" ${c.off ? "" : "checked"} title="Meenemen">
+      <input type="text" data-i="${i}" data-f="name" value="${esc(c.name)}" aria-label="Kolomnaam">
+      <select data-i="${i}" data-f="attr" aria-label="Wat wil je hebben?"><option value="text" ${c.attr === "text" ? "selected" : ""}>de tekst</option><option value="href" ${c.attr === "href" ? "selected" : ""}>de link</option><option value="src" ${c.attr === "src" ? "selected" : ""}>de afbeelding</option></select>
+      <label class="check" style="font-size:13px"><input type="checkbox" data-i="${i}" data-f="number" ${c.number ? "checked" : ""}> getal</label>
+      <div class="ex">${esc((c.samples || []).filter(Boolean).slice(0, 3).join("  ·  ") || "—")}</div>
+    </div>`).join("");
+  $("#cols").querySelectorAll("[data-i]").forEach(el => el.onchange = () => { const c = r.columns[+el.dataset.i], f = el.dataset.f; if (f === "off") c.off = !el.checked; else if (f === "number") c.number = el.checked; else c[f] = el.value; });
+}
+$("#scroll").onchange = e => { if (state.rule) state.rule.scroll = e.target.checked; };
+$("#pick-reset").onclick = () => { state.rule = null; $("#pick-empty").hidden = false; $("#pick-info").hidden = true; const d = frame.contentDocument; if (d) d.querySelectorAll(".pl-item").forEach(n => n.classList.remove("pl-item")); };
+$("#to-check").onclick = () => { if (!state.rule) return; showPage("check"); };
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])); }
+
+/* ---------- stap 3: uitlezen op de server ---------- */
+function cleanRule() { const r = state.rule; return { item: r.item, scroll: r.scroll, next: r.next ? { selector: r.next.selector } : null, columns: r.columns.map(c => ({ name: c.name, selector: c.selector, attr: c.attr, number: c.number, off: c.off })) }; }
+$("#run").onclick = async () => {
+  if (!state.rule || !state.snapshot) { msg($("#check-msg"), "Wijs eerst aan wat je wilt uitlezen (stap 2).", true); return; }
+  $("#run").disabled = true; state.busy = true; stats(); $("#check-pill").textContent = "Bezig…"; msg($("#check-msg"), "ParseLab leest de pagina's uit. Bij meerdere pagina's wacht hij netjes 2 seconden tussen elke pagina.");
+  try {
+    const run = await api("/run", { method: "POST", body: JSON.stringify({ url: state.snapshot.url, rule: cleanRule(), pages: +$("#pages").value || 1, proxy: $("#use-proxy").checked }) });
+    state.run = run; msg($("#check-msg"), ""); renderRun();
+  } catch (e) { $("#check-pill").textContent = "Niet gelukt"; msg($("#check-msg"), e.message, true); }
+  $("#run").disabled = false; state.busy = false; stats();
+};
+function renderRun() {
+  const run = state.run, cols = run.columns, empty = run.rows.filter(r => cols.some(c => r[c] === "" || r[c] == null)).length;
+  $("#check-pill").textContent = run.rows.length + " regels · " + run.pages + " pagina" + (run.pages === 1 ? "" : "'s");
+  $("#check-note").textContent = empty ? empty + " regels met een lege cel (gemarkeerd)" : "Alle cellen gevuld";
+  $("#check-table").innerHTML = `<table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${run.rows.slice(0, 200).map(r => `<tr>${cols.map(c => `<td class="${typeof r[c] === "number" ? "num" : ""} ${r[c] === "" || r[c] == null ? "empty" : ""}" title="${esc(r[c])}">${esc(r[c])}</td>`).join("")}</tr>`).join("")}</tbody></table>${run.rows.length > 200 ? `<div class="note" style="margin-top:8px">Eerste 200 van ${run.rows.length} regels getoond; het bestand bevat alles.</div>` : ""}`;
+  $("#check-actions").hidden = false;
+  $("#dl-empty").hidden = true; $("#dl-info").hidden = false; $("#dl-rows").textContent = run.rows.length; $("#dl-pages").textContent = run.pages; $("#dl-proxy").textContent = run.proxy ? "ja (" + run.proxy + ")" : "nee";
+  $("#dl-xlsx").href = API + "/runs/" + run.id + ".xlsx"; $("#dl-csv").href = API + "/runs/" + run.id + ".csv";
+  if (!$("#task-name").value) { try { $("#task-name").value = new URL(state.snapshot.url).hostname.replace(/^www\./, ""); } catch (e) {} }
+}
+$("#to-download").onclick = () => showPage("download"); $("#back-pick").onclick = () => showPage("pick");
+$("#dl-board").onclick = () => { if (!state.run) return; post({ type: "parselab:open", view: "board", section: "1", payload: { fileName: "uitgelezen.xlsx", rows: state.run.rows.length, runId: state.run.id } }); if (!EMBED) alert("Open ParseBoard in het dashboard en kies dit bestand als bron."); };
+
+/* ---------- stap 4: taken ---------- */
+$("#task-save").onclick = async () => {
+  if (!state.rule || !state.snapshot) { msg($("#task-msg"), "Wijs eerst aan wat je wilt uitlezen (stap 2).", true); return; }
+  try {
+    const t = await api("/tasks", { method: "POST", body: JSON.stringify({ name: $("#task-name").value.trim(), url: state.snapshot.url, rule: cleanRule(), pages: +$("#pages").value || 1, schedule: $("#task-schedule").value, proxy: $("#use-proxy").checked, lastRunId: state.run && state.run.id }) });
+    msg($("#task-msg"), "Taak “" + t.name + "” bewaard" + (t.schedule === "nu" ? "." : " en ingepland (" + { uur: "elk uur", dag: "elke dag", week: "elke week" }[t.schedule] + ")."));
+    state.currentTask = t; await loadTasks();
+    post({ type: "parselab:project", tool: "scrape", id: "scrape:" + t.id, name: t.name, payload: { taskId: t.id }, open: true });
+  } catch (e) { msg($("#task-msg"), e.message, true); }
+};
+async function loadTasks() {
+  try { state.tasks = await api("/tasks"); } catch (e) { state.tasks = []; }
+  const el = $("#tasks"); stats(); syncProjects();
+  if (!state.tasks.length) { el.innerHTML = '<div class="note">Nog geen bewaarde taken.</div>'; return; }
+  el.innerHTML = state.tasks.map(t => `
+    <div class="tr">
+      <div><div class="name">${esc(t.name)}</div><div class="meta">${esc(t.url)}</div></div>
+      <div class="meta">${{ nu: "op verzoek", uur: "elk uur", dag: "elke dag", week: "elke week" }[t.schedule] || ""}${t.lastRun ? " · laatst " + new Date(t.lastRun).toLocaleString("nl-NL", { dateStyle: "short", timeStyle: "short" }) + " · " + (t.lastStatus === "fout" ? "niet gelukt" : (t.lastRows || 0) + " regels") : " · nog niet gedraaid"}</div>
+      <div class="row">${t.lastRunId && t.lastStatus !== "fout" ? `<a class="link" href="${API}/runs/${t.lastRunId}.xlsx">Excel</a>` : ""}<button class="btn btn-outline btn-small" data-run-task="${t.id}">Nu draaien</button></div>
+      <button class="link" data-del-task="${t.id}" title="Verwijderen">✕</button>
+    </div>`).join("");
+  el.querySelectorAll("[data-run-task]").forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = "Bezig…"; try { await api("/tasks/" + b.dataset.runTask + "/run", { method: "POST" }); } catch (e) { alert(e.message); } loadTasks(); });
+  el.querySelectorAll("[data-del-task]").forEach(b => b.onclick = async () => { if (!confirm("Deze taak verwijderen?")) return; await api("/tasks/" + b.dataset.delTask, { method: "DELETE" }); loadTasks(); });
+}
+showPage(new URLSearchParams(location.search).get("section") || "url");
+post({ type: "parselab:ready", tool: "scrape" });
+</script>
+</body>
+</html>

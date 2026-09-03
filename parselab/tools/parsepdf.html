@@ -8,7 +8,7 @@
 
     <title>ParsePDF</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%84%3C/text%3E%3C/svg%3E">
 
     <style>
@@ -1048,6 +1048,7 @@
             <div class="nav-item" data-page="define"><span class="nav-num">2</span>Aanwijzen<span class="nav-check hidden" id="navCheckCols"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
             <div class="nav-item" data-page="check"><span class="nav-num">3</span>Controleren<span class="nav-check hidden" id="navCheckRes"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
             <div class="nav-item" data-page="download"><span class="nav-num">4</span>Downloaden<span class="nav-check hidden" id="navCheckDl"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-check"></use></svg></span></div>
+            <div class="nav-item" data-page="templates"><span class="nav-num">5</span>Sjablonen</div>
             <div class="nav-sep" style="margin-top:auto;"></div>
             <div class="nav-item" id="tourNavBtn"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-help"></use></svg></span>Rondleiding</div>
             <p class="sidebar-note"><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>Deze bestanden blijven op jouw computer. Alleen als je daar zelf per document voor kiest, gaat de tekst naar ParseLab voor herkenning.</span></p>
@@ -1290,6 +1291,17 @@
         </div>
 
         <!-- Stap 4: Downloaden -->
+        <div class="app-page" id="page-templates">
+            <h1 class="page-title">Sjablonen</h1>
+            <p class="page-sub">Een sjabloon is de set kolommen die je één keer hebt aangewezen. Kies er een om meteen mee te werken, of bewaar je huidige kolommen als nieuw sjabloon.</p>
+            <div class="tool-section">
+                <div class="rule-body" style="margin-top:0; display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+                    <div class="field" style="flex:1; min-width:220px;"><label>Huidige kolommen bewaren als</label><input type="text" id="tplPageName" placeholder="bijv. Facturen leverancier X"></div>
+                    <button class="btn" id="tplPageSave">Sjabloon bewaren</button>
+                </div>
+                <div id="tplPageList" style="margin-top:1rem;"></div>
+            </div>
+        </div>
         <div class="app-page" id="page-download">
             <h1 class="page-title">4 &middot; Downloaden</h1>
             <p class="page-sub">Download je tabel voor Excel, of vul er direct een formulier mee in.</p>
@@ -2656,11 +2668,13 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         }
 
         function chipFor(rule) {
-            var first = activeFiles()[0];
-            if (!first) return { show: false, text: '', cls: 'rule-chip empty' };
-            var v = evalRuleFinal(first.doc, rule).replace(/\n/g, ' ');
-            if (v === '') return { show: true, text: 'leeg', cls: 'rule-chip empty' };
-            return { show: true, text: v.length > 26 ? v.slice(0, 25) + '\u2026' : v, cls: 'rule-chip' };
+            var files = activeFiles().slice(0, 3);
+            if (!files.length) return { show: false, text: '', cls: 'rule-chip empty' };
+            var vals = files.map(function (f) { var v = ''; try { v = evalRuleFinal(f.doc, rule).replace(/\n/g, ' '); } catch (e) {} return v; });
+            var found = vals.filter(function (v) { return v !== ''; });
+            if (!found.length) return { show: true, text: 'leeg in ' + files.length + ' document' + (files.length === 1 ? '' : 'en'), cls: 'rule-chip empty' };
+            var text = vals.map(function (v) { return v === '' ? '\u2014' : (v.length > 18 ? v.slice(0, 17) + '\u2026' : v); }).join('  \u00b7  ');
+            return { show: true, text: text, cls: 'rule-chip' + (found.length < files.length ? ' partial' : ''), title: files.map(function (f, i) { return (f.name || f.file && f.file.name || 'document ' + (i + 1)) + ': ' + (vals[i] || 'leeg'); }).join('\n') };
         }
 
         function updateChips() {
@@ -2674,6 +2688,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     chip.style.display = c.show ? '' : 'none';
                     chip.className = c.cls;
                     chip.textContent = c.text;
+                    chip.title = c.title || '';
                     chip.setAttribute('data-chip', '');
                     if (changed && c.show && c.text) {
                         chip.classList.remove('flash');
@@ -2718,7 +2733,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 '<span class="rule-title">' + esc(rule.name || 'Kolom') + '</span>' +
                 (rule.source === 'ai' ? '<span class="ai-badge" title="Deze kolom is met AI herkend">AI</span>' : '') +
                 '<span class="rule-summary">' + esc(summarizeRule(rule)) + '</span>' +
-                '<span class="' + chip.cls + '" data-chip' + (chip.show ? '' : ' style="display:none"') + '>' + esc(chip.text) + '</span>' +
+                '<span class="' + chip.cls + '" data-chip title="' + esc(chip.title || 'Wat er wordt opgehaald uit de eerste documenten') + '"' + (chip.show ? '' : ' style="display:none"') + '>' + esc(chip.text) + '</span>' +
                 '<button type="button" class="rule-x" data-action="remove" title="Verwijderen">\u2715</button>' +
                 '</div>';
 
@@ -4046,7 +4061,34 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             return strip(rules) === strip(tpl.rules || []);
         }
 
+        function renderTemplatesPage() {
+            var holder = $('tplPageList'); if (!holder) return;
+            var own = loadTemplates(), names = Object.keys(BUILTIN_TEMPLATES).concat(Object.keys(own));
+            function cols(t) { return (t.rules || []).map(function (r) { return r.name || 'Kolom'; }); }
+            holder.innerHTML = names.map(function (name) {
+                var t = BUILTIN_TEMPLATES[name] || own[name], builtin = !!BUILTIN_TEMPLATES[name];
+                return '<div class="define-card" style="margin-bottom:12px;">' +
+                    '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
+                    '<h3 style="margin:0; flex:1;">' + esc(name) + (builtin ? ' <span class="tmpl-chip builtin" style="font-size:12px;">voorbeeld</span>' : '') + (name === activeTemplate ? ' <span class="tmpl-chip active" style="font-size:12px;">in gebruik</span>' : '') + '</h3>' +
+                    '<button class="btn btn-small" data-tpl-use="' + esc(name) + '">Gebruiken</button>' +
+                    (builtin ? '' : '<button class="btn btn-small btn-secondary" data-tpl-rename="' + esc(name) + '">Naam wijzigen</button><button class="btn btn-small btn-secondary" data-tpl-del="' + esc(name) + '">Verwijderen</button>') +
+                    '</div>' +
+                    '<p class="page-sub" style="margin:6px 0 0;">' + esc(cols(t).length + ' kolommen: ' + cols(t).join(', ')) + (t.savedAt ? ' \u00b7 bewaard ' + new Date(t.savedAt).toLocaleDateString('nl-NL') : '') + '</p>' +
+                    '</div>';
+            }).join('');
+            holder.querySelectorAll('[data-tpl-use]').forEach(function (b) { b.addEventListener('click', function () { applyTemplate(b.getAttribute('data-tpl-use'), true); showPage('define'); }); });
+            holder.querySelectorAll('[data-tpl-del]').forEach(function (b) { b.addEventListener('click', function () {
+                var name = b.getAttribute('data-tpl-del'); if (!confirm('Sjabloon \u201c' + name + '\u201d verwijderen?')) return;
+                var cur = loadTemplates(); delete cur[name]; storeTemplates(cur); if (activeTemplate === name) activeTemplate = null; renderTemplateChips(); setStatus('Sjabloon \u201c' + name + '\u201d verwijderd.');
+            }); });
+            holder.querySelectorAll('[data-tpl-rename]').forEach(function (b) { b.addEventListener('click', function () {
+                var name = b.getAttribute('data-tpl-rename'), nn = prompt('Nieuwe naam voor dit sjabloon:', name); if (!nn || nn === name) return; nn = nn.trim();
+                if (BUILTIN_TEMPLATES[nn]) { setStatus('Die naam is van een voorbeeldsjabloon. Kies een andere.', true); return; }
+                var cur = loadTemplates(); cur[nn] = cur[name]; delete cur[name]; storeTemplates(cur); if (activeTemplate === name) activeTemplate = nn; renderTemplateChips(); setStatus('Sjabloon heet nu \u201c' + nn + '\u201d.');
+            }); });
+        }
         function renderTemplateChips() {
+            renderTemplatesPage();
             updateChecklist();
             refreshWorkflowTemplates();
             postStats();
@@ -4662,6 +4704,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 n.classList.toggle('active', n.getAttribute('data-page') === name);
             });
             if (name === 'define') refreshWizard();
+            if (name === 'templates') renderTemplatesPage();
             if (name === 'download') {
                 refreshWorkflowTemplates();
                 if (!results) runScrape(true);
@@ -4789,6 +4832,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         }
 
         function initAppShell() {
+            var tps = $('tplPageSave');
+            if (tps) tps.addEventListener('click', function () { var n = $('tplPageName').value.trim(); if (n) $('tmplName').value = n; saveTemplate(); if ($('tplPageName')) $('tplPageName').value = ''; });
             document.querySelectorAll('.nav-item[data-page]').forEach(function (n) {
                 n.addEventListener('click', function () { showPage(n.getAttribute('data-page')); });
             });
@@ -5260,17 +5305,35 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     // Navigatie loopt via de zijbalk van het dashboard. Eigen zijbalk is verborgen.
     function current() { var a = document.querySelector(".app-page.active"); return a ? a.id.replace(/^page-/, "") : "upload"; }
     function report() { post({ type:"parselab:section", section: current() }); }
+    // Projecten = sjablonen. Het dashboard toont ze in de zijbalk; openen = sjabloon toepassen op stap Aanwijzen.
+    function syncProjects() {
+      try {
+        var all = (typeof loadTemplates === "function") ? loadTemplates() : JSON.parse(localStorage.getItem("pdfScraperTemplates") || "{}");
+        post({ type: "parselab:projects", tool: "pdf", list: Object.keys(all || {}).map(function (n) { return { id: "pdf:" + n, name: n, payload: { template: n }, updated: (all[n] && all[n].updated) || null }; }) });
+      } catch (e) {}
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncProjects); else syncProjects();
+    window.addEventListener("storage", syncProjects);
+    var _setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { _setItem.apply(this, arguments); if (k === "pdfScraperTemplates") setTimeout(syncProjects, 0); };
     window.addEventListener("message", function (ev) {
       var d = ev.data || {};
+      if (d.type === "parselab:load-project" && d.project) {
+        var pr = d.project;
+        if (pr.payload && pr.payload.template && typeof applyTemplate === "function") { try { applyTemplate(pr.payload.template, true); } catch (e) {} if (typeof showPage === "function") showPage("define"); }
+        else { if (typeof showPage === "function") showPage("upload"); var nm = document.querySelector("#templateName, #tplName, input[placeholder*='Facturen']"); if (nm && pr.name) nm.value = pr.name; }
+        return;
+      }
       if (d.type !== "parselab:nav" || !d.section) return;
       var item = document.querySelector('.nav-item[data-page="' + d.section + '"]');
       if (item) item.click(); else if (typeof showPage === "function") showPage(d.section);
     });
     var obs = new MutationObserver(function () { report(); });
-    window.addEventListener("load", function () {
+    function arm() {
       document.querySelectorAll(".app-page").forEach(function (p) { obs.observe(p, { attributes:true, attributeFilter:["class"] }); });
-      report();
-    });
+      report(); post({ type:"parselab:ready", tool:"pdf" });
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", arm); else arm();
   })();
 </script>
 </body>
