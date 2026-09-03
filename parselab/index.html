@@ -109,16 +109,61 @@
   .pill-live { background:var(--blue-tint); color:var(--blue); }
   .pill-neutral { background:var(--cream); color:var(--ink-deep); }
 
-  /* ===== Overzicht ===== */
-  .launch { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px; }
-  .launch button { display:flex; align-items:center; gap:14px; text-align:left; background:var(--navy); color:var(--on-dark); border-radius:20px; padding:22px; box-shadow:var(--shadow-dark); transition:transform 150ms ease-out, filter 150ms ease-out; }
-  .launch button:hover { transform:translateY(-1px); filter:brightness(1.05); }
-  .launch .stack > span:first-child { font-size:18px; font-weight:600; }
-  .launch .stack > span:last-child { font-size:13px; color:var(--on-dark-muted); }
-  .launch .arrow { margin-left:auto; font-weight:600; }
+  /* ===== Overzicht (ParseLab Start): navy kaarten met een mini-visual per tool ===== */
+  .overview-title h1 { font-size:52px; letter-spacing:-.02em; line-height:1.05; color:var(--navy); }
+  .overview-title .sub { font-size:19px; }
+  .launch { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:22px; }
+  .launch button { display:flex; flex-direction:column; gap:18px; text-align:left; background:var(--navy); color:#fff; border-radius:20px; padding:24px; box-shadow:0 18px 40px rgba(31,58,95,.18); transition:transform 180ms ease, box-shadow 180ms ease; }
+  .launch button:hover { transform:translateY(-4px); box-shadow:0 26px 54px rgba(31,58,95,.26); }
+  .launch .lh { display:flex; align-items:center; justify-content:space-between; width:100%; }
+  .launch .ltile { width:38px; height:38px; border-radius:999px; color:var(--navy); font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; font-family:var(--font); }
+  .launch .lt { font-size:21px; font-weight:600; line-height:1.2; }
+  .launch .ls { font-size:14px; color:#A9BAD0; margin-top:8px; line-height:1.45; }
+  .launch .lv { margin-top:auto; width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px; position:relative; overflow:hidden; height:96px; }
+  .lv .rowl { display:flex; align-items:center; gap:6px; }
+  .lv .lab { width:26px; height:5px; border-radius:3px; background:rgba(255,255,255,.22); flex:none; }
+  .lv .fld { flex:1; height:14px; border-radius:5px; background:rgba(255,255,255,.14); }
+  .lv .fld.on { background:#CFDCEA; display:flex; align-items:center; padding:0 5px; }
+  .lv .caret { width:2px; height:8px; background:var(--navy); animation:pl-caret 2.6s infinite; }
+  .lv .chip { position:absolute; left:14px; bottom:8px; font-family:var(--mono); font-size:9px; color:var(--navy); background:var(--gold); border-radius:4px; padding:2px 6px; animation:pl-fill 2.6s infinite; }
+  .lv .scan { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:7px; }
+  .lv .scan i { display:block; height:12px; border-radius:4px; background:rgba(255,255,255,.13); }
+  .lv .scan .beam { position:absolute; inset:0 0 auto 0; height:12px; border-radius:4px; border:1.5px solid var(--gold); background:rgba(201,169,97,.18); animation:pl-scan 2.4s cubic-bezier(.6,0,.4,1) infinite alternate; }
+  .lv .arr { width:16px; display:flex; align-items:center; justify-content:center; color:#8D9AAB; font-size:11px; }
+  .lv .rows { flex:1; display:grid; grid-template-rows:repeat(4,1fr); gap:7px; }
+  .lv .rows i { display:block; border-radius:4px; background:rgba(207,220,234,.85); animation:pl-row 2.4s infinite; }
+  .lv .rows i:nth-child(2) { opacity:.85; animation-delay:.2s; } .lv .rows i:nth-child(3) { opacity:.7; animation-delay:.4s; } .lv .rows i:nth-child(4) { opacity:.55; animation-delay:.6s; }
+  .lv .doc { width:44px; background:rgba(255,255,255,.1); border-radius:5px; padding:6px; display:flex; flex-direction:column; gap:4px; }
+  .lv .doc i { display:block; height:4px; border-radius:2px; background:rgba(255,255,255,.2); }
+  .lv .doc i.t { width:70%; background:rgba(255,255,255,.4); } .lv .doc i.g { background:var(--gold); width:80%; } .lv .doc i.g2 { background:var(--gold); width:55%; }
+  .lv .tbl { flex:1; display:flex; flex-direction:column; gap:5px; font-family:var(--mono); font-size:8px; color:var(--navy); }
+  .lv .tbl .tr2 { display:flex; gap:4px; } .lv .tbl .tr2 > i { display:flex; align-items:center; padding-left:3px; flex:1; background:rgba(255,255,255,.2); border-radius:3px; height:12px; font-style:normal; }
+  .lv .tbl .tr2 > i.k { flex:none; width:22px; padding:0; } .lv .tbl .tr2.h > i.k { background:rgba(255,255,255,.2); }
+  .lv .tbl .tr2.d { animation:pl-row 2.6s infinite; } .lv .tbl .tr2.d > i { background:#EDEFF3; } .lv .tbl .tr2.d > i.k { background:var(--gold); }
+  .lv .tbl .tr2.d2 { animation-delay:.25s; } .lv .tbl .tr2.d3 { animation-delay:.5s; } .lv .tbl .tr2.d3 > i { background:rgba(237,239,243,.65); } .lv .tbl .tr2.d3 > i.k { background:rgba(201,169,97,.6); }
+  .lv .bars { display:flex; align-items:flex-end; gap:5px; height:44px; }
+  .lv .bars i { flex:1; display:block; border-radius:3px 3px 0 0; background:rgba(207,220,234,.6); transform-origin:bottom; animation:pl-grow .9s ease-out both; }
+  .lv .bars i.g { background:var(--gold); }
+  .lv .spark { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+  .lv .spark path { stroke-dasharray:140; stroke-dashoffset:140; animation:pl-dash 1.4s ease-out .3s forwards; }
+  .lv .spark span { font-family:var(--mono); font-size:9px; color:#CFDCEA; }
+  @keyframes pl-fill { 0%,12% { transform:translate(0,0); opacity:0; } 20% { opacity:1; } 60% { transform:translate(58px,-22px); opacity:1; } 72%,100% { transform:translate(58px,-22px); opacity:0; } }
+  @keyframes pl-caret { 0%,55% { opacity:0; } 62%,100% { opacity:1; } }
+  @keyframes pl-scan { 0% { transform:translateY(0); } 100% { transform:translateY(34px); } }
+  @keyframes pl-row { 0%,20% { opacity:.18; transform:translateX(-6px); } 40%,100% { opacity:1; transform:translateX(0); } }
+  @keyframes pl-grow { 0% { transform:scaleY(.15); } 100% { transform:scaleY(1); } }
+  @keyframes pl-dash { to { stroke-dashoffset:0; } }
+  @media (prefers-reduced-motion: reduce) { .lv * { animation:none !important; } .lv .spark path { stroke-dashoffset:0; } }
+  .proj-row .pname { font-size:19px; font-weight:600; color:var(--navy); overflow-wrap:anywhere; white-space:normal; }
+  .proj-row .ptool { display:flex; align-items:center; gap:16px; }
+  .proj-row .mini { display:flex; align-items:flex-end; gap:2px; height:20px; }
+  .proj-row .mini i { display:block; width:4px; border-radius:1px; background:#DDE4EC; }
+  .proj-row .mini i.m { background:#C6D2E0; } .proj-row .mini i.d { background:var(--navy); }
+  .btn-pill { border:1.5px solid var(--navy); color:var(--navy); border-radius:999px; padding:10px 22px; font-size:15px; font-weight:600; background:var(--white); transition:background 150ms ease, color 150ms ease; }
+  .btn-pill:hover { background:var(--navy); color:#fff; }
   .table { display:flex; flex-direction:column; }
   .tr { display:grid; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--hairline); width:100%; text-align:left; color:var(--ink); }
-  .proj-row { grid-template-columns:1.6fr 1fr auto auto; }
+  .proj-row { grid-template-columns:minmax(0,1.6fr) 220px auto auto; padding:20px 0; }
   .files-row { grid-template-columns:1.6fr 1fr auto; }
   .cell-main { display:flex; flex-direction:column; gap:2px; min-width:0; }
   .cell-main > span:first-child { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -331,6 +376,7 @@ function render() {
   const um = document.getElementById("user-menu"); um.innerHTML = state.menu === "user" ? renderUserMenu() : ""; um.hidden = state.menu !== "user";
 
   const eyebrow = document.getElementById("top-eyebrow"), title = document.getElementById("top-title"), sub = document.getElementById("top-sub"), action = document.getElementById("top-action");
+  document.querySelector(".topbar-text").classList.toggle("overview-title", !tool && state.view === "overview");
   if (tool) {
     const pr = state.project && readProjects().find(x => x.id === state.project);
     eyebrow.textContent = tool.task; title.textContent = pr ? pr.name : tool.name; sub.textContent = pr ? tool.name + " · " + tool.projectWord : tool.tagline;
@@ -340,6 +386,7 @@ function render() {
     const heads = { files:["Bestanden", "Wat ParseLab voor je heeft uitgelezen."], help:["Hulp", "Zo werkt elke tool, in gewone taal."] };
     const h = heads[state.view] || [greeting() + ", " + state.user.name.split(" ")[0], "Waar wil je mee verder?"];
     eyebrow.textContent = "ParseLab"; title.textContent = h[0]; sub.textContent = h[1];
+    document.querySelector(".topbar-text").classList.toggle("overview-title", state.view === "overview");
     action.textContent = "Wat wil je doen?"; action.onclick = () => go("overview");
     action.hidden = state.view === "overview";
     document.title = (heads[state.view] ? h[0] + " · " : "") + "ParseLab";
@@ -459,20 +506,39 @@ function renderOverview(defs) {
   return `
     <div style="display:flex; flex-direction:column; gap:32px;">
       <div class="launch">
-        ${defs.map(t => `<button type="button" data-bench="${t.key}">${tile(t, 36)}<span class="stack"><span>${esc(t.task)}</span><span>${esc(t.tagline)}</span></span><span class="arrow">→</span></button>`).join("")}
+        ${defs.map(t => `<button type="button" data-bench="${t.key}">
+          <span class="lh"><span class="ltile" style="background:${t.key === "form" ? "#CFDCEA" : "#E7E2CE"}">${esc(t.mark)}</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span>
+          <span class="stack"><span class="lt">${esc(t.task)}</span><span class="ls">${esc(t.tagline)}</span></span>
+          <span class="lv" aria-hidden="true">${visual(t.key)}</span>
+        </button>`).join("")}
       </div>
       <div class="card">
         <div class="card-head"><div class="caps">Je projecten</div>${all.length ? `<span class="note">${all.length}</span>` : ""}</div>
         ${all.length ? `<div class="table">${all.slice(0, 12).map(pr => { const t = byKey[pr.tool]; if (!t) return ""; return `
           <div class="tr proj-row">
-            <div class="cell-main"><span>${esc(pr.name)}</span><span class="mono-12">${esc(t.projectWord)}${pr.updated ? " · " + esc(when(pr.updated)) : ""}</span></div>
-            <div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div>
-            <button type="button" class="btn btn-outline btn-small" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>
+            <div class="cell-main"><span class="pname">${esc(pr.name)}</span><span class="mono-12">${esc(t.projectWord)}${pr.updated ? " · " + esc(when(pr.updated)) : ""}</span></div>
+            <div class="ptool"><span class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></span>${miniVisual(t.key, pr)}</div>
+            <button type="button" class="btn-pill" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>
             <button type="button" class="link" data-edit-project="${esc(pr.id)}">Naam</button>
           </div>`; }).join("")}</div>` :
         `<div class="note empty">Nog geen projecten. Kies hierboven waar je mee wilt beginnen; wat je bewaart komt hier te staan.</div>`}
       </div>
     </div>`;
+}
+
+/* ---------- mini-visuals per tool (ParseLab Start.dc.html) ---------- */
+function visual(key) {
+  if (key === "form") return `<span style="display:flex; flex-direction:column; gap:8px;"><span class="rowl"><i class="lab"></i><i class="fld"></i></span><span class="rowl"><i class="lab"></i><i class="fld on"><i class="caret"></i></i></span><span class="rowl"><i class="lab"></i><i class="fld"></i></span></span><span class="chip">rij 12</span>`;
+  if (key === "scrape") return `<span style="display:flex; gap:10px; height:100%;"><span class="scan"><i></i><i></i><i></i><i></i><i class="beam"></i></span><span class="arr">→</span><span class="rows"><i></i><i></i><i></i><i></i></span></span>`;
+  if (key === "pdf") return `<span style="display:flex; gap:10px; align-items:stretch; height:100%;"><span class="doc"><i class="t"></i><i></i><i class="g"></i><i></i><i class="g2"></i><i></i></span><span class="tbl"><span class="tr2 h"><i></i><i></i><i class="k"></i></span><span class="tr2 d"><i>NL84…</i><i>€ 1.240</i><i class="k"></i></span><span class="tr2 d d2"><i>NL22…</i><i>€ 860</i><i class="k"></i></span><span class="tr2 d d3"><i></i><i></i><i class="k"></i></span></span></span>`;
+  return `<span class="bars"><i style="height:38%; animation-delay:0s"></i><i style="height:62%; animation-delay:.08s"></i><i style="height:48%; animation-delay:.16s"></i><i class="g" style="height:82%; animation-delay:.24s"></i><i style="height:70%; animation-delay:.32s"></i><i style="height:96%; animation-delay:.4s"></i></span><span class="spark"><svg width="86" height="20" viewBox="0 0 86 20" fill="none" aria-hidden="true"><path d="M2 15 16 11 30 13 44 7 58 9 70 4 84 2" stroke="#8FB4DA" stroke-width="1.8" stroke-linecap="round"/></svg><span>+12,4%</span></span>`;
+}
+function miniVisual(key, pr) {
+  const seed = String(pr.id || pr.name).split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 997, 7);
+  const hs = [0, 1, 2, 3, 4].map(i => 35 + ((seed * (i + 3) * 7) % 60));
+  if (key === "board") { const pts = hs.map((h, i) => `${2 + i * 15} ${18 - h / 6}`).join(" L"); return `<svg width="64" height="20" viewBox="0 0 64 20" fill="none" aria-hidden="true"><path d="M${pts}" stroke="#1F3A5F" stroke-width="1.8" stroke-linecap="round"/></svg>`; }
+  const max = Math.max(...hs);
+  return `<span class="mini" aria-hidden="true">${hs.map(h => `<i class="${h === max ? "d" : h > 55 ? "m" : ""}" style="height:${h}%"></i>`).join("")}</span>`;
 }
 
 /* ---------- werkbank: de tool zelf, of het extensiepaneel ---------- */
