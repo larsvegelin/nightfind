@@ -1959,6 +1959,22 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
         // ---------- Bewaarde documenten (IndexedDB) ----------
         var DOC_DB = 'pdfScraperDocs';
+        // Accountinstellingen uit het dashboard (parselab:settings) of localStorage: AI-herkenning en documenten bewaren.
+        function plSettings() {
+            var d = { ai: false, storeDocs: true };
+            try { var o = JSON.parse(localStorage.getItem('parselab-settings') || 'null'); if (o) { if (typeof o.ai === 'boolean') d.ai = o.ai; if (typeof o.storeDocs === 'boolean') d.storeDocs = o.storeDocs; } } catch (e) {}
+            return d;
+        }
+        function applyPlSettings() {
+            var st = plSettings();
+            var ai = $('aiDetectBtn'); if (ai) ai.style.display = st.ai ? '' : 'none';
+            if (!st.storeDocs && window.indexedDB) { idbClear()['catch'](function () {}); (files || []).forEach(function (f) { f.stored = false; }); }
+        }
+        window.addEventListener('message', function (ev) {
+            var d = ev.data || {};
+            if (d.type === 'parselab:settings' && d.settings) { try { localStorage.setItem('parselab-settings', JSON.stringify(d.settings)); } catch (e) {} applyPlSettings(); }
+        });
+        document.addEventListener('DOMContentLoaded', applyPlSettings);
         function idbOpen() {
             return new Promise(function (res, rej) {
                 var req = indexedDB.open(DOC_DB, 1);
@@ -2031,6 +2047,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         // Document met categorie -> bewaren; zonder categorie -> uit de opslag
         function persistDocStorage(f) {
             if (!window.indexedDB || !f.file) return;
+            if (!plSettings().storeDocs) { f.stored = false; updateSavedIndicator(f); return; }
             if ((f.labels || []).length > 0) {
                 f.file.arrayBuffer().then(function (buf) {
                     return idbPut({ name: f.name, data: buf, savedAt: Date.now() });
@@ -3691,7 +3708,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         }
 
         // ---------- Export ----------
+        function plKeepFile(blob, filename) {
+            try { if (window.self !== window.top) window.parent.postMessage({ source: 'parselab-tool', type: 'parselab:file', tool: 'pdf', name: filename, mime: blob.type, blob: blob, rows: results ? results.rows.length : null }, '*'); } catch (e) {}
+        }
+        function writeXlsx(wb, filename) {
+            var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            download(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), filename);
+        }
         function download(blob, filename) {
+            plKeepFile(blob, filename);
             var a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = filename;
@@ -3737,8 +3762,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             var ws = XLSX.utils.aoa_to_sheet([results.headers].concat(results.rows));
             var wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Resultaten');
-            XLSX.writeFile(wb, exportName('xlsx'));
-            showToast(exportName('xlsx') + ' gedownload', 'download');
+            writeXlsx(wb, exportName('xlsx'));
             markDownloaded();
         }
 
@@ -3749,7 +3773,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             var ws = XLSX.utils.aoa_to_sheet([results.headers].concat(results.rows));
             var wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Invullijst');
-            XLSX.writeFile(wb, fileName);
+            writeXlsx(wb, fileName);
             markDownloaded();
             if (isEmbedded) {
                 postToParent({ type: 'parselab:open', view: 'form', section: 'install', payload: { fileName: fileName, rows: results.rows.length } });

@@ -157,6 +157,11 @@
   .field label { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
   .field input { border:1px solid var(--hairline); border-radius:14px; padding:13px 16px; font-size:16px; font-family:inherit; color:var(--ink); background:var(--white); }
   .field input:focus { outline:0; border-color:var(--blue); background:var(--blue-tint); }
+  .toggle { display:flex; gap:12px; align-items:flex-start; cursor:pointer; }
+  .toggle input { margin-top:5px; width:18px; height:18px; accent-color:var(--navy); flex:none; }
+  .server-hint { background:var(--cream); border-radius:14px; padding:14px 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .server-hint .ico { width:18px; height:18px; flex:none; color:var(--muted); }
+  .server-hint code { font-family:var(--mono); font-size:13px; background:var(--white); padding:2px 8px; border-radius:9px; }
 
   /* ===== Login ===== */
   .login { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
@@ -223,6 +228,26 @@ function syncProjects(tool, incoming) {
   writeProjects(list.sort((a, b) => String(b.updated).localeCompare(String(a.updated))));
 }
 function projectsOf(tool) { return readProjects().filter(x => x.tool === tool).sort((a, b) => String(b.updated).localeCompare(String(a.updated))); }
+
+/* ---------- accountinstellingen (veiligheid): AI-herkenning en documenten bewaren ---------- */
+const SETTINGS_KEY = "parselab-settings";
+function readSettings() { const d = { ai:false, storeDocs:true, keepFiles:true }; try { Object.assign(d, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); } catch (e) {} return d; }
+function writeSettings(st) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(st)); } catch (e) {} document.querySelectorAll("iframe.bench-frame").forEach(f => { try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:settings", settings:st }, "*"); } catch (e) {} }); }
+
+/* ---------- bestanden bewaren in ParseLab (IndexedDB in deze browser), instelbaar onder Account ---------- */
+function filesDb() { return new Promise((res, rej) => { const r = indexedDB.open("parselab-files", 1); r.onupgradeneeded = () => r.result.createObjectStore("files", { keyPath:"id" }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function filesPut(rec) { const db = await filesDb(); return new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").put(rec); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
+async function filesAll() { try { const db = await filesDb(); return await new Promise((res, rej) => { const r = db.transaction("files", "readonly").objectStore("files").getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); }); } catch (e) { return []; } }
+async function filesDel(id) { const db = await filesDb(); return new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").delete(id); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
+async function filesClear() { try { const db = await filesDb(); await new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").clear(); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e) {} }
+async function keepFile(d) {
+  if (!readSettings().keepFiles || !d.blob) return;
+  try { await filesPut({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), tool:d.tool, name:String(d.name || "bestand"), mime:d.mime || "", size:d.blob.size, rows:d.rows || null, when:new Date().toISOString(), blob:d.blob }); if (state.view === "files") loadFiles(); } catch (e) {}
+}
+
+/* ---------- serverstatus: draait de ParseLab-server (node server/server.js)? ---------- */
+let serverOk = null;
+async function checkServer() { try { const r = await fetch(CONFIG.apiBase + "/api/scrape/status", { cache:"no-store" }); serverOk = r.ok; } catch (e) { serverOk = false; } return serverOk; }
 
 /* ---------- live tellers uit de tools (alleen via postMessage) ---------- */
 const stats = { pdf:null, board:null, scrape:null, extension:null };
@@ -369,6 +394,7 @@ function renderShell() {
   <div id="modal"></div>`;
 }
 function bindShell() {
+  checkServer().then(() => { if (state.view === "scrape" && serverOk === false) { const v = document.getElementById("view"); if (v) v.innerHTML = ""; } if (state.view === "scrape" || state.view === "files") render(); });
   document.getElementById("search").addEventListener("input", e => { state.query = e.target.value; render(); });
   document.getElementById("user-btn").onclick = () => { state.menu = state.menu === "user" ? null : "user"; render(); };
   document.addEventListener("click", e => { if (state.menu && !e.target.closest(".user-wrap")) { state.menu = null; render(); } });
@@ -453,7 +479,8 @@ function renderOverview(defs) {
 function renderBench(t) {
   let b = t.bench;
   const extPanel = b.kind === "extension" || (b.extensionSection && state.section === b.extensionSection);
-  if (!extPanel) return `<div class="card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
+  const hint = (t.key === "scrape" && serverOk === false) ? `<div class="server-hint">${LOCK_ICO}<span class="note" style="flex:1"><span class="strong">De ParseLab-server draait niet.</span> Website uitlezen werkt via de server. Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.</span><button type="button" class="btn btn-outline btn-small" id="recheck-server">Opnieuw proberen</button></div>` : "";
+  if (!extPanel) return hint + `<div class="card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
   const store = CONFIG.webstoreUrl, ext = stats.extension, title = b.extPanelTitle || b.panelTitle;
   return `
     <div class="card bench">
@@ -491,15 +518,26 @@ function initFrame(f) {
   if (f.dataset.ready === "1") return; f.dataset.ready = "1";
   sendSection(f, state.section);
   try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:lang", lang:CONFIG.lang }, "*"); } catch (e) {}
+  try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:settings", settings:readSettings() }, "*"); } catch (e) {}
   if (state.project) { f.dataset.project = state.project; sendProject(f, state.project); }
 }
 
 /* ---------- bestanden: alleen wat er echt is (uitvoeringen van de server) ---------- */
 function renderFiles() {
-  return `<div class="card"><div class="card-head"><div class="caps">Uitgelezen websites</div></div><div id="files-list" class="note">Laden…</div></div>
-    <div class="card" style="margin-top:24px"><div class="caps">ParsePDF en ParseBoard</div><div class="note">Die bestanden gaan rechtstreeks naar je map Downloads; ze worden niet bewaard door ParseLab.</div></div>`;
+  const keep = readSettings().keepFiles;
+  return `<div class="card"><div class="card-head"><div class="caps">Bewaard in ParseLab</div>${keep ? "" : `<span class="note">Staat uit; zet aan onder Account</span>`}</div><div id="files-kept" class="note">Laden…</div></div>
+    <div class="card" style="margin-top:24px"><div class="card-head"><div class="caps">Uitgelezen websites</div><span class="note">Op de ParseLab-server</span></div><div id="files-list" class="note">Laden…</div></div>`;
 }
 async function loadFiles() {
+  const kept = document.getElementById("files-kept");
+  if (kept) {
+    const list = (await filesAll()).sort((a, b) => String(b.when).localeCompare(String(a.when)));
+    const byKey = Object.fromEntries(toolDefs().map(d => [d.key, d]));
+    document.querySelectorAll("a[data-objurl]").forEach(a => URL.revokeObjectURL(a.href));
+    kept.className = list.length ? "table" : "note";
+    kept.innerHTML = list.length ? list.map(f => { const t = byKey[f.tool] || byKey.pdf; return `<div class="tr files-row"><div class="cell-main"><span>${esc(f.name)}</span><span class="mono-12">${esc(when(f.when))}${f.rows ? " · " + f.rows + " regels" : ""} · ${Math.max(1, Math.round(f.size / 1024))} kB</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div><span style="display:flex; gap:8px"><a class="btn btn-outline btn-small" data-objurl="1" href="${URL.createObjectURL(f.blob)}" download="${esc(f.name)}">Download</a><button type="button" class="link" data-del-file="${esc(f.id)}" title="Verwijderen">✕</button></span></div>`; }).join("") : `<div class="note empty">${readSettings().keepFiles ? "Nog geen bestanden. Wat je downloadt uit ParsePDF en ParseBoard komt hier te staan." : "Bestanden bewaren staat uit. Downloads gaan alleen naar je map Downloads."}</div>`;
+    document.querySelectorAll("[data-del-file]").forEach(el => { el.onclick = async () => { await filesDel(el.getAttribute("data-del-file")); loadFiles(); }; });
+  }
   const el = document.getElementById("files-list"); if (!el) return;
   try {
     const res = await fetch(CONFIG.apiBase + "/api/scrape/tasks"); if (!res.ok) throw new Error();
@@ -507,7 +545,7 @@ async function loadFiles() {
     const t = toolDefs().find(x => x.key === "scrape");
     el.className = "table";
     el.innerHTML = tasks.length ? tasks.map(x => `<div class="tr files-row"><div class="cell-main"><span>${esc(x.name)}</span><span class="mono-12">${esc(when(x.lastRun))} · ${x.lastRows || 0} regels</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>ParseScraper</span></div><a class="btn btn-outline btn-small" href="${CONFIG.apiBase}/api/scrape/runs/${esc(x.lastRunId)}.xlsx">Excel</a></div>`).join("") : `<div class="note empty">Nog geen uitgelezen websites.</div>`;
-  } catch (e) { el.className = "note"; el.textContent = "De ParseLab-server is niet bereikbaar. Start hem met: node server/server.js"; }
+  } catch (e) { el.className = "note"; el.innerHTML = `<span class="strong">De ParseLab-server draait niet.</span> Uitgelezen websites staan op de server. Start hem via <code>start.bat</code> of <code>start.sh</code> in de map <code>parselab</code>, of met <code>node server/server.js</code>, en open <code>http://localhost:8080</code>.`; }
 }
 
 /* ---------- hulp ---------- */
@@ -554,7 +592,14 @@ function renderModal(m, defs) {
       <form id="ep-form" class="field"><label for="ep-name">Naam</label><input id="ep-name" type="text" value="${esc(pr.name)}" required></form>
       <div class="foot"><button type="button" class="btn btn-outline" id="ep-delete">Uit lijst halen</button><button type="button" class="btn btn-outline" id="ep-save">Naam bewaren</button><button type="button" class="btn btn-navy" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen <span class="arrow">→</span></button></div>`;
   } else if (m.kind === "account") {
-    body = `<div class="title-24">Account</div><div class="kv"><span class="caps">Naam</span><span>${esc(state.user.name)}</span><span class="caps">E-mail</span><span>${esc(state.user.email)}</span></div><div class="foot"><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
+    const st = readSettings();
+    body = `<div class="title-24">Account</div><div class="kv"><span class="caps">Naam</span><span>${esc(state.user.name)}</span><span class="caps">E-mail</span><span>${esc(state.user.email)}</span></div>
+      <div class="hairline"></div>
+      <div class="caps">Veiligheid</div>
+      <label class="toggle"><input type="checkbox" id="set-ai" ${st.ai ? "checked" : ""}><span class="stack"><span class="strong">AI-herkenning gebruiken</span><span class="note">Alleen als dit aan staat toont ParsePDF de knop "Laat ParseLab de velden herkennen". Daarbij gaat de tekst van dat ene document naar ParseLab, na jouw akkoord per document.</span></span></label>
+      <label class="toggle"><input type="checkbox" id="set-store" ${st.storeDocs ? "checked" : ""}><span class="stack"><span class="strong">Documenten bewaren op deze computer</span><span class="note">Uit: ParsePDF bewaart geüploade documenten niet in de browser; na sluiten zijn ze weg. Wat al bewaard was, wordt gewist.</span></span></label>
+      <label class="toggle"><input type="checkbox" id="set-keep" ${st.keepFiles ? "checked" : ""}><span class="stack"><span class="strong">Bestanden bewaren in ParseLab</span><span class="note">Aan: wat je downloadt uit ParsePDF en ParseBoard staat ook onder Bestanden, in deze browser. Uit: de bestanden gaan alleen naar je map Downloads en wat al bewaard was, wordt gewist.</span></span></label>
+      <div class="foot"><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
   } else if (m.kind === "extension") {
     const ext = stats.extension;
     body = `<div class="title-24">Verbonden extensie</div><div class="note">${ext ? "ParseLab-extensie versie " + esc(ext.version) + " is verbonden in deze browser. Loskoppelen: chrome://extensions → ParseLab → Verwijderen." : "In deze browser is nog geen ParseLab-extensie gevonden."}</div><div class="foot"><button type="button" class="btn btn-outline" data-bench="form">Extensie toevoegen</button><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
@@ -581,6 +626,7 @@ window.addEventListener("message", ev => {
     if (state.user) { renderNavOnly(); renderTop(); } return;
   }
   if (d.type === "parselab:open" && d.view) { go(d.view, d.section); return; }
+  if (d.type === "parselab:file") { keepFile(d); return; }
   if (d.type !== "parselab:section" && d.type !== "parselab:ready") return;
   const tool = toolDefs().find(t => t.key === state.view); if (!tool) return;
   const fr = document.querySelector("iframe.bench-frame");
@@ -612,6 +658,12 @@ function bindActions() {
   const epd = document.getElementById("ep-delete"); if (epd) epd.onclick = () => { deleteProject(state.modal.id); state.modal = null; render(); };
   const it = document.getElementById("toggle-it"); if (it) it.onclick = () => { const d = document.getElementById("it-details"); d.open = true; d.scrollIntoView({ behavior:"smooth", block:"start" }); };
   const cs = document.getElementById("clear-search"); if (cs) cs.onclick = () => { state.query = ""; render(); };
+  const sa = document.getElementById("set-ai"), ss = document.getElementById("set-store");
+  if (sa) sa.onchange = () => { const st = readSettings(); st.ai = sa.checked; writeSettings(st); };
+  if (ss) ss.onchange = () => { const st = readSettings(); st.storeDocs = ss.checked; writeSettings(st); };
+  const sk = document.getElementById("set-keep"); if (sk) sk.onchange = () => { const st = readSettings(); st.keepFiles = sk.checked; writeSettings(st); if (!sk.checked) filesClear(); };
+  document.querySelectorAll("[data-del-file]").forEach(el => { el.onclick = async () => { await filesDel(el.getAttribute("data-del-file")); loadFiles(); }; });
+  const rs = document.getElementById("recheck-server"); if (rs) rs.onclick = async () => { await checkServer(); render(); };
   const lo = document.getElementById("logout"); if (lo) lo.onclick = () => { state.user = null; state.menu = null; state.modal = null; writeSession(null); location.hash = "#overview"; render(); };
 }
 

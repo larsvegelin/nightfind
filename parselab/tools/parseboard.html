@@ -879,6 +879,7 @@ async function exportCsv(kind){
   }
   try {
     const blob = new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" });
+    try { if (window.self !== window.top) window.parent.postMessage({ source: "parselab-tool", type: "parselab:file", tool: "board", name, mime: blob.type, blob }, "*"); } catch (e) {}
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = name;

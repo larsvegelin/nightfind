@@ -4,12 +4,17 @@ Eén schil voor vier tools: ParseForm, ParseScraper, ParsePDF en ParseBoard. Min
 
 ## Starten
 
+De makkelijkste manier: dubbelklik op `start.bat` (Windows) of `start.sh` (Mac/Linux) in de map `parselab`. Dat controleert of Node.js er is, installeert de eerste keer Playwright met Chromium, en start ParseLab op `http://localhost:8080`.
+
+Met de hand:
+
 ```
 cd parselab
+npm install        # eerste keer: haalt Playwright met Chromium op
 node server/server.js
 ```
 
-Open `http://localhost:8080`. De server serveert het dashboard én de serverkant van "Website uitlezen". Playwright met Chromium is nodig (`cd server && npm install` haalt het op).
+Zie je in het dashboard "De ParseLab-server draait niet"? Dan is het dashboard geopend zonder deze server (bijvoorbeeld als los bestand of via een andere webserver). Website uitlezen werkt alleen via de ParseLab-server; ParsePDF en ParseBoard werken ook zonder. Node.js staat op https://nodejs.org.
 
 Instellingen via omgevingsvariabelen:
 
@@ -37,6 +42,15 @@ Instellingen via omgevingsvariabelen:
 - **Met de extensie (in je eigen browser):** voor portalen waar je moet inloggen en voor formulieren invullen. Die gegevens verlaten je computer niet.
 
 Grenzen die vaststaan in `server/server.js`: alleen http(s) naar openbare adressen, robots.txt wordt gerespecteerd, minimaal 2 seconden tussen verzoeken per website, maximaal 2 pagina's tegelijk en 25 pagina's per ronde, herkenbare user-agent. Geen omzeiling van captcha's of botbescherming.
+
+## Instellingen (Account)
+
+Onder je naam in de zijbalk staat Account met twee schakelaars:
+
+- **AI-herkenning gebruiken** (standaard uit). Alleen als dit aan staat toont ParsePDF de knop "Laat ParseLab de velden herkennen"; de tekst van dat ene document gaat dan na jouw akkoord naar ParseLab.
+- **Documenten bewaren op deze computer** (standaard aan). Uit betekent: ParsePDF bewaart geüploade documenten niet in de browser en wist wat al bewaard was.
+
+De keuzes staan in `localStorage` onder `parselab-settings` en gaan via `parselab:settings` naar de tools.
 
 ## Projecten
 
