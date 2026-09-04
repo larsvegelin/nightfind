@@ -1600,10 +1600,18 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     type: 'parselab:stats', tool: 'pdf',
                     templates: Object.keys(loadTemplates()).length,
                     documents: files.length,
-                    rows: results ? results.rows.length : 0,
-                    review: results ? reviewCount() : 0
+                    rows: results ? statsRows().length : 0,
+                    review: statsRows().filter(function (i) { return results.review[i].some(Boolean); }).length
                 });
             }, 50);
+        }
+        // Resultaatregels die nog bij een aanwezig document horen (na toevoegen/verwijderen/leegmaken zonder nieuwe run).
+        function statsRows() {
+            if (!results || !results.review) return [];
+            var ids = results.fileIds;
+            return results.review.map(function (_, i) { return i; }).filter(function (i) {
+                return !ids || files.some(function (f) { return f.id === ids[i]; });
+            });
         }
 
         // ---------- Helpers ----------
@@ -3573,7 +3581,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 pages.push(pg.sort(function (a, b) { return a - b; }));
                 return row;
             });
-            results = { headers: headers, rows: rows, meta: colMeta, review: review, pages: pages };
+            results = { headers: headers, rows: rows, meta: colMeta, review: review, pages: pages, fileIds: ready.map(function (f) { return f.id; }) };
             renderResults();
             updateDownloadState();
             setStatus(ready.length + ' document' + (ready.length === 1 ? '' : 'en') + ' uitgelezen, ' + rules.length + ' kolom(men).' +

@@ -23,6 +23,9 @@ Instellingen via omgevingsvariabelen:
 | `PARSELAB_PORT` | Poort, standaard 8080 |
 | `PARSELAB_PROXIES` | Komma-gescheiden proxylijst (`http://user:pass@host:port`), of zet ze in `server/proxies.txt` (één per regel, zie `proxies.example.txt`). ParseLab wisselt per verzoek en slaat een proxy 10 minuten over na drie fouten. |
 | `PARSELAB_API_TOKEN` | Zet je dit, dan vraagt de API een toegangscode (`x-parselab-token`); de tool vraagt er één keer om. |
+| `PARSELAB_ANTHROPIC_KEY` | Anthropic API-sleutel op de server. Alleen dan werkt "Laat ParseLab de velden herkennen" in ParsePDF (`POST /api/parsepdf/detect`, model `PARSELAB_AI_MODEL`, standaard `claude-opus-5`). Vraagt `npm install @anthropic-ai/sdk` in `server/`. De sleutel staat nooit in de browser. |
+
+Per gebruiker: het dashboard stuurt het e-mailadres van wie is ingelogd mee (`x-parselab-user`). Taken van ParseScraper horen bij dat adres en zijn voor anderen onzichtbaar; projecten, namen en instellingen staan onder `/api/store/:key` zodat je ze op een andere computer terugziet. Dit is scheiding, geen beveiliging: zonder accounts kan iemand met toegang tot de server een ander adres opgeven. Zet `PARSELAB_API_TOKEN` voor een echte drempel.
 
 ## Mappen
 
@@ -51,7 +54,7 @@ Onder je naam in de zijbalk staat Account met twee schakelaars:
 - **AI-herkenning gebruiken** (standaard uit). Alleen als dit aan staat toont ParsePDF de knop "Laat ParseLab de velden herkennen"; de tekst van dat ene document gaat dan na jouw akkoord naar ParseLab.
 - **Documenten bewaren op deze computer** (standaard aan). Uit betekent: ParsePDF bewaart geüploade documenten niet in de browser en wist wat al bewaard was.
 
-De keuzes staan in `localStorage` onder `parselab-settings` en gaan via `parselab:settings` naar de tools.
+De keuzes staan in `localStorage` onder `parselab-settings`, gaan via `parselab:settings` naar de tools en (met server) via `/api/store/settings` mee naar je andere computers.
 
 ## Projecten
 

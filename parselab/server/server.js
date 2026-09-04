@@ -14,6 +14,8 @@
  *   POST /api/scrape/tasks/:id/run                               → taak nu uitvoeren
  *   GET  /api/scrape/runs/:id.xlsx | .csv                        → bestand van een uitvoering
  *   GET  /api/scrape/status                                      → proxies, wachtrij, planning
+ *   POST /api/parsepdf/detect   { text, fileName }               → velden herkennen met Claude (alleen met PARSELAB_ANTHROPIC_KEY)
+ *   GET/PUT /api/store/:key     (header x-parselab-user)         → projecten en instellingen van het dashboard per gebruiker
  *
  * Grenzen die bewust vaststaan (docs/parsescraper.md, "Wat het veiliger maakt"):
  *   - alleen http(s), geen privé-adressen (SSRF), robots.txt wordt gerespecteerd, minimaal 2 s tussen verzoeken per host,
@@ -120,6 +122,8 @@ async function politeWait(host) {
   hostLast.set(host, Date.now());
 }
 
+function isUtf8(buf) { try { new TextDecoder("utf-8", { fatal: true }).decode(buf); return true; } catch (e) { return false; } }
+
 /* ---------------- browser ---------------- */
 let browserP = null;
 async function browser() {
@@ -145,7 +149,20 @@ async function openPage(u, useProxy) {
   const proxy = useProxy ? pickProxy() : null;
   const b = await browser();
   const ctx = await b.newContext({ userAgent: UA, locale: "nl-NL", viewport: { width: 1280, height: 900 }, proxy: toPlaywrightProxy(proxy), javaScriptEnabled: true });
-  await ctx.route("**/*", route => { const t = route.request().resourceType(); if (t === "media" || t === "font") return route.abort(); route.continue(); });
+  await ctx.route("**/*", async route => {
+    const t = route.request().resourceType(); if (t === "media" || t === "font") return route.abort();
+    if (t !== "document") return route.continue();
+    // Pagina's zonder charset leest Chromium als Windows-1252 (€ wordt â‚¬). Is de inhoud geldige UTF-8, dan zeggen we dat erbij.
+    try {
+      const r = await route.fetch(); const ct = r.headers()["content-type"] || "";
+      if (/text\/html/i.test(ct) && !/charset=/i.test(ct)) {
+        const body = await r.body();
+        if (!/<meta[^>]+charset/i.test(body.slice(0, 4096).toString("latin1")) && isUtf8(body)) return route.fulfill({ response: r, body, headers: Object.assign({}, r.headers(), { "content-type": ct + "; charset=utf-8" }) });
+        return route.fulfill({ response: r, body });
+      }
+      return route.fulfill({ response: r });
+    } catch (e) { return route.continue(); }
+  });
   const page = await ctx.newPage();
   page.setDefaultTimeout(LIMITS.navTimeoutMs);
   return { ctx, page, proxy };
@@ -328,7 +345,7 @@ function send(res, status, body, type) {
   res.writeHead(status, { "content-type": type || (isBuf ? "application/octet-stream" : "application/json; charset=utf-8"), "cache-control": "no-store" });
   res.end(isBuf || typeof body === "string" ? body : JSON.stringify(body));
 }
-function readBody(req) { return new Promise((resolve, reject) => { let b = ""; req.on("data", d => { b += d; if (b.length > 1e6) { reject(httpError(413, "Te groot")); req.destroy(); } }); req.on("end", () => { try { resolve(b ? JSON.parse(b) : {}); } catch (e) { reject(httpError(400, "Ongeldige JSON")); } }); }); }
+function readBody(req) { return new Promise((resolve, reject) => { let b = ""; req.on("data", d => { b += d; if (b.length > 1e6) { reject(httpError(413, "Het verzoek is te groot (maximaal 1 MB).")); } }); req.on("end", () => { try { resolve(b ? JSON.parse(b) : {}); } catch (e) { reject(httpError(400, "Ongeldige JSON")); } }); }); }
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".zip": "application/zip", ".md": "text/markdown; charset=utf-8", ".ico": "image/x-icon" };
 function serveStatic(req, res, pathname) {
   let p = decodeURIComponent(pathname); if (p.endsWith("/")) p += "index.html";
@@ -349,11 +366,51 @@ function validateRule(rule) {
     columns: rule.columns.slice(0, 40).map((c, i) => ({ name: String(c.name || "kolom " + (i + 1)).slice(0, 60), selector: sel(c.selector), attr: ["text", "href", "src"].includes(c.attr) ? c.attr : "text", number: !!c.number, off: !!c.off })) };
 }
 
+/* ---------------- ParsePDF: velden herkennen via Claude (alleen met sleutel op de server) ---------------- */
+const AI_KEY = process.env.PARSELAB_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY || "";
+const AI_MODEL = process.env.PARSELAB_AI_MODEL || "claude-opus-5";
+let aiClient = null;
+function anthropic() {
+  if (aiClient) return aiClient;
+  let Anthropic; try { Anthropic = require("@anthropic-ai/sdk"); } catch (e) { throw httpError(501, "AI-herkenning is niet geïnstalleerd op deze server. Installeer met: cd server && npm install @anthropic-ai/sdk"); }
+  aiClient = new (Anthropic.default || Anthropic)({ apiKey: AI_KEY });
+  return aiClient;
+}
+async function detectFields(body) {
+  if (!AI_KEY) throw httpError(501, "AI-herkenning staat uit op deze server. Zet PARSELAB_ANTHROPIC_KEY (een Anthropic API-sleutel) en start de server opnieuw.");
+  const text = String(body.text || "").slice(0, 60000); if (!text.trim()) throw httpError(400, "Het document bevat geen tekst.");
+  const client = anthropic();
+  const resp = await client.messages.create({
+    model: AI_MODEL, max_tokens: 4000,
+    system: "Je krijgt de tekst van één zakelijk document (factuur, bon, loonstrook, rapport). Bepaal welke velden iemand hieruit in een tabel wil hebben. Antwoord uitsluitend met JSON van de vorm {\"velden\":[{\"naam\":\"Factuurnummer\",\"zoekNa\":\"Factuurnummer:\",\"voorbeeld\":\"2026-001\",\"type\":\"tekst|getal|datum|bedrag\"}]}. \"zoekNa\" is de letterlijke tekst die in het document direct vóór de waarde staat, zodat de waarde daarna teruggevonden kan worden. Maximaal 12 velden, Nederlandse namen, geen uitleg.",
+    messages: [{ role: "user", content: "Bestandsnaam: " + String(body.fileName || "").slice(0, 120) + "\n\n" + text }],
+  });
+  if (resp.stop_reason === "refusal") throw httpError(422, "ParseLab kon dit document niet verwerken.");
+  const txt = resp.content.filter(b => b.type === "text").map(b => b.text).join("");
+  let parsed = null; try { parsed = JSON.parse(txt); } catch (e) { const m = txt.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) {} } }
+  return { velden: parsed && Array.isArray(parsed.velden) ? parsed.velden.slice(0, 12) : [], truncated: resp.stop_reason === "max_tokens" };
+}
+
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
     if (!u.pathname.startsWith("/api/")) return serveStatic(req, res, u.pathname);
     if (TOKEN && req.headers["x-parselab-token"] !== TOKEN) throw httpError(401, "Geen toegang: de ParseLab-server vraagt een toegangscode.");
+    // Wie is dit? Het dashboard stuurt het e-mailadres van de ingelogde gebruiker mee. Zonder accounts is dit scheiding, geen beveiliging;
+    // wie de server bereikt en een ander adres opgeeft, ziet die taken. Zet PARSELAB_API_TOKEN voor een echte drempel.
+    const owner = String(req.headers["x-parselab-user"] || "").trim().toLowerCase().slice(0, 200) || null;
+    const mine = tid => { const t = readTasks().find(x => x.id === tid); if (!t) throw httpError(404, "Taak niet gevonden"); if (t.owner && owner && t.owner !== owner) throw httpError(403, "Deze taak is van iemand anders."); return t; };
+    if (u.pathname === "/api/parsepdf/detect") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await detectFields(await readBody(req))); }
+    const sm = u.pathname.match(/^\/api\/store\/([a-z0-9_-]{1,40})$/i);
+    if (sm) {
+      if (!owner) throw httpError(400, "Geen gebruiker: log in het dashboard in.");
+      const f = path.join(DATA, "store", crypto.createHash("sha256").update(owner).digest("hex").slice(0, 32) + ".json");
+      fs.mkdirSync(path.dirname(f), { recursive: true });
+      let all = {}; try { all = JSON.parse(fs.readFileSync(f, "utf8")); } catch (e) {}
+      if (req.method === "GET") return send(res, 200, { key: sm[1], value: all[sm[1]] === undefined ? null : all[sm[1]], updated: (all.__updated || {})[sm[1]] || null });
+      if (req.method === "PUT") { const body = await readBody(req); all[sm[1]] = body.value; all.__updated = Object.assign({}, all.__updated || {}, { [sm[1]]: new Date().toISOString() }); fs.writeFileSync(f, JSON.stringify(all)); return send(res, 200, { ok: true, updated: all.__updated[sm[1]] }); }
+      throw httpError(405, "Alleen GET of PUT");
+    }
     const m = u.pathname.match(/^\/api\/scrape\/(snapshot|run|tasks|status|runs)(?:\/([a-z0-9-]+))?(?:\/(run))?(\.xlsx|\.csv)?$/i);
     if (!m) throw httpError(404, "Onbekende opdracht");
     const [, kind, sub, action, ext] = m;
@@ -388,22 +445,27 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (kind === "tasks") {
-      if (req.method === "GET") return send(res, 200, readTasks());
+      if (req.method === "GET") return send(res, 200, readTasks().filter(t => !t.owner || !owner || t.owner === owner));
       if (req.method === "POST" && !sub) {
         const body = await readBody(req); const target = await checkUrl(body.url);
-        const t = { id: id(), name: String(body.name || target.hostname).slice(0, 80), url: target.href, rule: validateRule(body.rule), pages: Math.min(Number(body.pages) || 1, LIMITS.pagesPerRun), schedule: ["nu", "uur", "dag", "week"].includes(body.schedule) ? body.schedule : "nu", proxy: body.proxy !== false, created: new Date().toISOString() };
+        const t = { id: id(), owner: owner || null, name: String(body.name || target.hostname).slice(0, 80), url: target.href, rule: validateRule(body.rule), pages: Math.min(Number(body.pages) || 1, LIMITS.pagesPerRun), schedule: ["nu", "uur", "dag", "week"].includes(body.schedule) ? body.schedule : "nu", proxy: body.proxy !== false, created: new Date().toISOString() };
         if (body.lastRunId && fs.existsSync(runPath(String(body.lastRunId)))) { try { const r = JSON.parse(fs.readFileSync(runPath(String(body.lastRunId)), "utf8")); t.lastRunId = r.id; t.lastRun = r.start; t.lastStatus = r.status; t.lastRows = r.rows.length; r.taskId = t.id; fs.writeFileSync(runPath(r.id), JSON.stringify(r)); } catch (e) {} }
         updateTask(t); return send(res, 200, t);
       }
       if (req.method === "POST" && sub && action === "run") {
-        const t = readTasks().find(x => x.id === sub); if (!t) throw httpError(404, "Taak niet gevonden");
+        const t = mine(sub);
         const run = await executeTask(t); t.lastRun = run.start; t.lastRunId = run.id; t.lastStatus = run.status; t.lastRows = run.rows.length; t.lastError = run.error || null; updateTask(t);
         if (run.status === "fout") throw httpError(502, run.error);
         return send(res, 200, run);
       }
-      if (req.method === "DELETE" && sub) { writeTasks(readTasks().filter(x => x.id !== sub)); return send(res, 200, { ok: true }); }
+      if (req.method === "DELETE" && sub) {
+        mine(sub); writeTasks(readTasks().filter(x => x.id !== sub));
+        // Uitvoeringen van deze taak gaan mee (anders blijven ze op de schijf staan).
+        for (const f of fs.readdirSync(path.join(DATA, "runs"))) { try { const r = JSON.parse(fs.readFileSync(path.join(DATA, "runs", f), "utf8")); if (r.taskId === sub) fs.unlinkSync(path.join(DATA, "runs", f)); } catch (e) {} }
+        return send(res, 200, { ok: true });
+      }
       if (req.method === "PATCH" && sub) {
-        const body = await readBody(req); const t = readTasks().find(x => x.id === sub); if (!t) throw httpError(404, "Taak niet gevonden");
+        const body = await readBody(req); const t = mine(sub);
         if (body.name) t.name = String(body.name).slice(0, 80);
         if (["nu", "uur", "dag", "week"].includes(body.schedule)) t.schedule = body.schedule;
         updateTask(t); return send(res, 200, t);
@@ -412,6 +474,7 @@ const server = http.createServer(async (req, res) => {
 
     if (kind === "runs" && sub) {
       let run; try { run = JSON.parse(fs.readFileSync(runPath(sub), "utf8")); } catch (e) { throw httpError(404, "Uitvoering niet gevonden"); }
+      if (run.taskId) mine(run.taskId);
       const name = (run.taskId ? readTasks().find(t => t.id === run.taskId)?.name : null) || new URL(run.url).hostname;
       if (ext === ".xlsx") { res.setHeader("content-disposition", `attachment; filename="${name.replace(/[^a-z0-9._-]/gi, "_")}.xlsx"`); return send(res, 200, xlsx(run.columns, run.rows, name), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); }
       if (ext === ".csv") { res.setHeader("content-disposition", `attachment; filename="${name.replace(/[^a-z0-9._-]/gi, "_")}.csv"`); return send(res, 200, csv(run.columns, run.rows), "text/csv; charset=utf-8"); }

@@ -1,0 +1,40 @@
+name: ParseLab QA
+
+on:
+  push:
+    paths: ["parselab/**", ".github/workflows/qa.yml"]
+  pull_request:
+    paths: ["parselab/**"]
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Playwright met Chromium
+        run: |
+          npm install --no-save playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Servers starten
+        working-directory: parselab
+        run: |
+          PARSELAB_ALLOW_PRIVATE=1 NODE_PATH=$GITHUB_WORKSPACE/node_modules node server/server.js > /tmp/parselab.log 2>&1 &
+          (cd tests/site && python3 -m http.server 9000 > /dev/null 2>&1 &)
+          (cd .. && python3 -m http.server 8765 > /dev/null 2>&1 &)
+          for i in $(seq 1 30); do curl -sf localhost:8080/api/scrape/status > /dev/null && break; sleep 1; done
+      - name: Testrun
+        working-directory: parselab/tests
+        run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node qa.mjs
+      - name: Resultaat en schermafbeeldingen bewaren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parselab-qa
+          path: |
+            parselab/tests/qa-result.txt
+            parselab/tests/shots/
+            /tmp/parselab.log

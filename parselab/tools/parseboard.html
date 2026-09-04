@@ -254,6 +254,13 @@
   .partrow .selwrap { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
   input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
 
+  /* ---- stap 1: opgeslagen overzichten ---- */
+  .savedlist { margin-top: 6px; }
+  .savedrow { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--grid); flex-wrap: wrap; }
+  .savedrow:last-child { border-bottom: none; }
+  .savedrow label { flex: 1; min-width: 180px; }
+  .savedrow label small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 400; }
+
   .routes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
   @media (max-width: 700px) { .routes { grid-template-columns: 1fr; } }
   .route {
@@ -430,7 +437,8 @@ const KIND_CHIP = { time: "role-time", metric: "role-metric", cat: "role-cat", i
 const SERIES_VARS = ["--s1","--s2","--s3","--s4"];
 const SEG_INK = { "--s1": "#ffffff", "--s2": "#ffffff", "--s3": "#062b1c", "--s4": "#231800" };
 const MAX_METRICS = 8, MAX_KPIS = 8, MAX_CHARTS = 6, MAX_SERIES = 4;
-const CONFIG_KEY = "paneel-config";
+const CONFIG_KEY = "paneel-config";      // legacy: één opgeslagen overzicht (wordt eenmalig gemigreerd)
+const CONFIGS_KEY = "paneel-configs";    // lijst van opgeslagen overzichten [{id, name, savedAt, ...config}]
 
 const DEMO_WEBSHOP = ["Besteldatum","Ordernummer","Regio","Productcategorie","Verkoopkanaal","Klanttype","Retour","Status","Aantal","Omzet","Marge","Korting %","Beoordeling"];
 const DEMO_POLIS = ["Startdatum","Polisnummer","Verzekeringstype","Regio","Betaalwijze","Actief","Status","Premie","Schadebedrag","Korting %","Klantscore"];
@@ -449,6 +457,7 @@ const COUNTRY_VALUES = ["Nederland","België","Duitsland","Frankrijk"];
 const STEPS = ["Databron", "Typen", "Metrieken", "Onderdelen", "Weergave", "Dashboard"];
 const state = {
   step: 1,
+  currentId: null,        // id van het opgeslagen overzicht waaruit deze indeling komt (null = nieuw)
   source: null,           // 'own' | 'fake'
   fileName: null,
   rawRows: null,
@@ -756,6 +765,46 @@ function pruneCustom(){
     series: ch.series.filter(s => ok(s.col)).map(s => ({ col: s.col, agg: aggOptionsFor(s.col).includes(s.agg) ? s.agg : defaultAgg(s.col) })),
   })).filter(ch => ch.series.length && (!ch.x.startsWith("cat:") || ok(ch.x.slice(4))));
 }
+function isValidConfig(cfg){
+  return !!(cfg && cfg.v === 1 && Array.isArray(cfg.columns) && cfg.columns.length);
+}
+/* Lijst van opgeslagen overzichten; het oude losse "paneel-config" wordt eenmalig overgezet. */
+function readConfigs(){
+  let list = [];
+  try {
+    const raw = localStorage.getItem(CONFIGS_KEY);
+    if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) list = arr; }
+  } catch (e) { list = []; }
+  list = list.filter(isValidConfig);
+  try {
+    const legacy = localStorage.getItem(CONFIG_KEY);
+    if (legacy) {
+      const cfg = JSON.parse(legacy);
+      if (isValidConfig(cfg)) {
+        if (!cfg.id) cfg.id = newConfigId();
+        if (!cfg.name) cfg.name = uniqueConfigName(cfg.fileName || "Mijn overzicht", list);
+        list.push(cfg);
+        writeConfigs(list);
+      }
+      localStorage.removeItem(CONFIG_KEY);
+    }
+  } catch (e) {}
+  return list.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+}
+function writeConfigs(list){ localStorage.setItem(CONFIGS_KEY, JSON.stringify(list)); }
+function newConfigId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function uniqueConfigName(base, list, skipId){
+  base = String(base || "Mijn overzicht").trim() || "Mijn overzicht";
+  const taken = new Set(list.filter(c => c.id !== skipId).map(c => c.name));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base} (${n})`)) n++;
+  return `${base} (${n})`;
+}
+function deleteConfig(id){
+  try { writeConfigs(readConfigs().filter(c => c.id !== id)); } catch (e) {}
+  if (state.currentId === id) state.currentId = null;
+}
 function saveConfig(){
   const cfg = {
     v: 1, savedAt: Date.now(),
@@ -771,21 +820,31 @@ function saveConfig(){
     if (raw.length < 2000000) cfg.rawRows = state.rawRows;
   }
   try {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+    const list = readConfigs();
+    const idx = state.currentId ? list.findIndex(c => c.id === state.currentId) : -1;
+    if (idx >= 0) {
+      cfg.id = list[idx].id; cfg.name = list[idx].name;
+      list[idx] = cfg;
+    } else {
+      cfg.id = newConfigId();
+      cfg.name = uniqueConfigName(state.fileName || "Mijn overzicht", list);
+      list.push(cfg);
+      state.currentId = cfg.id;
+    }
+    writeConfigs(list);
     showToast(cfg.rawRows || state.source !== "own"
-      ? "Dashboard opgeslagen in deze browser."
-      : "Indeling opgeslagen — je databestand was te groot om mee te bewaren; upload het later opnieuw.");
+      ? `"${cfg.name}" opgeslagen in deze browser.`
+      : `"${cfg.name}" opgeslagen — je databestand was te groot om mee te bewaren; upload het later opnieuw.`);
   } catch (e) { showToast("Opslaan lukte niet — de browseropslag is vol of geblokkeerd."); }
 }
-function readConfig(){
-  try {
-    const raw = localStorage.getItem(CONFIG_KEY);
-    if (!raw) return null;
-    const cfg = JSON.parse(raw);
-    return (cfg && cfg.v === 1 && Array.isArray(cfg.columns) && cfg.columns.length) ? cfg : null;
-  } catch (e) { return null; }
+/* Meest recent opgeslagen overzicht (compatibiliteit met #loadCfgBtn). */
+function readConfig(id){
+  const list = readConfigs();
+  if (id) return list.find(c => c.id === id) || null;
+  return list[0] || null;
 }
 function loadConfig(cfg){
+  state.currentId = cfg.id || null;
   state.columns = cfg.columns.map(c => ({ name: String(c.name), role: ROLES[c.role] ? c.role : "skip" }));
   state.theme = cfg.theme || "auto"; state.accent = cfg.accent || "blauw"; state.route = cfg.route === "custom" ? "custom" : "standard";
   state.parts = { ...state.parts, ...(cfg.parts || {}) };
@@ -929,15 +988,22 @@ function navRow(nextLabel, nextId){
 
 /* ---------- stap 1: databron ---------- */
 function renderStep1(){
-  const saved = readConfig();
-  const savedCard = saved ? `
+  const savedList = readConfigs();
+  const savedCard = savedList.length ? `
   <div class="card">
-    <span class="eyebrow">Opgeslagen dashboard</span>
-    <h2>${esc(saved.fileName || "Fictieve data")} · ${saved.columns.length} kolommen</h2>
-    <p class="hint">Bewaard op ${fmtDateNL(new Date(saved.savedAt))} in deze browser${saved.rawRows ? " — inclusief je data" : ""}.</p>
+    <span class="eyebrow">Opgeslagen overzichten</span>
+    <h2>${savedList.length === 1 ? "1 overzicht" : savedList.length + " overzichten"} bewaard in deze browser</h2>
+    <div class="savedlist">
+      ${savedList.map(c => `
+      <div class="savedrow" data-cfg="${esc(c.id)}">
+        <label><strong>${esc(c.name || c.fileName || "Mijn overzicht")}</strong><small>${fmtDateNL(new Date(c.savedAt))} · ${c.columns.length} kolommen${c.rawRows ? " · inclusief je data" : ""}</small></label>
+        <button class="primary" data-open="${esc(c.id)}">Openen</button>
+        <button class="ghost" data-del="${esc(c.id)}">Verwijderen</button>
+      </div>`).join("")}
+    </div>
     <div class="btnrow" style="margin-top:10px">
-      <button class="primary" id="loadCfgBtn">Open mijn dashboard</button>
-      <button class="ghost" id="delCfgBtn">Verwijderen</button>
+      <button class="ghost" id="loadCfgBtn" hidden>Open mijn dashboard</button>
+      <button class="ghost" id="delCfgBtn" hidden>Verwijderen</button>
     </div>
   </div>` : "";
   return `
@@ -985,6 +1051,7 @@ function renderStep1(){
 }
 function resetForNewColumns(){
   state.rows = null;
+  state.currentId = null;
   state.route = "standard";
   state.kpis = []; state.charts = [];
   state.chartMetrics = { line: null, bar: null, dist: null, weekday: null };
@@ -1003,8 +1070,13 @@ function bindStep1(){
   $("#demoBtn").addEventListener("click", () => startFake([...DEMO_WEBSHOP]));
   $("#demo2Btn").addEventListener("click", () => startFake([...DEMO_POLIS]));
   const lb = $("#loadCfgBtn"), db = $("#delCfgBtn");
-  if (lb) lb.addEventListener("click", () => { const cfg = readConfig(); if (cfg) loadConfig(cfg); });
-  if (db) db.addEventListener("click", () => { try { localStorage.removeItem(CONFIG_KEY); } catch (e) {} render(); showToast("Opgeslagen dashboard verwijderd."); });
+  if (lb) lb.addEventListener("click", () => { const cfg = readConfig(lb.dataset.id || null); if (cfg) loadConfig(cfg); });
+  if (db) db.addEventListener("click", () => { const cfg = readConfig(db.dataset.id || null); if (cfg) deleteConfig(cfg.id); render(); showToast("Opgeslagen overzicht verwijderd."); });
+  document.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => { const cfg = readConfig(b.dataset.open); if (cfg) loadConfig(cfg); }));
+  document.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => {
+    const cfg = readConfig(b.dataset.del); if (!cfg) return;
+    deleteConfig(cfg.id); render(); showToast(`"${cfg.name || "Overzicht"}" verwijderd.`);
+  }));
 
   const dz = $("#dropzone");
   const handleFile = (f) => {
@@ -1917,28 +1989,40 @@ render();
       try { post({ type:"parselab:section", section: String(state.step), max: state.step, labels: STEPS }); } catch (e) {}
       // Statistieken voor het dashboard (dashboard.md: tellers via postMessage, niet via localStorage).
       try {
-        var c = JSON.parse(localStorage.getItem("paneel-config") || "null");
-        post({ type:"parselab:stats", tool:"board", saved: !!c, fileName: c && c.fileName || null,
+        var list = readConfigs(); var c = list[0] || null;
+        post({ type:"parselab:stats", tool:"board", saved: list.length > 0, fileName: c && c.fileName || null,
                columns: c && Array.isArray(c.columns) ? c.columns.length : null,
                tiles: c ? ((Array.isArray(c.kpis) ? c.kpis.length : 0) + (Array.isArray(c.charts) ? c.charts.length : 0)) : null });
       } catch (e) {}
     }
-    // Projecten = het opgeslagen overzicht. Openen = "Open mijn dashboard".
+    // Projecten = de opgeslagen overzichten. Openen = het betreffende overzicht laden.
     function syncProjects() {
-      try { var c = JSON.parse(localStorage.getItem("paneel-config") || "null");
-        post({ type: "parselab:projects", tool: "board", list: c ? [{ id: "board:saved", name: c.fileName || "Mijn overzicht", payload: { saved: true }, updated: c.savedAt || null }] : [] }); } catch (e) {}
+      try { var list = readConfigs();
+        post({ type: "parselab:projects", tool: "board", list: list.map(function (cfg) {
+          return { id: "board:" + cfg.id, name: cfg.name || cfg.fileName || "Mijn overzicht", payload: { saved: true, id: cfg.id }, updated: cfg.savedAt || null };
+        }) }); } catch (e) {}
     }
     syncProjects();
     var _setItem = Storage.prototype.setItem;
-    Storage.prototype.setItem = function (k, v) { _setItem.apply(this, arguments); if (k === "paneel-config") setTimeout(syncProjects, 0); };
+    Storage.prototype.setItem = function (k, v) { _setItem.apply(this, arguments); if (k === "paneel-configs" || k === "paneel-config") setTimeout(syncProjects, 0); };
     var _removeItem = Storage.prototype.removeItem;
-    Storage.prototype.removeItem = function (k) { _removeItem.apply(this, arguments); if (k === "paneel-config") setTimeout(syncProjects, 0); };
+    Storage.prototype.removeItem = function (k) { _removeItem.apply(this, arguments); if (k === "paneel-configs" || k === "paneel-config") setTimeout(syncProjects, 0); };
+    function boardId(id) { return (typeof id === "string" && id.indexOf("board:") === 0) ? id.slice(6) : null; }
     window.addEventListener("message", function (ev) {
       var d = ev.data || {};
-      if (d.type === "parselab:rename-project" && d.id === "board:saved") { try { var c = JSON.parse(localStorage.getItem("paneel-config") || "null"); if (c) { c.fileName = d.name; localStorage.setItem("paneel-config", JSON.stringify(c)); } } catch (e) {} return; }
-      if (d.type === "parselab:delete-project" && d.id === "board:saved") { try { localStorage.removeItem("paneel-config"); } catch (e) {} return; }
+      if (d.type === "parselab:rename-project" && boardId(d.id)) {
+        try { var id = boardId(d.id); var list = readConfigs(); var hit = list.find(function (c) { return c.id === id; });
+          if (hit) { hit.name = uniqueConfigName(d.name, list, id); writeConfigs(list); if (state.step === 1) render(); } } catch (e) {}
+        return;
+      }
+      if (d.type === "parselab:delete-project" && boardId(d.id)) { try { deleteConfig(boardId(d.id)); if (state.step === 1) render(); } catch (e) {} return; }
       if (d.type === "parselab:load-project" && d.project) {
-        try { if (d.project.payload && d.project.payload.saved) { goto(1); var b = document.querySelector("#loadCfgBtn"); if (b) b.click(); } else { goto(1); } } catch (e) {}
+        try {
+          if (d.project.payload && d.project.payload.saved) {
+            var cfg = readConfig(d.project.payload.id || boardId(d.project.id) || null) || readConfig();
+            if (cfg) loadConfig(cfg); else goto(1);
+          } else { goto(1); }
+        } catch (e) {}
       }
     });
     window.addEventListener("message", function (ev) {

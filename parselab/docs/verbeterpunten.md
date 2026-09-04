@@ -30,24 +30,32 @@ Datum: 4 september 2026. Getest met Playwright (`tests/qa.mjs`, 73 checks) plus 
 6. **Zoeken vond alleen projectnamen.** Zoekt nu ook tools en stappen.
 7. Na inloggen stond er geen `#overzicht` in de adresbalk; `SIGTERM` stopte de server niet netjes.
 
-## Verbeterpunten (nog open)
+## Verbeterpunten: uitgevoerd
 
-Prioriteit 1 = eerst doen.
+Alle vijftien punten uit de eerste lijst zijn opgepakt; de testrun is uitgebreid naar 81 checks.
+
+| # | Onderdeel | Wat er nu is |
+|---|---|---|
+| 1 | Mobiel | Zijbalk is op smalle schermen ingeklapt achter een menuknop; kiezen sluit het menu. |
+| 2 | ParseForm | Zonder Web Store-adres heet de knop "Installeren" en opent hij de IT-route; met `CONFIG.webstoreUrl` wordt het "Toevoegen aan Chrome". |
+| 3 | Server | Taken horen bij de ingelogde gebruiker (`x-parselab-user`); anderen zien, wijzigen of draaien ze niet. Zie README: scheiding, geen beveiliging zolang er geen accounts zijn. |
+| 4 | ParseScraper | Na "Ander element aanwijzen" krijgt de kolom de naam van het nieuwe element, tenzij je de naam zelf had aangepast. |
+| 5 | ParseScraper | Uitvoeringen worden mee verwijderd met de taak. |
+| 6 | Server | Pagina's zonder charset worden als UTF-8 gelezen als de bytes geldige UTF-8 zijn (`€` blijft `€`). |
+| 7 | Server | Te groot verzoek geeft een nette 413 met uitleg. |
+| 8 | ParsePDF | De teller "nakijken" telt alleen regels van documenten die er nog zijn; na wissen staat hij op nul. |
+| 9 | Bestanden | Knop "Nieuw project" met keuze uit de vier tools. |
+| 10 | ParseBoard | Meerdere overzichten naast elkaar (`paneel-configs`), elk als project in het dashboard; oude enkele opslag wordt overgezet. |
+| 11 | Dashboard | Projecten, namen en instellingen gaan via `/api/store` naar de server en komen terug op een andere computer met hetzelfde e-mailadres. |
+| 12 | Extensie | Web Store-vermelding blijft extern werk; de knop en tekst zijn erop voorbereid. |
+| 13 | Dashboard | Inloglink versturen vraagt een mailserver; nog mock. |
+| 14 | ParsePDF | `POST /api/parsepdf/detect` bestaat op de server en gebruikt de Anthropic SDK met `PARSELAB_ANTHROPIC_KEY`; zonder sleutel een duidelijke 501. |
+| 15 | Tests | `.github/workflows/qa.yml` draait de testrun bij elke push in `parselab/`. |
+
+## Nog open
 
 | # | Onderdeel | Wat | Prioriteit |
 |---|---|---|---|
-| 1 | Dashboard, mobiel | Op een telefoon staat de hele zijbalk boven de inhoud (ruim een schermhoogte). Maak hem inklapbaar met een menuknop. | 1 |
-| 2 | ParseForm | "Toevoegen aan Chrome" is een gewone knop zolang `CONFIG.webstoreUrl` leeg is; hij opent nu de IT-route. Zet de Web Store-vermelding erin of noem de knop tot die tijd "Installeren". | 1 |
-| 3 | Server | Taken zijn niet per gebruiker: iedereen die de server bereikt ziet en verwijdert elkaars taken. Koppel taken aan een account zodra de backend er is (nu alleen `PARSELAB_API_TOKEN` als drempel). | 1 |
-| 4 | ParseScraper | Na "Ander element aanwijzen" blijft de kolomnaam de oude (bijv. "Titel" met voorraadwaarden). Stel de naam opnieuw voor als hij automatisch was. | 2 |
-| 5 | ParseScraper | Bestanden van een verwijderde taak verdwijnen uit Bestanden, maar blijven op de schijf van de server (`server/data/runs`). Verwijder ze mee of toon ze onder "zonder taak". | 2 |
-| 6 | Server | Pagina's zonder charset worden als Windows-1252 gelezen (`€` wordt `â‚¬`). Detecteer UTF-8 als er geen charset is. | 2 |
-| 7 | Server | Een te groot verzoek (> 1 MB) wordt afgebroken zonder antwoord; stuur eerst een nette 413. | 3 |
-| 8 | ParsePDF | De tool meldt "2 nakijken" in de zijbalk; die teller blijft staan tot je ParsePDF opnieuw opent. Zet hem terug bij een nieuwe upload. | 3 |
-| 9 | Bestanden | De knop rechtsboven heet "Wat wil je doen?"; op deze pagina past "Nieuw project" beter. | 3 |
-| 10 | ParseBoard | Er kan maar één overzicht bewaard worden (`board:saved`); een tweede overschrijft het eerste zonder waarschuwing. | 2 |
-| 11 | Dashboard | Projecten en instellingen staan in de browser (`localStorage`); een andere computer of browser ziet ze niet. Wacht op accounts en synchronisatie. | 2 |
-| 12 | Extensie | De Chrome Web Store-vermelding moet nog worden ingediend; tot die tijd loopt installatie via ontwikkelaarsmodus. | 1 |
-| 13 | Dashboard | De inloglink is een mock (geen e-mail wordt verstuurd). | 1 |
-| 14 | ParsePDF | AI-herkenning wijst naar `/api/parsepdf/detect`, dat de server nog niet heeft; met AI aan geeft de knop een nette fout. | 2 |
-| 15 | Tests | `tests/qa.mjs` draait tegen lokale servers; koppel hem aan CI (GitHub Actions met Playwright) zodat elke push getest wordt. | 2 |
+| 12 | Extensie | Chrome Web Store-vermelding indienen; daarna `CONFIG.webstoreUrl` invullen. | 1 |
+| 13 | Dashboard | Inloglink echt versturen (mailserver) en accounts; daarmee wordt de scheiding per e-mailadres op de server ook beveiliging. | 1 |
+| 16 | Server | Proxy-, taken- en store-data staan als JSON op schijf; voor meer dan één server of veel gebruikers is een database nodig. | 3 |

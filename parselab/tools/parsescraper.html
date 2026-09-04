@@ -206,6 +206,7 @@ document.querySelectorAll(".nav-item[data-page]").forEach(n => n.onclick = () =>
 function post(msg) { if (!EMBED) return; try { window.parent.postMessage(Object.assign({ source: "parselab-tool" }, msg), "*"); } catch (e) {} }
 window.addEventListener("message", ev => {
   const d = ev.data || {};
+  if (d.type === "parselab:user" && d.email !== undefined) { const u = String(d.email || "").toLowerCase(); if (u !== state.user) { state.user = u; loadTasks(); } return; }
   if (d.type === "parselab:nav" && d.section) showPage(d.section);
     if (d.type === "parselab:rename-project" && d.id) { const tid = String(d.id).replace(/^scrape:/, ""); api("/tasks/" + tid, { method: "PATCH", body: JSON.stringify({ name: d.name }) }).then(loadTasks).catch(() => {}); return; }
     if (d.type === "parselab:delete-project" && d.id) { const tid = String(d.id).replace(/^scrape:/, ""); api("/tasks/" + tid, { method: "DELETE" }).then(loadTasks).catch(() => {}); return; }
@@ -216,7 +217,7 @@ function syncProjects() { post({ type: "parselab:projects", tool: "scrape", list
 
 /* ---------- API ---------- */
 async function api(path, opts) {
-  const headers = { "content-type": "application/json" }; if (state.token) headers["x-parselab-token"] = state.token;
+  const headers = { "content-type": "application/json" }; if (state.token) headers["x-parselab-token"] = state.token; if (state.user) headers["x-parselab-user"] = state.user;
   let res; try { res = await fetch(API + path, Object.assign({ headers }, opts || {})); } catch (e) { throw new Error("De ParseLab-server is niet bereikbaar. Start hem met: node server/server.js"); }
   const body = (res.headers.get("content-type") || "").includes("json") ? await res.json() : null;
   if (res.status === 401) { const t = prompt("De ParseLab-server vraagt een toegangscode:"); if (t) { state.token = t; sessionStorage.setItem("parselab-token", t); return api(path, opts); } }
@@ -337,6 +338,7 @@ function onPick(target) {
     const all = state.rule.item ? [...doc.querySelectorAll(state.rule.item)] : [doc.body];
     const sel = state.rule.item ? relSel(target, item) : pathTo(target, doc.body);
     c.selector = sel; c.attr = target.tagName === "IMG" ? "src" : (c.attr === "href" ? "href" : "text");
+    if (!c.renamed) c.name = humanName(target, i); // naam volgt het nieuwe element, tenzij je hem zelf had aangepast
     c.samples = all.slice(0, 6).map(it => { const e = it.querySelector(sel); if (!e) return ""; return c.attr === "src" ? (e.currentSrc || e.src) : c.attr === "href" ? ((e.tagName === "A" ? e : e.closest("a[href]")) || {}).href || "" : (e.innerText || "").trim(); });
     if (!c.samples.some(Boolean)) c.samples = [target.innerText ? target.innerText.trim() : ""];
     setMode("item"); renderRule(); return;
@@ -384,7 +386,7 @@ function renderRule() {
       <div class="sw"><button type="button" class="link" data-switch="${i}">Ander element aanwijzen</button></div>
       <div class="adv"><select data-i="${i}" data-f="attr" aria-label="Wat wil je hebben?"><option value="text" ${c.attr === "text" ? "selected" : ""}>de tekst</option><option value="href" ${c.attr === "href" ? "selected" : ""}>de link</option><option value="src" ${c.attr === "src" ? "selected" : ""}>de afbeelding</option></select><label class="check" style="font-size:13px"><input type="checkbox" data-i="${i}" data-f="number" ${c.number ? "checked" : ""}> als getal</label></div>
     </div>`).join("");
-  $("#cols").querySelectorAll("[data-i]").forEach(el => el.onchange = () => { const c = r.columns[+el.dataset.i], f = el.dataset.f; if (f === "off") c.off = !el.checked; else if (f === "number") c.number = el.checked; else c[f] = el.value; renderFlow(); });
+  $("#cols").querySelectorAll("[data-i]").forEach(el => el.onchange = () => { const c = r.columns[+el.dataset.i], f = el.dataset.f; if (f === "off") c.off = !el.checked; else if (f === "number") c.number = el.checked; else { c[f] = el.value; if (f === "name") c.renamed = true; } renderFlow(); });
   $("#cols").querySelectorAll("[data-switch]").forEach(b => b.onclick = () => setMode("col:" + b.dataset.switch));
   renderFlow();
 }

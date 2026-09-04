@@ -13,6 +13,8 @@ p.on('dialog', d => d.accept());
 const nf = []; p.on('response', r => { if (r.status() === 404 && !/8765\/api/.test(r.url())) nf.push(r.url()); });
 const U = 'http://127.0.0.1:8080/index.html';
 for (const t of await (await fetch('http://127.0.0.1:8080/api/scrape/tasks')).json()) await fetch('http://127.0.0.1:8080/api/scrape/tasks/' + t.id, { method:'DELETE' });
+for (const f of fs.readdirSync(S + '/../server/data/runs')) fs.unlinkSync(S + '/../server/data/runs/' + f);
+try { fs.rmSync(S + '/../server/data/store', { recursive:true }); } catch (e) {}
 const tool = () => p.frameLocator('iframe.bench-frame');
 const hash = () => p.evaluate(() => location.hash);
 
@@ -95,6 +97,7 @@ await step('scraper', async () => {
   await snap.locator('.stock').first().click(); await p.waitForTimeout(400);
   const after = await t.locator('#cols .col').first().locator('.ex').innerText();
   ok('kolom gewisseld naar ander element', before !== after, before + ' → ' + after);
+  ok('kolomnaam volgt het nieuwe element', await t.locator('#cols .col').first().locator('[data-f=name]').inputValue() !== 'Titel', await t.locator('#cols .col').first().locator('[data-f=name]').inputValue());
   // volgende pagina
   await t.locator('details.more summary').click(); await p.waitForTimeout(200);
   await t.locator('#mode-next').click(); await p.waitForTimeout(200);
@@ -116,7 +119,9 @@ await step('scraper', async () => {
   await t.locator('#task-name').fill('QA testshop'); await t.locator('#task-schedule').selectOption('dag').catch(()=>{}); await t.locator('#task-save').click(); await p.waitForTimeout(1200);
   ok('taak bewaard → project actief', /scrape\/.*/.test(await hash()) && /QA testshop/.test(await p.locator('#top-title').innerText()), await hash() + ' ' + await p.locator('#top-title').innerText());
   ok('project in zijbalk', await p.locator('.nav-sub-item.proj', { hasText:'QA testshop' }).count() === 1);
-  const tasks = await (await fetch('http://127.0.0.1:8080/api/scrape/tasks')).json(); const tk = (tasks.tasks||tasks).find(x => x.name === 'QA testshop'); taskId = tk && tk.id;
+  const tasks = await (await fetch('http://127.0.0.1:8080/api/scrape/tasks', { headers:{ 'x-parselab-user':'sanne.de.vries@kantoor.nl' } })).json(); const tk = (tasks.tasks||tasks).find(x => x.name === 'QA testshop'); taskId = tk && tk.id;
+  const other = await (await fetch('http://127.0.0.1:8080/api/scrape/tasks', { headers:{ 'x-parselab-user':'iemand.anders@kantoor.nl' } })).json();
+  ok('andere gebruiker ziet deze taak niet', !other.some(x => x.name === 'QA testshop'), other.length);
   ok('taak op server met planning en laatste run', !!tk && tk.schedule === 'dag' && !!tk.lastRunId, JSON.stringify(tk||{}).slice(0,160));
   await p.screenshot({ path:S+'/shots/qa-done.png', fullPage:true });
 });
@@ -132,7 +137,7 @@ await step('projecten', async () => {
   ok('project openen toont laatste resultaat', (await hash()).includes('scrape') && await tool().locator('#page-done.active').count() === 1 && /\d/.test(await tool().locator('#done-pill').innerText()), await hash());
   await p.reload({ waitUntil:'load' }); await p.waitForTimeout(3500);
   ok('hernoemde naam blijft na herladen', await p.locator('.nav-sub-item.proj', { hasText:'hernoemd' }).count() === 1, await p.$$eval('.nav-sub-item.proj', e => e.map(x => x.innerText.trim()).join('|')));
-  await p.waitForTimeout(1500); const srvName = (await (await fetch('http://127.0.0.1:8080/api/scrape/tasks')).json()).map(x => x.name).join('|'); ok('naam ook op de server aangepast', /hernoemd/.test(srvName), srvName);
+  await p.waitForTimeout(1500); const srvName = (await (await fetch('http://127.0.0.1:8080/api/scrape/tasks', { headers:{ 'x-parselab-user':'sanne.de.vries@kantoor.nl' } })).json()).map(x => x.name).join('|'); ok('naam ook op de server aangepast', /hernoemd/.test(srvName), srvName);
   ok('project na herladen weer geopend', await tool().locator('#page-done.active').count() === 1 && /\d/.test(await tool().locator('#done-pill').innerText().catch(()=>'')));
   const pids = await p.$$eval('.nav-sub-item.proj[data-project]', e => e.map(x => x.getAttribute('data-project'))); ok('geen dubbele projecten na herladen', new Set(pids).size === pids.length && pids.length === 1, pids.length);
   // rerun via tool
@@ -145,7 +150,8 @@ await step('projecten', async () => {
   await p.click('.proj-row [data-edit-project]'); await p.click('#ep-delete'); await p.waitForTimeout(600);
   await p.goto(U + '#scrape/url'); await p.reload({ waitUntil:'load' }); await p.waitForTimeout(2500);
   ok('"Uit lijst halen" blijft na herladen', await p.locator('.nav-sub-item.proj[data-project]').count() === 0, await p.locator('.nav-sub-item.proj[data-project]').count());
-  ok('"Uit lijst halen" verwijdert taak op server', (await (await fetch('http://127.0.0.1:8080/api/scrape/tasks')).json()).length === 0);
+  ok('"Uit lijst halen" verwijdert taak op server', (await (await fetch('http://127.0.0.1:8080/api/scrape/tasks', { headers:{ 'x-parselab-user':'sanne.de.vries@kantoor.nl' } })).json()).length === 0);
+  ok('uitvoeringen van de taak zijn mee verwijderd', fs.readdirSync(S + '/../server/data/runs').length === 0, fs.readdirSync(S + '/../server/data/runs').length);
   ok('nieuw project via "+ Nieuwe" start op stap 1', (await hash()).includes('scrape') && await tool().locator('#page-url.active').count() === 1, await hash());
 });
 
@@ -196,7 +202,7 @@ await step('parseboard', async () => {
   const bb = t.locator('#buildBtn'); if (await bb.count()) { await bb.click(); await p.waitForTimeout(1200); }
   ok('board: dashboard gebouwd (stap 6)', /board\/6/.test(await hash()) && await t.locator('#saveBtn').count() === 1, await hash());
   await t.locator('#saveBtn').click(); await p.waitForTimeout(1000);
-  ok('board: overzicht bewaard als project', await p.locator('.nav-sub-item.proj[data-project="board:saved"]').count() === 1, await p.$$eval('.nav-sub-item.proj[data-project]', e => e.map(x => x.innerText.trim()).join('|')));
+  ok('board: overzicht bewaard als project', await p.locator('.nav-sub-item.proj[data-project^="board:"]').count() === 1, await p.$$eval('.nav-sub-item.proj[data-project]', e => e.map(x => x.innerText.trim()).join('|')));
   await p.screenshot({ path:S+'/shots/qa-board.png', fullPage:true });
 });
 
@@ -204,7 +210,7 @@ await step('parseboard', async () => {
 await step('parseform', async () => {
   await p.goto(U + '#form/install'); await p.waitForTimeout(800);
   const v = await p.locator('#view').innerText();
-  ok('form: installatiepaneel zonder extensie', /Chrome/.test(v));
+  ok('form: installatiepaneel zonder extensie', /Chrome/.test(v) && /Installeren/.test(v));
   ok('form: geen link naar Web Store (nog leeg)', !CONFIG_check(), 'CONFIG.webstoreUrl leeg');
   await p.click('#toggle-it').catch(()=>{}); await p.waitForTimeout(200);
   ok('form: IT-route uitklapbaar', await p.locator('#it-details').isVisible().catch(()=>false));
@@ -218,8 +224,26 @@ await step('mobiel', async () => {
   const sw = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   ok('mobiel: geen horizontale scroll', sw <= 0, sw);
   ok('mobiel: startkaarten zichtbaar', await p.locator('.launch button[data-bench]').first().isVisible());
+  ok('mobiel: zijbalk ingeklapt, menuknop zichtbaar', await p.locator('#menu-btn').isVisible() && !(await p.locator('#nav-tools').isVisible()));
+  await p.click('#menu-btn'); await p.waitForTimeout(200);
+  ok('mobiel: menu klapt uit', await p.locator('#nav-tools').isVisible());
+  await p.click('.nav-item[data-go="files"]'); await p.waitForTimeout(400);
+  ok('mobiel: menu sluit na keuze', !(await p.locator('#nav-tools').isVisible()) && (await hash()).startsWith('#files'));
+  await p.click('#top-action'); await p.waitForTimeout(200);
+  ok('bestanden: "Nieuw project" toont keuze uit 4 tools', await p.locator('#modal [data-new-project]').count() === 4);
+  await p.keyboard.press('Escape');
   await p.screenshot({ path:S+'/shots/qa-mobile.png', fullPage:true });
   await p.setViewportSize({ width:1440, height:1000 });
+});
+
+// ---------- 10b. Sync via server: andere browser, zelfde account ----------
+await step('sync', async () => {
+  await p.waitForTimeout(1500);
+  const ctx2 = await b.newContext({ viewport:{ width:1440, height:1000 } }); const p2 = await ctx2.newPage();
+  await p2.goto(U, { waitUntil:'load' }); await p2.fill('#login-email', 'sanne.de.vries@kantoor.nl'); await p2.click('#login-form button[type=submit]'); await p2.waitForTimeout(2500);
+  const names = await p2.$$eval('.proj-row', e => e.map(x => x.innerText.split('\n')[0]));
+  ok('andere browser, zelfde account: projecten via de server', names.some(n => /Facturen 2026/.test(n)), names.join('|'));
+  await ctx2.close();
 });
 
 // ---------- 11. Uitloggen ----------
