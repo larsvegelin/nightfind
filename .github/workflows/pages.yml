@@ -18,11 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  # Eerst bouwen en Pages aanzetten (bron: GitHub Actions) als dat nog niet is gebeurd; pas daarna bestaat de omgeving github-pages.
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Statische map samenstellen
@@ -33,9 +31,17 @@ jobs:
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
         with:
-          enablement: true   # zet GitHub Pages aan (bron: GitHub Actions) als dat nog niet is gebeurd
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
