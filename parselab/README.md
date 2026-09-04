@@ -34,7 +34,8 @@ Instellingen via omgevingsvariabelen:
 | `tools/parsepdf.html` | ParsePDF: Uploaden → Aanwijzen → Controleren → Downloaden, plus Sjablonen. |
 | `tools/parseboard.html` | ParseBoard: bestand → overzicht in zes stappen. |
 | `tools/extension/` | Browserextensie voor ParseForm en voor ParseScraper op ingelogde pagina's. `tools/parselab-extension.zip` is dezelfde extensie als download. |
-| `docs/` | Analyse per tool en status van toepassing. |
+| `docs/` | Analyse per tool, status van toepassing en `verbeterpunten.md` (laatste testronde). |
+| `tests/` | Playwright-testrun over het hele dashboard (`tests/README.md`). |
 
 ## Twee manieren van uitlezen
 
@@ -66,6 +67,7 @@ Een project is wat je bewaart: een taak (ParseScraper, ParseForm), een sjabloon 
 | `parselab:project { tool, id, name, payload, open }` | tool → dashboard | Eén project bewaard; `open` = maak het actief. |
 | `parselab:stats { tool, … }` | tool → dashboard | Tellers voor de zijbalk. |
 | `parselab:open { view, section }` | tool → dashboard | Open een andere tool. |
+| `parselab:rename-project { id, name }` / `parselab:delete-project { id }` | dashboard → tool | Naam of verwijdering die je in het dashboard koos; de tool past zijn eigen opslag aan (ParseScraper: `PATCH`/`DELETE /api/scrape/tasks/:id`). |
 | `parselab:extension { version }` | extensie → dashboard | De extensie is aanwezig (via `bridge.js`). |
 
 ## Wat nog een backend vraagt

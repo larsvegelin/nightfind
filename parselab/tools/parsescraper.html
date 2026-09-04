@@ -207,6 +207,8 @@ function post(msg) { if (!EMBED) return; try { window.parent.postMessage(Object.
 window.addEventListener("message", ev => {
   const d = ev.data || {};
   if (d.type === "parselab:nav" && d.section) showPage(d.section);
+    if (d.type === "parselab:rename-project" && d.id) { const tid = String(d.id).replace(/^scrape:/, ""); api("/tasks/" + tid, { method: "PATCH", body: JSON.stringify({ name: d.name }) }).then(loadTasks).catch(() => {}); return; }
+    if (d.type === "parselab:delete-project" && d.id) { const tid = String(d.id).replace(/^scrape:/, ""); api("/tasks/" + tid, { method: "DELETE" }).then(loadTasks).catch(() => {}); return; }
   if (d.type === "parselab:load-project" && d.project) loadProject(d.project);
 });
 function stats() { post({ type: "parselab:stats", tool: "scrape", tasks: state.tasks.length, running: !!state.busy }); }

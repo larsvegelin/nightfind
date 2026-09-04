@@ -1935,6 +1935,8 @@ render();
     Storage.prototype.removeItem = function (k) { _removeItem.apply(this, arguments); if (k === "paneel-config") setTimeout(syncProjects, 0); };
     window.addEventListener("message", function (ev) {
       var d = ev.data || {};
+      if (d.type === "parselab:rename-project" && d.id === "board:saved") { try { var c = JSON.parse(localStorage.getItem("paneel-config") || "null"); if (c) { c.fileName = d.name; localStorage.setItem("paneel-config", JSON.stringify(c)); } } catch (e) {} return; }
+      if (d.type === "parselab:delete-project" && d.id === "board:saved") { try { localStorage.removeItem("paneel-config"); } catch (e) {} return; }
       if (d.type === "parselab:load-project" && d.project) {
         try { if (d.project.payload && d.project.payload.saved) { goto(1); var b = document.querySelector("#loadCfgBtn"); if (b) b.click(); } else { goto(1); } } catch (e) {}
       }

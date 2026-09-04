@@ -4710,7 +4710,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             $('fsobSkip').addEventListener('click', function () { fsobFinish(true); });
             var seen = null;
             try { seen = localStorage.getItem(FSOB_KEY); } catch (e) {}
-            if (!seen) $('fsOnboarding').classList.add('open');
+            // In het ParseLab-dashboard doet het dashboard de uitleg; geen tweede welkomstscherm.
+            var inDashboard = false; try { inDashboard = (window.self !== window.top) || /[?&]embed=1/.test(location.search) || document.documentElement.classList.contains('parselab-embed'); } catch (e) { inDashboard = true; }
+            if (!seen && !inDashboard) $('fsOnboarding').classList.add('open');
         }
 
         // ---------- App-navigatie, checklist en workflow ----------
@@ -5294,6 +5296,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             propose: proposeRuleFromValue,
             transform: applyTransform,
             showPage: showPage,
+            renameTemplate: function (oldName, newName) { var all = loadTemplates(); if (!all[oldName]) return false; if (newName && newName !== oldName) all[newName] = all[oldName]; delete all[oldName]; storeTemplates(all); renderTemplatesPage(); if (typeof refreshWorkflowTemplates === "function") refreshWorkflowTemplates(); return true; },
             runWorkflow: runWorkflow,
             startTour: startTour,
             detectKind: detectKind,
@@ -5342,6 +5345,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     Storage.prototype.setItem = function (k, v) { _setItem.apply(this, arguments); if (k === "pdfScraperTemplates") setTimeout(syncProjects, 0); };
     window.addEventListener("message", function (ev) {
       var d = ev.data || {};
+      if ((d.type === "parselab:rename-project" || d.type === "parselab:delete-project") && d.id) {
+        try { var oldName = String(d.id).replace(/^pdf:/, ""); window.__pdfScraper.renameTemplate(oldName, d.type === "parselab:rename-project" ? d.name : null); } catch (e) {}
+        return;
+      }
       if (d.type === "parselab:load-project" && d.project) {
         var pr = d.project;
         if (pr.payload && pr.payload.template && typeof applyTemplate === "function") { try { applyTemplate(pr.payload.template, true); } catch (e) {} if (typeof showPage === "function") showPage("define"); }

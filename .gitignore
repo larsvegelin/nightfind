@@ -40,3 +40,6 @@ clubs_old.html
 parselab/server/proxies.txt
 parselab/server/data/
 parselab/server/node_modules/
+parselab/tests/shots/
+parselab/tests/qa-result.txt
+parselab/tests/qa-board.csv

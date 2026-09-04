@@ -10,7 +10,7 @@
  * Wat de server doet:
  *   POST /api/scrape/snapshot   { url, proxy? }                 → opgeschoonde HTML van de gerenderde pagina + schermafbeelding
  *   POST /api/scrape/run        { url, rule, pages?, proxy? }   → regels volgens de aangewezen regel, over meerdere pagina's
- *   GET  /api/scrape/tasks      · POST /api/scrape/tasks · DELETE /api/scrape/tasks/:id   (bewaarde taken met planning)
+ *   GET  /api/scrape/tasks      · POST /api/scrape/tasks · PATCH/DELETE /api/scrape/tasks/:id   (bewaarde taken met planning)
  *   POST /api/scrape/tasks/:id/run                               → taak nu uitvoeren
  *   GET  /api/scrape/runs/:id.xlsx | .csv                        → bestand van een uitvoering
  *   GET  /api/scrape/status                                      → proxies, wachtrij, planning
@@ -127,9 +127,12 @@ async function browser() {
     const pw = loadPlaywright();
     const opts = { args: ["--no-sandbox"] };
     if (process.env.PLAYWRIGHT_CHROMIUM_PATH) opts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
-    browserP = pw.chromium.launch(opts).catch(e => { browserP = null; throw e; });
+    browserP = pw.chromium.launch(opts).then(b => { b.on("disconnected", () => { if (browserP === thisP) browserP = null; }); return b; }).catch(e => { browserP = null; throw e; });
+    const thisP = browserP;
   }
-  return browserP;
+  const b = await browserP;
+  if (!b.isConnected()) { browserP = null; return browser(); } // browser is weggevallen: opnieuw starten
+  return b;
 }
 let running = 0; const queue = [];
 function withSlot(fn) {
@@ -330,7 +333,9 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 function serveStatic(req, res, pathname) {
   let p = decodeURIComponent(pathname); if (p.endsWith("/")) p += "index.html";
   const file = path.normalize(path.join(ROOT, p));
-  if (!file.startsWith(ROOT) || file.startsWith(path.join(ROOT, "server", "data"))) return send(res, 404, { error: "Niet gevonden" });
+  // Alleen het dashboard en de tools zijn openbaar; de servermap (code, proxies.txt, taken, uitvoeringen), node_modules en dotfiles nooit.
+  const rel = path.relative(ROOT, file);
+  if (rel.startsWith("..") || path.isAbsolute(rel) || /^(server|node_modules)(\/|\\|$)/.test(rel) || rel.split(/[\/\\]/).some(seg => seg.startsWith("."))) return send(res, 404, { error: "Niet gevonden" });
   fs.stat(file, (err, st) => {
     if (err || !st.isFile()) return send(res, 404, { error: "Niet gevonden" });
     res.writeHead(200, { "content-type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream" });
@@ -397,6 +402,12 @@ const server = http.createServer(async (req, res) => {
         return send(res, 200, run);
       }
       if (req.method === "DELETE" && sub) { writeTasks(readTasks().filter(x => x.id !== sub)); return send(res, 200, { ok: true }); }
+      if (req.method === "PATCH" && sub) {
+        const body = await readBody(req); const t = readTasks().find(x => x.id === sub); if (!t) throw httpError(404, "Taak niet gevonden");
+        if (body.name) t.name = String(body.name).slice(0, 80);
+        if (["nu", "uur", "dag", "week"].includes(body.schedule)) t.schedule = body.schedule;
+        updateTask(t); return send(res, 200, t);
+      }
     }
 
     if (kind === "runs" && sub) {
@@ -414,4 +425,5 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`ParseLab draait op http://localhost:${PORT}  (proxies: ${proxies.length}, toegangscode: ${TOKEN ? "aan" : "uit"})`);
 });
+process.on("SIGTERM", () => process.exit(0));
 process.on("SIGINT", async () => { try { const b = await browserP; if (b) await b.close(); } catch (e) {} process.exit(0); });

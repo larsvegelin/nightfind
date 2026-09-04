@@ -265,11 +265,26 @@ function upsertProject(pr) {
   if (i >= 0) list[i] = cur; else list.unshift(cur);
   writeProjects(list); return cur;
 }
-function deleteProject(id) { writeProjects(readProjects().filter(x => x.id !== id)); }
+/* Naam en "uit lijst" die jij in het dashboard kiest, winnen van wat de tool later meldt; de tool krijgt het ook te horen. */
+const OVERRIDE_KEY = "parselab-project-overrides";
+function readOverrides() { try { return JSON.parse(localStorage.getItem(OVERRIDE_KEY) || "{}") || {}; } catch (e) { return {}; } }
+function writeOverride(id, patch) { const o = readOverrides(); o[id] = Object.assign({}, o[id] || {}, patch); try { localStorage.setItem(OVERRIDE_KEY, JSON.stringify(o)); } catch (e) {} }
+function tellTool(msg) { const f = document.querySelector("iframe.bench-frame"); if (!f) return; try { f.contentWindow.postMessage(Object.assign({ source:"parselab-dashboard" }, msg), "*"); } catch (e) {} }
+function renameProject(id, name) { writeOverride(id, { name, pending:"rename" }); upsertProject({ id, name }); flushOverrides(); }
+function deleteProject(id) { writeOverride(id, { hidden:true, pending:"delete" }); writeProjects(readProjects().filter(x => x.id !== id)); flushOverrides(); }
+/* Wijzigingen gaan naar de tool zodra die open staat (vanuit het overzicht is er geen tool geladen). */
+function flushOverrides() {
+  const f = document.querySelector("iframe.bench-frame"); if (!f || f.dataset.ready !== "1") return;
+  const o = readOverrides(); let changed = false;
+  Object.keys(o).forEach(id => { const x = o[id]; if (!x.pending || id.split(":")[0] !== f.dataset.tool) return; tellTool(x.pending === "delete" ? { type:"parselab:delete-project", id } : { type:"parselab:rename-project", id, name:x.name }); delete x.pending; changed = true; });
+  if (changed) { try { localStorage.setItem(OVERRIDE_KEY, JSON.stringify(o)); } catch (e) {} }
+}
 function syncProjects(tool, incoming) {
-  const ids = new Set((incoming || []).map(x => x.id));
+  const ov = readOverrides();
+  incoming = (incoming || []).filter(pr => !(ov[pr.id] && ov[pr.id].hidden)).map(pr => (ov[pr.id] && ov[pr.id].name) ? Object.assign({}, pr, { name: ov[pr.id].name }) : pr);
+  const ids = new Set(incoming.map(x => x.id));
   const list = readProjects().filter(x => !(x.tool === tool && x.synced) && !ids.has(x.id));
-  (incoming || []).forEach(pr => { const prev = readProjects().find(x => x.id === pr.id); list.push(Object.assign({ created: new Date().toISOString() }, prev || {}, pr, { tool, synced:true, updated: pr.updated || (prev && prev.updated) || new Date().toISOString() })); });
+  incoming.forEach(pr => { const prev = readProjects().find(x => x.id === pr.id); list.push(Object.assign({ created: new Date().toISOString() }, prev || {}, pr, { tool, synced:true, updated: pr.updated || (prev && prev.updated) || new Date().toISOString() })); });
   writeProjects(list.sort((a, b) => String(b.updated).localeCompare(String(a.updated))));
 }
 function projectsOf(tool) { return readProjects().filter(x => x.tool === tool).sort((a, b) => String(b.updated).localeCompare(String(a.updated))); }
@@ -474,7 +489,7 @@ function bindLogin() {
   form.onsubmit = e => {
     e.preventDefault(); const email = document.getElementById("login-email").value.trim(); if (!email) return;
     note.hidden = false; note.innerHTML = `Inloglink gestuurd naar <span class="strong">${esc(email)}</span>. In deze versie ben je meteen ingelogd.`;
-    setTimeout(() => { state.user = userFromEmail(email); writeSession(state.user); render(); }, 700);
+    setTimeout(() => { state.user = userFromEmail(email); writeSession(state.user); if (!location.hash) history.replaceState(null, "", "#overview"); render(); }, 700);
   };
 }
 
@@ -586,6 +601,7 @@ function initFrame(f) {
   try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:lang", lang:CONFIG.lang }, "*"); } catch (e) {}
   try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:settings", settings:readSettings() }, "*"); } catch (e) {}
   if (state.project) { f.dataset.project = state.project; sendProject(f, state.project); }
+  setTimeout(flushOverrides, 300);
 }
 
 /* ---------- bestanden: alleen wat er echt is (uitvoeringen van de server) ---------- */
@@ -637,8 +653,16 @@ function renderHelp(defs) {
 function renderSearch(defs, q) {
   const lq = q.toLowerCase(), byKey = Object.fromEntries(defs.map(d => [d.key, d]));
   const hits = readProjects().filter(pr => pr.name.toLowerCase().includes(lq) && byKey[pr.tool]);
+  const text = t => [t.name, t.tagline, t.desc, t.intro, (t.bench && t.bench.intro) || "", ...(t.steps || []), ...t.sections.map(x => x.label + " " + (x.hint || ""))].join(" ").toLowerCase();
+  const tools = defs.filter(t => text(t).includes(lq));
+  const steps = defs.flatMap(t => t.sections.filter(x => (x.label + " " + (x.hint || "")).toLowerCase().includes(lq)).map(x => ({ t, x })));
+  const row = (main, sub, t, btn) => `<div class="tr proj-row"><div class="cell-main"><span>${main}</span><span class="mono-12">${sub}</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div>${btn}<span></span></div>`;
+  const any = hits.length || tools.length || steps.length;
   return `<div class="card"><div class="card-head"><div class="caps">Zoekresultaten voor “${esc(q)}”</div><button type="button" class="link" id="clear-search">Wissen</button></div>
-    <div class="table">${hits.length ? hits.map(pr => { const t = byKey[pr.tool]; return `<div class="tr proj-row"><div class="cell-main"><span>${esc(pr.name)}</span><span class="mono-12">${esc(t.projectWord)}</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div><button type="button" class="btn btn-outline btn-small" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button><span></span></div>`; }).join("") : `<div class="note empty">Niets gevonden.</div>`}</div></div>`;
+    <div class="table">${hits.map(pr => { const t = byKey[pr.tool]; return row(esc(pr.name), esc(t.projectWord), t, `<button type="button" class="btn btn-outline btn-small" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>`); }).join("")}
+    ${steps.map(({ t, x }) => row(esc(x.label), "Stap in " + esc(t.name), t, `<button type="button" class="btn btn-outline btn-small" data-go="${t.key}" data-section="${esc(x.id)}">Ga naar stap</button>`)).join("")}
+    ${tools.filter(t => !steps.some(s => s.t === t)).map(t => row(esc(t.name), esc(t.tagline || ""), t, `<button type="button" class="btn btn-outline btn-small" data-go="${t.key}">Openen</button>`)).join("")}
+    ${any ? "" : `<div class="note empty">Niets gevonden. Kijk bij Hulp voor uitleg per tool.</div>`}</div></div>`;
 }
 
 /* ---------- dialogen ---------- */
@@ -706,7 +730,7 @@ function renderNavOnly() { const el = document.getElementById("nav-tools"); if (
 function renderTop() { const tool = toolDefs().find(d => d.key === state.view); const pr = state.project && readProjects().find(x => x.id === state.project); if (tool && pr) { document.getElementById("top-title").textContent = pr.name; document.getElementById("top-sub").textContent = tool.name + " · " + tool.projectWord; } }
 
 function bindNav() {
-  document.querySelectorAll("[data-go]").forEach(el => { el.onclick = () => go(el.getAttribute("data-go")); });
+  document.querySelectorAll("[data-go]").forEach(el => { el.onclick = () => go(el.getAttribute("data-go"), el.getAttribute("data-section") || undefined); });
   document.querySelectorAll(".nav-sub-item[data-section]").forEach(el => { el.onclick = () => { if (!el.disabled) go(state.view, el.getAttribute("data-section"), state.project); }; });
   document.querySelectorAll("[data-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === state.view); go(state.view, t.projectSection, el.getAttribute("data-project")); }; });
   document.querySelectorAll("[data-new-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"newproject", tool:el.getAttribute("data-new-project") }; render(); focusLater("np-name"); }; });
@@ -720,7 +744,7 @@ function bindActions() {
   document.querySelectorAll("[data-close]").forEach(el => { el.onclick = () => { state.modal = null; render(); }; });
   document.querySelectorAll("[data-close-bg]").forEach(el => { el.onclick = e => { if (e.target === el) { state.modal = null; render(); } }; });
   const np = document.getElementById("np-save"); if (np) { const start = () => { const name = (document.getElementById("np-name").value || "").trim(); if (!name) return; const t = toolDefs().find(x => x.key === state.modal.tool); state.modal = null; go(t.key, t.sections[0].id, "new:" + name); }; np.onclick = start; document.getElementById("np-form").onsubmit = e => { e.preventDefault(); start(); }; }
-  const eps = document.getElementById("ep-save"); if (eps) { const save = () => { const name = (document.getElementById("ep-name").value || "").trim(); if (!name) return; upsertProject({ id:state.modal.id, name }); state.modal = null; render(); }; eps.onclick = save; document.getElementById("ep-form").onsubmit = e => { e.preventDefault(); save(); }; }
+  const eps = document.getElementById("ep-save"); if (eps) { const save = () => { const name = (document.getElementById("ep-name").value || "").trim(); if (!name) return; renameProject(state.modal.id, name); state.modal = null; render(); }; eps.onclick = save; document.getElementById("ep-form").onsubmit = e => { e.preventDefault(); save(); }; }
   const epd = document.getElementById("ep-delete"); if (epd) epd.onclick = () => { deleteProject(state.modal.id); state.modal = null; render(); };
   const it = document.getElementById("toggle-it"); if (it) it.onclick = () => { const d = document.getElementById("it-details"); d.open = true; d.scrollIntoView({ behavior:"smooth", block:"start" }); };
   const cs = document.getElementById("clear-search"); if (cs) cs.onclick = () => { state.query = ""; render(); };
