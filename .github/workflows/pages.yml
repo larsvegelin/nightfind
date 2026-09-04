@@ -4,7 +4,7 @@ name: ParseLab op GitHub Pages
 # "Website uitlezen" vanuit het dashboard vraagt de ParseLab-server (zie parselab/Dockerfile); zonder server toont het dashboard dat netjes.
 on:
   push:
-    branches: [main, claude/parselab-dashboard-t6irh2]
+    branches: [main]   # de omgeving github-pages laat standaard alleen main uitrollen
     paths: ["parselab/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
