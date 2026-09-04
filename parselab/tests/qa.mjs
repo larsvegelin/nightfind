@@ -4,7 +4,9 @@ const S = process.env.PARSELAB_QA_DIR || new URL('.', import.meta.url).pathname.
 const res = []; const errs = [];
 function ok(name, cond, extra) { res.push((cond ? 'PASS ' : 'FAIL ') + name + (extra !== undefined ? '  -> ' + String(extra).slice(0, 200) : '')); console.log(res[res.length-1]); }
 async function step(name, fn) { try { await fn(); } catch (e) { ok(name + ' (exception)', false, e.message.split('\n')[0]); } }
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args:['--no-sandbox'] });
+// Lokaal: Chromium op /opt/pw-browsers (of PARSELAB_CHROMIUM); in CI: de Chromium die Playwright zelf installeerde.
+const exe = process.env.PARSELAB_CHROMIUM || (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined);
+const b = await chromium.launch({ executablePath: exe, args:['--no-sandbox'] });
 const ctx = await b.newContext({ viewport:{ width:1440, height:1000 }, acceptDownloads:true, locale:'nl-NL' });
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('[pageerror] ' + e.message));
