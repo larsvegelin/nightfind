@@ -32,6 +32,8 @@ jobs:
           rm -rf site/tools/extension/mcp-server/node_modules
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true   # zet GitHub Pages aan (bron: GitHub Actions) als dat nog niet is gebeurd
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
