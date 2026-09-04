@@ -1,0 +1,39 @@
+name: ParseLab op GitHub Pages
+
+# Zet het statische deel online: dashboard, ParsePDF, ParseBoard, de extensie-download en de docs.
+# "Website uitlezen" vanuit het dashboard vraagt de ParseLab-server (zie parselab/Dockerfile); zonder server toont het dashboard dat netjes.
+on:
+  push:
+    branches: [main, claude/parselab-dashboard-t6irh2]
+    paths: ["parselab/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Statische map samenstellen
+        run: |
+          mkdir -p site
+          cp -r parselab/index.html parselab/tools parselab/docs parselab/README.md site/
+          rm -rf site/tools/extension/mcp-server/node_modules
+          touch site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

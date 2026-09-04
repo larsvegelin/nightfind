@@ -27,6 +27,12 @@ Instellingen via omgevingsvariabelen:
 
 Per gebruiker: het dashboard stuurt het e-mailadres van wie is ingelogd mee (`x-parselab-user`). Taken van ParseScraper horen bij dat adres en zijn voor anderen onzichtbaar; projecten, namen en instellingen staan onder `/api/store/:key` zodat je ze op een andere computer terugziet. Dit is scheiding, geen beveiliging: zonder accounts kan iemand met toegang tot de server een ander adres opgeven. Zet `PARSELAB_API_TOKEN` voor een echte drempel.
 
+## Online zetten
+
+**Gratis, statisch (GitHub Pages).** `.github/workflows/pages.yml` zet bij elke push het dashboard, ParsePDF, ParseBoard, de extensie-download en de docs op `https://larsvegelin.github.io/nightfind/`. Zet in de repo-instellingen bij Pages de bron op "GitHub Actions". Website uitlezen vanuit het dashboard werkt daar niet (geen server); het dashboard zegt dat erbij. De extensie kent dit adres (`bridge.js`).
+
+**Met server (Railway, Render, Fly.io of eigen server).** `Dockerfile` bouwt de server met Chromium; `railway.json` en `render.yaml` staan klaar. Koppel de repo, kies de map `parselab`, zet een volume op `/app/server/data` en de omgevingsvariabelen hieronder. Daarna rolt elke push automatisch uit. Zet `PARSELAB_API_TOKEN` zodra de server op internet staat.
+
 ## Mappen
 
 | Pad | Wat |

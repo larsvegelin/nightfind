@@ -1,6 +1,6 @@
 /*
  * ParseLab — dashboard-brug. Draait ALLEEN op de dashboard-adressen (localhost,
- * 127.0.0.1, *.parselab.nl) en vertelt het dashboard dat de extensie er is en welke
+ * 127.0.0.1, *.parselab.nl, larsvegelin.github.io) en vertelt het dashboard dat de extensie er is en welke
  * versie. Verder doet dit script niets: geen toegang tot andere sites.
  */
 (function () {
