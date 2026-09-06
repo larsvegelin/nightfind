@@ -1,0 +1,210 @@
+<!-- ParsePDF — embed 8 van 9: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
+<script>
+window.PLP_V=(function(){
+var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,CFG=window.PARSELAB;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+var BRON={kolomkop:"srcKolomkop",rechts:"srcRechts",inline:"srcInline",onder:"srcOnder",patroon:"srcPatroon",ai:"srcAi"};
+// Een gevonden waarde krijgt meteen de juiste opschoning mee.
+function filterVoor(v){
+  var p=v.vindregel&&v.vindregel.patroon;
+  if(p==="bedrag"||/^\s*-?€/.test(v.waarde)||/\d,\d{2}$/.test(v.waarde))return "bedrag";
+  if(p==="datum"||(ST.vind(v.waarde)||{}).patroon&&(ST.vind(v.waarde)||{}).patroon.naam==="datum")return "datum";
+  return "geen";
+}
+
+function open(file){
+  var t=S.t,laag=el("div","plp-doorkijk"),blad=el("div","plp-blad");
+  laag.appendChild(blad);document.body.appendChild(laag);
+  laag.addEventListener("click",function(e){if(e.target===laag)sluit();});
+  function sluit(){laag.remove();document.removeEventListener("keydown",toets);}
+  function toets(e){if(e.key==="Escape")sluit();}
+  document.addEventListener("keydown",toets);
+
+  var kop=el("div","pld-head"),links=el("div");
+  links.appendChild(el("h2","pld-title",t.look));
+  links.appendChild(el("p","pld-sub",t.lookHint));
+  var dicht=el("button","pld-btn pld-btn--ghost",t.cancel);dicht.type="button";
+  dicht.addEventListener("click",sluit);
+  kop.appendChild(links);kop.appendChild(dicht);blad.appendChild(kop);
+  var laden=el("p","pld-text",t.loading);blad.appendChild(laden);
+
+  P.lees(file).then(function(doc){
+    laden.remove();
+    var analyse=ST.analyse(doc);
+    var velden=analyse.velden.map(function(v){
+      return {aan:true,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,labelvak:v.labelvak,
+              vindregel:v.vindregel,filter:filterVoor(v)};
+    });
+    if(!velden.length){blad.appendChild(el("p","pld-msg pld-msg--warn",t.noFields));return;}
+    bouw(blad,file,doc,analyse,velden,sluit);
+  }).catch(function(e){
+    console.error(e);laden.remove();
+    blad.appendChild(el("p","pld-msg pld-msg--warn",t.errRead));
+  });
+}
+
+function bouw(blad,file,doc,analyse,velden,sluit){
+  var t=S.t,pagina=0,tabelAan=false;
+  var twee=el("div","plp-twee"),linkerkant=el("div"),rechterkant=el("div");
+  twee.appendChild(linkerkant);twee.appendChild(rechterkant);blad.appendChild(twee);
+
+  var vlak=el("div","plp-pagina"),canvas=document.createElement("canvas");
+  vlak.appendChild(canvas);linkerkant.appendChild(vlak);
+  var bladeren=el("div","pld-row");linkerkant.appendChild(bladeren);
+  if(doc.paginas>1){
+    for(var i=0;i<doc.paginas;i++)(function(n){
+      var b=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.page+" "+(n+1));b.type="button";
+      b.addEventListener("click",function(){pagina=n;teken();});bladeren.appendChild(b);
+    })(i);
+  }
+
+  var lijst=el("div","plp-lijst");rechterkant.appendChild(el("p","pld-caps",t.proposal));
+  rechterkant.appendChild(el("p","pld-text",t.proposalHint));rechterkant.appendChild(lijst);
+
+  if(analyse.tabel){
+    var kaart=el("div","pld-card");
+    kaart.appendChild(el("p","pld-caps",t.tableFound));
+    kaart.appendChild(el("p","pld-text",t.tableHint.replace("{n}",analyse.tabel.rijen.length).replace("{k}",analyse.tabel.kop.length)));
+    var aanknop=el("label","pld-row"),vink=document.createElement("input");
+    vink.type="checkbox";vink.addEventListener("change",function(){tabelAan=vink.checked;});
+    aanknop.appendChild(vink);aanknop.appendChild(el("span","pld-text",t.tableUse));
+    kaart.appendChild(aanknop);rechterkant.appendChild(kaart);
+  }
+
+  var knoppen=el("div","pld-row");blad.appendChild(knoppen);
+  var over=el("button","pld-btn",t.takeOver);over.type="button";
+  var ai=el("button","pld-btn pld-btn--ghost",t.withAi);ai.type="button";
+  var melding=el("p","pld-text");
+  knoppen.appendChild(over);knoppen.appendChild(ai);knoppen.appendChild(melding);
+
+  over.addEventListener("click",function(){
+    var gekozen=velden.filter(function(v){return v.aan&&v.naam;});
+    if(!gekozen.length)return;
+    S.regels=gekozen.map(function(v){
+      return {naam:v.naam,type:"cel",waarde:v.vindregel.label||v.vindregel.patroon||"",filter:v.filter,vindregel:v.vindregel};
+    });
+    if(tabelAan&&analyse.tabel)analyse.tabel.kop.forEach(function(k,i){
+      S.regels.push({naam:k,type:"tabelkolom",waarde:"",kolom:i,filter:"geen"});
+    });
+    try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
+    sluit();window.PLP_UI.teken();window.PLP_UI.meld(t.taken);
+  });
+  ai.addEventListener("click",function(){vraagAi(doc,velden,function(){teken();},melding,ai);});
+
+  function tekenLijst(){
+    lijst.innerHTML="";
+    velden.forEach(function(v,i){
+      var rij=el("div","plp-veldrij");
+      var vink=document.createElement("input");vink.type="checkbox";vink.checked=v.aan;
+      vink.setAttribute("aria-label",v.naam);
+      vink.addEventListener("change",function(){v.aan=vink.checked;tekenVlakken();});
+      var naam=el("input","pld-in");naam.value=v.naam;
+      naam.addEventListener("input",function(){v.naam=naam.value;});
+      var waarde=el("p","plp-mono",v.waarde);
+      var bron=el("span","plp-bron"+(v.bron==="ai"?" plp-bron--ai":""),t[BRON[v.bron]]||v.bron);
+      rij.appendChild(vink);rij.appendChild(naam);rij.appendChild(waarde);rij.appendChild(bron);
+      rij.addEventListener("mouseenter",function(){markeer(i,true);});
+      rij.addEventListener("mouseleave",function(){markeer(i,false);});
+      lijst.appendChild(rij);
+    });
+  }
+  function markeer(i,aan){
+    var b=vlak.querySelector('[data-veld="'+i+'"]');
+    if(b)b.classList.toggle("plp-vlak--warm",aan);
+  }
+
+  var schaal=1;
+  function tekenVlakken(){
+    [].slice.call(vlak.querySelectorAll(".plp-vlak,.plp-tip")).forEach(function(n){n.remove();});
+    var maat=doc.maten[pagina]||{hoog:842};
+    velden.forEach(function(v,i){
+      [[v.labelvak,"plp-vlak plp-vlak--label"],[v.vak,"plp-vlak"+(v.aan?"":" plp-vlak--uit")]].forEach(function(paar){
+        var vk=paar[0];
+        if(!vk||vk.pagina!==pagina)return;
+        var box=el("div",paar[1]);
+        box.style.left=(vk.x*schaal-2)+"px";
+        box.style.top=((maat.hoog-vk.y-vk.h)*schaal-2)+"px";
+        box.style.width=(vk.b*schaal+4)+"px";
+        box.style.height=(vk.h*schaal*1.35+2)+"px";
+        if(paar[1].indexOf("label")<0){
+          box.setAttribute("data-veld",i);
+          box.title=v.naam;
+          box.addEventListener("mouseenter",function(){tip(box,v.naam+" = "+v.waarde);});
+          box.addEventListener("mouseleave",function(){var q=vlak.querySelector(".plp-tip");if(q)q.remove();});
+          box.addEventListener("click",function(){v.aan=!v.aan;tekenLijst();tekenVlakken();});
+        }
+        vlak.appendChild(box);
+      });
+    });
+  }
+  function tip(box,tekst){
+    var q=el("div","plp-tip",tekst);
+    q.style.left=(box.offsetLeft+box.offsetWidth/2)+"px";
+    q.style.top=(box.offsetTop-6)+"px";
+    vlak.appendChild(q);
+  }
+
+  function teken(){
+    tekenLijst();
+    P.open(file).then(function(pdf){return pdf.getPage(pagina+1);}).then(function(pg){
+      var breed=Math.min(760,linkerkant.clientWidth||760);
+      var v1=pg.getViewport({scale:1});
+      schaal=breed/v1.width;
+      var vp=pg.getViewport({scale:schaal});
+      canvas.width=vp.width;canvas.height=vp.height;
+      canvas.style.width="100%";
+      return pg.render({canvasContext:canvas.getContext("2d"),viewport:vp}).promise;
+    }).then(function(){
+      schaal=canvas.clientWidth/canvas.width*schaal;
+      tekenVlakken();
+    }).catch(function(e){console.error(e);tekenVlakken();});
+  }
+  teken();
+}
+
+// De AI mag pas meekijken nadat de gebruiker daar ja op zegt.
+function vraagAi(doc,velden,klaar,melding,knop){
+  var t=S.t,laag=document.createElement("div");laag.className="plp-modal";
+  var blad=el("div","plp-modal-blad");
+  blad.appendChild(el("p","pld-caps",t.aiTitle));
+  blad.appendChild(el("p","pld-text",t.aiText));
+  var rij=el("div","pld-row");
+  var ja=el("button","pld-btn",t.aiYes),nee=el("button","pld-btn pld-btn--ghost",t.aiNo);
+  ja.type="button";nee.type="button";
+  rij.appendChild(ja);rij.appendChild(nee);blad.appendChild(rij);
+  laag.appendChild(blad);document.body.appendChild(laag);
+  function weg(){laag.remove();}
+  nee.addEventListener("click",weg);
+  laag.addEventListener("click",function(e){if(e.target===laag)weg();});
+  ja.addEventListener("click",function(){
+    weg();knop.disabled=true;melding.textContent=t.aiBusy;
+    haalAi(doc,velden).then(function(nieuw){
+      knop.disabled=false;
+      if(!nieuw){melding.textContent=t.aiOff;return;}
+      nieuw.forEach(function(v){
+        var bestaand=velden.filter(function(x){return x.waarde===v.waarde;})[0];
+        if(bestaand){if(v.naam)bestaand.naam=v.naam;bestaand.bron="ai";}
+        else velden.push({aan:true,naam:v.naam,waarde:v.waarde,bron:"ai",vak:{pagina:-1},labelvak:null,
+                          vindregel:{type:"regexwaarde",waarde:v.waarde},filter:"geen"});
+      });
+      melding.textContent=t.aiDone;klaar();
+    }).catch(function(){knop.disabled=false;melding.textContent=t.aiOff;});
+  });
+}
+
+function haalAi(doc,velden){
+  var eind=(CFG&&CFG.aiEndpoint)||"/api/parsepdf/velden";
+  if(!/^https?:$/.test(location.protocol))return Promise.resolve(null);
+  return fetch(eind,{method:"POST",headers:{"content-type":"application/json"},
+    body:JSON.stringify({tekst:(doc.tekst||"").slice(0,20000),
+      cellen:(doc.cellen||[]).slice(0,400).map(function(c){return {t:c.t,x:Math.round(c.x),y:Math.round(c.y),p:c.pagina};}),
+      gevonden:velden.map(function(v){return {naam:v.naam,waarde:v.waarde};})})
+  }).then(function(r){
+    if(!r.ok)return null;
+    return r.json().then(function(j){return (j&&j.velden)||null;});
+  }).catch(function(){return null;});
+}
+
+return {open:open};
+})();
+</script>

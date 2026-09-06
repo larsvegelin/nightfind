@@ -7,13 +7,17 @@ Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 
 ## 1. Wat je krijgt
 
-| Bestand | Wat het doet | Tekens |
-|---|---|---|
-| `1-config-stijl.html` | Supabase-client, `window.PARSELAB`, alle `pld-` en `plp-` stijlen | 5.033 |
-| `2-teksten.html` | Alle teksten in nl, en, de plus drie startsjablonen | 6.517 |
-| `3-motor.html` | Uitleesmotor: pdf.js laden, tekst herleiden, regels toepassen, CSV maken | 5.474 |
-| `4-scherm.html` | Schermopbouw: verbruiksmeter, regelkaart, dropzone, resultaattabel | 8.715 |
-| `5-verwerken.html` | Verwerking, limietbewaking en opstarten | 3.111 |
+| Bestand | Wat het doet |
+|---|---|
+| `1-config-stijl.html` | Supabase-client, `window.PARSELAB`, alle `pld-` en `plp-` stijlen |
+| `2-teksten.html` | Teksten in nl, en, de plus drie startsjablonen |
+| `3-teksten-voorstel.html` | Teksten voor doorkijken, voorstel en AI |
+| `4-motor.html` | Uitleesmotor: pdf.js, cellen met x en y, regels toepassen, CSV maken |
+| `5-scherm.html` | Schermopbouw: verbruiksmeter, regelkaart, dropzone, resultaattabel |
+| `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
+| `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
+| `8-voorstel.html` | Doorkijkscherm met gearceerde velden, het voorstel en de AI-knop |
+| `9-verwerken.html` | Verwerking, limietbewaking en opstarten |
 
 Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens. Splits je later iets bij, houd die grens aan.
 
@@ -40,14 +44,18 @@ Body
                 ├── Div  · id: pl-parsepdf-root      ← leeg laten
                 ├── Embed 1-config-stijl
                 ├── Embed 2-teksten
-                ├── Embed 3-motor
-                ├── Embed 4-scherm
-                └── Embed 5-verwerken
+                ├── Embed 3-teksten-voorstel
+                ├── Embed 4-motor
+                ├── Embed 5-scherm
+                ├── Embed 6-structuur
+                ├── Embed 7-velden
+                ├── Embed 8-voorstel
+                └── Embed 9-verwerken
 ```
 
 De id `pl-parsepdf-root` moet exact zo geschreven zijn. Zonder die container doet de tool niets en verschijnt er een melding in de console.
 
-De volgorde van de embeds is niet vrij. Embed 5 gebruikt wat 1 tot en met 4 klaarzetten.
+De volgorde van de embeds is niet vrij. Embed 9 gebruikt wat 1 tot en met 8 klaarzetten.
 
 ## 4. Koppelen aan het dashboard
 
@@ -89,6 +97,10 @@ Belangrijk: het tellen gebeurt vóór het uitlezen. Gaat het uitlezen daarna mis
 - **Beveiligde PDF's.** Een bestand met een wachtwoord levert een leesfout op.
 
 ---
+
+## 6b. Kijk wat erin staat
+
+Naast zelf veldregels intikken kan de gebruiker op **Kijk wat erin staat** klikken. De tool opent het document, arceert wat hij kan uitlezen, stelt namen voor en neemt die op verzoek over als veldregels. Er is ook een knop **Uitlezen met AI**, die eerst om toestemming vraagt en pas daarna de tekst van dat ene document naar `POST /api/parsepdf/velden` stuurt. Zonder zo'n endpoint blijft alles werken op de structuurcheck. Alles staat in [`PARSEPDF-DOORKIJKEN.md`](PARSEPDF-DOORKIJKEN.md); wijs `window.PARSELAB.aiEndpoint` naar je eigen functie als je de AI-knop wilt laten werken op Webflow.
 
 ## 7b. Proef-PDF's
 

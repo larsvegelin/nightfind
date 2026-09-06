@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 4 van 5: schermopbouw -->
+<!-- ParsePDF — embed 5 van 9: schermopbouw -->
 <script>
 window.PLP_S={regels:[],bestanden:[],rijen:[],verbruik:null,taal:"nl",t:null,root:null};
 window.PLP_UI=(function(){
@@ -56,11 +56,11 @@ var rij=el("div","plp-rule");
 var naam=el("input","pld-in");naam.value=r.naam||"";
 naam.addEventListener("input",function(){r.naam=naam.value;});
 var type=el("select","pld-sel");
-[["label",t.tLabel],["regex",t.tRegex],["bestand",t.tFile]].forEach(function(o){
+[["label",t.tLabel],["regex",t.tRegex],["bestand",t.tFile],["cel",t.tCel]].forEach(function(o){
 var op=el("option","",o[1]);op.value=o[0];if(o[0]===r.type)op.selected=true;type.appendChild(op);});
-var waarde=el("input","pld-in");waarde.value=r.waarde||"";waarde.disabled=r.type==="bestand";
+var waarde=el("input","pld-in");waarde.value=r.waarde||"";waarde.disabled=r.type==="bestand"||r.type==="cel";
 waarde.addEventListener("input",function(){r.waarde=waarde.value;});
-type.addEventListener("change",function(){r.type=type.value;waarde.disabled=r.type==="bestand";});
+type.addEventListener("change",function(){r.type=type.value;waarde.disabled=r.type==="bestand"||r.type==="cel";if(r.type!=="cel")delete r.vindregel;});
 var filter=el("select","pld-sel");
 [["geen",t.xNone],["bedrag",t.xAmount],["datum",t.xDate]].forEach(function(o){
 var op=el("option","",o[1]);op.value=o[0];if(o[0]===r.filter)op.selected=true;filter.appendChild(op);});
@@ -100,9 +100,13 @@ S.bestanden.forEach(function(f,i){
 var r=el("div","plp-file"),l=el("div");
 l.appendChild(el("p","pld-text",f.name));
 l.appendChild(el("p","plp-mono",(f.size/1048576).toFixed(1)+" MB"));
+var knoppen=el("div","pld-row");
+var kijk=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.look);kijk.type="button";
+kijk.addEventListener("click",function(){if(window.PLP_V)window.PLP_V.open(f);});
 var w=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.del);w.type="button";
 w.addEventListener("click",function(){S.bestanden.splice(i,1);teken();});
-r.appendChild(l);r.appendChild(w);k.appendChild(r);});
+knoppen.appendChild(kijk);knoppen.appendChild(w);
+r.appendChild(l);r.appendChild(knoppen);k.appendChild(r);});
 var rij=el("div","pld-row");
 var start=el("button","pld-btn",t.start);start.type="button";
 start.addEventListener("click",function(){if(window.PLP_RUN)window.PLP_RUN(start,rij);});

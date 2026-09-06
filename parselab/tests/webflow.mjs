@@ -11,8 +11,18 @@ execFileSync(process.execPath, [path.join(here, 'webflow-proef.mjs'), map], { st
 execFileSync(process.execPath, [path.join(here, '..', 'webflow', 'bouw-pagina.mjs'), path.join(map, 'ParsePDF.html')], { stdio: 'inherit' });
 
 const TYPE = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.pdf':'application/pdf' };
+// De eerste AI-aanroep doet alsof de server geen sleutel heeft, de tweede antwoordt wel.
+// Zo zijn beide wegen te testen zonder een echte AI-server.
+let aiAanroepen = 0;
 const srv = http.createServer((req, res) => {
   if (req.url.startsWith('/favicon.ico')) { res.writeHead(204); return res.end(); }
+  if (req.url === '/api/parsepdf/velden') {
+    aiAanroepen++;
+    if (aiAanroepen === 1) { res.writeHead(501, { 'content-type': 'application/json' }); return res.end('{"error":"geen sleutel"}'); }
+    res.writeHead(200, { 'content-type': 'application/json' });
+    return res.end(JSON.stringify({ velden: [{ naam: 'Factuurnummer van de leverancier', waarde: 'INV10632', zekerheid: 0.95 },
+                                             { naam: 'Betaalmethode', waarde: 'iDEAL', zekerheid: 0.8 }], waarschuwingen: [] }));
+  }
   const p = path.join(map, decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html');
   if (!p.startsWith(map) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); return res.end('nee'); }
   res.writeHead(200, { 'content-type': TYPE[path.extname(p)] || 'application/octet-stream' });
@@ -29,7 +39,10 @@ const b = await chromium.launch({ ...exe, args: ['--no-sandbox'] });
 const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('[pageerror] ' + e.message));
-p.on('console', m => { if (m.type() === 'error' && !/favicon|ERR_/.test(m.text())) errs.push('[console] ' + m.text().slice(0, 140)); });
+p.on('console', m => {
+  const bron = (m.location() && m.location().url) || '';
+  if (m.type() === 'error' && !/favicon|ERR_/.test(m.text()) && !/parsepdf\/velden/.test(bron)) errs.push('[console] ' + m.text().slice(0, 140));
+});
 
 // 1. zonder sessie hoort de bezoeker naar de inlogpagina
 await p.goto(BASIS + '?ingelogd=0', { waitUntil: 'load' });
@@ -164,6 +177,65 @@ ok('alpha: bedragen op dezelfde regel', proef[0][2] === '1.505,45' && proef[0][3
 ok('beta: waarde op de regel eronder wordt gepakt', proef[1][2] === '1.076,90' && proef[1][3] === '186,90', proef[1].join('|'));
 ok('beta: geschreven datum ("2 april 2026")', proef[1][4] === '2 april 2026', proef[1][4]);
 ok('gamma: Subtotaal kaapt het Totaal niet', proef[2][2] === '14.703,92', proef[2].join('|'));
+
+// 11c. doorkijken: het document openen, gearceerde vlakken, namen bij hover,
+// het voorstel overnemen en alle kolommen uitlezen.
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-webshop.pdf'));
+await p.click('button:has-text("Kijk wat erin staat")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(1200);
+const voorstel = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
+ok('voorstel vindt de kolomkop-velden zonder instellen',
+  voorstel.includes('Factuurnummer=INV10632') && voorstel.includes('Datum=Zondag 21 Juni 2026') && voorstel.includes('Klantnummer=227521416'),
+  voorstel.slice(0, 4).join(' · '));
+ok('voorstel scheidt Totaal excl. van Totaal incl.',
+  voorstel.includes('Totaal excl. BTW=€32,15') && voorstel.includes('Totaal incl. BTW=€38,90'));
+ok('voorstel herkent patronen zonder label', voorstel.some(v => v.startsWith('IBAN=NL71')) && voorstel.some(v => v.startsWith('Btw-nummer=NL0020')), voorstel.filter(v => /IBAN|Btw/.test(v)).join(' · '));
+const vlakken = await p.$$eval('.plp-vlak', n => n.length);
+ok('gevonden velden staan gearceerd op de pagina', vlakken >= 20, vlakken);
+ok('de pagina is echt getekend', await p.$eval('.plp-pagina canvas', c => c.width > 300 && c.height > 400));
+await (await p.$('.plp-vlak:not(.plp-vlak--label)')).hover();
+await p.waitForTimeout(250);
+ok('zweven toont de naam bij het vlak', /=/.test(await p.$eval('.plp-tip', n => n.textContent)), await p.$eval('.plp-tip', n => n.textContent));
+const tabelkaart = await p.textContent('.plp-blad .pld-card');
+ok('regeltabel gevonden en aan te zetten', /3 regels met 6 kolommen/.test(tabelkaart), tabelkaart.replace(/\s+/g, ' ').slice(0, 70));
+await p.check('.plp-blad .pld-card input[type=checkbox]');
+// AI vraagt eerst toestemming en doet zonder ja niets
+await p.click('button:has-text("Uitlezen met AI")');
+await p.waitForSelector('.plp-modal', { timeout: 5000 });
+ok('AI vraagt eerst toestemming', /tekst van dit ene document/.test(await p.textContent('.plp-modal')));
+await p.click('button:has-text("Nee, laat maar")');
+ok('zonder toestemming gebeurt er niets', (await p.$$('.plp-modal')).length === 0);
+await p.click('button:has-text("Uitlezen met AI")');
+await p.click('button:has-text("Ja, een keer lezen")');
+await p.waitForTimeout(1500);
+ok('zonder AI-sleutel komt er een nette melding, geen fout', /niet beschikbaar/.test(await p.textContent('.plp-blad')));
+await p.click('button:has-text("Uitlezen met AI")');
+await p.click('button:has-text("Ja, een keer lezen")');
+await p.waitForTimeout(1200);
+const naAi = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '|' + r.querySelector('.plp-bron').textContent));
+ok('AI hernoemt een gevonden veld en meldt zich als bron', naAi.some(v => v.startsWith('Factuurnummer van de leverancier|AI')), naAi.filter(v => /AI/.test(v)).join(' · '));
+ok('AI voegt een gemist veld toe', naAi.some(v => v.startsWith('Betaalmethode|AI')), '');
+await p.click('button:has-text("Neem over als veldregels")');
+await p.waitForTimeout(400);
+const soorten = await p.evaluate(() => window.PLP_S.regels.map(r => r.type));
+ok('voorstel wordt een sjabloon van veldregels', soorten.filter(x => x === 'cel').length >= 10 && soorten.includes('tabelkolom'), soorten.join(','));
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const alles = await p.evaluate(() => [...document.querySelectorAll('.plp-table tr')].map(tr => [...tr.children].map(td => td.textContent)));
+ok('uitlezen toont alle kolommen uit het voorstel', alles[0].length >= 18, alles[0].length + ' kolommen');
+ok('elke tabelregel wordt een eigen rij', alles.length === 4, (alles.length - 1) + ' rijen');
+const kop = alles[0];
+function cel(rij, naam) { return rij[kop.indexOf(naam)]; }
+// De AI hernoemde het factuurnummer hierboven; die naam is nu de kolomnaam.
+ok('waarden kloppen na het overnemen',
+  cel(alles[1], 'Factuurnummer van de leverancier') === 'INV10632' && cel(alles[1], 'Datum') === '21 Juni 2026' && cel(alles[1], 'Totaal incl. BTW') === '38,90',
+  [cel(alles[1], 'Factuurnummer van de leverancier'), cel(alles[1], 'Datum'), cel(alles[1], 'Totaal incl. BTW')].join(' · '));
+ok('de tabelregels verschillen per rij', cel(alles[1], 'Beschrijving') !== cel(alles[2], 'Beschrijving'), cel(alles[1], 'Beschrijving') + ' / ' + cel(alles[2], 'Beschrijving'));
 
 // 12. de losse pagina uit bouw-pagina.mjs: zelfde embeds, echte cdn-adressen.
 // Die adressen zijn hier onbereikbaar, dus ze worden onderweg vervangen door de lokale kopie.

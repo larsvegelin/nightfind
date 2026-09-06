@@ -1,5 +1,5 @@
 <!--
-  ParsePDF — embed 1 van 5: configuratie en stijl
+  ParsePDF — embed 1 van 9: configuratie en stijl
   Plaats bovenaan de pagina, boven de lege container <div id="pl-parsepdf-root">.
 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -53,6 +53,27 @@ window.PARSELAB.client=window.supabase.createClient(window.PARSELAB.supabaseUrl,
 .plp-skel{height:14px;border-radius:999px;background:#E6E3D8;animation:plp-pulse 1.2s ease-in-out infinite}
 @keyframes plp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.plp-skel{animation:none}.pld-bar>span{transition:none}}
+.plp-doorkijk{position:fixed;inset:0;z-index:9999;background:rgba(6,18,35,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px}
+.plp-blad{background:#FBFAF6;border-radius:20px;max-width:1120px;width:100%;padding:28px;display:flex;flex-direction:column;gap:20px;box-shadow:0 24px 60px rgba(6,18,35,.28)}
+.plp-twee{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.plp-pagina{position:relative;background:#FFF;border-radius:14px;border:1px solid #E6E3D8;overflow:hidden;line-height:0}
+.plp-pagina canvas{width:100%;height:auto;display:block}
+.plp-vlak{position:absolute;border-radius:3px;background:rgba(44,111,168,.18);border:1px solid rgba(44,111,168,.55);cursor:pointer}
+.plp-vlak--uit{background:rgba(138,144,165,.12);border-color:rgba(138,144,165,.45)}
+.plp-vlak--label{background:rgba(201,169,97,.16);border-color:rgba(201,169,97,.5);cursor:default}
+.plp-vlak:hover,.plp-vlak--warm{background:rgba(44,111,168,.34);border-color:#215A88}
+.plp-tip{position:absolute;z-index:3;background:#1F3A5F;color:#F2F0E7;font-size:13px;line-height:1.3;padding:6px 10px;border-radius:9px;pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%)}
+.plp-lijst{display:flex;flex-direction:column;gap:10px;max-height:70vh;overflow:auto}
+.plp-veldrij{display:grid;grid-template-columns:auto minmax(0,1.1fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #E6E3D8}
+.plp-veldrij:first-child{border-top:0}
+.plp-veldrij input[type=checkbox]{width:20px;height:20px;accent-color:#2C6FA8}
+.plp-bron{font-size:13px;color:#4A5A6C;white-space:nowrap}
+.plp-bron--ai{color:#215A88;font-weight:600}
+.plp-modal{position:fixed;inset:0;z-index:10000;background:rgba(6,18,35,.55);display:flex;align-items:center;justify-content:center;padding:24px}
+.plp-modal-blad{background:#FFF;border-radius:20px;max-width:560px;width:100%;padding:28px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 60px rgba(6,18,35,.28)}
+.plp-uit{background:transparent;border:0;font:inherit;color:#4A5A6C;cursor:pointer;padding:8px;min-height:44px}
+@media (max-width:991px){.plp-twee{grid-template-columns:1fr}.plp-lijst{max-height:none}}
+@media (max-width:767px){.plp-veldrij{grid-template-columns:auto 1fr;row-gap:6px}.plp-blad{padding:20px}}
 @media (max-width:767px){.plp-rule{grid-template-columns:1fr 1fr}.pld-card{padding:24px}}
 @media (max-width:479px){.pld-title{font-size:28px}.pld-num{font-size:26px}.plp-rule{grid-template-columns:1fr}.pld-card{padding:20px}.pld-btn{width:100%}}
 </style>

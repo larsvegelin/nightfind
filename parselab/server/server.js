@@ -15,6 +15,7 @@
  *   GET  /api/scrape/runs/:id.xlsx | .csv                        → bestand van een uitvoering
  *   GET  /api/scrape/status                                      → proxies, wachtrij, planning
  *   POST /api/parsepdf/detect   { text, fileName }               → velden herkennen met Claude (alleen met PARSELAB_ANTHROPIC_KEY)
+ *   POST /api/parsepdf/velden   { tekst, cellen, gevonden }       → de structuurcheck laten benoemen en natellen door Claude
  *   GET/PUT /api/store/:key     (header x-parselab-user)         → projecten en instellingen van het dashboard per gebruiker
  *
  * Grenzen die bewust vaststaan (docs/parsescraper.md, "Wat het veiliger maakt"):
@@ -391,6 +392,27 @@ async function detectFields(body) {
   return { velden: parsed && Array.isArray(parsed.velden) ? parsed.velden.slice(0, 12) : [], truncated: resp.stop_reason === "max_tokens" };
 }
 
+// De structuurcheck heeft de velden al gevonden; de AI benoemt ze en telt na.
+// Er gaat altijd maar één document heen, en pas nadat de gebruiker daar ja op zei.
+async function noemVelden(body) {
+  if (!AI_KEY) throw httpError(501, "AI-hulp staat uit op deze server. Zet PARSELAB_ANTHROPIC_KEY en start opnieuw.");
+  const tekst = String(body.tekst || "").slice(0, 40000);
+  if (!tekst.trim()) throw httpError(400, "Het document bevat geen tekst.");
+  const gevonden = Array.isArray(body.gevonden) ? body.gevonden.slice(0, 60) : [];
+  const resp = await anthropic().messages.create({
+    model: AI_MODEL, max_tokens: 3000,
+    system: "Je krijgt de tekst van één zakelijk document en de velden die een parser er al uit haalde. Doe drie dingen: geef elk gevonden veld een duidelijke Nederlandse naam, voeg velden toe die de parser miste, en meld het als een bedrag of datum niet klopt (bijvoorbeeld als subtotaal plus btw niet gelijk is aan het totaal). Antwoord uitsluitend met JSON: {\"velden\":[{\"naam\":\"Factuurnummer\",\"waarde\":\"INV10632\",\"zekerheid\":0.9}],\"waarschuwingen\":[\"...\"]}. Neem de waarden letterlijk over uit het document. Hoogstens 20 velden, geen uitleg.",
+    messages: [{ role: "user", content: "Al gevonden:\n" + gevonden.map(v => "- " + v.naam + " = " + v.waarde).join("\n") + "\n\nDocument:\n" + tekst }],
+  });
+  if (resp.stop_reason === "refusal") throw httpError(422, "ParseLab kon dit document niet verwerken.");
+  const txt = resp.content.filter(b => b.type === "text").map(b => b.text).join("");
+  let parsed = null; try { parsed = JSON.parse(txt); } catch (e) { const m = txt.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) {} } }
+  return {
+    velden: parsed && Array.isArray(parsed.velden) ? parsed.velden.slice(0, 20) : [],
+    waarschuwingen: parsed && Array.isArray(parsed.waarschuwingen) ? parsed.waarschuwingen.slice(0, 5) : [],
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
@@ -400,6 +422,7 @@ const server = http.createServer(async (req, res) => {
     // wie de server bereikt en een ander adres opgeeft, ziet die taken. Zet PARSELAB_API_TOKEN voor een echte drempel.
     const owner = String(req.headers["x-parselab-user"] || "").trim().toLowerCase().slice(0, 200) || null;
     const mine = tid => { const t = readTasks().find(x => x.id === tid); if (!t) throw httpError(404, "Taak niet gevonden"); if (t.owner && owner && t.owner !== owner) throw httpError(403, "Deze taak is van iemand anders."); return t; };
+    if (u.pathname === "/api/parsepdf/velden") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemVelden(await readBody(req))); }
     if (u.pathname === "/api/parsepdf/detect") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await detectFields(await readBody(req))); }
     const sm = u.pathname.match(/^\/api\/store\/([a-z0-9_-]{1,40})$/i);
     if (sm) {

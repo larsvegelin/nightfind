@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 3 van 5: uitleesmotor. Draait volledig lokaal in de browser. -->
+<!-- ParsePDF — embed 4 van 9: uitleesmotor. Draait volledig lokaal in de browser. -->
 <script>
 window.PLP=(function(){
 var LIB="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
@@ -57,20 +57,64 @@ function regels(tc){
   }).filter(Boolean);
 }
 
+// Tekstfragmenten worden cellen: fragmenten die tegen elkaar aan staan horen bij
+// elkaar, een gat zo breed als een spatie betekent een nieuwe cel. Zo blijven twee
+// kolommen naast elkaar ook twee cellen, in plaats van één lange regel.
+function cellen(tc,pagina){
+  var los=[];
+  tc.items.forEach(function(it){
+    if(!it.str||!it.str.trim())return;
+    var h=Math.abs(it.height)||Math.abs(it.transform[3])||10;
+    los.push({t:it.str,x:it.transform[4],y:it.transform[5],b:it.width||0,h:h});
+  });
+  if(!los.length)return [];
+  var tol=Math.max(2,los.reduce(function(a,c){return a+c.h;},0)/los.length*0.5);
+  var rijen=[];
+  los.sort(function(a,b){return b.y-a.y||a.x-b.x;}).forEach(function(c){
+    var r=rijen[rijen.length-1];
+    if(r&&Math.abs(r.y-c.y)<=tol){r.cellen.push(c);r.y=(r.y+c.y)/2;}
+    else rijen.push({y:c.y,cellen:[c]});
+  });
+  var uit=[];
+  rijen.forEach(function(r,ri){
+    r.cellen.sort(function(a,b){return a.x-b.x;});
+    var open=null;
+    r.cellen.forEach(function(c){
+      var gat=open?c.x-(open.x+open.b):0;
+      if(open&&gat<Math.max(1.5,open.h*0.4)){
+        open.t+=(gat>open.h*0.12?" ":"")+c.t;open.b=c.x+c.b-open.x;open.h=Math.max(open.h,c.h);
+      }else{
+        if(open)uit.push(open);
+        open={t:c.t,x:c.x,y:c.y,b:c.b,h:c.h,rij:ri,pagina:pagina};
+      }
+    });
+    if(open)uit.push(open);
+  });
+  return uit.map(function(c){c.t=c.t.replace(/\s+/g," ").trim();return c;}).filter(function(c){return c.t;});
+}
+
 function lees(file){
   return open(file).then(function(doc){
-    var uit=[],keten=Promise.resolve();
+    var uit=[],alleCellen=[],maten=[],keten=Promise.resolve();
     for(var i=1;i<=doc.numPages;i++){
       (function(p){
         keten=keten.then(function(){return doc.getPage(p);})
-                   .then(function(pg){return pg.getTextContent();})
-                   .then(function(tc){uit.push(regels(tc));});
+                   .then(function(pg){
+                     var v=pg.getViewport({scale:1});
+                     maten[p-1]={breed:v.width,hoog:v.height};
+                     return pg.getTextContent();
+                   })
+                   .then(function(tc){
+                     uit.push(regels(tc));
+                     alleCellen.push(cellen(tc,p-1));
+                   });
       })(i);
     }
     return keten.then(function(){
       var alle=[].concat.apply([],uit);
       doc.destroy();
-      return {naam:file.naam||file.name,paginas:uit.length,regels:alle,tekst:alle.join("\n")};
+      return {naam:file.naam||file.name,paginas:uit.length,regels:alle,tekst:alle.join("\n"),
+              cellen:[].concat.apply([],alleCellen),maten:maten};
     });
   });
 }
@@ -89,6 +133,8 @@ function schoon(waarde,filter){
 
 function pasToe(regel,doc){
   if(regel.type==="bestand")return doc.naam;
+  // Uit het voorstel: de vindregel weet zelf waar de waarde staat.
+  if(regel.type==="cel")return window.PLP_ST?schoon(window.PLP_ST.pas(doc,regel.vindregel),regel.filter):"";
   if(regel.type==="regex"){
     if(!regel.waarde)return "";
     var re;try{re=new RegExp(regel.waarde,"i");}catch(e){return "";}
@@ -146,6 +192,6 @@ function bewaar(naam,tekst){
   setTimeout(function(){URL.revokeObjectURL(url);a.remove();},0);
 }
 
-return {tel:tel,lees:lees,rij:rij,csv:csv,bewaar:bewaar,MAXBYTES:MAXBYTES,MAXFILES:MAXFILES};
+return {tel:tel,lees:lees,rij:rij,csv:csv,bewaar:bewaar,open:open,motor:motor,MAXBYTES:MAXBYTES,MAXFILES:MAXFILES};
 })();
 </script>

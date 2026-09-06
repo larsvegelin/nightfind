@@ -23,7 +23,7 @@ Instellingen via omgevingsvariabelen:
 | `PARSELAB_PORT` | Poort, standaard 8080 |
 | `PARSELAB_PROXIES` | Komma-gescheiden proxylijst (`http://user:pass@host:port`), of zet ze in `server/proxies.txt` (één per regel, zie `proxies.example.txt`). ParseLab wisselt per verzoek en slaat een proxy 10 minuten over na drie fouten. |
 | `PARSELAB_API_TOKEN` | Zet je dit, dan vraagt de API een toegangscode (`x-parselab-token`); de tool vraagt er één keer om. |
-| `PARSELAB_ANTHROPIC_KEY` | Anthropic API-sleutel op de server. Alleen dan werkt "Laat ParseLab de velden herkennen" in ParsePDF (`POST /api/parsepdf/detect`, model `PARSELAB_AI_MODEL`, standaard `claude-opus-5`). Vraagt `npm install @anthropic-ai/sdk` in `server/`. De sleutel staat nooit in de browser. |
+| `PARSELAB_ANTHROPIC_KEY` | Anthropic API-sleutel op de server. Alleen dan werken "Laat ParseLab de velden herkennen" en "Uitlezen met AI" in ParsePDF (`POST /api/parsepdf/detect` en `POST /api/parsepdf/velden`, model `PARSELAB_AI_MODEL`, standaard `claude-opus-5`). Vraagt `npm install @anthropic-ai/sdk` in `server/`. De sleutel staat nooit in de browser. |
 
 Per gebruiker: het dashboard stuurt het e-mailadres van wie is ingelogd mee (`x-parselab-user`). Taken van ParseScraper horen bij dat adres en zijn voor anderen onzichtbaar; projecten, namen en instellingen staan onder `/api/store/:key` zodat je ze op een andere computer terugziet. Dit is scheiding, geen beveiliging: zonder accounts kan iemand met toegang tot de server een ander adres opgeven. Zet `PARSELAB_API_TOKEN` voor een echte drempel.
 
@@ -45,7 +45,7 @@ Per gebruiker: het dashboard stuurt het e-mailadres van wie is ingelogd mee (`x-
 | `tools/extension/` | Browserextensie voor ParseForm en voor ParseScraper op ingelogde pagina's. `tools/parselab-extension.zip` is dezelfde extensie als download. |
 | `ParsePDF.html` | ParsePDF als één losse pagina, gebouwd uit `webflow/` met `webflow/bouw-pagina.mjs`. Op elke webhost te zetten; werkt met de Supabase-login. |
 | `webflow/` | De vijf embeds van ParsePDF voor de Webflow-pagina met Supabase erachter (`webflow/README.md`, `docs/INTEGRATIE.md`). |
-| `docs/` | Analyse per tool, status van toepassing en `verbeterpunten.md` (laatste testronde), plus `LANCERING.md` en `INTEGRATIE.md` voor het live zetten en `PARSEPDF-VOLGENDE-VERSIE.md` voor de volgende versie van ParsePDF. |
+| `docs/` | Analyse per tool, status van toepassing en `verbeterpunten.md` (laatste testronde), plus `LANCERING.md` en `INTEGRATIE.md` voor het live zetten `PARSEPDF-VOLGENDE-VERSIE.md` voor de volgende versie van ParsePDF en `PARSEPDF-DOORKIJKEN.md` voor het doorkijkscherm met het voorstel en de AI-knop. |
 | `tests/` | Playwright-testrun over het hele dashboard (`tests/README.md`). |
 
 ## Twee manieren van uitlezen

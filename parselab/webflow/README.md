@@ -4,15 +4,21 @@ Deze vijf bestanden zijn de embeds die op de Webflow-pagina `/tools/parsepdf-too
 
 Plaatsing, wat de gebruiker ziet en wat er nog niet in zit staat in [`../docs/INTEGRATIE.md`](../docs/INTEGRATIE.md). Kort:
 
-| Bestand | Wat het doet | Tekens |
-|---|---|---|
-| `1-config-stijl.html` | Supabase-client, `window.PARSELAB`, alle `pld-` en `plp-` stijlen | 5.033 |
-| `2-teksten.html` | Teksten in nl, en, de plus drie startsjablonen | 6.517 |
-| `3-motor.html` | Uitleesmotor: pdf.js, tekst herleiden, regels toepassen, CSV | 5.474 |
-| `4-scherm.html` | Verbruiksmeter, regelkaart, dropzone, resultaattabel | 8.715 |
-| `5-verwerken.html` | Verwerking, limietbewaking en opstarten | 3.111 |
+| Bestand | Wat het doet |
+|---|---|
+| `1-config-stijl.html` | Supabase-client, `window.PARSELAB`, alle `pld-` en `plp-` stijlen |
+| `2-teksten.html` | Teksten in nl, en, de plus drie startsjablonen |
+| `3-teksten-voorstel.html` | Teksten voor doorkijken, voorstel en AI |
+| `4-motor.html` | Uitleesmotor: pdf.js, cellen met x en y, regels toepassen, CSV |
+| `5-scherm.html` | Verbruiksmeter, regelkaart, dropzone, resultaattabel |
+| `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
+| `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
+| `8-voorstel.html` | Doorkijkscherm, voorstel en de AI-knop met toestemming |
+| `9-verwerken.html` | Verwerking, limietbewaking en opstarten |
 
-De volgorde ligt vast: embed 5 gebruikt wat 1 tot en met 4 klaarzetten. Ze staan onder de lege container `<div id="pl-parsepdf-root">`. Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens; splits je iets, zet het nieuwe deel dan vóór embed 5.
+Wat het doorkijkscherm doet en hoe de herkenning werkt staat in [`../docs/PARSEPDF-DOORKIJKEN.md`](../docs/PARSEPDF-DOORKIJKEN.md).
+
+De volgorde ligt vast: embed 9 gebruikt wat 1 tot en met 8 klaarzetten. Ze staan onder de lege container `<div id="pl-parsepdf-root">`. Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens; splits je iets, zet het nieuwe deel dan vóór embed 9.
 
 ## Dezelfde tool als één bestand
 
@@ -35,7 +41,7 @@ Met de adresregel stel je de namaak-Supabase in: `?ingelogd=0` (geen sessie), `?
 
 ## Testen
 
-`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 36 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm en de losse pagina uit `bouw-pagina.mjs`.
+`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 57 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm, het doorkijkscherm met voorstel en AI-toestemming, en de losse pagina uit `bouw-pagina.mjs`.
 
 ## Nog met de hand te doen in Webflow
 

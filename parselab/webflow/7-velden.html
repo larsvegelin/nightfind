@@ -1,0 +1,133 @@
+<!-- ParsePDF — embed 7 van 9: velden voorstellen. Gebruikt de cellen uit embed 6. -->
+<script>
+(function(){
+var ST=window.PLP_ST;if(!ST)return;
+var PAT=ST.patronen,STOP=ST.STOP;
+var labelachtig=ST.labelachtig,bruikbaar=ST.bruikbaar,eigenPaar=ST.eigenPaar,vind=ST.vind,re=ST.re;
+var schoonLabel=ST.schoonLabel,overlapt=ST.overlapt,perRij=ST.perRij;
+function kandidaat(naam,waarde,score,vak,vindregel,label){
+  return {naam:naam,waarde:String(waarde).trim(),score:score,vak:vak,vindregel:vindregel,labelvak:label||null};
+}
+function analyse(doc){
+  var cellen=doc.cellen||[],rijen=perRij(cellen),uit=[];
+
+  // 1. Kolomkop boven de waarde: dezelfde x-posities op twee rijen.
+  for(var r=0;r<rijen.length-1;r++){
+    var kop=rijen[r],waardeRij=rijen[r+1];
+    if(kop.length<2||kop[0].pagina!==waardeRij[0].pagina)continue;
+    if(waardeRij[0].rij!==kop[0].rij+1)continue;
+    var labels=kop.filter(function(c){return labelachtig(c.t);});
+    if(labels.length<2)continue;
+    labels.forEach(function(lab){
+      var w=waardeRij.filter(function(c){return overlapt(lab,c)&&bruikbaar(c.t)&&!eigenPaar(c.t);});
+      if(w.length!==1)return;
+      uit.push(kandidaat(schoonLabel(lab.t),w[0].t,0.9,w[0],{type:"kolomkop",label:schoonLabel(lab.t)},lab));
+    });
+  }
+
+  // 2. Label links, waarde rechts op dezelfde rij.
+  rijen.forEach(function(rij){
+    for(var i=0;i<rij.length-1;i++){
+      var lab=rij[i],w=rij[i+1];
+      if(!labelachtig(lab.t)||labelachtig(w.t)||eigenPaar(w.t))continue;
+      if(w.x-(lab.x+lab.b)>260)continue;
+      uit.push(kandidaat(schoonLabel(lab.t),w.t,0.85,w,{type:"rechts",label:schoonLabel(lab.t)},lab));
+    }
+  });
+
+  // 3. Label en waarde in dezelfde cel.
+  cellen.forEach(function(c){
+    for(var i=0;i<PAT.length;i++){
+      var m=c.t.match(new RegExp("^(.{2,36}?)[\\s:\\-–]+("+PAT[i].re+")$","i"));
+      if(!m)continue;
+      var lab=schoonLabel(m[1]);
+      if(!labelachtig(lab)||STOP.test(lab))break;
+      uit.push(kandidaat(lab,m[2],0.8,c,{type:"inline",label:lab,patroon:PAT[i].naam},c));
+      break;
+    }
+  });
+
+  // 4. Label met de waarde eronder, in dezelfde kolom.
+  for(var q=0;q<rijen.length-1;q++){
+    var boven=rijen[q],onder=rijen[q+1];
+    if(boven.length>2||boven[0].pagina!==onder[0].pagina||onder[0].rij!==boven[0].rij+1)continue;
+    boven.forEach(function(lab){
+      if(!labelachtig(lab.t)||vind(lab.t)||/:/.test(lab.t))return;
+      var w=onder.filter(function(c){return Math.abs(c.x-lab.x)<=4&&bruikbaar(c.t)&&!/:/.test(c.t)&&!eigenPaar(c.t);});
+      if(w.length!==1)return;
+      uit.push(kandidaat(schoonLabel(lab.t),w[0].t,0.7,w[0],{type:"onder",label:schoonLabel(lab.t)},lab));
+    });
+  }
+
+  // 5. Sterke patronen mogen los een veld zijn.
+  cellen.forEach(function(c){
+    PAT.forEach(function(p){
+      if(!p.sterk)return;
+      var m=c.t.match(re(p));
+      if(!m)return;
+      uit.push(kandidaat(p.toon,m[0],0.6,c,{type:"patroon",patroon:p.naam},null));
+    });
+  });
+
+  return {velden:ontdubbel(uit),kolommen:ST.kolommen(cellen),tabel:tabel(rijen)};
+}
+
+// Zelfde waarde op dezelfde plek: de hoogste score wint. Zelfde naam: nummeren.
+function ontdubbel(lijst){
+  var perVak={};
+  lijst.forEach(function(k){
+    if(!k.naam||!k.waarde)return;
+    var sleutel=k.vak.pagina+":"+Math.round(k.vak.x)+":"+Math.round(k.vak.y);
+    if(!perVak[sleutel]||perVak[sleutel].score<k.score)perVak[sleutel]=k;
+  });
+  var perWaarde={};
+  Object.keys(perVak).forEach(function(s){
+    var k=perVak[s],w=k.vak.pagina+":"+k.waarde.toLowerCase();
+    if(!perWaarde[w]||perWaarde[w].score<k.score)perWaarde[w]=k;
+  });
+  var uit=Object.keys(perWaarde).map(function(s){return perWaarde[s];})
+    .sort(function(a,b){return b.score-a.score||a.vak.pagina-b.vak.pagina||b.vak.y-a.vak.y;});
+  var geteld={};
+  uit.forEach(function(k){
+    geteld[k.naam]=(geteld[k.naam]||0)+1;
+    if(geteld[k.naam]>1)k.naam=k.naam+" "+geteld[k.naam];
+  });
+  return uit;
+}
+
+// Regeltabel: kopregel met 3+ labels, daaronder rijen op diezelfde kolommen.
+function tabel(rijen){
+  var beste=null;
+  for(var r=0;r<rijen.length-1;r++){
+    var kop=rijen[r];
+    var labels=kop.filter(function(c){return labelachtig(c.t);});
+    if(labels.length<3)continue;
+    var rows=[],leeg=0,vorigeY=kop[0].y,stap=0;
+    for(var i=r+1;i<rijen.length;i++){
+      var rij=rijen[i];
+      if(rij[0].pagina!==kop[0].pagina)break;
+      var raak=labels.filter(function(lab){return rij.some(function(c){return overlapt(lab,c);});}).length;
+      var gat=vorigeY-rij[0].y;
+      if(rows.length&&stap&&gat>stap*2.2)break;
+      var eersteKolom=rij.some(function(c){return overlapt(labels[0],c);});
+      if(raak>=Math.ceil(labels.length/2)&&eersteKolom){
+        if(!stap||gat<stap)stap=gat;
+        vorigeY=rij[0].y;
+        rows.push(labels.map(function(lab){
+          var c=rij.filter(function(x){return overlapt(lab,x);});
+          return c.length?c.map(function(x){return x.t;}).join(" "):"";
+        }));
+        leeg=0;
+      }else if(rows.length){ if(++leeg>1)break; }
+    }
+    if(rows.length>=2){
+      var kandidaatTabel={kop:labels.map(function(c){return schoonLabel(c.t);}),rijen:rows};
+      if(!beste||labels.length>beste.kop.length||(labels.length===beste.kop.length&&rows.length>beste.rijen.length))beste=kandidaatTabel;
+    }
+  }
+  return beste;
+}
+
+ST.analyse=analyse;
+})();
+</script>
