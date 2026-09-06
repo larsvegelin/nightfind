@@ -1,0 +1,73 @@
+<!-- ParsePDF — embed 5 van 5: verwerking en opstarten. Plaats als laatste. -->
+<script>
+(function(){
+var CFG=window.PARSELAB,P=window.PLP,T=window.PLP_T,S=window.PLP_S,U=window.PLP_UI;
+if(!CFG||!CFG.client||!P||!T||!S||!U){console.error("ParsePDF: onderdelen ontbreken");return;}
+var sb=CFG.client;
+
+window.PLP_RUN=function(knop,rij){
+var t=S.t;
+if(!S.bestanden.length){U.meld(t.errNoFiles,"warn");return;}
+var actief=S.regels.filter(function(r){return r.naam&&(r.type==="bestand"||r.waarde);});
+if(!actief.length){U.meld(t.errNoRules,"warn");return;}
+knop.disabled=true;knop.textContent=t.counting;
+var stand=U.el("p","pld-text");stand.setAttribute("role","status");rij.appendChild(stand);
+var lijst=S.bestanden.slice(),totaal=0,fouten=[],keten=Promise.resolve();
+lijst.forEach(function(f){
+keten=keten.then(function(){return P.tel(f);})
+.then(function(n){totaal+=n;})
+.catch(function(){fouten.push(f.name+" "+t.errRead);});});
+keten.then(function(){
+if(!totaal){herstel(knop);U.meld(fouten.join(" ")||t.errLib,"warn");return null;}
+var over=U.over();
+if(totaal>over){herstel(knop);S.root.insertBefore(U.limietKaart(totaal,over),S.root.firstChild);
+window.scrollTo({top:0,behavior:"smooth"});return null;}
+return sb.rpc("record_usage",{p_tool:"parsepdf",p_pages:totaal}).then(function(r){
+if(r.error)throw new Error("usage");
+knop.textContent=t.reading;
+var uit=[],n=0,k2=Promise.resolve();
+lijst.forEach(function(f){
+k2=k2.then(function(){return P.lees(f);})
+.then(function(doc){
+var r2=P.rij(doc,actief);
+if(r2.leeg)fouten.push(f.name+" "+t.scanned);
+uit.push(r2);n++;stand.textContent=n+" / "+lijst.length;})
+.catch(function(){fouten.push(f.name+" "+t.errRead);});});
+return k2.then(function(){
+S.rijen=uit;S.regels=actief;
+if(S.verbruik)S.verbruik.used=Number(S.verbruik.used||0)+totaal;
+S.bestanden=[];U.teken();
+if(fouten.length)U.meld(fouten.join(" "),"warn");});});
+}).catch(function(e){
+console.error(e);herstel(knop);
+U.meld(e&&e.message==="usage"?t.errUsage:t.errLib,"warn");});
+};
+
+function herstel(knop){knop.disabled=false;knop.textContent=S.t.start;}
+
+function start(){
+var root=document.getElementById("pl-parsepdf-root");
+if(!root)return;
+S.root=root;S.t=T.nl;
+root.innerHTML="";
+var laden=document.createElement("p");laden.className="pld-text";laden.textContent=T.nl.loading;
+root.appendChild(laden);
+sb.auth.getSession().then(function(r){
+if(!r.data.session){window.location.replace(CFG.loginPath);return;}
+return Promise.all([
+sb.from("profiles").select("locale").eq("id",r.data.session.user.id).maybeSingle(),
+sb.rpc("usage_summary")
+]).then(function(res){
+var p=(res[0]&&res[0].data)||{};
+S.taal=T[p.locale]?p.locale:"nl";S.t=T[S.taal];
+document.documentElement.lang=S.taal;
+var u=res[1]&&res[1].data;if(Array.isArray(u))u=u[0];
+S.verbruik=u||null;S.regels=U.laadRegels();U.teken();});
+}).catch(function(e){
+console.error(e);root.innerHTML="";
+var p=document.createElement("p");p.className="pld-msg pld-msg--warn";
+p.textContent=S.t.err||S.t.errRead;root.appendChild(p);});
+}
+document.readyState!=="loading"?start():document.addEventListener("DOMContentLoaded",start);
+})();
+</script>
