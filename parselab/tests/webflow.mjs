@@ -144,6 +144,27 @@ ok('geen horizontale schuif op 375px', smal.schuif <= 0, smal.schuif);
 ok('regelvelden staan onder elkaar op 375px', smal.kolommen === 1, smal.kolommen);
 ok('knoppen blijven minstens 44px hoog', smal.knop >= 44, smal.knop);
 
+// 11b. de proef-PDF's uit tests/pdfs: label met tekst erachter, waarde op de regel eronder,
+// en een Subtotaal dat het Totaal niet mag kapen.
+await p.setViewportSize({ width: 1440, height: 1000 });
+await p.goto(BASIS + '?limiet=100000', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.setItem('pl_parsepdf_regels', JSON.stringify([
+  { naam: 'Totaal', type: 'label', waarde: 'Totaal', filter: 'bedrag' },
+  { naam: 'BTW', type: 'label', waarde: 'BTW', filter: 'bedrag' },
+  { naam: 'Datum', type: 'label', waarde: 'Factuurdatum', filter: 'datum' }
+])));
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+const pdfmap = path.join(here, 'pdfs');
+await p.setInputFiles('input[type=file]', ['factuur-alpha.pdf', 'factuur-beta.pdf', 'factuur-gamma.pdf'].map(f => path.join(pdfmap, f)));
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const proef = await p.evaluate(() => [...document.querySelectorAll('.plp-table tbody tr')].map(tr => [...tr.children].map(td => td.textContent)));
+ok('alpha: bedragen op dezelfde regel', proef[0][2] === '1.505,45' && proef[0][3] === '261,28', proef[0].join('|'));
+ok('beta: waarde op de regel eronder wordt gepakt', proef[1][2] === '1.076,90' && proef[1][3] === '186,90', proef[1].join('|'));
+ok('beta: geschreven datum ("2 april 2026")', proef[1][4] === '2 april 2026', proef[1][4]);
+ok('gamma: Subtotaal kaapt het Totaal niet', proef[2][2] === '14.703,92', proef[2].join('|'));
+
 // 12. de losse pagina uit bouw-pagina.mjs: zelfde embeds, echte cdn-adressen.
 // Die adressen zijn hier onbereikbaar, dus ze worden onderweg vervangen door de lokale kopie.
 const p2 = await ctx.newPage();

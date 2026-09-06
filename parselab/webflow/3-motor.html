@@ -98,21 +98,22 @@ function pasToe(regel,doc){
   }
   if(regel.type==="label"){
     if(!regel.waarde)return "";
-    var lab=esc(regel.waarde), grens="(?![A-Za-z0-9\u00C0-\u024F])";
-    // Eerst regels die met het label beginnen, dan het label als los woord,
-    // pas als laatste een losse match. Zo pakt "Totaal" niet "Subtotaal".
+    var lab=esc(regel.waarde), teken="A-Za-z0-9\u00C0-\u024F", grens="(?!["+teken+"])";
+    // Eerst regels die met het label beginnen, daarna het label ergens op de regel.
+    // Voor en achter het label moet een woordgrens staan, anders pakt "Totaal" ook "Subtotaal".
     var patronen=[
       new RegExp("^\\s*"+lab+grens+"\\s*[:\\-–]?\\s*(.*)","i"),
-      new RegExp("(?:^|\\s)"+lab+grens+"\\s*[:\\-–]?\\s*(.*)","i"),
-      new RegExp(lab+"\\s*[:\\-–]?\\s*(.*)","i")
+      new RegExp("(?:^|[^"+teken+"])"+lab+grens+"\\s*[:\\-–]?\\s*(.*)","i")
     ];
     for(var p=0;p<patronen.length;p++){
       for(var i=0;i<doc.regels.length;i++){
         var t=doc.regels[i].match(patronen[p]);
         if(!t)continue;
         var rest=(t[1]||"").trim();
-        if(!rest)rest=(doc.regels[i+1]||"").trim();
+        // Staat er achter het label niets bruikbaars (bijvoorbeeld "BTW 21%" of
+        // "Totaal te voldoen"), kijk dan op de regel eronder.
         var w=schoon(rest,regel.filter);
+        if(!w)w=schoon((doc.regels[i+1]||"").trim(),regel.filter);
         if(w)return w;
       }
     }

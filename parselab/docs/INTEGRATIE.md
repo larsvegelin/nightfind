@@ -90,6 +90,10 @@ Belangrijk: het tellen gebeurt vóór het uitlezen. Gaat het uitlezen daarna mis
 
 ---
 
+## 7b. Proef-PDF's
+
+In `parselab/tests/pdfs/` staan zeven documenten om de tool mee te controleren, met de uitkomsten die eruit horen te komen (`tests/pdfs/README.md`). Onder andere een factuur waarbij de waarde op de regel onder het label staat, een met "Subtotaal" boven "Totaal", een van zes pagina's voor de limiet, en één zonder tekstlaag.
+
 ## 8. Testen na plaatsen
 
 1. Publiceer en open de pagina in een incognitovenster zonder ingelogd te zijn. Je hoort meteen naar `/inloggen` te gaan.
