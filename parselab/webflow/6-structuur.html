@@ -1,0 +1,114 @@
+<!-- ParsePDF — embed 6 van 9: cellen, kolommen en patronen. De basis van de herkenning. -->
+<script>
+
+window.PLP_ST=(function(){
+// Patronen die zichzelf verraden. "sterk": mag ook zonder label een veld worden.
+var PAT=[
+{naam:"iban",toon:"Rekeningnummer",sterk:true,re:"[A-Z]{2}\\d{2} ?(?:[A-Z0-9]{4} ?){2,7}[A-Z0-9]{1,4}"},
+{naam:"btwnl",toon:"Btw-nummer",sterk:true,re:"NL ?\\d{9} ?B ?\\d{2}"},
+{naam:"kvk",toon:"KvK-nummer",sterk:true,re:"\\d{8}(?![\\d-])"},
+{naam:"email",toon:"E-mailadres",sterk:true,re:"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"},
+{naam:"url",toon:"Website",sterk:true,re:"(?:https?://|www\\.)[A-Za-z0-9.-]+\\.[A-Za-z]{2,}(?:/\\S*)?"},
+{naam:"telefoon",toon:"Telefoonnummer",sterk:true,re:"(?:\\+31|0)[\\s-]?\\d(?:[\\s-]?\\d){7,9}"},
+{naam:"postcode",toon:"Postcode",sterk:true,re:"\\d{4} ?[A-Z]{2}(?![A-Za-z0-9])"},
+{naam:"bedrag",toon:"Bedrag",sterk:false,re:"-?\\u20AC ?-?\\d{1,3}(?:[.\\s]\\d{3})*,\\d{2}|-?\\d{1,3}(?:[.\\s]\\d{3})*,\\d{2}|-?\\u20AC ?\\d+[.,]\\d{2}"},
+{naam:"datum",toon:"Datum",sterk:false,re:"\\d{1,2}[-/.]\\d{1,2}[-/.]\\d{2,4}|\\d{1,2} (?:jan|feb|mrt|maa|apr|mei|jun|jul|aug|sep|okt|nov|dec)[a-z]*\\.? \\d{4}"},
+{naam:"percentage",toon:"Percentage",sterk:false,re:"\\d{1,3}(?:[.,]\\d{1,2})? ?%"},
+{naam:"kenmerk",toon:"Kenmerk",sterk:false,re:"[A-Za-z]{0,6}[-/]?\\d{4,}(?:[-/][A-Za-z0-9]+)*"}
+];
+function re(p,heel){return new RegExp((heel?"^(?:":"")+p.re+(heel?")$":""),"i");}
+function vind(t){for(var i=0;i<PAT.length;i++){var m=String(t).match(re(PAT[i]));if(m)return {patroon:PAT[i],waarde:m[0]};}return null;}
+function isWaarde(t){var v=vind(t);return !!v;}
+
+// Een label is kort, begint met een hoofdletter of eindigt op een dubbele punt,
+// en is zelf geen waarde.
+function labelachtig(t){
+  t=String(t).trim();
+  if(!t||t.length>36)return false;
+  if(t.split(/\s+/).length>4)return false;
+  if(/^[\d\W]+$/.test(t))return false;
+  var v=vind(t);
+  if(v&&v.waarde.length>=t.length-1)return false;
+  return /^[A-Z\u00C0-\u017F]/.test(t)||/:$/.test(t);
+}
+function schoonLabel(t){return String(t).replace(/[\s:\-–]+$/,"").trim();}
+function overlapt(a,b){return a.x<b.x+b.b+2&&b.x<a.x+a.b+2;}
+// Een waarde mag op een label lijken zolang er iets herkenbaars in staat.
+function bruikbaar(t){return !labelachtig(t)||!!vind(t);}
+// Een cel met label én waarde erin ("IBAN NL71 …") hoort niet bij het label erboven.
+function eigenPaar(t){
+  for(var i=0;i<PAT.length;i++){
+    // kenmerk en percentage zijn te gretig om een cel op te knippen.
+    if(!PAT[i].sterk&&PAT[i].naam!=="bedrag")continue;
+    var m=String(t).match(new RegExp("^(.{2,36}?)[\\s:\\-–]+("+PAT[i].re+")$","i"));
+    if(m&&labelachtig(schoonLabel(m[1]))&&!STOP.test(schoonLabel(m[1])))return true;
+  }
+  return false;
+}
+// Woorden die nooit een veldnaam zijn.
+var STOP=/^(zondag|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december|van|tot|per|nr|blad|pagina)$/i;
+
+function perRij(cellen){
+  var rijen={};
+  cellen.forEach(function(c){var k=c.pagina+":"+c.rij;(rijen[k]=rijen[k]||[]).push(c);});
+  return Object.keys(rijen).sort(function(a,b){
+    var A=a.split(":").map(Number),B=b.split(":").map(Number);return A[0]-B[0]||A[1]-B[1];
+  }).map(function(k){return rijen[k].sort(function(a,b){return a.x-b.x;});});
+}
+
+// Kolommen: x-posities waar meerdere rijen een cel beginnen.
+function kolommen(cellen){
+  var groepen=[];
+  cellen.slice().sort(function(a,b){return a.x-b.x;}).forEach(function(c){
+    var g=groepen[groepen.length-1];
+    if(g&&Math.abs(g.x-c.x)<=4){g.leden.push(c);g.x=(g.x*(g.leden.length-1)+c.x)/g.leden.length;}
+    else groepen.push({x:c.x,leden:[c]});
+  });
+  return groepen.filter(function(g){
+    var rijen={};g.leden.forEach(function(c){rijen[c.pagina+":"+c.rij]=1;});
+    return Object.keys(rijen).length>=3;
+  }).map(function(g){
+    return {x:g.x,breed:Math.max.apply(null,g.leden.map(function(c){return c.b;})),aantal:g.leden.length};
+  });
+}
+
+// Een bewaarde vindregel opnieuw toepassen op een volgend document.
+function pas(doc,vr){
+  if(!vr||!vr.type)return "";
+  var cellen=doc.cellen||[],rijen=perRij(cellen);
+  if(vr.type==="patroon"){
+    for(var i=0;i<PAT.length;i++)if(PAT[i].naam===vr.patroon){var m=(doc.tekst||"").match(re(PAT[i]));return m?m[0]:"";}
+    return "";
+  }
+  var lab=null;
+  for(var c=0;c<cellen.length;c++){
+    if(schoonLabel(cellen[c].t).toLowerCase()===String(vr.label).toLowerCase()){lab=cellen[c];break;}
+  }
+  if(vr.type==="inline"){
+    // Zonder het patroon pakt het label "BTW" ook een kolomkop.
+    var staart="(.+)",pt=null;
+    for(var q=0;q<PAT.length;q++)if(PAT[q].naam===vr.patroon)pt=PAT[q];
+    if(pt)staart="("+pt.re+")";
+    var kern=new RegExp("^"+String(vr.label).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"[\\s:\\-–]+"+staart+"$","i");
+    for(var d=0;d<cellen.length;d++){
+      var m2=cellen[d].t.match(kern);
+      if(m2)return m2[1].trim();
+    }
+    return "";
+  }
+  if(!lab)return "";
+  if(!lab)return "";
+  var eigen=rijen.filter(function(rij){return rij[0].pagina===lab.pagina&&rij[0].rij===lab.rij;})[0]||[];
+  if(vr.type==="rechts"){
+    for(var e=0;e<eigen.length-1;e++)if(eigen[e]===lab)return eigen[e+1].t;
+    return "";
+  }
+  var volgende=rijen.filter(function(rij){return rij[0].pagina===lab.pagina&&rij[0].rij===lab.rij+1;})[0]||[];
+  var w=volgende.filter(function(c){return vr.type==="kolomkop"?overlapt(lab,c):Math.abs(c.x-lab.x)<=4;});
+  return w.length?w[0].t:"";
+}
+
+return {pas:pas,labelachtig:labelachtig,re:re,bruikbaar:bruikbaar,eigenPaar:eigenPaar,schoonLabel:schoonLabel,
+overlapt:overlapt,perRij:perRij,kolommen:kolommen,patronen:PAT,vind:vind,isWaarde:isWaarde,STOP:STOP};
+})();
+</script>

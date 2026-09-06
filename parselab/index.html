@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ParseLab</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231F3A5F'/%3E%3Crect x='9' y='9' width='14' height='14' rx='4' fill='%23F2F0E7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+  /* ===== Tokens — DESIGN-parselab.md ===== */
+  :root {
+    color-scheme: light;
+    --navy:#1F3A5F; --navy-alt:#1A3253; --ink-deep:#16293F;
+    --cream:#F2F0E7; --cream-white:#FBFAF6; --white:#FFFFFF;
+    /* Tekst op donker: nooit lichter dan .62, anders draagt het geen informatie meer (styleguide 2.2). */
+    --on-dark:#F2F0E7; --on-dark-muted:rgba(242,240,231,.82); --on-dark-faint:rgba(242,240,231,.72); --on-dark-label:rgba(242,240,231,.66);
+    --ink:#16293F; --muted:#4A5A6C; --hairline:#E6E3D8;
+    --gold:#C9A961; --gold-tint:#EDE7D5; --blue:#2C6FA8; --blue-on:#215A88; --blue-tint:#DCE8F2;
+    --field:#8A90A5; --danger:#8A3B2E; --dot-off:#B9C3CE;
+    --chip-dark:rgba(242,240,231,.16); --nav-active:rgba(242,240,231,.14);
+    --shadow-light:0 18px 44px rgba(6,18,35,.10); --shadow-dark:0 24px 60px rgba(6,18,35,.28);
+    --font:Poppins,-apple-system,"Segoe UI",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); -webkit-font-smoothing:antialiased; color:var(--ink); background:var(--cream-white); font-size:16px; line-height:1.55; }
+  a { color:var(--ink); text-decoration:none; }
+  button { font-family:inherit; font-size:inherit; color:inherit; cursor:pointer; border:0; background:none; }
+  button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid var(--gold); outline-offset:3px; border-radius:14px; }
+  [hidden] { display:none !important; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; } }
+
+  .caps, .pld-caps { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; line-height:1.2; color:var(--muted); }
+  .caps-nav { font-size:13px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
+  .mono { font-family:var(--mono); font-size:13px; letter-spacing:.02em; }
+  .mono-12 { font-family:var(--mono); font-size:12px; letter-spacing:.02em; color:var(--muted); }
+  .num, .pld-num { font-family:var(--mono); font-size:30px; font-weight:700; line-height:1.1; letter-spacing:-.01em; color:var(--ink); }
+  .title-24 { font-size:24px; font-weight:600; line-height:1.25; letter-spacing:-.01em; text-wrap:balance; }
+  .note, .pld-text { font-size:15px; line-height:1.5; color:var(--muted); text-wrap:pretty; max-width:66ch; }
+  .strong { font-weight:500; color:var(--ink); }
+
+  /* ===== Shell ===== */
+  .shell { display:grid; grid-template-columns:272px 1fr; min-height:100vh; }
+  .side { background:var(--navy); padding:32px 20px; display:flex; flex-direction:column; gap:32px; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .logo { display:flex; align-items:center; gap:12px; padding:0 8px; border-radius:14px; }
+  .logo-mark { width:26px; height:26px; border-radius:9px; background:var(--cream); display:block; flex:none; }
+  .logo-word { font-size:19px; font-weight:600; letter-spacing:-.02em; color:var(--on-dark); }
+  .group { display:flex; flex-direction:column; gap:6px; }
+  .group-label { padding:0 8px 6px; color:var(--on-dark-label); }
+  .nav-item { display:flex; align-items:center; gap:12px; width:100%; min-height:44px; text-align:left; font-size:16px; font-weight:500; border-radius:14px; padding:12px 14px; color:var(--on-dark-muted); transition:background 150ms ease-out; }
+  .nav-item:hover { background:rgba(242,240,231,.08); }
+  .nav-item[aria-current="page"] { background:var(--nav-active); color:var(--on-dark); }
+  .nav-item .label { flex:1; }
+  .nav-item .meta { font-size:12px; font-weight:500; color:var(--on-dark-muted); border-radius:999px; padding:2px 9px; background:var(--chip-dark); white-space:nowrap; }
+  .nav-sub { display:flex; flex-direction:column; gap:2px; padding:2px 0 6px 0; }
+  .nav-sub-item { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; text-align:left; font-size:15px; font-weight:500; border-radius:14px; padding:9px 14px 9px 52px; color:var(--on-dark-muted); transition:background 150ms ease-out; }
+  .nav-sub-item:hover { background:rgba(242,240,231,.08); }
+  .nav-sub-item[aria-current="page"] { background:var(--nav-active); color:var(--on-dark); }
+  .nav-sub-item[disabled] { color:var(--on-dark-label); cursor:default; }
+  .nav-sub-item[disabled]:hover { background:transparent; }
+  .nav-sub-item .idx { font-family:var(--mono); font-size:12px; width:16px; flex:none; }
+  .nav-proj-label { padding:10px 14px 4px 52px; color:var(--on-dark-label); font-size:12px; letter-spacing:.06em; text-transform:uppercase; font-weight:500; }
+  .nav-sub-item.proj { font-weight:400; }
+  .nav-sub-item.proj .pdot { width:6px; height:6px; border-radius:999px; background:var(--gold); flex:none; }
+  .nav-sub-item.proj span:not(.pdot) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nav-sub-item.new { color:var(--on-dark-label); }
+  .dot { width:8px; height:8px; border-radius:999px; display:block; flex:none; }
+  .tile { border-radius:9px; color:var(--ink-deep); font-family:var(--mono); display:flex; align-items:center; justify-content:center; flex:none; }
+  .tile-26 { width:26px; height:26px; font-size:11px; }
+  .tile-36 { width:36px; height:36px; border-radius:14px; font-size:13px; }
+  .spacer { flex:1; }
+  .user-wrap { position:relative; }
+  .user { display:flex; align-items:center; gap:12px; padding:8px; width:100%; text-align:left; border-radius:14px; transition:background 150ms ease-out; }
+  .user:hover { background:rgba(242,240,231,.08); }
+  .avatar { width:36px; height:36px; border-radius:999px; background:var(--gold); color:var(--ink-deep); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:none; }
+  .user-name { font-size:15px; font-weight:500; color:var(--on-dark); }
+  .user-mail { font-size:13px; color:var(--on-dark-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .menu { position:absolute; left:8px; right:8px; bottom:calc(100% + 8px); background:var(--white); border-radius:14px; box-shadow:var(--shadow-dark); padding:8px; display:flex; flex-direction:column; gap:2px; z-index:20; }
+  .menu button { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; text-align:left; padding:10px 12px; border-radius:9px; font-size:15px; font-weight:500; color:var(--ink); }
+  .menu button:hover { background:var(--cream); }
+
+  .work { padding:32px 48px 64px; display:flex; flex-direction:column; gap:32px; max-width:1216px; width:100%; min-width:0; }
+  .topbar { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+  .topbar-text { display:flex; flex-direction:column; gap:6px; flex:1; min-width:240px; }
+  .topbar-text .caps-nav { color:var(--muted); }
+  .topbar-text h1 { font-size:34px; font-weight:700; letter-spacing:-.01em; line-height:1.1; text-wrap:balance; }
+  .topbar-text .sub { font-size:16px; color:var(--muted); }
+  .topbar-actions { display:flex; align-items:center; gap:12px; }
+  .search { background:var(--white); border-radius:12px; padding:12px 14px; font-size:15px; color:var(--ink); border:1px solid var(--field); min-width:260px; min-height:44px; font-family:inherit; }
+  .search::placeholder { color:var(--muted); }
+
+  .btn, .pld-btn { display:inline-flex; align-items:center; justify-content:center; gap:12px; font-size:16px; font-weight:600; line-height:1; border-radius:14px; padding:15px 24px; min-height:44px; transition:transform 150ms ease-out, filter 150ms ease-out; white-space:nowrap; }
+  .btn[disabled] { opacity:.6; cursor:default; transform:none; filter:none; }
+  .btn:not([disabled]):hover { transform:translateY(-1px); filter:brightness(1.08); }
+  .btn .arrow { transition:transform 150ms ease-out; }
+  .btn:hover .arrow { transform:translateX(4px); }
+  .btn-navy { background:var(--navy); color:var(--on-dark); }
+  .btn-outline, .pld-btn--ghost { background:transparent; color:var(--navy); border:1px solid var(--navy); padding:14px 23px; }
+  .btn-cream, .pld-btn--cream { background:var(--cream); color:var(--ink-deep); }
+  .btn-danger, .pld-btn--danger { background:transparent; color:var(--danger); border:1px solid var(--danger); padding:14px 23px; }
+  .btn-small, .pld-btn--sm { padding:10px 16px; font-size:14px; min-height:40px; }
+  .link { font-size:15px; font-weight:600; color:var(--blue); }
+
+  .card, .pld-card { background:var(--white); color:var(--ink); border-radius:20px; padding:28px; box-shadow:var(--shadow-light); display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .card--navy, .pld-card--navy { background:var(--navy); color:var(--on-dark); box-shadow:var(--shadow-dark); }
+  .card--compact { padding:20px; }
+  .card-head { display:flex; align-items:center; gap:12px; }
+  .card-head .caps { flex:1; }
+  .hairline { height:1px; background:var(--hairline); }
+  .stack { display:flex; flex-direction:column; gap:2px; }
+  .lock { display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--muted); }
+  .lock .ico { width:16px; height:16px; flex:none; }
+  .pill, .pld-pill { display:inline-flex; align-items:center; border-radius:999px; padding:4px 12px; font-size:13px; font-weight:600; line-height:1.4; white-space:nowrap; }
+  .pill-live, .pld-pill--on { background:var(--blue-tint); color:var(--blue-on); }
+  .pill-neutral { background:var(--cream); color:var(--ink-deep); }
+  .link { color:var(--blue-on); }
+
+  /* ===== Overzicht (ParseLab Start): navy kaarten met een mini-visual per tool ===== */
+  .overview-title h1 { font-size:34px; letter-spacing:-.01em; line-height:1.1; color:var(--navy); }
+  .overview-title .sub { font-size:16px; }
+  .launch, .pld-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:24px; }
+  .launch > *, .pld-grid > * { min-width:0; }
+  .launch button { display:flex; flex-direction:column; gap:16px; text-align:left; background:var(--navy); color:var(--on-dark); border-radius:20px; padding:28px; min-width:0; box-shadow:var(--shadow-dark); transition:transform 180ms ease; }
+  .launch button:hover { transform:translateY(-4px); }
+  .launch .lh { display:flex; align-items:center; justify-content:space-between; width:100%; }
+  .launch .ltile { width:38px; height:38px; border-radius:999px; color:var(--navy); font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; font-family:var(--font); }
+  .launch .lt { font-size:24px; font-weight:600; line-height:1.2; letter-spacing:-.01em; }
+  .launch .ls { font-size:15px; color:var(--on-dark-muted); margin-top:8px; line-height:1.5; }
+  .launch .lv { margin-top:auto; width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px; position:relative; overflow:hidden; height:96px; }
+  .lv .rowl { display:flex; align-items:center; gap:6px; }
+  .lv .lab { width:26px; height:5px; border-radius:3px; background:rgba(255,255,255,.22); flex:none; }
+  .lv .fld { flex:1; height:14px; border-radius:5px; background:rgba(255,255,255,.14); }
+  .lv .fld.on { background:var(--blue-tint); display:flex; align-items:center; padding:0 5px; }
+  .lv .caret { width:2px; height:8px; background:var(--navy); animation:pl-caret 2.6s infinite; }
+  .lv .chip { position:absolute; left:14px; bottom:8px; font-family:var(--mono); font-size:9px; color:var(--navy); background:var(--gold); border-radius:4px; padding:2px 6px; animation:pl-fill 2.6s infinite; }
+  .lv .scan { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:7px; }
+  .lv .scan i { display:block; height:12px; border-radius:4px; background:rgba(255,255,255,.13); }
+  .lv .scan .beam { position:absolute; inset:0 0 auto 0; height:12px; border-radius:4px; border:1.5px solid var(--gold); background:rgba(201,169,97,.18); animation:pl-scan 2.4s cubic-bezier(.6,0,.4,1) infinite alternate; }
+  .lv .arr { width:16px; display:flex; align-items:center; justify-content:center; color:var(--on-dark-faint); font-size:11px; }
+  .lv .rows { flex:1; display:grid; grid-template-rows:repeat(4,1fr); gap:7px; }
+  .lv .rows i { display:block; border-radius:4px; background:rgba(207,220,234,.85); animation:pl-row 2.4s infinite; }
+  .lv .rows i:nth-child(2) { opacity:.85; animation-delay:.2s; } .lv .rows i:nth-child(3) { opacity:.7; animation-delay:.4s; } .lv .rows i:nth-child(4) { opacity:.55; animation-delay:.6s; }
+  .lv .doc { width:44px; background:rgba(255,255,255,.1); border-radius:5px; padding:6px; display:flex; flex-direction:column; gap:4px; }
+  .lv .doc i { display:block; height:4px; border-radius:2px; background:rgba(255,255,255,.2); }
+  .lv .doc i.t { width:70%; background:rgba(255,255,255,.4); } .lv .doc i.g { background:var(--gold); width:80%; } .lv .doc i.g2 { background:var(--gold); width:55%; }
+  .lv .tbl { flex:1; display:flex; flex-direction:column; gap:5px; font-family:var(--mono); font-size:8px; color:var(--navy); }
+  .lv .tbl .tr2 { display:flex; gap:4px; } .lv .tbl .tr2 > i { display:flex; align-items:center; padding-left:3px; flex:1; background:rgba(255,255,255,.2); border-radius:3px; height:12px; font-style:normal; }
+  .lv .tbl .tr2 > i.k { flex:none; width:22px; padding:0; } .lv .tbl .tr2.h > i.k { background:rgba(255,255,255,.2); }
+  .lv .tbl .tr2.d { animation:pl-row 2.6s infinite; } .lv .tbl .tr2.d > i { background:var(--cream-white); } .lv .tbl .tr2.d > i.k { background:var(--gold); }
+  .lv .tbl .tr2.d2 { animation-delay:.25s; } .lv .tbl .tr2.d3 { animation-delay:.5s; } .lv .tbl .tr2.d3 > i { background:rgba(237,239,243,.65); } .lv .tbl .tr2.d3 > i.k { background:rgba(201,169,97,.6); }
+  .lv .bars { display:flex; align-items:flex-end; gap:5px; height:44px; }
+  .lv .bars i { flex:1; display:block; border-radius:3px 3px 0 0; background:rgba(207,220,234,.6); transform-origin:bottom; animation:pl-grow .9s ease-out both; }
+  .lv .bars i.g { background:var(--gold); }
+  .lv .spark { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+  .lv .spark path { stroke-dasharray:140; stroke-dashoffset:140; animation:pl-dash 1.4s ease-out .3s forwards; }
+  .lv .spark span { font-family:var(--mono); font-size:11px; color:var(--on-dark-muted); }
+  @keyframes pl-fill { 0%,12% { transform:translate(0,0); opacity:0; } 20% { opacity:1; } 60% { transform:translate(58px,-22px); opacity:1; } 72%,100% { transform:translate(58px,-22px); opacity:0; } }
+  @keyframes pl-caret { 0%,55% { opacity:0; } 62%,100% { opacity:1; } }
+  @keyframes pl-scan { 0% { transform:translateY(0); } 100% { transform:translateY(34px); } }
+  @keyframes pl-row { 0%,20% { opacity:.18; transform:translateX(-6px); } 40%,100% { opacity:1; transform:translateX(0); } }
+  @keyframes pl-grow { 0% { transform:scaleY(.15); } 100% { transform:scaleY(1); } }
+  @keyframes pl-dash { to { stroke-dashoffset:0; } }
+  @media (prefers-reduced-motion: reduce) { .lv * { animation:none !important; } .lv .spark path { stroke-dashoffset:0; } }
+  .proj-row .pname { font-size:16px; font-weight:600; color:var(--navy); overflow-wrap:anywhere; white-space:normal; }
+  .proj-row .ptool { display:flex; align-items:center; gap:16px; }
+  .proj-row .mini { display:flex; align-items:flex-end; gap:2px; height:20px; }
+  .proj-row .mini i { display:block; width:4px; border-radius:1px; background:var(--hairline); }
+  .proj-row .mini i.m { background:var(--dot-off); } .proj-row .mini i.d { background:var(--navy); }
+  .btn-pill { border:1.5px solid var(--navy); color:var(--navy); border-radius:999px; padding:10px 22px; min-height:44px; font-size:15px; font-weight:600; background:var(--white); transition:background 150ms ease, color 150ms ease; }
+  .btn-pill:hover { background:var(--navy); color:var(--on-dark); }
+  .table, .pld-table { display:flex; flex-direction:column; }
+  .table .tr:hover, .pld-table .tr:hover { background:var(--cream-white); }
+  .table .num-cell { font-family:var(--mono); font-size:13px; text-align:right; }
+  .table-wrap { overflow-x:auto; min-width:0; }
+  .tr { display:grid; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--hairline); width:100%; text-align:left; color:var(--ink); }
+  .proj-row { grid-template-columns:minmax(0,1.6fr) 220px auto auto; padding:20px 0; }
+  .files-row { grid-template-columns:1.6fr 1fr auto; }
+  .cell-main { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .cell-main > span:first-child { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cell-tool { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--muted); }
+  .empty { padding:8px 0; }
+
+  /* ===== Meter, dropzone en laden (styleguide 6.5, 6.9, 6.10) ===== */
+  .pld-bar { height:10px; border-radius:999px; background:var(--hairline); overflow:hidden; }
+  .pld-bar > i { display:block; height:100%; border-radius:999px; background:var(--blue); }
+  .pld-bar--hot > i { background:var(--gold); }
+  .pld-drop { border:2px dashed var(--field); border-radius:20px; padding:48px; text-align:center; background:var(--white); color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .pld-drop.over { border-color:var(--blue); background:var(--blue-tint); }
+  .skel { display:flex; flex-direction:column; gap:12px; }
+  .skel i { display:block; height:14px; border-radius:999px; background:var(--hairline); animation:pl-pulse 1.4s ease-in-out infinite; }
+  .skel i:nth-child(2) { width:72%; animation-delay:.15s; } .skel i:nth-child(3) { width:54%; animation-delay:.3s; }
+  @keyframes pl-pulse { 0%,100% { opacity:1; } 50% { opacity:.45; } }
+  @media (prefers-reduced-motion: reduce) { .skel i { animation:none; } }
+
+  /* ===== Werkbank ===== */
+  .bench { padding:0; overflow:hidden; gap:0; }
+  .bench-frame { width:100%; height:calc(100vh - 150px); min-height:720px; border:0; display:block; background:var(--cream-white); }
+  .bench-body { padding:28px; display:grid; grid-template-columns:1.2fr 1fr; gap:32px; align-items:start; }
+  .bench-actions { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .bench-note { background:var(--cream); border-radius:14px; padding:16px 20px; display:flex; flex-direction:column; gap:8px; }
+  .bench-side { display:flex; flex-direction:column; gap:24px; }
+  .steps { display:flex; flex-direction:column; gap:14px; }
+  .step { display:flex; gap:14px; align-items:flex-start; }
+  .step-n { width:28px; height:28px; border-radius:9px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:none; }
+  .step .stack > span:first-child { font-size:16px; font-weight:500; }
+  details.it { border-top:1px solid var(--hairline); padding-top:16px; }
+  details.it summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; color:var(--muted); }
+  details.it summary::-webkit-details-marker { display:none; }
+  details.it summary::after { content:"+"; font-family:var(--mono); margin-left:auto; }
+  details.it[open] summary::after { content:"−"; }
+  details.it > div { display:flex; flex-direction:column; gap:16px; padding-top:16px; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:6px 16px; align-items:baseline; }
+
+  /* ===== Hulp ===== */
+  .help-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:24px; }
+  .help-card ol { padding-left:20px; display:flex; flex-direction:column; gap:8px; font-size:15px; color:var(--muted); }
+  .help-card li span { color:var(--ink); font-weight:500; }
+
+  /* ===== Modal ===== */
+  .modal-bg { position:fixed; inset:0; background:rgba(6,18,35,.45); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px; }
+  .modal { background:var(--white); border-radius:20px; padding:28px; box-shadow:var(--shadow-dark); width:min(560px, 100%); display:flex; flex-direction:column; gap:16px; max-height:90vh; overflow:auto; }
+  .modal .foot { display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { font-size:13px; font-weight:500; line-height:1.4; color:var(--muted); }
+  .field input, .field select, .pld-in, .pld-sel { width:100%; border:1px solid var(--field); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; color:var(--ink); background:var(--white); min-height:44px; }
+  .field input:focus, .field select:focus, .pld-in:focus, .pld-sel:focus { border-color:var(--blue); outline:2px solid var(--gold); outline-offset:3px; }
+  .field input[aria-invalid="true"] { border-color:var(--gold); }
+  .field .err { font-size:13px; color:var(--danger); }
+  .toggle { display:flex; gap:12px; align-items:flex-start; cursor:pointer; }
+  .toggle input { margin-top:5px; width:18px; height:18px; accent-color:var(--navy); flex:none; }
+  .pld-msg { background:var(--blue-tint); color:var(--ink); border-radius:14px; padding:14px 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .pld-msg .note { color:var(--blue-on); }
+  .server-hint, .pld-msg--warn { background:var(--gold-tint); color:var(--ink); border-left:3px solid var(--gold); border-radius:14px; padding:14px 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .server-hint .ico { width:18px; height:18px; flex:none; color:var(--muted); }
+  .server-hint code { font-family:var(--mono); font-size:13px; background:var(--white); padding:2px 8px; border-radius:9px; }
+
+  /* ===== Login ===== */
+  .login { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
+  .login-left { background:var(--navy); color:var(--on-dark); padding:64px; display:flex; flex-direction:column; gap:32px; justify-content:center; }
+  .login-left h1 { font-size:48px; font-weight:700; line-height:1.1; letter-spacing:-.02em; max-width:16ch; text-wrap:balance; }
+  .login-left p { font-size:19px; color:var(--on-dark-muted); max-width:46ch; }
+  .login-right { display:flex; align-items:center; justify-content:center; padding:48px; }
+  .login-card { width:min(440px, 100%); gap:20px; }
+  .login .btn { justify-content:center; }
+
+  @media (max-width: 991px) { .bench-body { grid-template-columns:1fr; } .help-grid { grid-template-columns:1fr; } .login { grid-template-columns:1fr; } .login-left { padding:40px 24px; } .card { padding:24px; } }
+  .side-head { display:flex; align-items:center; justify-content:space-between; }
+  .side-body { display:contents; }
+  .menu-btn { display:none; width:44px; height:44px; border-radius:14px; background:rgba(242,240,231,.10); flex-direction:column; align-items:center; justify-content:center; gap:5px; }
+  .menu-btn span { display:block; width:20px; height:2px; background:var(--cream); border-radius:2px; }
+  @media (max-width: 767px) {
+    .shell { grid-template-columns:1fr; }
+    .side { position:sticky; top:0; z-index:5; height:auto; padding:14px 20px; gap:16px; }
+    .menu-btn { display:flex; }
+    .side-body { display:none; flex-direction:column; gap:20px; padding-bottom:8px; }
+    .side.open .side-body { display:flex; }
+    .side .spacer { display:none; }
+    .work { padding:24px 20px 48px; }
+    .bench-frame { height:80vh; min-height:560px; }
+    .topbar-text h1 { font-size:28px; }
+    .proj-row, .files-row { grid-template-columns:1fr auto; }
+    .proj-row > .cell-tool, .files-row > .cell-tool { display:none; }
+    .topbar { flex-direction:column; align-items:stretch; }
+    .topbar-actions { flex-direction:column; align-items:stretch; }
+    .topbar-actions .btn, .topbar-actions .search { width:100%; }
+  }
+  @media (max-width: 479px) {
+    .work { padding:20px 16px 48px; }
+    .card, .launch button { padding:20px; }
+    .topbar-text h1, .overview-title h1 { font-size:28px; }
+    .num, .pld-num { font-size:26px; }
+    .table-wrap { overflow-x:auto; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   ParseLab — één schil voor ParseForm, ParseScraper, ParsePDF en ParseBoard.
+   Geen voorbeelddata: alles wat je ziet komt uit de tools zelf (projecten, taken, sjablonen, bestanden).
+   state.view = overview | files | help | form | scrape | pdf | board ; state.section = stap in de tool ; state.project = geopend project.
+   ========================================================================= */
+
+const CONFIG = { webstoreUrl: "", lang: "nl", apiBase: "" };
+/* Getallen volgen de taal van het profiel: 2.500 en niet 2500 (styleguide 3.2). */
+const LOCALE = { nl:"nl-NL", en:"en-GB", de:"de-DE" };
+/* Knop tijdens een actie: uitgeschakeld met "Bezig…"; bij een fout komt het oude label terug. */
+function busy(btn, on) {
+  if (!btn) return;
+  if (on) { if (!btn.dataset.label) btn.dataset.label = btn.innerHTML; btn.disabled = true; btn.textContent = "Bezig…"; }
+  else { btn.disabled = false; if (btn.dataset.label) { btn.innerHTML = btn.dataset.label; delete btn.dataset.label; } }
+}
+function nf(n) { const v = Number(n); return isFinite(v) ? v.toLocaleString(LOCALE[CONFIG.lang] || "nl-NL") : String(n); }
+try { document.documentElement.lang = CONFIG.lang; } catch (e) {}
+const TONE = { form:{ tile:"#DCE8F2", dot:"#2C6FA8" }, scrape:{ tile:"#EDE7D5", dot:"#C9A961" }, pdf:{ tile:"#F2F0E7", dot:"#4A5A6C" }, board:{ tile:"#D8D5C8", dot:"#16293F" } };
+
+/* ---------- sessie: inloglink per e-mail; zonder backend start de sessie op deze computer ---------- */
+const SESSION_KEY = "parselab-session";
+function readSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e) { return null; } }
+function writeSession(s) { try { if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSION_KEY); } catch (e) {} }
+function userFromEmail(email) {
+  const particles = ["de", "van", "der", "den", "het", "te", "ten", "ter", "op", "in"];
+  const local = String(email).split("@")[0].replace(/[._-]+/g, " ").trim();
+  const name = local ? local.split(" ").map((w, i) => (i > 0 && particles.includes(w.toLowerCase())) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Gebruiker";
+  return { email, name, initials: name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() };
+}
+
+/* ---------- projecten: bewaarde eenheden van werk per tool; de tools melden ze via postMessage ---------- */
+const PROJECTS_KEY = "parselab-projects";
+function readProjects() { try { return JSON.parse(localStorage.getItem(PROJECTS_KEY) || "[]"); } catch (e) { return []; } }
+function writeProjects(list) { try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(list.slice(0, 200))); } catch (e) {} pushStore("projects"); }
+function upsertProject(pr) {
+  const list = readProjects(); const i = list.findIndex(x => x.id === pr.id);
+  const cur = Object.assign({ created: new Date().toISOString() }, i >= 0 ? list[i] : {}, pr, { updated: pr.updated || new Date().toISOString() });
+  if (i >= 0) list[i] = cur; else list.unshift(cur);
+  writeProjects(list); return cur;
+}
+/* Naam en "uit lijst" die jij in het dashboard kiest, winnen van wat de tool later meldt; de tool krijgt het ook te horen. */
+const OVERRIDE_KEY = "parselab-project-overrides";
+function readOverrides() { try { return JSON.parse(localStorage.getItem(OVERRIDE_KEY) || "{}") || {}; } catch (e) { return {}; } }
+function writeOverride(id, patch) { const o = readOverrides(); o[id] = Object.assign({}, o[id] || {}, patch); try { localStorage.setItem(OVERRIDE_KEY, JSON.stringify(o)); } catch (e) {} pushStore("overrides"); }
+function tellTool(msg) { const f = document.querySelector("iframe.bench-frame"); if (!f) return; try { f.contentWindow.postMessage(Object.assign({ source:"parselab-dashboard" }, msg), "*"); } catch (e) {} }
+function renameProject(id, name) { writeOverride(id, { name, pending:"rename" }); upsertProject({ id, name }); flushOverrides(); }
+function deleteProject(id) { writeOverride(id, { hidden:true, pending:"delete" }); writeProjects(readProjects().filter(x => x.id !== id)); flushOverrides(); }
+/* Wijzigingen gaan naar de tool zodra die open staat (vanuit het overzicht is er geen tool geladen). */
+function flushOverrides() {
+  const f = document.querySelector("iframe.bench-frame"); if (!f || f.dataset.ready !== "1") return;
+  const o = readOverrides(); let changed = false;
+  Object.keys(o).forEach(id => { const x = o[id]; if (!x.pending || id.split(":")[0] !== f.dataset.tool) return; tellTool(x.pending === "delete" ? { type:"parselab:delete-project", id } : { type:"parselab:rename-project", id, name:x.name }); delete x.pending; changed = true; });
+  if (changed) { try { localStorage.setItem(OVERRIDE_KEY, JSON.stringify(o)); } catch (e) {} }
+}
+function syncProjects(tool, incoming) {
+  const ov = readOverrides();
+  incoming = (incoming || []).filter(pr => !(ov[pr.id] && ov[pr.id].hidden)).map(pr => (ov[pr.id] && ov[pr.id].name) ? Object.assign({}, pr, { name: ov[pr.id].name }) : pr);
+  const ids = new Set(incoming.map(x => x.id));
+  const list = readProjects().filter(x => !(x.tool === tool && x.synced) && !ids.has(x.id));
+  incoming.forEach(pr => { const prev = readProjects().find(x => x.id === pr.id); list.push(Object.assign({ created: new Date().toISOString() }, prev || {}, pr, { tool, synced:true, updated: pr.updated || (prev && prev.updated) || new Date().toISOString() })); });
+  writeProjects(list.sort((a, b) => String(b.updated).localeCompare(String(a.updated))));
+}
+function projectsOf(tool) { return readProjects().filter(x => x.tool === tool).sort((a, b) => String(b.updated).localeCompare(String(a.updated))); }
+
+/* ---------- accountinstellingen (veiligheid): AI-herkenning en documenten bewaren ---------- */
+/* Via de ParseLab-server gaan projecten, namen en instellingen mee naar een andere computer (zelfde e-mailadres, zelfde server).
+   Zonder server blijft alles in deze browser. */
+function userHeaders() { const h = {}; if (state.user && state.user.email) h["x-parselab-user"] = state.user.email; return h; }
+const STORE_KEYS = { projects:PROJECTS_KEY, overrides:"parselab-project-overrides", settings:"parselab-settings" };
+let storeTimer = null, storeLoaded = false;
+function pushStore(key) {
+  if (!/^https?:$/.test(location.protocol) || serverOk !== true || !state.user || !storeLoaded) return;
+  clearTimeout(storeTimer);
+  storeTimer = setTimeout(async () => {
+    for (const k of Object.keys(STORE_KEYS)) { try { await fetch(CONFIG.apiBase + "/api/store/" + k, { method:"PUT", headers:Object.assign({ "content-type":"application/json" }, userHeaders()), body:JSON.stringify({ value: JSON.parse(localStorage.getItem(STORE_KEYS[k]) || "null") }) }); } catch (e) {} }
+  }, 800);
+}
+async function pullStore() {
+  if (!/^https?:$/.test(location.protocol) || serverOk !== true || !state.user) return;
+  try {
+    const r = await fetch(CONFIG.apiBase + "/api/store/projects", { headers:userHeaders() }); if (!r.ok) return;
+    const remote = (await r.json()).value;
+    if (Array.isArray(remote)) { const local = readProjects(); const byId = Object.fromEntries(local.map(x => [x.id, x])); remote.forEach(x => { if (!byId[x.id] || String(x.updated) > String(byId[x.id].updated)) byId[x.id] = x; }); localStorage.setItem(PROJECTS_KEY, JSON.stringify(Object.values(byId).sort((a, b) => String(b.updated).localeCompare(String(a.updated))).slice(0, 200))); }
+    for (const k of ["overrides", "settings"]) { try { const rr = await fetch(CONFIG.apiBase + "/api/store/" + k, { headers:userHeaders() }); const v = rr.ok ? (await rr.json()).value : null; if (v && typeof v === "object" && !localStorage.getItem(STORE_KEYS[k])) localStorage.setItem(STORE_KEYS[k], JSON.stringify(v)); } catch (e) {} }
+  } catch (e) {}
+  storeLoaded = true; pushStore();
+}
+const SETTINGS_KEY = "parselab-settings";
+function readSettings() { const d = { ai:false, storeDocs:true, keepFiles:true }; try { Object.assign(d, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); } catch (e) {} return d; }
+function writeSettings(st) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(st)); } catch (e) {} pushStore("settings"); document.querySelectorAll("iframe.bench-frame").forEach(f => { try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:settings", settings:st }, "*"); } catch (e) {} }); }
+
+/* ---------- bestanden bewaren in ParseLab (IndexedDB in deze browser), instelbaar onder Account ---------- */
+function filesDb() { return new Promise((res, rej) => { const r = indexedDB.open("parselab-files", 1); r.onupgradeneeded = () => r.result.createObjectStore("files", { keyPath:"id" }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function filesPut(rec) { const db = await filesDb(); return new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").put(rec); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
+async function filesAll() { try { const db = await filesDb(); return await new Promise((res, rej) => { const r = db.transaction("files", "readonly").objectStore("files").getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); }); } catch (e) { return []; } }
+async function filesDel(id) { const db = await filesDb(); return new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").delete(id); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
+async function filesClear() { try { const db = await filesDb(); await new Promise((res, rej) => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").clear(); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e) {} }
+async function keepFile(d) {
+  if (!readSettings().keepFiles || !d.blob) return;
+  try { await filesPut({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), tool:d.tool, name:String(d.name || "bestand"), mime:d.mime || "", size:d.blob.size, rows:d.rows || null, when:new Date().toISOString(), blob:d.blob }); if (state.view === "files") loadFiles(); } catch (e) {}
+}
+
+/* ---------- serverstatus: draait de ParseLab-server (node server/server.js)? ---------- */
+let serverOk = null;
+async function checkServer() {
+  // Als los bestand geopend (file://) is er geen server; niet proberen, dat geeft alleen een foutmelding in de console.
+  if (!/^https?:$/.test(location.protocol)) { serverOk = false; return serverOk; }
+  try { const r = await fetch(CONFIG.apiBase + "/api/scrape/status", { cache:"no-store" }); serverOk = r.ok; } catch (e) { serverOk = false; } return serverOk;
+}
+
+/* ---------- live tellers uit de tools (alleen via postMessage) ---------- */
+const stats = { pdf:null, board:null, scrape:null, extension:null };
+
+/* ---------- tools: nieuwe software = één object erbij ---------- */
+function toolDefs() {
+  const ext = stats.extension;
+  const extState = ext ? { text:"Extensie verbonden in deze browser · versie " + ext.version, on:true } : { text:"Extensie nog niet toegevoegd aan deze browser", on:false };
+  return [
+    { key:"form", name:"ParseForm", task:"Formulieren invullen", tagline:"Een portaal invullen vanuit je lijst", mark:"PF", tone:TONE.form,
+      projectWord:"taak", projectWords:"taken", projectSection:"install",
+      local:"Blijft op je computer: het invullen gebeurt in je eigen browser.",
+      state:extState,
+      sections:[ { id:"install", label:"Extensie" } ],
+      bench:{ kind:"extension", panelTitle:"ParseForm werkt in je eigen browser", intro:"Formulieren invullen gebeurt op de echte pagina van het portaal. Daarom is ParseForm een kleine toevoeging aan je browser. Eén keer toevoegen, daarna staat het ParseLab-icoon rechtsboven op elke pagina." },
+      steps:[ { title:"Open het portaal", body:"Klik op het ParseLab-icoon rechtsboven in je browser." }, { title:"Wijs de velden en knoppen aan", body:"Klik ze één keer aan. ParseLab onthoudt ze." }, { title:"Laad je lijst en klik op Start", body:"Eén regel per formulier. Elke regel krijgt een vinkje." } ] },
+    { key:"scrape", name:"ParseScraper", task:"Websites uitlezen", tagline:"Een lijst van een website in Excel", mark:"PS", tone:TONE.scrape,
+      projectWord:"taak", projectWords:"taken", projectSection:"done",
+      local:"Openbare websites leest de ParseLab-server uit; je computer mag uit staan. Ingelogde pagina's doe je met de extensie.",
+      state:extState,
+      sections:[ { id:"url", label:"Adres" }, { id:"pick", label:"Aanwijzen" }, { id:"done", label:"Klaar" }, { id:"install", label:"Extensie (ingelogd)" } ], numbered:true,
+      bench:{ kind:"frame", src:"tools/parsescraper.html", extensionSection:"install", extPanelTitle:"Ingelogde portalen lees je uit met de extensie", intro:"Openbare websites leest ParseLab vanaf de server uit. Voor pagina's waar je moet inloggen werkt de extensie in je eigen browser; die gegevens verlaten je computer niet." },
+      steps:[ { title:"Plak een adres", body:"ParseLab haalt de pagina op." }, { title:"Klik één item aan", body:"De hele lijst wordt herkend." }, { title:"Download of bewaar als taak", body:"Als Excel, of elke dag opnieuw op de server." } ] },
+    { key:"pdf", name:"ParsePDF", task:"Documenten uitlezen", tagline:"Facturen, bonnen en rapporten als tabel", mark:"PP", tone:TONE.pdf,
+      projectWord:"sjabloon", projectWords:"sjablonen", projectSection:"define",
+      local:"Blijft op je computer: je documenten worden in je browser gelezen en niet verstuurd.",
+      sections:[ { id:"upload", label:"Uploaden" }, { id:"define", label:"Aanwijzen" }, { id:"check", label:"Controleren" }, { id:"download", label:"Downloaden" }, { id:"templates", label:"Sjablonen" } ], numbered:true,
+      bench:{ kind:"frame", src:"tools/parsepdf.html" },
+      steps:[ { title:"Sleep je documenten", body:"Ze blijven op jouw computer." }, { title:"Wijs aan wat je nodig hebt", body:"Teken een vak, of kies een sjabloon." }, { title:"Controleer en download", body:"Als Excel." } ] },
+    { key:"board", name:"ParseBoard", task:"Overzichten maken", tagline:"Cijfers en grafieken uit je bestand", mark:"PB", tone:TONE.board,
+      projectWord:"overzicht", projectWords:"overzichten", projectSection:"1",
+      local:"Blijft op je computer: je bestand en je overzicht worden lokaal bewaard.",
+      sections:[ { id:"1", label:"Bron" }, { id:"2", label:"Typen" }, { id:"3", label:"Cijfers" }, { id:"4", label:"Onderdelen" }, { id:"5", label:"Weergave" }, { id:"6", label:"Overzicht" } ], numbered:true,
+      bench:{ kind:"frame", src:"tools/parseboard.html" },
+      steps:[ { title:"Kies een bron", body:"Je bestand of de voorbeeldgegevens." }, { title:"Kies je cijfers", body:"Suggesties staan klaar." }, { title:"Sla op", body:"Het overzicht blijft op je computer." } ] }
+  ];
+}
+
+/* ===== helpers ===== */
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch])); }
+function pill(text, cls) { return text ? `<span class="pill ${cls}">${esc(text)}</span>` : ""; }
+function tile(t, size) { return `<span class="tile tile-${size}" style="background:${t.tone.tile}">${esc(t.mark)}</span>`; }
+function dot(color) { return `<span class="dot" style="background:${color}"></span>`; }
+const LOCK_ICO = `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
+function lock(text) { return `<span class="lock">${LOCK_ICO}<span>${esc(text)}</span></span>`; }
+function greeting() { const h = new Date().getHours(); return h < 6 ? "Goedenacht" : h < 12 ? "Goedemorgen" : h < 18 ? "Goedemiddag" : "Goedenavond"; }
+function when(iso) { try { return new Date(iso).toLocaleString("nl-NL", { dateStyle:"short", timeStyle:"short" }); } catch (e) { return ""; } }
+
+/* ===== state & routing: #view/section/project ===== */
+const VIEWS = ["overview", "files", "help", "form", "scrape", "pdf", "board"];
+const state = { view:"overview", bench:false, section:null, project:null, toolMax:null, query:"", menu:null, modal:null, user:null };
+function parseHash() {
+  const [view, sub, proj] = location.hash.replace(/^#\/?/, "").split("/");
+  state.view = VIEWS.includes(view) ? view : "overview";
+  const tool = toolDefs().find(d => d.key === state.view) || null;
+  if (tool) { const ids = tool.sections.map(x => x.id); state.section = ids.includes(sub) ? sub : ids[0]; state.bench = true; }
+  else { state.bench = false; state.section = null; }
+  state.project = proj ? decodeURIComponent(proj) : null;
+}
+function go(view, section, projectId) {
+  const side = document.querySelector(".side.open"); if (side) { side.classList.remove("open"); const mb = document.getElementById("menu-btn"); if (mb) mb.setAttribute("aria-expanded", "false"); }
+  const t = toolDefs().find(d => d.key === view);
+  const sub = t ? "/" + (section && t.sections.some(s => s.id === section) ? section : t.sections[0].id) : "";
+  const target = "#" + view + sub + (projectId && sub ? "/" + encodeURIComponent(projectId) : "");
+  state.menu = null; state.modal = null;
+  if (location.hash === target) { parseHash(); render(); } else location.hash = target;
+}
+window.addEventListener("hashchange", () => { const wasView = state.view; parseHash(); if (state.view !== wasView) state.toolMax = null; render(); if (state.view !== wasView) window.scrollTo({ top:0 }); });
+
+/* ===== render ===== */
+function render() {
+  const root = document.getElementById("root");
+  if (!state.user) { root.innerHTML = renderLogin(); bindLogin(); return; }
+  if (!root.querySelector(".shell")) { root.innerHTML = renderShell(); bindShell(); }
+  const defs = toolDefs(), tool = defs.find(d => d.key === state.view) || null;
+
+  document.getElementById("nav-main").innerHTML = navItem({ label:"Overzicht", key:"overview", lead:dot("#F2F0E7") }) + navItem({ label:"Bestanden", key:"files", lead:dot("rgba(242,240,231,.5)") }) + navItem({ label:"Hulp", key:"help", lead:dot("rgba(242,240,231,.5)") });
+  document.getElementById("nav-tools").innerHTML = defs.map(d => navItem({ label:d.name, key:d.key, meta:navMeta(d), lead:tile(d, 26) }) + navSub(d)).join("");
+  document.getElementById("user-initials").textContent = state.user.initials;
+  document.getElementById("user-name").textContent = state.user.name;
+  document.getElementById("user-mail").textContent = state.user.email;
+  const um = document.getElementById("user-menu"); um.innerHTML = state.menu === "user" ? renderUserMenu() : ""; um.hidden = state.menu !== "user";
+
+  const eyebrow = document.getElementById("top-eyebrow"), title = document.getElementById("top-title"), sub = document.getElementById("top-sub"), action = document.getElementById("top-action");
+  document.querySelector(".topbar-text").classList.toggle("overview-title", !tool && state.view === "overview");
+  if (tool) {
+    const pr = state.project && readProjects().find(x => x.id === state.project);
+    eyebrow.textContent = tool.task; title.textContent = pr ? pr.name : tool.name; sub.textContent = pr ? tool.name + " · " + tool.projectWord : tool.tagline;
+    action.textContent = "Nieuwe " + tool.projectWord; action.onclick = () => { state.modal = { kind:"newproject", tool:tool.key }; render(); focusLater("np-name"); };
+    document.title = (pr ? pr.name + " · " : "") + tool.name + " · ParseLab";
+  } else {
+    const heads = { files:["Bestanden", "Wat ParseLab voor je heeft uitgelezen."], help:["Hulp", "Zo werkt elke tool, in gewone taal."] };
+    const h = heads[state.view] || [greeting() + ", " + state.user.name.split(" ")[0], "Waar wil je mee verder?"];
+    eyebrow.textContent = "ParseLab"; title.textContent = h[0]; sub.textContent = h[1];
+    document.querySelector(".topbar-text").classList.toggle("overview-title", state.view === "overview");
+    action.textContent = "Nieuw project"; action.onclick = () => { state.modal = { kind:"choose" }; render(); };
+    action.hidden = state.view === "overview";
+    document.title = (heads[state.view] ? h[0] + " · " : "") + "ParseLab";
+  }
+  action.hidden = state.view === "overview";
+
+  const view = document.getElementById("view");
+  const frame = view.querySelector("iframe.bench-frame");
+  const q = state.query.trim();
+  if (q) view.innerHTML = renderSearch(defs, q);
+  else if (tool && frame && frame.dataset.tool === tool.key && !(tool.bench.extensionSection && state.section === tool.bench.extensionSection)) {
+    sendSection(frame, state.section);
+    if (state.project && frame.dataset.project !== state.project) { frame.dataset.project = state.project; sendProject(frame, state.project); }
+  } else {
+    view.innerHTML = tool ? renderBench(tool) : state.view === "files" ? renderFiles(defs) : state.view === "help" ? renderHelp(defs) : renderOverview(defs);
+    const f = view.querySelector("iframe.bench-frame");
+    if (f) f.addEventListener("load", () => initFrame(f));
+    if (state.view === "files") loadFiles();
+  }
+  document.getElementById("modal").innerHTML = state.modal ? renderModal(state.modal, defs) : "";
+  bindActions();
+  document.getElementById("search").value = state.query;
+}
+function navMeta(t) {
+  if (t.key === "scrape" && stats.scrape && stats.scrape.running) return "bezig";
+  if (t.key === "pdf" && stats.pdf && stats.pdf.review) return stats.pdf.review + " nakijken";
+  return "";
+}
+function focusLater(id) { setTimeout(() => { const i = document.getElementById(id); if (i) i.focus(); }, 50); }
+
+function renderShell() {
+  return `
+  <div class="shell">
+    <aside class="side" aria-label="Navigatie">
+      <div class="side-head"><a class="logo" href="#overview" title="Naar overzicht"><span class="logo-mark"></span><span class="logo-word">ParseLab</span></a><button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="side-body" aria-label="Menu"><span></span><span></span><span></span></button></div>
+      <div class="side-body" id="side-body">
+      <nav class="group"><div class="caps-nav group-label">Werkruimte</div><div id="nav-main" class="group"></div></nav>
+      <nav class="group"><div class="caps-nav group-label">Software</div><div id="nav-tools" class="group"></div></nav>
+      <div class="spacer"></div>
+      <div class="user-wrap">
+        <div class="menu" id="user-menu" hidden></div>
+        <button type="button" class="user" id="user-btn"><span class="avatar" id="user-initials"></span><span class="stack" style="flex:1; min-width:0"><span class="user-name" id="user-name"></span><span class="user-mail" id="user-mail"></span></span></button>
+      </div>
+      </div>
+    </aside>
+    <main class="work">
+      <div class="topbar">
+        <div class="topbar-text"><div class="caps-nav" id="top-eyebrow"></div><h1 id="top-title"></h1><div class="sub" id="top-sub"></div></div>
+        <div class="topbar-actions"><input class="pld-in search" id="search" type="search" placeholder="Zoek een project…" aria-label="Zoeken"><button type="button" class="pld-btn btn btn-navy" id="top-action"></button></div>
+      </div>
+      <section id="view"></section>
+    </main>
+  </div>
+  <div id="modal"></div>`;
+}
+function bindShell() {
+  const mb = document.getElementById("menu-btn"); if (mb) mb.onclick = () => { const side = mb.closest(".side"); const open = !side.classList.contains("open"); side.classList.toggle("open", open); mb.setAttribute("aria-expanded", String(open)); };
+  checkServer().then(async () => { if (state.view === "scrape" && serverOk === false) { const v = document.getElementById("view"); if (v) v.innerHTML = ""; } if (state.view === "scrape" || state.view === "files") render(); if (serverOk && state.user) { await pullStore(); if (state.user) { renderNavOnly(); if (!state.bench) render(); } } });
+  document.getElementById("search").addEventListener("input", e => { state.query = e.target.value; render(); });
+  document.getElementById("user-btn").onclick = () => { state.menu = state.menu === "user" ? null : "user"; render(); };
+  document.addEventListener("click", e => { if (state.menu && !e.target.closest(".user-wrap")) { state.menu = null; render(); } });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && (state.menu || state.modal)) { state.menu = null; state.modal = null; render(); } });
+  const v = document.documentElement.dataset.parselabExtension; if (v) stats.extension = { version:v };
+  try { window.postMessage({ source:"parselab-dashboard", type:"parselab:ping" }, "*"); } catch (e) {}
+}
+
+/* ---------- login ---------- */
+function renderLogin() {
+  return `
+  <div class="login">
+    <div class="login-left">
+      <span class="logo" style="padding:0"><span class="logo-mark"></span><span class="logo-word">ParseLab</span></span>
+      <h1>Documenten, websites en formulieren, zonder klikwerk.</h1>
+      <p>Log in met je e-mailadres. Je krijgt een link, geen wachtwoord om te onthouden.</p>
+    </div>
+    <div class="login-right">
+      <form class="pld-card card login-card" id="login-form">
+        <div class="title-24">Inloggen</div>
+        <div class="field"><label for="login-email">E-mailadres</label><input id="login-email" type="email" required placeholder="naam@kantoor.nl" autocomplete="email"></div>
+        <button type="submit" class="pld-btn btn btn-navy">Stuur mij een inloglink <span class="arrow">→</span></button>
+        <div class="pld-text note" id="login-note" hidden></div>
+      </form>
+    </div>
+  </div>`;
+}
+function bindLogin() {
+  const form = document.getElementById("login-form"), note = document.getElementById("login-note");
+  form.onsubmit = e => {
+    e.preventDefault(); const email = document.getElementById("login-email").value.trim(); if (!email) return;
+    busy(form.querySelector("button[type=submit]"), true);
+    note.hidden = false; note.innerHTML = `Inloglink gestuurd naar <span class="strong">${esc(email)}</span>. In deze versie ben je meteen ingelogd.`;
+    setTimeout(async () => { state.user = userFromEmail(email); writeSession(state.user); if (!location.hash) history.replaceState(null, "", "#overview"); render(); if (serverOk) { await pullStore(); renderNavOnly(); if (!state.bench) render(); } }, 700);
+  };
+}
+
+/* ---------- zijbalk ---------- */
+function navItem({ label, key, meta, lead }) {
+  return `<button type="button" class="nav-item" data-go="${key}" ${state.view === key ? 'aria-current="page"' : ""}>${lead}<span class="label">${esc(label)}</span>${meta ? `<span class="meta">${esc(meta)}</span>` : ""}</button>`;
+}
+function navSub(t) {
+  if (state.view !== t.key) return "";
+  const max = state.toolMax != null ? state.toolMax : Infinity;
+  const projs = projectsOf(t.key).slice(0, 8);
+  return `<div class="nav-sub">${t.sections.map((s, i) => {
+    const locked = t.key === "board" && (i + 1) > max;
+    return `<button type="button" class="nav-sub-item" data-section="${esc(s.id)}" ${state.section === s.id ? 'aria-current="page"' : ""} ${locked ? "disabled" : ""}>${t.numbered ? `<span class="idx">${i + 1}</span>` : ""}<span>${esc(s.label)}</span></button>`;
+  }).join("")}
+  <div class="nav-proj-label">${esc(t.projectWords)}</div>
+  ${projs.map(pr => `<button type="button" class="nav-sub-item proj" data-project="${esc(pr.id)}" ${state.project === pr.id ? 'aria-current="page"' : ""} title="${esc(pr.name)}"><span class="pdot"></span><span>${esc(pr.name)}</span></button>`).join("")}
+  <button type="button" class="nav-sub-item proj new" data-new-project="${t.key}"><span>+ Nieuwe ${esc(t.projectWord)}</span></button>
+  </div>`;
+}
+function renderUserMenu() {
+  return `<button type="button" data-modal="account">Account</button><button type="button" data-modal="extension">Verbonden extensie</button><button type="button" id="logout">Uitloggen</button>`;
+}
+
+/* ---------- overzicht: kies waar je mee verder wilt, en je projecten ---------- */
+function renderOverview(defs) {
+  const all = readProjects().sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
+  const byKey = Object.fromEntries(defs.map(d => [d.key, d]));
+  return `
+    <div style="display:flex; flex-direction:column; gap:32px;">
+      <div class="launch">
+        ${defs.map(t => `<button type="button" data-bench="${t.key}">
+          <span class="lh"><span class="ltile" style="background:${t.key === "form" ? "#DCE8F2" : "#EDE7D5"}">${esc(t.mark)}</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span>
+          <span class="stack"><span class="lt">${esc(t.task)}</span><span class="ls">${esc(t.tagline)}</span></span>
+          <span class="lv" aria-hidden="true">${visual(t.key)}</span>
+        </button>`).join("")}
+      </div>
+      <div class="pld-card card">
+        <div class="card-head"><div class="pld-caps caps">Je projecten</div>${all.length ? `<span class="pld-text note">${all.length}</span>` : ""}</div>
+        ${all.length ? `<div class="pld-table table">${all.slice(0, 12).map(pr => { const t = byKey[pr.tool]; if (!t) return ""; return `
+          <div class="tr proj-row">
+            <div class="cell-main"><span class="pname">${esc(pr.name)}</span><span class="mono-12">${esc(t.projectWord)}${pr.updated ? " · " + esc(when(pr.updated)) : ""}</span></div>
+            <div class="ptool"><span class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></span>${miniVisual(t.key, pr)}</div>
+            <button type="button" class="btn-pill" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>
+            <button type="button" class="link" data-edit-project="${esc(pr.id)}">Naam</button>
+          </div>`; }).join("")}</div>` :
+        `<div class="pld-text note empty">Nog geen projecten. Kies hierboven waar je mee wilt beginnen; wat je bewaart komt hier te staan.</div>`}
+      </div>
+    </div>`;
+}
+
+/* ---------- mini-visuals per tool (ParseLab Start.dc.html) ---------- */
+function visual(key) {
+  if (key === "form") return `<span style="display:flex; flex-direction:column; gap:8px;"><span class="rowl"><i class="lab"></i><i class="fld"></i></span><span class="rowl"><i class="lab"></i><i class="fld on"><i class="caret"></i></i></span><span class="rowl"><i class="lab"></i><i class="fld"></i></span></span><span class="chip">rij 12</span>`;
+  if (key === "scrape") return `<span style="display:flex; gap:10px; height:100%;"><span class="scan"><i></i><i></i><i></i><i></i><i class="beam"></i></span><span class="arr">→</span><span class="rows"><i></i><i></i><i></i><i></i></span></span>`;
+  if (key === "pdf") return `<span style="display:flex; gap:10px; align-items:stretch; height:100%;"><span class="doc"><i class="t"></i><i></i><i class="g"></i><i></i><i class="g2"></i><i></i></span><span class="tbl"><span class="tr2 h"><i></i><i></i><i class="k"></i></span><span class="tr2 d"><i>NL84…</i><i>€ 1.240</i><i class="k"></i></span><span class="tr2 d d2"><i>NL22…</i><i>€ 860</i><i class="k"></i></span><span class="tr2 d d3"><i></i><i></i><i class="k"></i></span></span></span>`;
+  return `<span class="bars"><i style="height:38%; animation-delay:0s"></i><i style="height:62%; animation-delay:.08s"></i><i style="height:48%; animation-delay:.16s"></i><i class="g" style="height:82%; animation-delay:.24s"></i><i style="height:70%; animation-delay:.32s"></i><i style="height:96%; animation-delay:.4s"></i></span><span class="spark"><svg width="86" height="20" viewBox="0 0 86 20" fill="none" aria-hidden="true"><path d="M2 15 16 11 30 13 44 7 58 9 70 4 84 2" stroke="#8FB4DA" stroke-width="1.8" stroke-linecap="round"/></svg><span>+12,4%</span></span>`;
+}
+function miniVisual(key, pr) {
+  const seed = String(pr.id || pr.name).split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 997, 7);
+  const hs = [0, 1, 2, 3, 4].map(i => 35 + ((seed * (i + 3) * 7) % 60));
+  if (key === "board") { const pts = hs.map((h, i) => `${2 + i * 15} ${18 - h / 6}`).join(" L"); return `<svg width="64" height="20" viewBox="0 0 64 20" fill="none" aria-hidden="true"><path d="M${pts}" stroke="#1F3A5F" stroke-width="1.8" stroke-linecap="round"/></svg>`; }
+  const max = Math.max(...hs);
+  return `<span class="mini" aria-hidden="true">${hs.map(h => `<i class="${h === max ? "d" : h > 55 ? "m" : ""}" style="height:${h}%"></i>`).join("")}</span>`;
+}
+
+/* ---------- werkbank: de tool zelf, of het extensiepaneel ---------- */
+function renderBench(t) {
+  let b = t.bench;
+  const extPanel = b.kind === "extension" || (b.extensionSection && state.section === b.extensionSection);
+  const hint = (t.key === "scrape" && serverOk === false) ? `<div class="server-hint" role="status" aria-live="polite">${LOCK_ICO}<span class="pld-text note" style="flex:1"><span class="strong">De ParseLab-server draait niet.</span> ${!/^https?:$/.test(location.protocol) ? "Je hebt ParseLab als los bestand geopend; documenten en overzichten werken gewoon. Voor websites uitlezen heb je de map ParseLab nodig." : "Website uitlezen werkt via de server."} Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.</span><button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" id="recheck-server">Opnieuw proberen</button></div>` : "";
+  if (!extPanel) return hint + `<div class="pld-card card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
+  const store = CONFIG.webstoreUrl, ext = stats.extension, title = b.extPanelTitle || b.panelTitle;
+  return `
+    <div class="pld-card card bench">
+      <div class="bench-body">
+        <div style="display:flex; flex-direction:column; gap:24px;">
+          <div class="title-24" style="max-width:26ch;">${esc(title)}</div>
+          <div class="pld-text note" style="max-width:56ch; font-size:16px;">${esc(b.intro)}</div>
+          ${ext ? `<div class="bench-note">${lock("Extensie verbonden in deze browser · versie " + ext.version)}<span class="pld-text note">Open een website en klik op het ParseLab-icoon rechtsboven.</span></div>` : `
+          <div class="bench-actions">
+            ${store ? `<a class="pld-btn btn btn-navy" href="${esc(store)}" target="_blank" rel="noopener">Toevoegen aan Chrome <span class="arrow">→</span></a>` : `<button type="button" class="pld-btn btn btn-navy" id="toggle-it">Installeren <span class="arrow">→</span></button>`}
+            <a class="pld-btn pld-btn--ghost btn btn-outline" href="#help">Handleiding</a>
+          </div>
+          <div class="pld-text note">Daarna staat het ParseLab-icoon rechtsboven in je browser. Zet het vast met de punaise.</div>
+          ${store ? "" : `<div class="pld-text note">De Chrome Web Store-vermelding is er nog niet; tot die tijd voegt IT-beheer de toevoeging toe via de route hieronder.</div>`}`}
+          <details class="it" id="it-details">
+            <summary>Voor IT-beheer</summary>
+            <div>
+              <div class="steps">
+                <div class="step"><span class="step-n">1</span><div class="stack"><span>Download het pakket</span><span class="pld-text note">Pak de zip uit in een map die blijft staan.</span></div></div>
+                <div class="step"><span class="step-n">2</span><div class="stack"><span>Laad het in Chrome, Edge of Brave</span><span class="pld-text note">chrome://extensions → Ontwikkelaarsmodus aan → Uitgepakte extensie laden.</span></div></div>
+              </div>
+              <div class="bench-actions"><a class="pld-btn pld-btn--ghost btn btn-outline" href="tools/parselab-extension.zip" download="parselab-extension.zip">Download pakket (zip)</a><a class="pld-btn pld-btn--ghost btn btn-outline" href="tools/extension/README.md" target="_blank" rel="noopener">Technische notities</a></div>
+              <div class="kv"><span class="pld-caps caps">Rechten</span><span class="mono">activeTab · storage · downloads · sitetoegang per website na toestemming</span><span class="pld-caps caps">Gegevens</span><span class="mono">0 bytes verlaten je computer</span></div>
+            </div>
+          </details>
+        </div>
+        <div class="bench-side">
+          <div class="bench-note"><span class="pld-caps caps">Zo begin je</span>${t.steps.map((s, i) => `<span class="pld-text note"><span class="strong">${i + 1}. ${esc(s.title)}.</span> ${esc(s.body)}</span>`).join("")}</div>
+          <div class="bench-note">${lock(t.local)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+function initFrame(f) {
+  if (f.dataset.ready === "1") return; f.dataset.ready = "1";
+  sendSection(f, state.section);
+  try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:lang", lang:CONFIG.lang }, "*"); } catch (e) {}
+  try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:settings", settings:readSettings() }, "*"); } catch (e) {}
+  try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:user", email:state.user ? state.user.email : "" }, "*"); } catch (e) {}
+  if (state.project) { f.dataset.project = state.project; sendProject(f, state.project); }
+  setTimeout(flushOverrides, 300);
+}
+
+/* ---------- bestanden: alleen wat er echt is (uitvoeringen van de server) ---------- */
+function renderFiles() {
+  const keep = readSettings().keepFiles;
+  return `<div class="pld-card card"><div class="card-head"><div class="pld-caps caps">Bewaard in ParseLab</div>${keep ? "" : `<span class="pld-text note">Staat uit; zet aan onder Account</span>`}</div><div id="files-kept" class="skel" aria-busy="true"><i></i><i></i><i></i></div></div>
+    <div class="pld-card card" style="margin-top:24px"><div class="card-head"><div class="pld-caps caps">Uitgelezen websites</div><span class="pld-text note">Op de ParseLab-server</span></div><div id="files-list" class="skel" aria-busy="true"><i></i><i></i><i></i></div></div>`;
+}
+async function loadFiles() {
+  const kept = document.getElementById("files-kept");
+  if (kept) {
+    const list = (await filesAll()).sort((a, b) => String(b.when).localeCompare(String(a.when)));
+    const byKey = Object.fromEntries(toolDefs().map(d => [d.key, d]));
+    document.querySelectorAll("a[data-objurl]").forEach(a => URL.revokeObjectURL(a.href));
+    kept.removeAttribute("aria-busy"); kept.className = list.length ? "pld-table table" : "note";
+    kept.innerHTML = list.length ? list.map(f => { const t = byKey[f.tool] || byKey.pdf; return `<div class="tr files-row"><div class="cell-main"><span>${esc(f.name)}</span><span class="mono-12">${esc(when(f.when))}${f.rows ? " · " + nf(f.rows) + " regels" : ""} · ${nf(Math.max(1, Math.round(f.size / 1024)))} kB</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div><span style="display:flex; gap:8px"><a class="pld-btn pld-btn--ghost btn btn-outline btn-small" data-objurl="1" href="${URL.createObjectURL(f.blob)}" download="${esc(f.name)}">Download</a><button type="button" class="link" data-del-file="${esc(f.id)}" title="Verwijderen">✕</button></span></div>`; }).join("") : `<div class="pld-text note empty">${readSettings().keepFiles ? "Nog geen bestanden. Wat je downloadt uit ParsePDF en ParseBoard komt hier te staan." : "Bestanden bewaren staat uit. Downloads gaan alleen naar je map Downloads."}</div>`;
+    document.querySelectorAll("[data-del-file]").forEach(el => { el.onclick = async () => { await filesDel(el.getAttribute("data-del-file")); loadFiles(); }; });
+  }
+  const el = document.getElementById("files-list"); if (!el) return;
+  try {
+    if (!/^https?:$/.test(location.protocol)) throw new Error();
+    const res = await fetch(CONFIG.apiBase + "/api/scrape/tasks", { headers:userHeaders() }); if (!res.ok) throw new Error();
+    const tasks = (await res.json()).filter(t => t.lastRunId && t.lastStatus !== "fout");
+    const t = toolDefs().find(x => x.key === "scrape");
+    el.removeAttribute("aria-busy"); el.className = "pld-table table";
+    el.innerHTML = tasks.length ? tasks.map(x => `<div class="tr files-row"><div class="cell-main"><span>${esc(x.name)}</span><span class="mono-12">${esc(when(x.lastRun))} · ${nf(x.lastRows || 0)} regels</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>ParseScraper</span></div><a class="pld-btn pld-btn--ghost btn btn-outline btn-small" href="${CONFIG.apiBase}/api/scrape/runs/${esc(x.lastRunId)}.xlsx">Excel</a></div>`).join("") : `<div class="pld-text note empty">Nog geen uitgelezen websites.</div>`;
+  } catch (e) { el.removeAttribute("aria-busy"); el.className = "note"; el.innerHTML = `<span class="strong">De ParseLab-server draait niet.</span> Uitgelezen websites staan op de server. Start hem via <code>start.bat</code> of <code>start.sh</code> in de map <code>parselab</code>, of met <code>node server/server.js</code>, en open <code>http://localhost:8080</code>.`; }
+}
+
+/* ---------- hulp ---------- */
+function renderHelp(defs) {
+  const guides = {
+    form:[ ["Voeg ParseLab toe aan je browser", "één keer."], ["Open het portaal", "en klik op het ParseLab-icoon rechtsboven."], ["Klik op Invullen", "en wijs het formulier of het veld aan."], ["Maak je invullijst (Excel)", "vul hem in en laad hem."], ["Klik op Start", "elke regel krijgt een vinkje."] ],
+    scrape:[ ["Plak het adres", "van de pagina met de lijst."], ["Klik één item aan", "en kies 'de hele lijst'."], ["Download voor Excel", "of bewaar als taak die elke dag draait."], ["Moet je inloggen?", "kies dan 'Extensie (ingelogd)'."] ],
+    pdf:[ ["Sleep je documenten", "naar ParsePDF. Ze blijven op je computer."], ["Kies een sjabloon", "of teken een vak om het bedrag of de datum."], ["Controleer", "de regels om na te kijken staan bovenaan."], ["Download voor Excel", "."] ],
+    board:[ ["Kies een bron", "je bestand of de voorbeeldgegevens."], ["Kies je cijfers", "de suggesties staan klaar."], ["Sla op", "en download je overzicht."] ]
+  };
+  return `<div class="help-grid">${defs.map(t => `
+    <div class="pld-card card help-card">
+      <div class="card-head">${tile(t, 36)}<div class="pld-caps caps">${esc(t.name)}</div><button type="button" class="link" data-bench="${t.key}">Openen →</button></div>
+      <div class="title-24">${esc(t.task)}</div>
+      <ol>${guides[t.key].map(([a, b]) => `<li><span>${esc(a)}</span> ${esc(b)}</li>`).join("")}</ol>
+      <div class="hairline"></div>${lock(t.local)}
+    </div>`).join("")}
+    <div class="pld-card card help-card"><div class="pld-caps caps">Woorden</div><ol><li><span>Taak</span> stappen die ParseLab voor je herhaalt.</li><li><span>Sjabloon</span> de velden die je één keer hebt aangewezen in een document.</li><li><span>Overzicht</span> cijfers en grafieken uit een bestand.</li><li><span>Regel</span> één rij in je lijst of bestand.</li></ol></div>
+  </div>`;
+}
+
+/* ---------- zoeken in projecten ---------- */
+function renderSearch(defs, q) {
+  const lq = q.toLowerCase(), byKey = Object.fromEntries(defs.map(d => [d.key, d]));
+  const hits = readProjects().filter(pr => pr.name.toLowerCase().includes(lq) && byKey[pr.tool]);
+  const text = t => [t.name, t.tagline, t.desc, t.intro, (t.bench && t.bench.intro) || "", ...(t.steps || []), ...t.sections.map(x => x.label + " " + (x.hint || ""))].join(" ").toLowerCase();
+  const tools = defs.filter(t => text(t).includes(lq));
+  const steps = defs.flatMap(t => t.sections.filter(x => (x.label + " " + (x.hint || "")).toLowerCase().includes(lq)).map(x => ({ t, x })));
+  const row = (main, sub, t, btn) => `<div class="tr proj-row"><div class="cell-main"><span>${main}</span><span class="mono-12">${sub}</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div>${btn}<span></span></div>`;
+  const any = hits.length || tools.length || steps.length;
+  return `<div class="pld-card card"><div class="card-head"><div class="pld-caps caps">Zoekresultaten voor “${esc(q)}”</div><button type="button" class="link" id="clear-search">Wissen</button></div>
+    <div class="pld-table table">${hits.map(pr => { const t = byKey[pr.tool]; return row(esc(pr.name), esc(t.projectWord), t, `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>`); }).join("")}
+    ${steps.map(({ t, x }) => row(esc(x.label), "Stap in " + esc(t.name), t, `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" data-go="${t.key}" data-section="${esc(x.id)}">Ga naar stap</button>`)).join("")}
+    ${tools.filter(t => !steps.some(s => s.t === t)).map(t => row(esc(t.name), esc(t.tagline || ""), t, `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" data-go="${t.key}">Openen</button>`)).join("")}
+    ${any ? "" : `<div class="pld-text note empty">Niets gevonden. Kijk bij Hulp voor uitleg per tool.</div>`}</div></div>`;
+}
+
+/* ---------- dialogen ---------- */
+function renderModal(m, defs) {
+  let body = "";
+  if (m.kind === "choose") {
+    body = `<div class="title-24">Wat wil je maken?</div><div class="pld-table table">${defs.map(t => `<button type="button" class="tr proj-row" data-new-project="${t.key}" style="text-align:left; cursor:pointer"><div class="cell-main"><span>${esc(t.task)}</span><span class="mono-12">Nieuwe ${esc(t.projectWord)} in ${esc(t.name)}</span></div><div class="cell-tool">${tile(t, 26)}</div><span class="arrow">→</span><span></span></button>`).join("")}</div>
+      <div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-close>Annuleren</button></div>`;
+  } else if (m.kind === "newproject") {
+    const t = defs.find(x => x.key === m.tool);
+    const hints = { scrape:"Geef de taak een naam en plak daarna het webadres.", pdf:"Geef het sjabloon een naam en wijs daarna de kolommen aan.", board:"Geef het overzicht een naam en kies daarna een bron.", form:"Geef de taak een naam; de stappen neem je op in de extensie op het portaal zelf." };
+    body = `<div class="card-head">${tile(t, 36)}<div class="pld-caps caps">${esc(t.name)}</div></div><div class="title-24">Nieuwe ${esc(t.projectWord)}</div>
+      <form id="np-form" class="field"><label for="np-name">Naam</label><input id="np-name" type="text" required></form>
+      <div class="pld-text note">${esc(hints[t.key])}</div>
+      <div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-close>Annuleren</button><button type="button" class="pld-btn btn btn-navy" id="np-save">Starten <span class="arrow">→</span></button></div>`;
+  } else if (m.kind === "project") {
+    const pr = readProjects().find(x => x.id === m.id); if (!pr) return "";
+    const t = defs.find(x => x.key === pr.tool);
+    body = `<div class="card-head">${tile(t, 36)}<div class="pld-caps caps">${esc(t.name)} · ${esc(t.projectWord)}</div></div>
+      <form id="ep-form" class="field"><label for="ep-name">Naam</label><input id="ep-name" type="text" value="${esc(pr.name)}" required></form>
+      <div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" id="ep-delete">Uit lijst halen</button><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" id="ep-save">Naam bewaren</button><button type="button" class="pld-btn btn btn-navy" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen <span class="arrow">→</span></button></div>`;
+  } else if (m.kind === "account") {
+    const st = readSettings();
+    body = `<div class="title-24">Account</div><div class="kv"><span class="pld-caps caps">Naam</span><span>${esc(state.user.name)}</span><span class="pld-caps caps">E-mail</span><span>${esc(state.user.email)}</span></div>
+      <div class="hairline"></div>
+      <div class="pld-caps caps">Veiligheid</div>
+      <label class="toggle"><input type="checkbox" id="set-ai" ${st.ai ? "checked" : ""}><span class="stack"><span class="strong">AI-herkenning gebruiken</span><span class="pld-text note">Alleen als dit aan staat toont ParsePDF de knop "Laat ParseLab de velden herkennen". Daarbij gaat de tekst van dat ene document naar ParseLab, na jouw akkoord per document.</span></span></label>
+      <label class="toggle"><input type="checkbox" id="set-store" ${st.storeDocs ? "checked" : ""}><span class="stack"><span class="strong">Documenten bewaren op deze computer</span><span class="pld-text note">Uit: ParsePDF bewaart geüploade documenten niet in de browser; na sluiten zijn ze weg. Wat al bewaard was, wordt gewist.</span></span></label>
+      <label class="toggle"><input type="checkbox" id="set-keep" ${st.keepFiles ? "checked" : ""}><span class="stack"><span class="strong">Bestanden bewaren in ParseLab</span><span class="pld-text note">Aan: wat je downloadt uit ParsePDF en ParseBoard staat ook onder Bestanden, in deze browser. Uit: de bestanden gaan alleen naar je map Downloads en wat al bewaard was, wordt gewist.</span></span></label>
+      <div class="foot"><button type="button" class="pld-btn btn btn-navy" data-close>Sluiten</button></div>`;
+  } else if (m.kind === "extension") {
+    const ext = stats.extension;
+    body = `<div class="title-24">Verbonden extensie</div><div class="pld-text note">${ext ? "ParseLab-extensie versie " + esc(ext.version) + " is verbonden in deze browser. Loskoppelen: chrome://extensions → ParseLab → Verwijderen." : "In deze browser is nog geen ParseLab-extensie gevonden."}</div><div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-bench="form">Extensie toevoegen</button><button type="button" class="pld-btn btn btn-navy" data-close>Sluiten</button></div>`;
+  }
+  return `<div class="modal-bg" data-close-bg><div class="modal" role="dialog" aria-modal="true">${body}</div></div>`;
+}
+
+/* ---------- koppeling met de tools en de extensie ---------- */
+function sendSection(frame, section) { if (!frame || !section) return; try { frame.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:nav", section }, "*"); } catch (e) {} }
+function sendProject(frame, id) {
+  const pr = readProjects().find(x => x.id === id) || (id.startsWith("new:") ? { id, name:id.slice(4), payload:{}, isNew:true } : null);
+  if (!frame || !pr) return;
+  try { frame.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:load-project", project:pr }, "*"); } catch (e) {}
+}
+window.addEventListener("message", ev => {
+  const d = ev.data || {};
+  if (d.source === "parselab-extension" && d.type === "parselab:extension") { if (!stats.extension || stats.extension.version !== d.version) { stats.extension = { version:String(d.version || "") }; if (state.user) render(); } return; }
+  if (d.source !== "parselab-tool") return;
+  if (d.type === "parselab:stats" && d.tool) { stats[d.tool] = d; if (state.user) renderNavOnly(); return; }
+  if (d.type === "parselab:projects" && d.tool) { syncProjects(d.tool, d.list); if (state.user) { renderNavOnly(); if (!state.bench) render(); } return; }
+  if (d.type === "parselab:project" && d.tool && d.id) {
+    upsertProject({ id:d.id, tool:d.tool, name:String(d.name || "Zonder naam").slice(0, 80), payload:d.payload || {}, synced:false });
+    if (d.open && state.view === d.tool) { state.project = d.id; history.replaceState(null, "", "#" + d.tool + "/" + state.section + "/" + encodeURIComponent(d.id)); const f = document.querySelector("iframe.bench-frame"); if (f) f.dataset.project = d.id; }
+    if (state.user) { renderNavOnly(); renderTop(); } return;
+  }
+  if (d.type === "parselab:open" && d.view) { go(d.view, d.section); return; }
+  if (d.type === "parselab:file") { keepFile(d); return; }
+  if (d.type !== "parselab:section" && d.type !== "parselab:ready") return;
+  const tool = toolDefs().find(t => t.key === state.view); if (!tool) return;
+  const fr = document.querySelector("iframe.bench-frame");
+  if (fr && fr.contentWindow === ev.source && fr.dataset.ready !== "1") { initFrame(fr); if (d.section && String(d.section) !== state.section) sendSection(fr, state.section); }
+  if (d.type === "parselab:ready") return;
+  if (d.max != null) state.toolMax = d.max;
+  if (d.section && tool.sections.some(s => s.id === String(d.section))) { state.section = String(d.section); history.replaceState(null, "", "#" + tool.key + "/" + state.section + (state.project ? "/" + encodeURIComponent(state.project) : "")); }
+  renderNavOnly();
+});
+function renderNavOnly() { const el = document.getElementById("nav-tools"); if (!el) return; el.innerHTML = toolDefs().map(t => navItem({ label:t.name, key:t.key, meta:navMeta(t), lead:tile(t, 26) }) + navSub(t)).join(""); bindNav(); }
+function renderTop() { const tool = toolDefs().find(d => d.key === state.view); const pr = state.project && readProjects().find(x => x.id === state.project); if (tool && pr) { document.getElementById("top-title").textContent = pr.name; document.getElementById("top-sub").textContent = tool.name + " · " + tool.projectWord; } }
+
+function bindNav() {
+  document.querySelectorAll("[data-go]").forEach(el => { el.onclick = () => go(el.getAttribute("data-go"), el.getAttribute("data-section") || undefined); });
+  document.querySelectorAll(".nav-sub-item[data-section]").forEach(el => { el.onclick = () => { if (!el.disabled) go(state.view, el.getAttribute("data-section"), state.project); }; });
+  document.querySelectorAll("[data-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === state.view); go(state.view, t.projectSection, el.getAttribute("data-project")); }; });
+  document.querySelectorAll("[data-new-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"newproject", tool:el.getAttribute("data-new-project") }; render(); focusLater("np-name"); }; });
+}
+function bindActions() {
+  bindNav();
+  document.querySelectorAll("[data-bench]").forEach(el => { el.onclick = () => go(el.getAttribute("data-bench")); });
+  document.querySelectorAll("[data-open-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === el.getAttribute("data-open-tool")); go(t.key, t.projectSection, el.getAttribute("data-open-project")); }; });
+  document.querySelectorAll("[data-edit-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"project", id:el.getAttribute("data-edit-project") }; render(); }; });
+  document.querySelectorAll("[data-modal]").forEach(el => { el.onclick = () => { state.modal = { kind:el.getAttribute("data-modal") }; state.menu = null; render(); }; });
+  document.querySelectorAll("[data-close]").forEach(el => { el.onclick = () => { state.modal = null; render(); }; });
+  document.querySelectorAll("[data-close-bg]").forEach(el => { el.onclick = e => { if (e.target === el) { state.modal = null; render(); } }; });
+  const np = document.getElementById("np-save"); if (np) { const start = () => { const name = (document.getElementById("np-name").value || "").trim(); if (!name) return; const t = toolDefs().find(x => x.key === state.modal.tool); state.modal = null; go(t.key, t.sections[0].id, "new:" + name); }; np.onclick = start; document.getElementById("np-form").onsubmit = e => { e.preventDefault(); start(); }; }
+  const eps = document.getElementById("ep-save"); if (eps) { const save = () => { const name = (document.getElementById("ep-name").value || "").trim(); if (!name) return; renameProject(state.modal.id, name); state.modal = null; render(); }; eps.onclick = save; document.getElementById("ep-form").onsubmit = e => { e.preventDefault(); save(); }; }
+  const epd = document.getElementById("ep-delete"); if (epd) epd.onclick = () => { deleteProject(state.modal.id); state.modal = null; render(); };
+  const it = document.getElementById("toggle-it"); if (it) it.onclick = () => { const d = document.getElementById("it-details"); d.open = true; d.scrollIntoView({ behavior:"smooth", block:"start" }); };
+  const cs = document.getElementById("clear-search"); if (cs) cs.onclick = () => { state.query = ""; render(); };
+  const sa = document.getElementById("set-ai"), ss = document.getElementById("set-store");
+  if (sa) sa.onchange = () => { const st = readSettings(); st.ai = sa.checked; writeSettings(st); };
+  if (ss) ss.onchange = () => { const st = readSettings(); st.storeDocs = ss.checked; writeSettings(st); };
+  const sk = document.getElementById("set-keep"); if (sk) sk.onchange = () => { const st = readSettings(); st.keepFiles = sk.checked; writeSettings(st); if (!sk.checked) filesClear(); };
+  document.querySelectorAll("[data-del-file]").forEach(el => { el.onclick = async () => { await filesDel(el.getAttribute("data-del-file")); loadFiles(); }; });
+  const rs = document.getElementById("recheck-server"); if (rs) rs.onclick = async () => { busy(rs, true); await checkServer(); busy(rs, false); render(); };
+  const lo = document.getElementById("logout"); if (lo) lo.onclick = () => { state.user = null; state.menu = null; state.modal = null; writeSession(null); location.hash = "#overview"; render(); };
+}
+
+state.user = readSession();
+parseHash();
+render();
+</script>
+</body>
+</html>

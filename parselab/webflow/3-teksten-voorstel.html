@@ -1,0 +1,50 @@
+<!-- ParsePDF - embed 3 van 9: teksten voor doorkijken, voorstel en AI -->
+<script>
+(function(){var T=window.PLP_T;if(!T)return;
+var EXTRA={
+nl:{look:"Kijk wat erin staat",lookHint:"De tool opent het document, arceert wat hij kan uitlezen en stelt namen voor. Zweef over een vlak om de naam te zien.",
+proposal:"Voorstel",proposalHint:"Dit vond de tool zelf. Vink aan wat je wilt hebben en pas de namen aan.",
+fName:"Naam",fValue:"Waarde",source:"Gevonden via",
+srcKolomkop:"kolomkop",srcRechts:"label links",srcInline:"label in de cel",srcOnder:"label erboven",srcPatroon:"patroon",srcAi:"AI",
+takeOver:"Neem over als veldregels",taken:"Overgenomen. Je kunt nu uitlezen starten.",
+withAi:"Uitlezen met AI",aiTitle:"AI mag dit document lezen?",
+aiText:"Om te helpen benoemen stuurt ParseLab de tekst van dit ene document naar de eigen server, die het aan het AI-model voorlegt. Het document zelf blijft hier; de tekst wordt niet bewaard. De andere documenten in je lijst gaan niet mee.",
+aiYes:"Ja, een keer lezen",aiNo:"Nee, laat maar",
+aiBusy:"De AI kijkt mee...",aiOff:"AI-hulp is niet beschikbaar op deze server. Het voorstel komt uit de structuur van het document.",
+aiDone:"De AI heeft namen aangevuld en de waarden nagelopen.",
+tableFound:"Regeltabel gevonden",tableHint:"{n} regels met {k} kolommen. Zet aan om per regel een rij te maken in plaats van per document.",
+tableUse:"Een rij per tabelregel",cancel:"Annuleren",page:"Pagina",noFields:"De tool vond geen velden. Het document heeft mogelijk geen tekstlaag.",
+tCel:"Automatisch (uit voorstel)"},
+en:{look:"See what is in it",lookHint:"The tool opens the document, highlights what it can read and suggests names. Hover a box to see the name.",
+proposal:"Proposal",proposalHint:"This is what the tool found by itself. Tick what you want and adjust the names.",
+fName:"Name",fValue:"Value",source:"Found via",
+srcKolomkop:"column header",srcRechts:"label on the left",srcInline:"label in the cell",srcOnder:"label above",srcPatroon:"pattern",srcAi:"AI",
+takeOver:"Use these as field rules",taken:"Taken over. You can start the extraction now.",
+withAi:"Extract with AI",aiTitle:"May AI read this document?",
+aiText:"To help with naming, ParseLab sends the text of this one document to its own server, which passes it to the AI model. The document itself stays here and the text is not stored. The other documents in your list are not included.",
+aiYes:"Yes, read it once",aiNo:"No thanks",
+aiBusy:"The AI is having a look...",aiOff:"AI help is not available on this server. The proposal comes from the structure of the document.",
+aiDone:"The AI added names and checked the values.",
+tableFound:"Line table found",tableHint:"{n} lines with {k} columns. Turn on to make one row per line instead of one per document.",
+tableUse:"One row per table line",cancel:"Cancel",page:"Page",noFields:"The tool found no fields. The document may have no text layer.",
+tCel:"Automatic (from proposal)"},
+de:{look:"Sieh nach, was drinsteht",lookHint:"Das Werkzeug oeffnet das Dokument, hebt hervor was es lesen kann und schlaegt Namen vor. Fahre ueber ein Feld, um den Namen zu sehen.",
+proposal:"Vorschlag",proposalHint:"Das hat das Werkzeug selbst gefunden. Hake an, was du willst, und passe die Namen an.",
+fName:"Name",fValue:"Wert",source:"Gefunden ueber",
+srcKolomkop:"Spaltenkopf",srcRechts:"Label links",srcInline:"Label in der Zelle",srcOnder:"Label darueber",srcPatroon:"Muster",srcAi:"KI",
+takeOver:"Als Feldregeln uebernehmen",taken:"Uebernommen. Du kannst jetzt auslesen.",
+withAi:"Mit KI auslesen",aiTitle:"Darf die KI dieses Dokument lesen?",
+aiText:"Zum Benennen schickt ParseLab den Text dieses einen Dokuments an den eigenen Server, der ihn dem KI-Modell vorlegt. Das Dokument selbst bleibt hier, der Text wird nicht gespeichert. Die anderen Dokumente in deiner Liste gehen nicht mit.",
+aiYes:"Ja, einmal lesen",aiNo:"Nein, danke",
+aiBusy:"Die KI schaut mit...",aiOff:"KI-Hilfe ist auf diesem Server nicht verfuegbar. Der Vorschlag kommt aus der Struktur des Dokuments.",
+aiDone:"Die KI hat Namen ergaenzt und die Werte geprueft.",
+tableFound:"Positionstabelle gefunden",tableHint:"{n} Zeilen mit {k} Spalten. Einschalten, um eine Zeile pro Position statt pro Dokument zu erzeugen.",
+tableUse:"Eine Zeile pro Tabellenzeile",cancel:"Abbrechen",page:"Seite",noFields:"Das Werkzeug hat keine Felder gefunden. Das Dokument hat vielleicht keine Textebene.",
+tCel:"Automatisch (aus dem Vorschlag)"}
+};
+Object.keys(EXTRA).forEach(function(taal){
+  if(!T[taal])return;
+  Object.keys(EXTRA[taal]).forEach(function(k){T[taal][k]=EXTRA[taal][k];});
+});
+})();
+</script>

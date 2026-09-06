@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ParseScraper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+  :root { color-scheme:light; --navy:#1F3A5F; --ink:#16293F; --muted:#6B7A8C; --cream:#F2F0E7; --page:#FBFAF6; --white:#FFFFFF; --hairline:#E6E3D8; --blue:#2C6FA8; --blue-tint:#DCE8F2; --gold:#C9A961; --gold-tint:#EDE7D5; --shadow:0 18px 44px rgba(6,18,35,.10); --font:Poppins,-apple-system,"Segoe UI",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--font); background:var(--page); color:var(--ink); font-size:16px; line-height:1.55; }
+  button, input, select { font-family:inherit; font-size:inherit; color:inherit; }
+  button { cursor:pointer; border:0; background:none; }
+  button:focus-visible, input:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid var(--gold); outline-offset:3px; border-radius:14px; }
+  [hidden] { display:none !important; }
+  .layout { display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+  html.parselab-embed .layout { grid-template-columns:1fr; }
+  aside.sidebar { background:var(--white); border-right:1px solid var(--hairline); padding:28px 20px; display:flex; flex-direction:column; gap:8px; }
+  html.parselab-embed aside.sidebar { display:none; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:600; font-size:19px; padding:0 8px 16px; }
+  .brand i { width:26px; height:26px; border-radius:9px; background:var(--gold-tint); display:inline-flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:11px; font-style:normal; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:14px; color:var(--muted); font-weight:500; cursor:pointer; }
+  .nav-item.active { background:var(--cream); color:var(--ink); }
+  .nav-item .n { font-family:var(--mono); font-size:12px; width:16px; }
+  main { padding:32px 40px 64px; display:flex; flex-direction:column; gap:24px; max-width:1240px; width:100%; }
+  html.parselab-embed main { padding:8px 0 40px; }
+  h1 { font-size:24px; font-weight:600; letter-spacing:-.01em; line-height:1.25; }
+  .head { display:flex; flex-direction:column; gap:6px; margin-bottom:20px; }
+  .sub { color:var(--muted); font-size:16px; max-width:64ch; }
+  .card { background:var(--white); border-radius:20px; padding:24px 28px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .caps { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
+  .note { font-size:15px; color:var(--muted); }
+  .mono { font-family:var(--mono); font-size:13px; letter-spacing:.02em; }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; gap:10px; font-weight:600; border-radius:14px; padding:13px 20px; line-height:1; transition:transform 150ms ease-out, filter 150ms ease-out; white-space:nowrap; }
+  .btn:hover { transform:translateY(-1px); filter:brightness(1.03); }
+  .btn:disabled { opacity:.5; cursor:default; transform:none; }
+  .btn-navy { background:var(--navy); color:var(--cream); }
+  .btn-outline { background:var(--white); color:var(--navy); border:1px solid var(--navy); padding:12px 18px; }
+  .btn-small { padding:9px 14px; font-size:15px; }
+  .link { color:var(--blue); font-weight:600; font-size:15px; }
+  .field { display:flex; flex-direction:column; gap:6px; flex:1; min-width:220px; }
+  .field label { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
+  input[type=text], input[type=url], select, input[type=number] { border:1px solid var(--hairline); border-radius:14px; padding:12px 16px; background:var(--white); width:100%; }
+  input:focus { outline:0; border-color:var(--blue); background:var(--blue-tint); }
+  .check { display:flex; align-items:center; gap:8px; font-size:15px; }
+  .pill { display:inline-flex; border-radius:999px; padding:4px 12px; font-size:13px; font-weight:500; }
+  .pill-live { background:var(--blue-tint); color:var(--blue); }
+  .pill-neutral { background:var(--cream); color:var(--ink); }
+  .lock { display:inline-flex; gap:8px; align-items:center; font-size:14px; color:var(--muted); }
+  .msg { border-radius:14px; padding:12px 16px; background:var(--cream); font-size:15px; }
+  .msg.err { border-left:4px solid var(--gold); }
+  details.more { border-top:1px solid var(--hairline); padding-top:12px; }
+  details.more summary { cursor:pointer; list-style:none; font-size:15px; font-weight:600; color:var(--muted); display:flex; align-items:center; }
+  details.more summary::-webkit-details-marker { display:none; }
+  details.more summary::after { content:"+"; font-family:var(--mono); margin-left:auto; }
+  details.more[open] summary::after { content:"−"; }
+  details.more > div { display:flex; flex-direction:column; gap:12px; padding-top:12px; }
+  .pick-wrap { display:grid; grid-template-columns:minmax(0, 1fr) 360px; gap:24px; align-items:start; }
+  @media (max-width:900px) { .pick-wrap { grid-template-columns:1fr; } }
+  .pick-wrap > .card { position:sticky; top:8px; max-height:calc(100vh - 40px); overflow:auto; }
+  .frame-box { border:1px solid var(--hairline); border-radius:14px; overflow:hidden; background:#fff; position:relative; }
+  .frame-box iframe { width:100%; height:calc(100vh - 300px); min-height:520px; border:0; display:block; }
+  .frame-bar { display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--hairline); font-size:14px; color:var(--muted); }
+  .frame-bar .mono { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .ask { position:absolute; left:16px; right:16px; bottom:16px; background:var(--white); border-radius:14px; padding:14px 16px; box-shadow:0 24px 60px rgba(6,18,35,.28); display:flex; flex-direction:column; gap:10px; }
+  .ask .ex { font-size:14px; color:var(--muted); font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  table { width:100%; border-collapse:collapse; font-size:15px; }
+  th { text-align:left; font-family:var(--mono); font-size:12px; font-weight:400; color:var(--muted); padding:6px 8px 8px 0; }
+  td { padding:9px 8px 9px 0; border-top:1px solid var(--hairline); vertical-align:top; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  td.num { font-family:var(--mono); font-size:14px; }
+  td.empty { background:var(--gold-tint); }
+  .cols { display:flex; flex-direction:column; }
+  .col { display:grid; grid-template-columns:auto 1fr; gap:4px 10px; align-items:center; padding:10px 0; border-top:1px solid var(--hairline); }
+  .col input[type=text] { padding:8px 12px; border-radius:9px; }
+  .col .ex { font-size:13px; color:var(--muted); grid-column:2; font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .col .adv { grid-column:2; display:flex; gap:10px; align-items:center; font-size:13px; color:var(--muted); }
+  .col .adv select { width:auto; padding:6px 10px; border-radius:9px; font-size:13px; }
+  .tasks .tr { display:grid; grid-template-columns:1.5fr 1fr auto auto; gap:12px; align-items:center; padding:10px 0; border-top:1px solid var(--hairline); }
+  .tasks .name { font-weight:500; }
+  .tasks .meta { font-size:13px; color:var(--muted); font-family:var(--mono); }
+  .table-wrap { overflow-x:auto; }
+  .flow { display:flex; flex-direction:column; }
+  .flow .fs { display:grid; grid-template-columns:28px 1fr auto; gap:6px 12px; align-items:center; padding:10px 0; border-top:1px solid var(--hairline); }
+  .flow .fs:first-child { border-top:0; }
+  .flow .fn { width:28px; height:28px; border-radius:9px; background:var(--cream); display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; }
+  .flow .fs.done .fn { background:var(--blue-tint); color:var(--blue); }
+  .flow .fs.active .fn { background:var(--gold-tint); }
+  .flow .ft { font-weight:500; }
+  .flow .fd { grid-column:2 / span 2; font-size:13px; color:var(--muted); }
+  .flow .fa { font-size:13px; font-weight:600; color:var(--blue); white-space:nowrap; }
+  .col .sw { grid-column:2; font-size:13px; }
+  .server-hint { background:var(--cream); border-radius:14px; padding:14px 18px; display:flex; flex-direction:column; gap:8px; }
+  .server-hint code { font-family:var(--mono); font-size:13px; background:var(--white); padding:2px 8px; border-radius:9px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><i>PS</i>ParseScraper</div>
+    <div class="nav-item active" data-page="url"><span class="n">1</span>Adres</div>
+    <div class="nav-item" data-page="pick"><span class="n">2</span>Aanwijzen</div>
+    <div class="nav-item" data-page="done"><span class="n">3</span>Klaar</div>
+    <div style="flex:1"></div>
+    <div class="note" style="padding:0 8px">Voor pagina's waar je moet inloggen gebruik je de ParseLab-extensie in je eigen browser.</div>
+  </aside>
+  <main>
+    <!-- 1 Adres -->
+    <section class="app-page active" id="page-url">
+      <div class="head"><h1>Welke pagina wil je uitlezen?</h1><div class="sub">Plak het adres van de pagina met de lijst: producten, vacatures, adressen, prijzen.</div></div>
+      <div class="card">
+        <div class="row">
+          <div class="field"><label for="url">Webadres</label><input id="url" type="url" placeholder="https://www.voorbeeld.nl/producten" autocomplete="off"></div>
+          <div style="align-self:flex-end"><button class="btn btn-navy" id="fetch">Pagina ophalen →</button></div>
+        </div>
+        <label class="check" id="proxy-row" hidden><input type="checkbox" id="use-proxy" checked> Via een ParseLab-proxy ophalen</label>
+        <div id="fetch-msg" hidden></div>
+        <div class="lock">🔒 ParseLab leest alleen wat zonder inloggen zichtbaar is en respecteert robots.txt. Lees alleen uit wat je zelf mag gebruiken.</div>
+      </div>
+    </section>
+
+    <!-- 2 Aanwijzen -->
+    <section class="app-page" id="page-pick" hidden>
+      <div class="head"><h1>Klik één item aan</h1><div class="sub">Klik in de pagina op één regel of één product uit de lijst. ParseLab zoekt de rest erbij.</div></div>
+      <div class="pick-wrap">
+        <div class="frame-box">
+          <div class="frame-bar"><span class="pill pill-neutral" id="mode-pill">Klik een item</span><span class="mono" id="frame-url"></span></div>
+          <iframe id="snap" sandbox="allow-same-origin" title="Opgehaalde pagina"></iframe>
+          <div class="ask" id="ask" hidden>
+            <div><b>Alleen dit, of de hele lijst?</b></div>
+            <div class="ex" id="ask-ex"></div>
+            <div class="row"><button class="btn btn-navy btn-small" id="ask-list">De hele lijst</button><button class="btn btn-outline btn-small" id="ask-one">Alleen dit</button><button class="btn btn-small link" id="ask-cancel">Annuleren</button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="caps">Flow</div>
+          <div class="flow" id="flow"></div>
+          <div class="hairline"></div>
+          <div id="pick-empty" class="note">Nog niets aangewezen. Klik in de pagina op één item uit de lijst.</div>
+          <div id="pick-info" hidden style="display:flex; flex-direction:column; gap:16px;">
+            <div class="row"><span class="pill pill-live" id="count-pill"></span><span class="note">Vink uit wat je niet nodig hebt.</span></div>
+            <div class="cols" id="cols"></div>
+            <details class="more">
+              <summary>Meer instellingen</summary>
+              <div>
+                <label class="check"><input type="checkbox" id="scroll"> De lijst laadt verder als je scrolt</label>
+                <div class="row"><button class="btn btn-outline btn-small" id="mode-next">Volgende-knop aanwijzen</button><span class="note" id="next-note">Staat de lijst op meerdere pagina's? Wijs de volgende-knop aan.</span></div>
+                <div class="field" style="max-width:160px"><label for="pages">Pagina's</label><input id="pages" type="number" min="1" max="25" value="1"></div>
+              </div>
+            </details>
+            <div class="row"><button class="btn btn-navy" id="to-done">Uitlezen →</button><button class="btn btn-outline" id="pick-reset">Opnieuw aanwijzen</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 Klaar -->
+    <section class="app-page" id="page-done" hidden>
+      <div class="head"><h1 id="done-title">Uitgelezen</h1><div class="sub" id="done-sub">Download het bestand, of bewaar dit als taak zodat ParseLab het voortaan zelf doet.</div></div>
+      <div class="card" style="margin-bottom:24px"><div class="caps">Flow</div><div class="flow" id="flow-done"></div></div>
+      <div class="card">
+        <div class="row"><span class="pill pill-neutral" id="done-pill">Nog niet uitgelezen</span><span class="note" id="done-note"></span><span style="flex:1"></span><button class="btn btn-outline btn-small" id="rerun">Opnieuw uitlezen</button></div>
+        <div id="done-msg" hidden></div>
+        <div class="row" id="dl-row" hidden><a class="btn btn-navy" id="dl-xlsx" href="#">Download voor Excel</a><a class="link" id="dl-csv" href="#">Als CSV</a></div>
+        <div class="table-wrap" id="done-table"></div>
+      </div>
+      <div class="card" style="margin-top:24px" id="save-card">
+        <div class="caps">Bewaren als taak</div>
+        <div class="row">
+          <div class="field"><label for="task-name">Naam</label><input id="task-name" type="text" placeholder="Bijv. Webshop-prijzen"></div>
+          <div class="field" style="max-width:220px"><label for="task-schedule">Hoe vaak</label><select id="task-schedule"><option value="nu">Alleen als ik het vraag</option><option value="uur">Elk uur</option><option value="dag">Elke dag</option><option value="week">Elke week</option></select></div>
+          <div style="align-self:flex-end"><button class="btn btn-navy" id="task-save">Bewaren</button></div>
+        </div>
+        <div class="note">Een bewaarde taak draait op de ParseLab-server, ook als je computer uit staat. Je vindt hem in de zijbalk onder ParseScraper.</div>
+        <div id="task-msg" hidden></div>
+      </div>
+      <div class="card" style="margin-top:24px" id="tasks-card" hidden>
+        <div class="caps">Je taken</div>
+        <div class="tasks" id="tasks"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+"use strict";
+/* ParseScraper — Website uitlezen vanaf de ParseLab-server (server/server.js). Drie stappen: Adres → Aanwijzen → Klaar. */
+const $ = s => document.querySelector(s);
+const API = (window.PARSELAB_API_BASE || "") + "/api/scrape";
+const state = window.plState = { page: "url", snapshot: null, rule: null, run: null, mode: "item", proxies: 0, tasks: [], currentTask: null, token: sessionStorage.getItem("parselab-token") || "" };
+const EMBED = (() => { try { return window.self !== window.top || /[?&]embed=1/.test(location.search); } catch (e) { return true; } })();
+if (EMBED) document.documentElement.classList.add("parselab-embed");
+
+/* ---------- navigatie en koppeling met het dashboard ---------- */
+function showPage(name) {
+  if (!$("#page-" + name)) name = "url";
+  state.page = name;
+  document.querySelectorAll(".app-page").forEach(p => { const on = p.id === "page-" + name; p.hidden = !on; p.classList.toggle("active", on); });
+  document.querySelectorAll(".nav-item[data-page]").forEach(n => n.classList.toggle("active", n.dataset.page === name));
+  window.scrollTo(0, 0); post({ type: "parselab:section", section: name });
+}
+window.showPage = showPage;
+document.querySelectorAll(".nav-item[data-page]").forEach(n => n.onclick = () => showPage(n.dataset.page));
+function post(msg) { if (!EMBED) return; try { window.parent.postMessage(Object.assign({ source: "parselab-tool" }, msg), "*"); } catch (e) {} }
+window.addEventListener("message", ev => {
+  const d = ev.data || {};
+  if (d.type === "parselab:user" && d.email !== undefined) { const u = String(d.email || "").toLowerCase(); if (u !== state.user) { state.user = u; loadTasks(); } return; }
+  if (d.type === "parselab:nav" && d.section) showPage(d.section);
+    if (d.type === "parselab:rename-project" && d.id) { const tid = String(d.id).replace(/^scrape:/, ""); api("/tasks/" + tid, { method: "PATCH", body: JSON.stringify({ name: d.name }) }).then(loadTasks).catch(() => {}); return; }
+    if (d.type === "parselab:delete-project" && d.id) { const tid = String(d.id).replace(/^scrape:/, ""); api("/tasks/" + tid, { method: "DELETE" }).then(loadTasks).catch(() => {}); return; }
+  if (d.type === "parselab:load-project" && d.project) loadProject(d.project);
+});
+function stats() { post({ type: "parselab:stats", tool: "scrape", tasks: state.tasks.length, running: !!state.busy }); }
+function syncProjects() { post({ type: "parselab:projects", tool: "scrape", list: state.tasks.map(t => ({ id: "scrape:" + t.id, name: t.name, payload: { taskId: t.id }, updated: t.lastRun || t.created })) }); }
+
+/* ---------- API ---------- */
+async function api(path, opts) {
+  const headers = { "content-type": "application/json" }; if (state.token) headers["x-parselab-token"] = state.token; if (state.user) headers["x-parselab-user"] = state.user;
+  // Als los bestand geopend is er geen server; niet proberen te verbinden.
+  if (!/^https?:$/.test(location.protocol)) throw new Error("Website uitlezen werkt via de ParseLab-server. Open de map ParseLab en start hem met start.bat (Windows) of start.sh (Mac).");
+  let res; try { res = await fetch(API + path, Object.assign({ headers }, opts || {})); } catch (e) { throw new Error("De ParseLab-server is niet bereikbaar. Start hem met: node server/server.js"); }
+  const body = (res.headers.get("content-type") || "").includes("json") ? await res.json() : null;
+  if (res.status === 401) { const t = prompt("De ParseLab-server vraagt een toegangscode:"); if (t) { state.token = t; sessionStorage.setItem("parselab-token", t); return api(path, opts); } }
+  if (!res.ok) throw new Error(body && body.error || "Er ging iets mis (" + res.status + ")");
+  return body;
+}
+function msg(el, text, err) { el.hidden = !text; el.className = "msg" + (err ? " err" : ""); el.textContent = text || ""; }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])); }
+
+/* ---------- 1 Adres ---------- */
+function serverHint() {
+  msg($("#fetch-msg"), ""); const el = $("#fetch-msg"); el.hidden = false; el.className = "server-hint";
+  el.innerHTML = `<span class="strong">De ParseLab-server draait niet.</span><span class="note">Website uitlezen werkt via de server. Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.</span><div><button type="button" class="btn btn-outline btn-small" id="recheck">Opnieuw proberen</button></div>`;
+  $("#recheck").onclick = init;
+}
+function init() { api("/status").then(s => { state.proxies = (s.proxies || []).length; $("#proxy-row").hidden = !state.proxies; $("#use-proxy").checked = !!state.proxies; msg($("#fetch-msg"), ""); loadTasks(); }).catch(serverHint); }
+init();
+$("#fetch").onclick = async () => {
+  const u = $("#url").value.trim(); if (!u) return;
+  $("#fetch").disabled = true; msg($("#fetch-msg"), "Pagina ophalen… dit duurt een paar seconden.");
+  try {
+    const snap = await api("/snapshot", { method: "POST", body: JSON.stringify({ url: u, proxy: $("#use-proxy").checked }) });
+    state.snapshot = snap; state.rule = null; state.run = null; state.currentTask = null;
+    $("#done-title").textContent = "Uitgelezen"; $("#done-sub").textContent = "Download het bestand, of bewaar dit als taak zodat ParseLab het voortaan zelf doet.";
+    msg($("#fetch-msg"), ""); loadSnapshot(snap); renderFlow(); showPage("pick");
+  } catch (e) { if (/niet bereikbaar/.test(e.message)) serverHint(); else msg($("#fetch-msg"), e.message, true); }
+  $("#fetch").disabled = false;
+};
+$("#url").addEventListener("keydown", e => { if (e.key === "Enter") $("#fetch").click(); });
+
+/* ---------- 2 Aanwijzen ---------- */
+const frame = $("#snap");
+function loadSnapshot(snap) {
+  $("#frame-url").textContent = snap.url; $("#pick-empty").hidden = false; $("#pick-info").hidden = true; setMode("item");
+  frame.srcdoc = snap.html;
+  frame.onload = () => {
+    const doc = frame.contentDocument; if (!doc) return;
+    const style = doc.createElement("style"); style.textContent = ".pl-hl{outline:2px solid #2C6FA8!important;outline-offset:2px;background:rgba(44,111,168,.10)!important;cursor:crosshair!important}.pl-item{outline:2px dashed #C9A961!important;outline-offset:2px}a{cursor:crosshair!important}"; doc.head.appendChild(style);
+    let hover = null;
+    doc.addEventListener("mouseover", e => { if (hover) hover.classList.remove("pl-hl"); hover = e.target; if (hover && hover.classList) hover.classList.add("pl-hl"); }, true);
+    doc.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); onPick(e.target); }, true);
+    doc.addEventListener("submit", e => e.preventDefault(), true);
+  };
+}
+function setMode(m) {
+  state.mode = m;
+  const col = m.startsWith("col:") && state.rule ? state.rule.columns[+m.slice(4)] : null;
+  $("#mode-pill").textContent = m === "next" ? "Klik nu op de volgende-knop" : col ? "Klik het element voor “" + col.name + "”" : "Klik een item";
+  $("#mode-next").textContent = m === "next" ? "Toch niet" : "Volgende-knop aanwijzen";
+}
+$("#mode-next").onclick = () => setMode(state.mode === "next" ? "item" : "next");
+
+const GENERATED = /\d{3,}|^(css|sc|jss|emotion|chakra|mui)-|^_/i;
+function classes(el) { return [...(el.classList || [])].filter(c => !GENERATED.test(c) && !/^pl-/.test(c) && c.length < 40).slice(0, 3); }
+function sig(el) { return el.tagName.toLowerCase() + (classes(el).length ? "." + classes(el).sort().join(".") : ""); }
+function selSig(el) { return el.tagName.toLowerCase() + classes(el).map(c => "." + CSS.escape(c)).join(""); }
+function pathTo(el, root) {
+  const parts = []; let cur = el;
+  while (cur && cur !== root && cur.nodeType === 1 && cur.tagName !== "BODY" && cur.tagName !== "HTML") {
+    if (cur.id && !GENERATED.test(cur.id)) { parts.unshift("#" + CSS.escape(cur.id)); return parts.join(" > "); }
+    let s = selSig(cur); const par = cur.parentElement;
+    if (par) { const same = [...par.children].filter(c => sig(c) === sig(cur)); if (same.length > 1) s += ":nth-of-type(" + ([...par.children].filter(c => c.tagName === cur.tagName).indexOf(cur) + 1) + ")"; }
+    parts.unshift(s); cur = par; if (parts.length > 8) break;
+  }
+  return parts.join(" > ");
+}
+function findList(el) {
+  let cur = el;
+  for (let depth = 0; depth < 10 && cur && cur.parentElement && cur.tagName !== "BODY"; depth++) {
+    const par = cur.parentElement, same = [...par.children].filter(c => sig(c) === sig(cur) && (c.innerText || "").trim());
+    if (same.length >= 3) return { item: cur, container: par, siblings: same };
+    cur = par;
+  }
+  return null;
+}
+function relSel(el, item) {
+  const parts = []; let cur = el;
+  while (cur && cur !== item) {
+    let s = selSig(cur); const par = cur.parentElement;
+    if (par) { const same = [...par.children].filter(c => c.tagName === cur.tagName); if (same.length > 1 && classes(cur).length === 0) s += ":nth-of-type(" + (same.indexOf(cur) + 1) + ")"; }
+    parts.unshift(s); cur = par;
+  }
+  return parts.join(" > ");
+}
+function leafCandidates(item) {
+  const out = [];
+  item.querySelectorAll("*").forEach(n => {
+    if (["SCRIPT", "STYLE", "SVG", "PATH", "BR"].includes(n.tagName)) return;
+    const own = [...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim());
+    if (n.tagName === "IMG" && (n.currentSrc || n.src)) out.push({ el: n, attr: "src" });
+    else if (own && (n.innerText || "").trim() && (n.innerText || "").length < 300) out.push({ el: n, attr: "text" });
+    else if (n.tagName === "A" && n.href && !own && !n.querySelector("img") && (n.innerText || "").trim()) out.push({ el: n, attr: "text" });
+  });
+  if (!out.length && (item.innerText || "").trim()) out.push({ el: item, attr: "text" });
+  return out.slice(0, 40);
+}
+function humanName(el, i) {
+  const c = classes(el).find(x => /[a-z]{3,}/i.test(x));
+  const raw = el.getAttribute("aria-label") || el.getAttribute("title") || el.getAttribute("itemprop") || (c ? c.replace(/[-_]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2") : "") || (el.tagName === "IMG" ? "afbeelding" : el.tagName === "A" ? "link" : "");
+  const map = { price: "prijs", title: "titel", name: "naam", desc: "omschrijving", description: "omschrijving", img: "afbeelding", image: "afbeelding", photo: "afbeelding", date: "datum", location: "plaats", city: "plaats", company: "bedrijf", link: "link", stock: "voorraad" };
+  let n = raw.trim().toLowerCase(); Object.keys(map).forEach(k => { if (n.includes(k)) n = map[k]; });
+  return n ? n.charAt(0).toUpperCase() + n.slice(1) : "Kolom " + (i + 1);
+}
+const looksNumber = v => /^\s*(€|eur|\$)?\s*-?\d{1,3}([.,]\d{3})*([.,]\d+)?\s*(€|eur|%|,-)?\s*$/i.test(String(v || ""));
+let pending = null;
+function onPick(target) {
+  if (!target || !target.tagName) return;
+  if (state.mode === "next") {
+    const a = target.closest("a, button"); if (!a) return;
+    state.rule = state.rule || { item: "", columns: [], count: 0 }; state.rule.next = { selector: pathTo(a, frame.contentDocument.body), text: (a.innerText || "").trim() };
+    $("#next-note").textContent = "Volgende-knop: “" + (state.rule.next.text || "zonder tekst") + "”. Kies hoeveel pagina's ParseLab mag volgen."; if (+$("#pages").value < 2) $("#pages").value = 5;
+    setMode("item"); return;
+  }
+  if (state.mode.startsWith("col:") && state.rule) {
+    const i = +state.mode.slice(4), c = state.rule.columns[i], doc = frame.contentDocument;
+    const item = state.rule.item ? target.closest(state.rule.item) : null;
+    if (state.rule.item && !item) { $("#mode-pill").textContent = "Klik op een element bínnen een item van de lijst"; return; }
+    const all = state.rule.item ? [...doc.querySelectorAll(state.rule.item)] : [doc.body];
+    const sel = state.rule.item ? relSel(target, item) : pathTo(target, doc.body);
+    c.selector = sel; c.attr = target.tagName === "IMG" ? "src" : (c.attr === "href" ? "href" : "text");
+    if (!c.renamed) c.name = humanName(target, i); // naam volgt het nieuwe element, tenzij je hem zelf had aangepast
+    c.samples = all.slice(0, 6).map(it => { const e = it.querySelector(sel); if (!e) return ""; return c.attr === "src" ? (e.currentSrc || e.src) : c.attr === "href" ? ((e.tagName === "A" ? e : e.closest("a[href]")) || {}).href || "" : (e.innerText || "").trim(); });
+    if (!c.samples.some(Boolean)) c.samples = [target.innerText ? target.innerText.trim() : ""];
+    setMode("item"); renderRule(); return;
+  }
+  const list = findList(target); pending = { target, list };
+  $("#ask-ex").textContent = list ? list.siblings.length + " vergelijkbare items · bijv. “" + (list.siblings[0].innerText || "").trim().slice(0, 80) + "”" : "Geen lijst rondom dit item gevonden; je krijgt alleen dit.";
+  $("#ask-list").disabled = !list; $("#ask").hidden = false;
+}
+$("#ask-cancel").onclick = () => { $("#ask").hidden = true; pending = null; };
+$("#ask-one").onclick = () => { $("#ask").hidden = true; buildRule(pending.target, null); };
+$("#ask-list").onclick = () => { $("#ask").hidden = true; buildRule(pending.target, pending.list); };
+function buildRule(target, list) {
+  const doc = frame.contentDocument, body = doc.body;
+  doc.querySelectorAll(".pl-item").forEach(n => n.classList.remove("pl-item"));
+  let rule;
+  if (list) {
+    const itemSel = pathTo(list.container, body) + " > " + selSig(list.item);
+    const all = [...doc.querySelectorAll(itemSel)]; all.forEach(n => n.classList.add("pl-item"));
+    const seen = new Set(), columns = [];
+    leafCandidates(list.item).forEach(c => {
+      const sel = relSel(c.el, list.item); const key = sel + "|" + c.attr; if (seen.has(key)) return; seen.add(key);
+      const hits = all.filter(it => it.querySelector(sel)); if (hits.length < Math.max(2, all.length * 0.4)) return;
+      const samples = all.slice(0, 6).map(it => { const e = it.querySelector(sel); return e ? (c.attr === "src" ? (e.currentSrc || e.src) : (e.innerText || "").trim()) : ""; });
+      if (columns.some(u => u.samples.join("|") === samples.join("|"))) return;
+      columns.push({ name: humanName(c.el, columns.length), selector: sel, attr: c.attr, number: c.attr === "text" && samples.filter(Boolean).every(looksNumber) && samples.some(Boolean), off: false, samples, isLink: c.el.tagName === "A" || !!c.el.closest("a[href]") });
+    });
+    const l = columns.find(c => c.isLink);
+    if (l) columns.push({ name: "Link", selector: l.selector, attr: "href", number: false, off: false, samples: all.slice(0, 6).map(it => { const e = it.querySelector(l.selector); const a = e && (e.tagName === "A" ? e : e.closest("a[href]")); return a ? a.href : ""; }) });
+    rule = { item: itemSel, columns: columns.slice(0, 12), scroll: false, next: state.rule && state.rule.next || null, count: all.length };
+  } else {
+    const sel = pathTo(target, body); target.classList.add("pl-item");
+    rule = { item: "", columns: [{ name: humanName(target, 0), selector: sel, attr: target.tagName === "IMG" ? "src" : "text", number: looksNumber(target.innerText), off: false, samples: [target.tagName === "IMG" ? target.src : (target.innerText || "").trim()] }], scroll: false, next: null, count: 1 };
+  }
+  state.rule = rule; renderRule();
+}
+function renderRule() {
+  const r = state.rule; $("#pick-empty").hidden = true; $("#pick-info").hidden = false;
+  $("#count-pill").textContent = r.item ? r.count + " items gevonden" : "Alleen dit item";
+  $("#scroll").checked = !!r.scroll;
+  $("#cols").innerHTML = r.columns.map((c, i) => `
+    <div class="col">
+      <input type="checkbox" data-i="${i}" data-f="off" ${c.off ? "" : "checked"} title="Meenemen">
+      <input type="text" data-i="${i}" data-f="name" value="${esc(c.name)}" aria-label="Kolomnaam">
+      <div class="ex">${esc((c.samples || []).filter(Boolean).slice(0, 3).join("  ·  ") || "—")}</div>
+      <div class="sw"><button type="button" class="link" data-switch="${i}">Ander element aanwijzen</button></div>
+      <div class="adv"><select data-i="${i}" data-f="attr" aria-label="Wat wil je hebben?"><option value="text" ${c.attr === "text" ? "selected" : ""}>de tekst</option><option value="href" ${c.attr === "href" ? "selected" : ""}>de link</option><option value="src" ${c.attr === "src" ? "selected" : ""}>de afbeelding</option></select><label class="check" style="font-size:13px"><input type="checkbox" data-i="${i}" data-f="number" ${c.number ? "checked" : ""}> als getal</label></div>
+    </div>`).join("");
+  $("#cols").querySelectorAll("[data-i]").forEach(el => el.onchange = () => { const c = r.columns[+el.dataset.i], f = el.dataset.f; if (f === "off") c.off = !el.checked; else if (f === "number") c.number = el.checked; else { c[f] = el.value; if (f === "name") c.renamed = true; } renderFlow(); });
+  $("#cols").querySelectorAll("[data-switch]").forEach(b => b.onclick = () => setMode("col:" + b.dataset.switch));
+  renderFlow();
+}
+/* De flow rechts: elke stap is te volgen en te wijzigen (ander item, ander element per kolom, andere volgende-knop). */
+function renderFlow() {
+  const r = state.rule, url = state.snapshot && state.snapshot.url;
+  const cols = r ? r.columns.filter(c => !c.off) : [];
+  const steps = [
+    { n:"1", t:"Pagina", d:url ? url : "Nog geen adres", done:!!url, a:url ? { label:"Wijzig", go:"url" } : null },
+    { n:"2", t:r ? (r.item ? r.count + " items" : "Eén item") : "Item", d:r ? "Aangewezen in de pagina" : "Klik één item aan in de pagina", done:!!r, active:!r && !!url, a:r ? { label:"Ander item", mode:"item" } : null },
+    { n:"3", t:"Kolommen", d:r ? cols.map(c => c.name).join(", ") || "Geen kolommen aan" : "Volgt na het item", done:!!(r && cols.length), a:r ? { label:"Wisselen", go:"pick" } : null },
+    { n:"4", t:"Volgende pagina", d:r && r.next ? "“" + (r.next.text || "knop") + "” · " + ($("#pages").value || 1) + " pagina's" : "Niet nodig, of wijs de volgende-knop aan", done:!!(r && r.next), a:r ? { label:r.next ? "Andere knop" : "Aanwijzen", mode:"next" } : null },
+    { n:"5", t:"Uitlezen", d:state.run ? state.run.rows.length + " regels" + (state.currentTask ? " · taak “" + state.currentTask.name + "”" : "") : "Klik op Uitlezen", done:!!state.run, a:r ? { label:state.run ? "Opnieuw" : "Start", run:true } : null }
+  ];
+  const html = steps.map(s => `<div class="fs ${s.done ? "done" : ""} ${s.active ? "active" : ""}"><span class="fn">${s.done ? "✓" : s.n}</span><span class="ft">${esc(s.t)}</span>${s.a ? `<button type="button" class="fa" data-fa="${s.n}">${esc(s.a.label)}</button>` : "<span></span>"}<span class="fd">${esc(s.d)}</span></div>`).join("");
+  ["#flow", "#flow-done"].forEach(sel => { const el = $(sel); if (!el) return; el.innerHTML = html; el.querySelectorAll("[data-fa]").forEach(b => b.onclick = () => { const st = steps.find(x => x.n === b.dataset.fa); if (!st || !st.a) return; if (st.a.go) showPage(st.a.go); else if (st.a.mode) { showPage("pick"); setMode(st.a.mode); } else if (st.a.run) { showPage("done"); runNow(); } }); });
+}
+$("#scroll").onchange = e => { if (state.rule) state.rule.scroll = e.target.checked; };
+$("#pick-reset").onclick = () => { state.rule = null; $("#pick-empty").hidden = false; $("#pick-info").hidden = true; const d = frame.contentDocument; if (d) d.querySelectorAll(".pl-item").forEach(n => n.classList.remove("pl-item")); };
+$("#to-done").onclick = () => { if (!state.rule) return; state.currentTask = null; showPage("done"); runNow(); };
+
+/* ---------- 3 Klaar: uitlezen, downloaden, bewaren ---------- */
+function cleanRule() { const r = state.rule; return { item: r.item, scroll: r.scroll, next: r.next ? { selector: r.next.selector } : null, columns: r.columns.map(c => ({ name: c.name, selector: c.selector, attr: c.attr, number: c.number, off: c.off })) }; }
+async function runNow() {
+  if (!state.rule || !state.snapshot) { msg($("#done-msg"), "Wijs eerst aan wat je wilt uitlezen (stap 2).", true); return; }
+  state.busy = true; stats(); $("#rerun").disabled = true; $("#done-pill").textContent = "Bezig…"; $("#dl-row").hidden = true; $("#done-note").textContent = "";
+  msg($("#done-msg"), "ParseLab leest de pagina's uit. Bij meerdere pagina's wacht hij netjes 2 seconden tussen elke pagina.");
+  try {
+    const body = { url: state.snapshot.url, rule: cleanRule(), pages: +$("#pages").value || 1, proxy: $("#use-proxy").checked };
+    state.run = state.currentTask ? await api("/tasks/" + state.currentTask.id + "/run", { method: "POST" }) : await api("/run", { method: "POST", body: JSON.stringify(body) });
+    msg($("#done-msg"), ""); renderRun(); renderFlow(); if (state.currentTask) loadTasks();
+  } catch (e) { $("#done-pill").textContent = "Niet gelukt"; msg($("#done-msg"), e.message, true); }
+  $("#rerun").disabled = false; state.busy = false; stats();
+}
+$("#rerun").onclick = runNow;
+function renderRun() {
+  const run = state.run, cols = run.columns, empty = run.rows.filter(r => cols.some(c => r[c] === "" || r[c] == null)).length;
+  $("#done-pill").textContent = run.rows.length + " regels · " + run.pages + " pagina" + (run.pages === 1 ? "" : "'s");
+  $("#done-note").textContent = empty ? empty + " regels met een lege cel" : "";
+  $("#dl-row").hidden = false; $("#dl-xlsx").href = API + "/runs/" + run.id + ".xlsx"; $("#dl-csv").href = API + "/runs/" + run.id + ".csv";
+  $("#done-table").innerHTML = `<table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${run.rows.slice(0, 100).map(r => `<tr>${cols.map(c => `<td class="${typeof r[c] === "number" ? "num" : ""} ${r[c] === "" || r[c] == null ? "empty" : ""}" title="${esc(r[c])}">${esc(r[c])}</td>`).join("")}</tr>`).join("")}</tbody></table>${run.rows.length > 100 ? `<div class="note" style="margin-top:8px">Eerste 100 van ${run.rows.length} regels; het bestand bevat alles.</div>` : ""}`;
+  if (!$("#task-name").value && state.snapshot) { try { $("#task-name").value = new URL(state.snapshot.url).hostname.replace(/^www\./, ""); } catch (e) {} }
+}
+$("#task-save").onclick = async () => {
+  if (!state.rule || !state.snapshot) { msg($("#task-msg"), "Wijs eerst aan wat je wilt uitlezen (stap 2).", true); return; }
+  try {
+    const t = await api("/tasks", { method: "POST", body: JSON.stringify({ name: $("#task-name").value.trim(), url: state.snapshot.url, rule: cleanRule(), pages: +$("#pages").value || 1, schedule: $("#task-schedule").value, proxy: $("#use-proxy").checked, lastRunId: state.run && state.run.id }) });
+    state.currentTask = t; msg($("#task-msg"), "Bewaard als “" + t.name + "”" + (t.schedule === "nu" ? "." : ", " + { uur: "elk uur", dag: "elke dag", week: "elke week" }[t.schedule] + "."));
+    await loadTasks(); post({ type: "parselab:project", tool: "scrape", id: "scrape:" + t.id, name: t.name, payload: { taskId: t.id }, open: true });
+  } catch (e) { msg($("#task-msg"), e.message, true); }
+};
+async function loadTasks() {
+  try { state.tasks = await api("/tasks"); } catch (e) { state.tasks = []; }
+  stats(); syncProjects();
+  const el = $("#tasks"); $("#tasks-card").hidden = !state.tasks.length;
+  el.innerHTML = state.tasks.map(t => `
+    <div class="tr">
+      <div><div class="name">${esc(t.name)}</div><div class="meta">${esc(t.url)}</div></div>
+      <div class="meta">${{ nu: "op verzoek", uur: "elk uur", dag: "elke dag", week: "elke week" }[t.schedule] || ""}${t.lastRun ? " · " + new Date(t.lastRun).toLocaleString("nl-NL", { dateStyle: "short", timeStyle: "short" }) + " · " + (t.lastStatus === "fout" ? "niet gelukt" : (t.lastRows || 0) + " regels") : ""}</div>
+      <div class="row">${t.lastRunId && t.lastStatus !== "fout" ? `<a class="link" href="${API}/runs/${t.lastRunId}.xlsx">Excel</a>` : ""}<button class="btn btn-outline btn-small" data-run-task="${t.id}">Nu draaien</button></div>
+      <button class="link" data-del-task="${t.id}" title="Verwijderen">✕</button>
+    </div>`).join("");
+  el.querySelectorAll("[data-run-task]").forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = "Bezig…"; try { await api("/tasks/" + b.dataset.runTask + "/run", { method: "POST" }); } catch (e) { alert(e.message); } loadTasks(); });
+  el.querySelectorAll("[data-del-task]").forEach(b => b.onclick = async () => { if (!confirm("Deze taak verwijderen?")) return; await api("/tasks/" + b.dataset.delTask, { method: "DELETE" }); loadTasks(); });
+}
+
+/* ---------- projecten vanuit het dashboard ---------- */
+async function loadProject(pr) {
+  try {
+    if (pr.payload && pr.payload.taskId) {
+      if (!state.tasks.length) { try { state.tasks = await api("/tasks"); } catch (e) {} }
+      const t = state.tasks.find(x => x.id === pr.payload.taskId);
+      if (!t) { msg($("#fetch-msg"), "Deze taak staat niet meer op de server.", true); showPage("url"); return; }
+      $("#url").value = t.url; $("#task-name").value = t.name; $("#task-schedule").value = t.schedule || "nu"; $("#pages").value = t.pages || 1; $("#use-proxy").checked = t.proxy !== false;
+      state.snapshot = { url: t.url, html: "" }; state.rule = Object.assign({ count: 0 }, t.rule, { columns: t.rule.columns.map(c => Object.assign({ samples: [] }, c)) }); state.currentTask = t;
+      renderRule(); $("#count-pill").textContent = "Bewaarde taak";
+      $("#done-title").textContent = t.name; $("#done-sub").textContent = t.url;
+      showPage("done"); $("#done-note").textContent = "";
+      if (t.lastRunId && t.lastStatus !== "fout") { try { state.run = await api("/runs/" + t.lastRunId); renderRun(); $("#done-note").textContent = "Laatste uitvoering"; } catch (e) {} }
+      else { $("#done-pill").textContent = "Nog niet uitgelezen"; $("#done-table").innerHTML = ""; $("#dl-row").hidden = true; }
+      renderFlow();
+    } else { if (pr.name) $("#task-name").value = pr.name; showPage("url"); $("#url").focus(); }
+  } catch (e) { msg($("#fetch-msg"), "Dit project kon niet worden geopend: " + e.message, true); showPage("url"); }
+}
+showPage(new URLSearchParams(location.search).get("section") || "url");
+post({ type: "parselab:ready", tool: "scrape" });
+</script>
+</body>
+</html>

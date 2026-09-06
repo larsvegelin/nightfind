@@ -1,0 +1,2042 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paneel</title>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&display=swap">
+</head>
+<body>
+<style>
+  /* Ontwerptokens — zie STYLEGUIDE.md voor het volledige designsysteem */
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --good: #006300;
+    --bad: #d03b3b;
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --radius: 12px;
+    --shadow-card: 0 1px 2px rgba(11,11,11,.04), 0 10px 28px -18px rgba(11,11,11,.16);
+    --shadow-hover: 0 2px 4px rgba(11,11,11,.05), 0 16px 36px -18px rgba(11,11,11,.22);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --good: #0ca30c;
+      --bad: #e66767;
+      --accent: #3987e5;
+      --shadow-card: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.6);
+      --shadow-hover: 0 2px 4px rgba(0,0,0,.45), 0 16px 36px -18px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --good: #0ca30c;
+    --bad: #e66767;
+    --accent: #3987e5;
+    --shadow-card: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.6);
+    --shadow-hover: 0 2px 4px rgba(0,0,0,.45), 0 16px 36px -18px rgba(0,0,0,.7);
+  }
+  :root[data-accent="terracotta"] { --accent: #b3491f; }
+  :root[data-accent="groen"]      { --accent: #0e7a3f; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+  }
+  .display { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+
+  /* ---- app-shell ---- */
+  .topbar-wrap {
+    position: sticky; top: 0; z-index: 5;
+    background: color-mix(in srgb, var(--page) 82%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    max-width: 1140px; margin: 0 auto; padding: 14px 24px;
+  }
+  .wordmark {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-weight: 700; font-size: 22px; letter-spacing: -0.01em;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .wordmark .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); display: inline-block; transition: background .2s; }
+  .tagline { color: var(--muted); font-size: 13px; }
+  .progress { height: 2px; background: transparent; }
+  .progress i { display: block; height: 100%; background: var(--accent); transition: width .35s ease; }
+
+  .stepper { display: flex; gap: 3px; margin-left: auto; flex-wrap: wrap; }
+  .step-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 999px; font-size: 12.5px; color: var(--muted);
+    border: 1px solid transparent; background: none; cursor: default;
+    font-family: inherit; transition: background .15s, color .15s, border-color .15s;
+  }
+  .step-pill .n {
+    width: 17px; height: 17px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10.5px; font-weight: 600;
+    background: var(--grid); color: var(--ink-2); transition: background .15s;
+  }
+  .step-pill.active { color: var(--ink); border-color: var(--border); background: var(--surface); }
+  .step-pill.active .n { background: var(--accent); color: var(--accent-ink); }
+  .step-pill.done { color: var(--ink-2); cursor: pointer; }
+  .step-pill.done:hover { background: var(--surface); }
+  .step-pill.done .n { background: var(--good); color: #fff; }
+
+  main { max-width: 1140px; margin: 0 auto; padding: 12px 24px 64px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .step { animation: stepIn .3s cubic-bezier(.2,.7,.3,1) both; }
+    @keyframes stepIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 24px; margin-top: 16px;
+    box-shadow: var(--shadow-card);
+  }
+  h1 { font-size: 27px; margin: 20px 0 6px; text-wrap: balance; letter-spacing: -0.015em; }
+  h2 { font-size: 17px; margin: 0 0 4px; }
+  .sub { color: var(--ink-2); margin: 0 0 14px; max-width: 66ch; }
+  .hint { color: var(--muted); font-size: 13px; }
+
+  .howto { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .hstep {
+    display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-2);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 13px 6px 7px;
+  }
+  .hstep b {
+    width: 19px; height: 19px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+    display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;
+  }
+
+  /* ---- formulier-elementen ---- */
+  textarea {
+    width: 100%; min-height: 74px; resize: vertical;
+    background: var(--page); color: var(--ink);
+    border: 1px solid var(--baseline); border-radius: 10px;
+    padding: 10px 12px; font: 14px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    transition: border-color .15s;
+  }
+  textarea:hover { border-color: var(--ink-2); }
+  textarea:focus, select:focus-visible, button:focus-visible, input:focus-visible, .dropzone:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  select {
+    font: inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--baseline); border-radius: 9px; padding: 6px 9px;
+    max-width: 100%; transition: border-color .15s;
+  }
+  select:hover { border-color: var(--ink-2); }
+  select.mini { font-size: 12.5px; padding: 3px 6px; border-radius: 7px; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 9px;
+    border: 1px solid var(--baseline); background: var(--surface); color: var(--ink);
+    padding: 8px 16px;
+    transition: transform .12s ease, box-shadow .15s ease, border-color .15s, background .15s, filter .15s;
+  }
+  button:hover:not(:disabled) { border-color: var(--ink-2); box-shadow: var(--shadow-card); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
+  button.primary {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+    font-weight: 600;
+  }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); border-color: var(--accent); }
+  button.ghost { border-color: transparent; color: var(--ink-2); }
+  button.ghost:hover:not(:disabled) { border-color: var(--baseline); }
+  button.addbtn { border-style: dashed; color: var(--ink-2); }
+  button.xbtn { border: none; background: none; color: var(--muted); font-size: 15px; padding: 2px 7px; }
+  button.xbtn:hover:not(:disabled) { color: var(--bad); box-shadow: none; transform: none; border: none; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .btnrow { display: flex; gap: 10px; margin-top: 18px; align-items: center; flex-wrap: wrap; }
+
+  .privacy {
+    display: flex; gap: 10px; align-items: flex-start;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 16px; margin-top: 16px; color: var(--ink-2); font-size: 13.5px;
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  }
+  .privacy .lock { font-size: 16px; line-height: 1.4; }
+
+  /* ---- stap 1: databron ---- */
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 800px) { .modes { grid-template-columns: 1fr; } }
+  .mode { margin-top: 0; display: flex; flex-direction: column; }
+  .mode .eyebrow, .eyebrow {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 6px;
+  }
+  .dropzone {
+    border: 1.5px dashed var(--baseline); border-radius: var(--radius);
+    padding: 26px 18px; text-align: center; cursor: pointer; margin-top: 10px;
+    color: var(--ink-2); background: var(--page);
+    transition: border-color .15s, background .15s;
+  }
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 7%, var(--page));
+  }
+  .dropzone .big { font-size: 26px; display: block; margin-bottom: 6px; }
+  .dropzone strong { color: var(--ink); }
+  .fileok {
+    display: flex; align-items: center; gap: 10px; margin-top: 12px;
+    padding: 10px 14px; border-radius: 10px; font-size: 13.5px;
+    background: color-mix(in srgb, var(--good) 9%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--good) 25%, var(--border));
+  }
+  .demochips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  /* ---- stap 2: kolomtypen ---- */
+  .coltable { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .coltable th {
+    text-align: left; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--grid);
+  }
+  .coltable td { padding: 9px 10px; border-bottom: 1px solid var(--grid); }
+  .coltable tr:last-child td { border-bottom: none; }
+  .colname { font-weight: 600; }
+  .rolechip {
+    display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  }
+  .role-time   { background: color-mix(in srgb, var(--s1) 15%, var(--surface)); color: var(--ink); }
+  .role-metric { background: color-mix(in srgb, var(--s3) 15%, var(--surface)); color: var(--ink); }
+  .role-cat    { background: color-mix(in srgb, var(--s2) 15%, var(--surface)); color: var(--ink); }
+  .role-id     { background: color-mix(in srgb, var(--s4) 20%, var(--surface)); color: var(--ink); }
+  .role-text, .role-skip { background: var(--grid); color: var(--ink-2); }
+  .typelegend { display: flex; gap: 8px 14px; flex-wrap: wrap; margin: 4px 0 10px; }
+
+  /* ---- stap 3 & 4 ---- */
+  .optrow { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+  .optrow label { flex: 1; }
+  .optrow .agg { color: var(--muted); font-size: 12px; }
+  .partrow {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--grid); flex-wrap: wrap;
+  }
+  .partrow:last-child { border-bottom: none; }
+  .partrow label { flex: 1; min-width: 180px; }
+  .partrow label small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 400; }
+  .partrow select { max-width: 240px; }
+  .partrow .selwrap { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
+  input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+  /* ---- stap 1: opgeslagen overzichten ---- */
+  .savedlist { margin-top: 6px; }
+  .savedrow { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--grid); flex-wrap: wrap; }
+  .savedrow:last-child { border-bottom: none; }
+  .savedrow label { flex: 1; min-width: 180px; }
+  .savedrow label small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 400; }
+
+  .routes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  @media (max-width: 700px) { .routes { grid-template-columns: 1fr; } }
+  .route {
+    border: 1px solid var(--baseline); border-radius: var(--radius); padding: 14px 16px;
+    background: var(--surface); text-align: left; font: inherit;
+  }
+  .route.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .route b { display: block; margin-bottom: 2px; }
+  .route small { color: var(--muted); font-size: 12.5px; }
+  .brow {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 0;
+    border-bottom: 1px solid var(--grid); font-size: 13.5px; color: var(--ink-2);
+  }
+  .brow:last-child { border-bottom: none; }
+  .chartbox { border: 1px solid var(--grid); border-radius: 10px; padding: 10px 14px; margin-top: 10px; }
+  .chartbox .bhead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-2); }
+
+  /* ---- stap 5 ---- */
+  .optgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
+  fieldset {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin: 0;
+    background: var(--surface); box-shadow: var(--shadow-card);
+  }
+  legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
+  .swatchrow { display: flex; gap: 8px; padding: 6px 0; }
+  .swatch { width: 34px; height: 34px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; padding: 0; transition: transform .12s, border-color .15s; }
+  .swatch:hover { transform: scale(1.08); }
+  .swatch.sel { border-color: var(--ink); }
+  .sw-blauw { background: #2a78d6; }
+  .sw-terracotta { background: #b3491f; }
+  .sw-groen { background: #0e7a3f; }
+
+  /* ---- stap 6: dashboard ---- */
+  .dashhead { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-top: 18px; }
+  .dashhead h1 { margin: 0; }
+  .dashhead .actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+  .tab {
+    padding: 6px 14px; border-radius: 999px; border: 1px solid var(--baseline);
+    background: var(--surface); color: var(--ink-2); font-size: 13.5px;
+  }
+  .tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .filters { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .filters .hint { margin-right: 2px; }
+  .filters .tab { padding: 5px 12px; font-size: 13px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 16px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: var(--shadow-card); transition: box-shadow .18s ease, transform .18s ease;
+  }
+  .kpi:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+  .kpi .label { font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 4px; }
+  .kpi .label .xbtn { margin-left: auto; }
+  .kpi .value { font-size: 30px; font-weight: 650; letter-spacing: -0.01em; margin: 2px 0 2px; }
+  .kpi .delta { font-size: 12.5px; font-weight: 600; }
+  .kpi .delta.up { color: var(--good); }
+  .kpi .delta.down { color: var(--bad); }
+  .kpi .delta .vs { color: var(--muted); font-weight: 400; }
+  .kpi svg { display: block; margin-top: 6px; }
+  .kpi .kpiedit { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+  .kpi.add { display: flex; flex-direction: column; gap: 8px; justify-content: center; border-style: dashed; box-shadow: none; }
+  .kpi.add .hint { font-size: 12.5px; }
+
+  .charts { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; margin-top: 14px; }
+  .charts.even { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 880px) { .charts { grid-template-columns: 1fr !important; } }
+  .chartcard {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; min-width: 0; box-shadow: var(--shadow-card);
+  }
+  .chartcard h2 { font-size: 15px; }
+  .chartcard .sub { font-size: 13px; margin-bottom: 10px; }
+  .chartctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0 10px; }
+  .chartctl .hint { font-size: 12px; }
+  .legend { display: flex; gap: 12px 16px; flex-wrap: wrap; margin: 2px 0 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+  .legend .lval { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+  .chartwrap { overflow-x: auto; }
+  svg text { font: 11px system-ui, sans-serif; fill: var(--muted); }
+  svg .tick { font-variant-numeric: tabular-nums; }
+
+  .hbar { display: grid; grid-template-columns: minmax(90px, 150px) 1fr; gap: 6px 12px; align-items: center; }
+  .hbar .blabel { font-size: 13px; color: var(--ink-2); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbar .btrack { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .hbar .bfill { height: 18px; background: var(--s1); border-radius: 0 4px 4px 0; min-width: 2px; transition: width .35s ease; }
+  .hbar .bval { font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .stack { display: flex; gap: 2px; height: 28px; border-radius: 7px; overflow: hidden; margin-top: 6px; }
+  .stack .seg {
+    min-width: 3px; display: flex; align-items: center; justify-content: center;
+    font-size: 11.5px; font-weight: 600; overflow: hidden; white-space: nowrap;
+    transition: flex-grow .35s ease;
+  }
+
+  .cols { display: flex; gap: 12px; align-items: stretch; height: 165px; margin-top: 8px; }
+  .cols .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; }
+  .cols .cval { font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .cols .cbar { width: 100%; max-width: 24px; background: var(--s1); border-radius: 4px 4px 0 0; min-height: 2px; transition: height .35s ease; }
+  .cols .clab { font-size: 11.5px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .datatable { width: 100%; border-collapse: collapse; }
+  .datatable th {
+    text-align: left; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; padding: 7px 10px; border-bottom: 1px solid var(--grid);
+  }
+  .datatable td { padding: 7px 10px; border-bottom: 1px solid var(--grid); }
+  .datatable tbody tr { transition: background .12s; }
+  .datatable tbody tr:hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+  .datatable tr:last-child td { border-bottom: none; }
+  .datatable .num, .datatable th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  #tooltip {
+    position: fixed; z-index: 10; pointer-events: none; display: none;
+    background: var(--ink); color: var(--page);
+    padding: 6px 10px; border-radius: 8px; font-size: 12.5px; max-width: 280px;
+  }
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: var(--ink); color: var(--page); padding: 10px 18px; border-radius: 10px;
+    font-size: 13.5px; opacity: 0; transition: opacity .25s ease, transform .25s ease;
+    pointer-events: none; z-index: 20; max-width: min(90vw, 480px); text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  footer { max-width: 1140px; margin: 0 auto; padding: 0 24px 40px; color: var(--muted); font-size: 12.5px; }
+  .hidden { display: none !important; }
+</style>
+
+<div class="topbar-wrap">
+  <header class="topbar">
+    <span class="wordmark"><span class="dot"></span>Paneel</span>
+    <span class="tagline">stel je eigen dashboard samen — jouw data blijft van jou</span>
+    <nav class="stepper" id="stepper"></nav>
+  </header>
+  <div class="progress"><i id="progressbar" style="width:17%"></i></div>
+</div>
+
+<main id="main"></main>
+
+<footer>Prototype · Alles gebeurt lokaal in je browser; er wordt niets naar een server gestuurd.</footer>
+<div id="tooltip" role="status"></div>
+<div id="toast" role="status"></div>
+<input type="file" id="fileinput" accept=".csv,.tsv,.txt" class="hidden" aria-hidden="true">
+
+<script>
+"use strict";
+
+/* ---------- typesysteem ---------- */
+const ROLES = {
+  date:     { label: "Datum",              group: "Tijd",       kind: "time",   desc: "tijdas voor trends" },
+  datetime: { label: "Datum + tijd",       group: "Tijd",       kind: "time",   desc: "tijdas voor trends" },
+  integer:  { label: "Heel getal",         group: "Getallen",   kind: "metric", agg: "sum",      desc: "opgeteld (som)" },
+  decimal:  { label: "Getal met komma",    group: "Getallen",   kind: "metric", agg: "sum",      desc: "opgeteld (som)" },
+  money:    { label: "Bedrag (€)",         group: "Getallen",   kind: "metric", agg: "sum",      money: true, desc: "opgeteld (som)" },
+  percent:  { label: "Percentage (%)",     group: "Getallen",   kind: "metric", agg: "avg",      pct: true, desc: "gemiddeld percentage" },
+  rating:   { label: "Score (1–5)",        group: "Getallen",   kind: "metric", agg: "avg",      desc: "gemiddelde score" },
+  category: { label: "Categorie",          group: "Categorieën", kind: "cat",                    desc: "groepen, filters en tabbladen" },
+  boolean:  { label: "Ja / nee",           group: "Categorieën", kind: "cat",   agg: "pctYes",   desc: "filter + aandeel ja" },
+  status:   { label: "Status",             group: "Categorieën", kind: "cat",                    desc: "groepen, filters en tabbladen" },
+  country:  { label: "Land",               group: "Categorieën", kind: "cat",                    desc: "groepen, filters en tabbladen" },
+  id:       { label: "Uniek nummer (ID)",  group: "Identificatie & tekst", kind: "id", agg: "distinct", desc: "telling unieke waarden" },
+  email:    { label: "E-mailadres",        group: "Identificatie & tekst", kind: "text",         desc: "niet in grafieken" },
+  phone:    { label: "Telefoonnummer",     group: "Identificatie & tekst", kind: "text",         desc: "niet in grafieken" },
+  url:      { label: "URL / link",         group: "Identificatie & tekst", kind: "text",         desc: "niet in grafieken" },
+  text:     { label: "Vrije tekst",        group: "Identificatie & tekst", kind: "text",         desc: "niet in grafieken" },
+  skip:     { label: "Niet gebruiken",     group: "Overig",     kind: "skip",                    desc: "wordt genegeerd" },
+};
+const ROLE_GROUPS = ["Tijd", "Getallen", "Categorieën", "Identificatie & tekst", "Overig"];
+const AGG_WORD = { sum: "som", avg: "gemiddeld", pctYes: "% ja", distinct: "uniek" };
+const AGG_KPI  = { sum: "totaal", avg: "gemiddeld", pctYes: "aandeel ja", distinct: "unieke waarden" };
+const AGG_LABEL = { sum: "totaal (som)", avg: "gemiddelde", pctYes: "aandeel ja (%)", distinct: "unieke waarden" };
+const KIND_CHIP = { time: "role-time", metric: "role-metric", cat: "role-cat", id: "role-id", text: "role-text", skip: "role-skip" };
+const SERIES_VARS = ["--s1","--s2","--s3","--s4"];
+const SEG_INK = { "--s1": "#ffffff", "--s2": "#ffffff", "--s3": "#062b1c", "--s4": "#231800" };
+const MAX_METRICS = 8, MAX_KPIS = 8, MAX_CHARTS = 6, MAX_SERIES = 4;
+const CONFIG_KEY = "paneel-config";      // legacy: één opgeslagen overzicht (wordt eenmalig gemigreerd)
+const CONFIGS_KEY = "paneel-configs";    // lijst van opgeslagen overzichten [{id, name, savedAt, ...config}]
+
+const DEMO_WEBSHOP = ["Besteldatum","Ordernummer","Regio","Productcategorie","Verkoopkanaal","Klanttype","Retour","Status","Aantal","Omzet","Marge","Korting %","Beoordeling"];
+const DEMO_POLIS = ["Startdatum","Polisnummer","Verzekeringstype","Regio","Betaalwijze","Actief","Status","Premie","Schadebedrag","Korting %","Klantscore"];
+const KNOWN_VALUES = {
+  regio: ["Noord","Oost","Zuid","West"],
+  productcategorie: ["Boeketten","Kamerplanten","Droogbloemen","Cadeausets"],
+  verkoopkanaal: ["Webshop","Marktplaats","Winkel"],
+  klanttype: ["Nieuw","Terugkerend"],
+  verzekeringstype: ["Auto","Inboedel","Aansprakelijkheid","Reis"],
+  betaalwijze: ["Maandelijks","Jaarlijks"],
+};
+const STATUS_VALUES = ["Afgerond","In behandeling","Open","Geannuleerd"];
+const COUNTRY_VALUES = ["Nederland","België","Duitsland","Frankrijk"];
+
+/* ---------- state ---------- */
+const STEPS = ["Databron", "Typen", "Metrieken", "Onderdelen", "Weergave", "Dashboard"];
+const state = {
+  step: 1,
+  currentId: null,        // id van het opgeslagen overzicht waaruit deze indeling komt (null = nieuw)
+  source: null,           // 'own' | 'fake'
+  fileName: null,
+  rawRows: null,
+  columns: [],            // {name, role}
+  theme: "auto",
+  accent: "blauw",
+  route: "standard",      // 'standard' | 'custom'
+  parts: { kpi: true, line: true, bar: true, dist: true, weekday: true, table: true, tabs: true },
+  dateCol: null, groupCol: null, tabCol: null, splitCol: null, distCol: null,
+  metricCols: [],
+  chartMetrics: { line: null, bar: null, dist: null, weekday: null },
+  chartTypes: { line: "lijn", bar: "staaf" },
+  kpis: [],               // custom: [{col, agg}]
+  charts: [],             // custom: [{x, form, series: [{col, agg}]}]
+  rows: null,
+  maxMs: null,
+  catValues: {},
+  view: { tab: null, filters: {}, period: "all" },
+};
+
+/* ---------- helpers ---------- */
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const nf = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat("nl-NL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+function roleOf(colName){
+  const c = state.columns.find(c => c.name === colName);
+  return c ? ROLES[c.role] : null;
+}
+const defaultAgg = (col) => { const r = roleOf(col); return (r && r.agg) || "distinct"; };
+/* welke samenvattingen mag een kolom hebben? */
+function aggOptionsFor(col){
+  const r = roleOf(col);
+  if (!r) return [];
+  if (r.kind === "metric") return ["sum", "avg", "distinct"];
+  if (r.kind === "cat") return r.agg === "pctYes" ? ["pctYes", "distinct"] : ["distinct"];
+  if (r.kind === "id") return ["distinct"];
+  return [];
+}
+const kpiCandidates = () => state.columns.filter(c => aggOptionsFor(c.name).length);
+const metricCandidates = () => state.columns.filter(c => ROLES[c.role].agg);
+const catCols = () => state.columns.filter(c => ROLES[c.role].kind === "cat");
+const timeCols = () => state.columns.filter(c => ROLES[c.role].kind === "time");
+
+function fmt(v, col, compact, agg){
+  const role = roleOf(col);
+  const a = agg || (role && role.agg) || "sum";
+  if (a === "pctYes" || (role && role.pct)) return nf1.format(v) + "%";
+  if (a === "distinct") return nf.format(Math.round(v));
+  const money = !!(role && role.money);
+  if (a === "avg") return (money ? "€ " : "") + nf1.format(v);
+  if (compact && Math.abs(v) >= 10000) {
+    const s = new Intl.NumberFormat("nl-NL", { notation: "compact", maximumFractionDigits: 1 }).format(v);
+    return money ? "€ " + s : s;
+  }
+  return (money ? "€ " : "") + nf.format(Math.round(v));
+}
+function unitOf(col, agg){
+  const role = roleOf(col);
+  if (agg === "pctYes" || (role && role.pct)) return "%";
+  if (agg === "distinct") return "#";
+  return role && role.money ? "€" : "n";
+}
+function guessRole(name){
+  const n = name.toLowerCase();
+  if (/timestamp|tijdstip|datum.*tijd/.test(n)) return "datetime";
+  if (/datum|date|^dag$|week|maand|jaar|periode/.test(n)) return "date";
+  if (/ja\s*\/\s*nee|retour|actief|akkoord|betaald|geannuleerd|opt.?in|nieuwsbrief|verlengd|churn/.test(n)) return "boolean";
+  if (/status|fase/.test(n)) return "status";
+  if (/\bland\b|country/.test(n)) return "country";
+  if (/%|percentage|korting|conversie|aandeel/.test(n)) return "percent";
+  if (/score|rating|beoordeling|sterren|tevredenheid|nps/.test(n)) return "rating";
+  if (/omzet|marge|prijs|bedrag|kosten|winst|budget|premie|revenue|sales/.test(n)) return "money";
+  if (/e-?mail/.test(n)) return "email";
+  if (/telefoon|mobiel/.test(n)) return "phone";
+  if (/url|link|website/.test(n)) return "url";
+  if (/aantal|count|stuks|clicks|views|bezoek|sessies/.test(n)) return "integer";
+  if (/polis|nummer|\bnr\b|\bid\b|code|referentie|kenmerk/.test(n)) return "id";
+  if (/gewicht|uren|duur|afstand|\bkm\b|\bkg\b|liter|temperatuur/.test(n)) return "decimal";
+  if (/naam|opmerking|omschrijving|notitie|adres|straat/.test(n)) return "text";
+  return "category";
+}
+
+/* ---------- CSV in ---------- */
+function detectDelim(line){
+  let best = ";", bestN = 0;
+  for (const d of [";", "\t", ",", "|"]) {
+    const n = line.split(d).length - 1;
+    if (n > bestN) { bestN = n; best = d; }
+  }
+  return best;
+}
+function splitCsvLine(line, delim){
+  const out = []; let cur = "", inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) {
+      if (ch === '"') { if (line[i+1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += ch;
+    } else if (ch === '"') inQ = true;
+    else if (ch === delim) { out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+function parseCsv(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return null;
+  const delim = detectDelim(lines[0]);
+  const header = splitCsvLine(lines[0], delim).slice(0, 24);
+  const seen = new Map();
+  const names = header.map(h => {
+    const base = h || "Kolom";
+    const n = (seen.get(base) || 0) + 1;
+    seen.set(base, n);
+    return n === 1 ? base : base + " (" + n + ")";
+  });
+  const rows = lines.slice(1).map(l => splitCsvLine(l, delim).slice(0, names.length));
+  return { names, rows };
+}
+function parseHeadersLoose(text){
+  const line = (text || "").split(/\r?\n/).find(l => l.trim()) || "";
+  const parts = splitCsvLine(line, detectDelim(line)).filter(Boolean);
+  return [...new Set(parts)].slice(0, 24);
+}
+function coerceNumber(v){
+  if (v == null) return 0;
+  let s = String(v).replace(/[€\s%]/g, "");
+  if (!s) return 0;
+  if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
+  else if (s.includes(",")) s = s.replace(",", ".");
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+function coerceDate(v){
+  if (!v) return null;
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], 12);
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1], 12);
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2})$/);
+  if (m) return new Date(2000 + +m[3], +m[2]-1, +m[1], 12);
+  return null;
+}
+function coerceBool(v){
+  return /^(ja|j|true|waar|x|1)$/i.test(String(v).trim()) ? "Ja" : "Nee";
+}
+
+/* ---------- aggregatie ---------- */
+function makeAcc(){ return { sum: 0, n: 0, yes: 0, set: new Set() }; }
+function accAdd(acc, r, col, agg){
+  if (agg === "distinct") acc.set.add(r[col]);
+  else if (agg === "pctYes") { acc.n++; if (r[col] === "Ja") acc.yes++; }
+  else { acc.sum += (+r[col] || 0); acc.n++; }
+}
+function accVal(acc, agg){
+  if (agg === "distinct") return acc.set.size;
+  if (agg === "pctYes") return acc.n ? (acc.yes / acc.n) * 100 : 0;
+  if (agg === "avg") return acc.n ? acc.sum / acc.n : 0;
+  return acc.sum;
+}
+function aggBy(rows, keyFn, col, agg){
+  const a = agg || defaultAgg(col), m = new Map();
+  for (const r of rows) {
+    const k = keyFn(r);
+    if (!m.has(k)) m.set(k, makeAcc());
+    accAdd(m.get(k), r, col, a);
+  }
+  return new Map([...m].map(([k, acc]) => [k, accVal(acc, a)]));
+}
+function aggAll(rows, col, agg){
+  const a = agg || defaultAgg(col), acc = makeAcc();
+  for (const r of rows) accAdd(acc, r, col, a);
+  return accVal(acc, a);
+}
+
+/* ---------- data opbouwen ---------- */
+function buildData(){
+  if (state.source === "own" && state.rawRows) buildOwnRows();
+  else generateRows();
+  state.maxMs = state.rows.reduce((a, r) => r.__date ? Math.max(a, r.__date.getTime()) : a, 0) || null;
+}
+function buildOwnRows(){
+  const cols = state.columns;
+  const dateIdx = cols.findIndex(c => c.name === state.dateCol);
+  const rows = state.rawRows.map(raw => {
+    const row = { __date: null };
+    cols.forEach((c, i) => {
+      const role = ROLES[c.role];
+      const v = (raw[i] ?? "").trim();
+      if (role.kind === "skip") return;
+      if (role.kind === "metric") row[c.name] = coerceNumber(v);
+      else if (role.kind === "cat") row[c.name] = c.role === "boolean" ? coerceBool(v) : (v || "Onbekend");
+      else row[c.name] = v;
+    });
+    if (dateIdx >= 0) row.__date = coerceDate(raw[dateIdx]);
+    return row;
+  });
+  rows.sort((a, b) => (a.__date ? a.__date.getTime() : Infinity) - (b.__date ? b.__date.getTime() : Infinity));
+  state.rows = rows;
+  state.catValues = {};
+  for (const c of catCols()) {
+    if (c.role === "boolean") { state.catValues[c.name] = ["Ja","Nee"]; continue; }
+    const freq = new Map();
+    for (const r of rows) freq.set(r[c.name], (freq.get(r[c.name]) || 0) + 1);
+    state.catValues[c.name] = [...freq.entries()].sort((a,b)=>b[1]-a[1]).slice(0, 12).map(e => e[0]);
+  }
+}
+function generateRows(){
+  const rng = mulberry32(20260818);
+  const cats = catCols(), texts = state.columns.filter(c => ["id","email","phone","url","text"].includes(c.role));
+  const metrics = state.columns.filter(c => ROLES[c.role].kind === "metric");
+  state.catValues = {};
+  const weights = {};
+  for (const c of cats) {
+    let vals;
+    if (c.role === "boolean") vals = ["Ja","Nee"];
+    else if (c.role === "status") vals = STATUS_VALUES;
+    else if (c.role === "country") vals = COUNTRY_VALUES;
+    else vals = KNOWN_VALUES[c.name.toLowerCase()] || ["Optie A","Optie B","Optie C","Optie D"].slice(0, 3 + Math.floor(rng()*2));
+    state.catValues[c.name] = vals;
+    if (c.role === "boolean") {
+      const p = /retour|geannuleerd|churn/i.test(c.name) ? 0.12 : 0.55 + rng()*0.35;
+      weights[c.name] = [p, 1 - p];
+    } else {
+      weights[c.name] = vals.map((_, i) => 1/(1 + i*0.55) * (0.7 + rng()*0.6));
+    }
+  }
+  const bases = {};
+  for (const c of metrics) {
+    if (c.role === "integer") bases[c.name] = 4;
+    else if (c.role === "decimal") bases[c.name] = 2 + rng()*28;
+    else if (c.role === "percent") bases[c.name] = 35 + rng()*30;
+    else if (c.role === "rating") bases[c.name] = 3.4 + rng()*0.8;
+    else bases[c.name] = 40 + rng()*360;
+  }
+  const DAYS = 180, today = new Date(); today.setHours(12,0,0,0);
+  const rows = [];
+  let seq = 0;
+  for (let d = 0; d < DAYS; d++) {
+    const date = new Date(today.getTime() - (DAYS-1-d)*86400000);
+    const weekday = date.getDay();
+    const dayBoost = (weekday === 0 || weekday === 6) ? 1.25 : 1;
+    const n = 2 + Math.floor(rng()*4);
+    for (let i = 0; i < n; i++) {
+      seq++;
+      const row = { __date: date };
+      let catMult = 1;
+      for (const c of cats) {
+        const vals = state.catValues[c.name], w = weights[c.name];
+        let r = rng() * w.reduce((a,b)=>a+b,0), idx = 0;
+        while (r > w[idx] && idx < w.length-1) { r -= w[idx]; idx++; }
+        row[c.name] = vals[idx];
+        if (c.role === "category") catMult *= 0.8 + w[idx];
+      }
+      const season = 1 + 0.22*Math.sin((d/28)*Math.PI*2);
+      const trend = 1 + d/420;
+      for (const c of metrics) {
+        const noise = 0.55 + rng()*0.9;
+        let v;
+        if (c.role === "percent") v = Math.min(99, Math.max(1, bases[c.name] + (rng()-0.5)*24));
+        else if (c.role === "rating") v = Math.min(5, Math.max(1, bases[c.name] + (rng()-0.5)*1.4));
+        else {
+          v = bases[c.name] * catMult * season * trend * dayBoost * noise;
+          if (/marge/i.test(c.name)) v *= 0.35;
+        }
+        row[c.name] = (c.role === "decimal" || c.role === "percent" || c.role === "rating")
+          ? Math.round(v*10)/10 : Math.max(1, Math.round(v));
+      }
+      for (const c of texts) {
+        const prefix = (c.name.replace(/[^A-Za-z]/g, "").slice(0,2) || "NR").toUpperCase();
+        if (c.role === "id") row[c.name] = prefix + "-" + (100000 + seq);
+        else if (c.role === "email") row[c.name] = "klant" + (1000 + seq) + "@voorbeeld.nl";
+        else if (c.role === "phone") row[c.name] = "06-" + String(10000000 + (seq*7919) % 89999999);
+        else if (c.role === "url") row[c.name] = "voorbeeld.nl/order/" + seq;
+        else row[c.name] = "Notitie " + seq;
+      }
+      rows.push(row);
+    }
+  }
+  state.rows = rows;
+}
+
+/* ---------- suggesties & config ---------- */
+function suggestCustom(){
+  state.kpis = state.metricCols.slice(0, MAX_KPIS).map(m => ({ col: m, agg: defaultAgg(m) }));
+  const m0 = state.metricCols[0];
+  state.charts = [];
+  if (m0) {
+    if (state.dateCol) state.charts.push({ x: "week", form: "lijn", series: [{ col: m0, agg: defaultAgg(m0) }] });
+    if (state.groupCol) state.charts.push({ x: "cat:" + state.groupCol, form: "staven", series: [{ col: m0, agg: defaultAgg(m0) }] });
+    if (state.dateCol) state.charts.push({ x: "weekdag", form: "kolommen", series: [{ col: m0, agg: defaultAgg(m0) }] });
+  }
+}
+function pruneCustom(){
+  const ok = (name) => state.columns.some(c => c.name === name);
+  state.kpis = state.kpis.filter(k => ok(k.col) && aggOptionsFor(k.col).length)
+    .map(k => ({ col: k.col, agg: aggOptionsFor(k.col).includes(k.agg) ? k.agg : defaultAgg(k.col) }));
+  state.charts = state.charts.map(ch => ({
+    ...ch,
+    series: ch.series.filter(s => ok(s.col)).map(s => ({ col: s.col, agg: aggOptionsFor(s.col).includes(s.agg) ? s.agg : defaultAgg(s.col) })),
+  })).filter(ch => ch.series.length && (!ch.x.startsWith("cat:") || ok(ch.x.slice(4))));
+}
+function isValidConfig(cfg){
+  return !!(cfg && cfg.v === 1 && Array.isArray(cfg.columns) && cfg.columns.length);
+}
+/* Lijst van opgeslagen overzichten; het oude losse "paneel-config" wordt eenmalig overgezet. */
+function readConfigs(){
+  let list = [];
+  try {
+    const raw = localStorage.getItem(CONFIGS_KEY);
+    if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) list = arr; }
+  } catch (e) { list = []; }
+  list = list.filter(isValidConfig);
+  try {
+    const legacy = localStorage.getItem(CONFIG_KEY);
+    if (legacy) {
+      const cfg = JSON.parse(legacy);
+      if (isValidConfig(cfg)) {
+        if (!cfg.id) cfg.id = newConfigId();
+        if (!cfg.name) cfg.name = uniqueConfigName(cfg.fileName || "Mijn overzicht", list);
+        list.push(cfg);
+        writeConfigs(list);
+      }
+      localStorage.removeItem(CONFIG_KEY);
+    }
+  } catch (e) {}
+  return list.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+}
+function writeConfigs(list){ localStorage.setItem(CONFIGS_KEY, JSON.stringify(list)); }
+function newConfigId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function uniqueConfigName(base, list, skipId){
+  base = String(base || "Mijn overzicht").trim() || "Mijn overzicht";
+  const taken = new Set(list.filter(c => c.id !== skipId).map(c => c.name));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base} (${n})`)) n++;
+  return `${base} (${n})`;
+}
+function deleteConfig(id){
+  try { writeConfigs(readConfigs().filter(c => c.id !== id)); } catch (e) {}
+  if (state.currentId === id) state.currentId = null;
+}
+function saveConfig(){
+  const cfg = {
+    v: 1, savedAt: Date.now(),
+    source: state.source, fileName: state.fileName,
+    columns: state.columns, theme: state.theme, accent: state.accent, route: state.route,
+    parts: state.parts, dateCol: state.dateCol, groupCol: state.groupCol, tabCol: state.tabCol,
+    splitCol: state.splitCol, distCol: state.distCol, metricCols: state.metricCols,
+    chartMetrics: state.chartMetrics, chartTypes: state.chartTypes,
+    kpis: state.kpis, charts: state.charts,
+  };
+  if (state.source === "own" && state.rawRows) {
+    const raw = JSON.stringify(state.rawRows);
+    if (raw.length < 2000000) cfg.rawRows = state.rawRows;
+  }
+  try {
+    const list = readConfigs();
+    const idx = state.currentId ? list.findIndex(c => c.id === state.currentId) : -1;
+    if (idx >= 0) {
+      cfg.id = list[idx].id; cfg.name = list[idx].name;
+      list[idx] = cfg;
+    } else {
+      cfg.id = newConfigId();
+      cfg.name = uniqueConfigName(state.fileName || "Mijn overzicht", list);
+      list.push(cfg);
+      state.currentId = cfg.id;
+    }
+    writeConfigs(list);
+    showToast(cfg.rawRows || state.source !== "own"
+      ? `"${cfg.name}" opgeslagen in deze browser.`
+      : `"${cfg.name}" opgeslagen — je databestand was te groot om mee te bewaren; upload het later opnieuw.`);
+  } catch (e) { showToast("Opslaan lukte niet — de browseropslag is vol of geblokkeerd."); }
+}
+/* Meest recent opgeslagen overzicht (compatibiliteit met #loadCfgBtn). */
+function readConfig(id){
+  const list = readConfigs();
+  if (id) return list.find(c => c.id === id) || null;
+  return list[0] || null;
+}
+function loadConfig(cfg){
+  state.currentId = cfg.id || null;
+  state.columns = cfg.columns.map(c => ({ name: String(c.name), role: ROLES[c.role] ? c.role : "skip" }));
+  state.theme = cfg.theme || "auto"; state.accent = cfg.accent || "blauw"; state.route = cfg.route === "custom" ? "custom" : "standard";
+  state.parts = { ...state.parts, ...(cfg.parts || {}) };
+  state.dateCol = cfg.dateCol || null; state.groupCol = cfg.groupCol || null; state.tabCol = cfg.tabCol || null;
+  state.splitCol = cfg.splitCol || null; state.distCol = cfg.distCol || null;
+  state.metricCols = Array.isArray(cfg.metricCols) ? cfg.metricCols : [];
+  state.chartMetrics = { line: null, bar: null, dist: null, weekday: null, ...(cfg.chartMetrics || {}) };
+  state.chartTypes = { line: "lijn", bar: "staaf", ...(cfg.chartTypes || {}) };
+  state.kpis = Array.isArray(cfg.kpis) ? cfg.kpis : [];
+  state.charts = Array.isArray(cfg.charts) ? cfg.charts : [];
+  if (cfg.source === "own" && Array.isArray(cfg.rawRows)) {
+    state.source = "own"; state.fileName = cfg.fileName || "opgeslagen data"; state.rawRows = cfg.rawRows;
+  } else {
+    state.source = "fake"; state.fileName = null; state.rawRows = null;
+    if (cfg.source === "own") showToast("Je databestand was niet mee opgeslagen — er is voorbeelddata geladen. Upload je CSV opnieuw voor echte cijfers.");
+  }
+  pruneCustom();
+  state.rows = null;
+  state.view = { tab: null, filters: {}, period: "all" };
+  applyTheme();
+  goto(6);
+}
+
+/* ---------- CSV uit ---------- */
+function csvCell(v){
+  const s = String(v ?? "");
+  return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+const csvNum = (v) => String(Math.round(v * 10) / 10).replace(".", ",");
+const fmtDateNL = (d) => d ? `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}` : "";
+/* de metriek-set van het dashboard: custom = KPI's, standaard = gekozen metrieken */
+function dashMetrics(){
+  if (state.route === "custom" && state.kpis.length) return state.kpis;
+  return state.metricCols.map(m => ({ col: m, agg: defaultAgg(m) }));
+}
+function overviewCsv(rows){
+  const group = state.groupCol || (catCols()[0] || {}).name;
+  if (!group) return null;
+  const metrics = dashMetrics();
+  const groups = new Map();
+  for (const r of rows) {
+    const k = r[group];
+    if (!groups.has(k)) groups.set(k, { n: 0, accs: metrics.map(() => makeAcc()) });
+    const g = groups.get(k); g.n++;
+    metrics.forEach((m, i) => accAdd(g.accs[i], r, m.col, m.agg));
+  }
+  const lines = [[group, "Rijen", ...metrics.map(m => m.col + " (" + AGG_WORD[m.agg] + ")")].map(csvCell).join(";")];
+  for (const [k, g] of groups) {
+    lines.push([csvCell(k), g.n, ...metrics.map((m, i) => csvNum(accVal(g.accs[i], m.agg)))].join(";"));
+  }
+  return lines.join("\n");
+}
+function dataCsv(rows){
+  const cols = state.columns.filter(c => ROLES[c.role].kind !== "skip");
+  const lines = [cols.map(c => csvCell(c.name)).join(";")];
+  for (const r of rows) {
+    lines.push(cols.map(c => {
+      const role = ROLES[c.role];
+      if (role.kind === "time") return csvCell(state.source === "own" ? (r[c.name] || fmtDateNL(r.__date)) : fmtDateNL(r.__date));
+      if (role.kind === "metric") return csvNum(+r[c.name] || 0);
+      return csvCell(r[c.name]);
+    }).join(";"));
+  }
+  return lines.join("\n");
+}
+async function exportCsv(kind){
+  const rows = filteredRows();
+  const text = kind === "overzicht" ? overviewCsv(rows) : dataCsv(rows);
+  if (!text) { showToast("Geen gegevens om te exporteren."); return; }
+  const name = "paneel-" + kind + ".csv";
+  if (window.claude && typeof window.claude.use === "function") {
+    try {
+      const dl = await window.claude.use("downloads");
+      if (dl) {
+        try {
+          await dl.save({ filename: name, data: "﻿" + text });
+          showToast(name + " opgeslagen.");
+          return;
+        } catch (err) {
+          if (err && err.code === "declined") return;
+          if (err && err.code === "extension_not_enabled") {
+            try {
+              await dl.save({ filename: name.replace(/\.csv$/, ".txt"), data: "﻿" + text });
+              showToast("Opgeslagen als .txt met CSV-inhoud (hernoem naar .csv voor Excel).");
+              return;
+            } catch (e2) { if (e2 && e2.code === "declined") return; }
+          }
+        }
+      }
+    } catch (e) { /* gewone download hieronder */ }
+  }
+  try {
+    const blob = new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" });
+    try { if (window.self !== window.top) window.parent.postMessage({ source: "parselab-tool", type: "parselab:file", tool: "board", name, mime: blob.type, blob }, "*"); } catch (e) {}
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (e) {}
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast(`${name} gedownload én naar je klembord gekopieerd (plak in Excel).`))
+      .catch(() => showToast(`${name} gedownload.`));
+  } else showToast(`${name} gedownload.`);
+}
+let toastTimer = null;
+function showToast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3600);
+}
+
+/* ---------- stap-navigatie ---------- */
+function goto(step){
+  state.step = step;
+  if (step === 6 && !state.rows) buildData();
+  render();
+  window.scrollTo({ top: 0 });
+}
+function renderStepper(){
+  $("#stepper").innerHTML = STEPS.map((label, i) => {
+    const n = i + 1;
+    const cls = n === state.step ? "active" : (n < state.step ? "done" : "");
+    return `<button type="button" class="step-pill ${cls}" data-goto="${n}" ${n >= state.step ? "disabled" : ""}>
+      <span class="n">${n < state.step ? "✓" : n}</span>${label}</button>`;
+  }).join("");
+  $("#progressbar").style.width = Math.round(state.step / STEPS.length * 100) + "%";
+  document.querySelectorAll("[data-goto]").forEach(b =>
+    b.addEventListener("click", () => { if (!b.disabled) goto(+b.dataset.goto); }));
+}
+function navRow(nextLabel, nextId){
+  return `<div class="btnrow">
+    <button class="ghost" id="backBtn">← Terug</button>
+    <button class="primary" id="${nextId || "nextBtn"}">${nextLabel}</button>
+    <span class="hint" id="stepHint"></span>
+  </div>`;
+}
+
+/* ---------- stap 1: databron ---------- */
+function renderStep1(){
+  const savedList = readConfigs();
+  const savedCard = savedList.length ? `
+  <div class="card">
+    <span class="eyebrow">Opgeslagen overzichten</span>
+    <h2>${savedList.length === 1 ? "1 overzicht" : savedList.length + " overzichten"} bewaard in deze browser</h2>
+    <div class="savedlist">
+      ${savedList.map(c => `
+      <div class="savedrow" data-cfg="${esc(c.id)}">
+        <label><strong>${esc(c.name || c.fileName || "Mijn overzicht")}</strong><small>${fmtDateNL(new Date(c.savedAt))} · ${c.columns.length} kolommen${c.rawRows ? " · inclusief je data" : ""}</small></label>
+        <button class="primary" data-open="${esc(c.id)}">Openen</button>
+        <button class="ghost" data-del="${esc(c.id)}">Verwijderen</button>
+      </div>`).join("")}
+    </div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="ghost" id="loadCfgBtn" hidden>Open mijn dashboard</button>
+      <button class="ghost" id="delCfgBtn" hidden>Verwijderen</button>
+    </div>
+  </div>` : "";
+  return `
+  <h1 class="display">Waar bouwen we je dashboard mee?</h1>
+  <p class="sub">Kies je startpunt: je eigen CSV-bestand, of fictieve data om eerst te verkennen. In beide gevallen blijft alles lokaal in je browser.</p>
+  <div class="howto" aria-label="Zo werkt het">
+    <span class="hstep"><b>1</b> Databron kiezen</span>
+    <span class="hstep"><b>2</b> Typen controleren</span>
+    <span class="hstep"><b>3</b> Metrieken kiezen</span>
+    <span class="hstep"><b>4</b> Onderdelen &amp; tabjes</span>
+    <span class="hstep"><b>5</b> Kleuren &amp; thema</span>
+    <span class="hstep"><b>6</b> Klaar ✓</span>
+  </div>
+  ${savedCard}
+  <div class="modes">
+    <div class="card mode">
+      <span class="eyebrow">Eigen data</span>
+      <h2>Upload je CSV-bestand</h2>
+      <p class="hint">Je dashboard rekent dan met je échte cijfers. Het bestand wordt volledig lokaal gelezen — er wordt niets verstuurd.</p>
+      <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="CSV-bestand kiezen of hierheen slepen">
+        <span class="big">📄</span>
+        <strong>Sleep je CSV hierheen</strong> of klik om te kiezen<br>
+        <span class="hint">.csv of .tsv · puntkomma, komma of tab</span>
+      </div>
+      <p class="hint" id="fileError" role="alert"></p>
+    </div>
+    <div class="card mode">
+      <span class="eyebrow">Fictieve data</span>
+      <h2>Verken met voorbeelddata</h2>
+      <p class="hint">Plak alleen je kolomnamen — wij vullen het dashboard met realistische voorbeeldcijfers. Of start met een kant-en-klare demo.</p>
+      <textarea id="headerinput" placeholder="Bijv. Besteldatum;Polisnummer;Regio;Aantal;Omzet;Korting %" spellcheck="false" style="margin-top:10px"></textarea>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="primary" id="parseBtn">Verder met deze kolommen</button>
+      </div>
+      <div class="demochips">
+        <button class="ghost" id="demoBtn">✨ Webshop-bestellingen</button>
+        <button class="ghost" id="demo2Btn">🛡️ Verzekeringsportefeuille</button>
+      </div>
+      <p class="hint" id="parseError" role="alert"></p>
+    </div>
+  </div>
+  <div class="privacy"><span class="lock">🔒</span>
+    <span><strong>Privacy als uitgangspunt.</strong> Alles gebeurt lokaal in je browser — ook je geüploade bestand en je opgeslagen dashboard verlaten je computer nooit.</span>
+  </div>`;
+}
+function resetForNewColumns(){
+  state.rows = null;
+  state.currentId = null;
+  state.route = "standard";
+  state.kpis = []; state.charts = [];
+  state.chartMetrics = { line: null, bar: null, dist: null, weekday: null };
+  state.chartTypes = { line: "lijn", bar: "staaf" };
+  state.view = { tab: null, filters: {}, period: "all" };
+}
+function bindStep1(){
+  const startFake = (headers) => {
+    if (headers.length < 2) { $("#parseError").textContent = "Minimaal twee kolomnamen nodig — controleer je scheidingsteken."; return; }
+    state.source = "fake"; state.fileName = null; state.rawRows = null;
+    state.columns = headers.map(name => ({ name, role: guessRole(name) }));
+    resetForNewColumns();
+    goto(2);
+  };
+  $("#parseBtn").addEventListener("click", () => startFake(parseHeadersLoose($("#headerinput").value)));
+  $("#demoBtn").addEventListener("click", () => startFake([...DEMO_WEBSHOP]));
+  $("#demo2Btn").addEventListener("click", () => startFake([...DEMO_POLIS]));
+  const lb = $("#loadCfgBtn"), db = $("#delCfgBtn");
+  if (lb) lb.addEventListener("click", () => { const cfg = readConfig(lb.dataset.id || null); if (cfg) loadConfig(cfg); });
+  if (db) db.addEventListener("click", () => { const cfg = readConfig(db.dataset.id || null); if (cfg) deleteConfig(cfg.id); render(); showToast("Opgeslagen overzicht verwijderd."); });
+  document.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => { const cfg = readConfig(b.dataset.open); if (cfg) loadConfig(cfg); }));
+  document.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => {
+    const cfg = readConfig(b.dataset.del); if (!cfg) return;
+    deleteConfig(cfg.id); render(); showToast(`"${cfg.name || "Overzicht"}" verwijderd.`);
+  }));
+
+  const dz = $("#dropzone");
+  const handleFile = (f) => {
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const parsed = parseCsv(String(reader.result));
+      if (!parsed || parsed.names.length < 2) { $("#fileError").textContent = "Kon dit bestand niet lezen als CSV — controleer het formaat."; return; }
+      if (!parsed.rows.length) { $("#fileError").textContent = "Dit bestand bevat alleen een kopregel. Gebruik dan de optie fictieve data."; return; }
+      state.source = "own"; state.fileName = f.name; state.rawRows = parsed.rows;
+      state.columns = parsed.names.map(name => ({ name, role: guessRole(name) }));
+      resetForNewColumns();
+      goto(2);
+    };
+    reader.readAsText(f);
+  };
+  dz.addEventListener("click", () => $("#fileinput").click());
+  dz.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#fileinput").click(); } });
+  dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drag"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
+  dz.addEventListener("drop", (e) => { e.preventDefault(); dz.classList.remove("drag"); handleFile(e.dataTransfer.files[0]); });
+  $("#fileinput").onchange = (e) => { handleFile(e.target.files[0]); e.target.value = ""; };
+}
+
+/* ---------- stap 2: typen ---------- */
+function roleSelect(colIndex, current){
+  return `<select data-col="${colIndex}" aria-label="Type voor ${esc(state.columns[colIndex].name)}">
+    ${ROLE_GROUPS.map(g => {
+      const opts = Object.entries(ROLES).filter(([, r]) => r.group === g)
+        .map(([key, r]) => `<option value="${key}" ${current===key?"selected":""}>${r.label}</option>`).join("");
+      return `<optgroup label="${g}">${opts}</optgroup>`;
+    }).join("")}
+  </select>`;
+}
+function renderStep2(){
+  const src = state.source === "own"
+    ? `<span class="fileok">✓ <strong>${esc(state.fileName)}</strong> — ${nf.format(state.rawRows.length)} rijen, ${state.columns.length} kolommen, lokaal gelezen</span>`
+    : "";
+  return `
+  <h1 class="display">Stap 2 · Controleer de kolomtypen</h1>
+  <p class="sub">We hebben elk type alvast geraden op basis van de naam. Klopt alles? Dan kun je direct door. Het type bepaalt hoe een kolom wordt samengevat.</p>
+  ${src}
+  <div class="card">
+    <div class="typelegend hint">
+      <span><span class="rolechip role-time">Tijd</span> tijdas</span>
+      <span><span class="rolechip role-metric">Getallen</span> som of gemiddelde</span>
+      <span><span class="rolechip role-cat">Categorieën</span> groepen &amp; tabjes</span>
+      <span><span class="rolechip role-id">ID</span> unieke waarden</span>
+      <span><span class="rolechip role-text">Tekst</span> niet in grafieken</span>
+    </div>
+    <table class="coltable">
+      <thead><tr><th>Kolom</th><th>Type</th><th>Gebruikt voor</th></tr></thead>
+      <tbody>
+      ${state.columns.map((c, i) => `
+        <tr>
+          <td class="colname">${esc(c.name)}</td>
+          <td>${roleSelect(i, c.role)}</td>
+          <td><span class="rolechip ${KIND_CHIP[ROLES[c.role].kind]}">${ROLES[c.role].desc}</span></td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+    ${navRow("Verder naar metrieken")}
+  </div>`;
+}
+function bindStep2(){
+  document.querySelectorAll("select[data-col]").forEach(sel =>
+    sel.addEventListener("change", () => {
+      state.columns[+sel.dataset.col].role = sel.value;
+      state.rows = null;
+      pruneCustom();
+      render();
+    }));
+  $("#backBtn").addEventListener("click", () => goto(1));
+  if (!metricCandidates().length) {
+    $("#nextBtn").disabled = true;
+    $("#stepHint").textContent = "Kies minstens één kolom die samengevat kan worden (getal, ja/nee of uniek nummer).";
+  }
+  $("#nextBtn").addEventListener("click", () => {
+    const cats = catCols(), dates = timeCols();
+    state.dateCol = dates[0] ? dates[0].name : null;
+    const plain = cats.filter(c => c.role === "category").map(c => c.name);
+    const all = cats.map(c => c.name);
+    state.groupCol = plain[0] || all[0] || null;
+    state.distCol  = plain[1] || plain[0] || all[0] || null;
+    state.tabCol   = plain[2] || plain[1] || plain[0] || all[0] || null;
+    state.splitCol = null;
+    const prio = { sum: 0, avg: 1, pctYes: 2, distinct: 3 };
+    if (!state.metricCols.length) {
+      state.metricCols = metricCandidates()
+        .slice().sort((a, b) => prio[ROLES[a.role].agg] - prio[ROLES[b.role].agg])
+        .slice(0, 4).map(c => c.name);
+    } else {
+      state.metricCols = state.metricCols.filter(m => metricCandidates().some(c => c.name === m));
+    }
+    goto(3);
+  });
+}
+
+/* ---------- stap 3: metrieken ---------- */
+function renderStep3(){
+  const candidates = metricCandidates();
+  return `
+  <h1 class="display">Stap 3 · Kies je metrieken</h1>
+  <p class="sub">Welke cijfers wil je volgen? Kies er maximaal ${MAX_METRICS} — ze worden de basis van je KPI-tegels en grafieken. In de volgende stap kun je per KPI en grafiek nog alles aanpassen.</p>
+  <div class="card">
+    ${candidates.map((c, i) => `<div class="optrow">
+      <input type="checkbox" data-metric="${esc(c.name)}" id="m-${i}" ${state.metricCols.includes(c.name)?"checked":""}>
+      <label for="m-${i}">${esc(c.name)} <span class="agg">· ${AGG_WORD[ROLES[c.role].agg]}</span></label>
+    </div>`).join("")}
+    ${navRow("Verder naar onderdelen")}
+  </div>`;
+}
+function bindStep3(){
+  $("#backBtn").addEventListener("click", () => goto(2));
+  document.querySelectorAll("[data-metric]").forEach(cb => cb.addEventListener("change", () => {
+    const name = cb.dataset.metric;
+    if (cb.checked) { if (state.metricCols.length >= MAX_METRICS) { cb.checked = false; $("#stepHint").textContent = `Maximaal ${MAX_METRICS} metrieken.`; return; } state.metricCols.push(name); }
+    else state.metricCols = state.metricCols.filter(m => m !== name);
+    $("#stepHint").textContent = "";
+  }));
+  $("#nextBtn").addEventListener("click", () => {
+    if (!state.metricCols.length) { $("#stepHint").textContent = "Kies minstens één metriek."; return; }
+    goto(4);
+  });
+}
+
+/* ---------- stap 4: onderdelen — standaard of custom ---------- */
+function catSelect(id, selected, allowNone){
+  return `<select id="${id}">` + (allowNone ? `<option value="">— geen —</option>` : "") +
+    catCols().map(c => `<option value="${esc(c.name)}" ${c.name===selected?"selected":""}>${esc(c.name)}</option>`).join("") + `</select>`;
+}
+function metricSelect(id, selected, onlyCountable){
+  const opts = metricCandidates().filter(c => !onlyCountable || ["sum","distinct"].includes(ROLES[c.role].agg));
+  return `<select id="${id}">` + opts.map(c =>
+    `<option value="${esc(c.name)}" ${c.name===selected?"selected":""}>${esc(c.name)}</option>`).join("") + `</select>`;
+}
+function colAggSelects(prefix, entry){
+  const cols = kpiCandidates();
+  const aggs = aggOptionsFor(entry.col);
+  return `<select class="mini" data-cs="${prefix}-col">${cols.map(c =>
+      `<option value="${esc(c.name)}" ${c.name===entry.col?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+    <select class="mini" data-cs="${prefix}-agg">${aggs.map(a =>
+      `<option value="${a}" ${a===entry.agg?"selected":""}>${AGG_LABEL[a]}</option>`).join("")}</select>`;
+}
+function xAxisOptions(selected){
+  const opts = [];
+  if (state.dateCol) opts.push(["dag","per dag"],["week","per week"],["maand","per maand"],["weekdag","per weekdag"]);
+  for (const c of catCols()) opts.push(["cat:"+c.name, "per " + c.name]);
+  return opts.map(([v, l]) => `<option value="${esc(v)}" ${v===selected?"selected":""}>${esc(l)}</option>`).join("");
+}
+function formOptions(chart){
+  const isCat = chart.x.startsWith("cat:") || chart.x === "weekdag";
+  const opts = isCat ? [["staven","liggende staven"],["kolommen","staande kolommen"]] : [["lijn","lijn"],["kolommen","kolommen"]];
+  return opts.map(([v, l]) => `<option value="${v}" ${v===chart.form?"selected":""}>${l}</option>`).join("");
+}
+function renderStep4(){
+  const hasDate = timeCols().length > 0;
+  const hasCat = catCols().length > 0;
+  const hasCountable = metricCandidates().some(c => ["sum","distinct"].includes(ROLES[c.role].agg));
+  const routeCards = `
+  <div class="routes">
+    <button type="button" class="route ${state.route==="standard"?"sel":""}" data-route="standard">
+      <b>Standaard</b><small>Een aanbevolen indeling op basis van je kolommen — trend, vergelijking, verdeling en weekdag-patroon, met per grafiek je eigen metriek en vorm.</small>
+    </button>
+    <button type="button" class="route ${state.route==="custom"?"sel":""}" data-route="custom">
+      <b>Custom</b><small>Stel alles zelf samen: KPI's met eigen samenvatting (totaal, gemiddelde, unieke waarden), en grafieken waarbij jij bepaalt wat er op welke as staat.</small>
+    </button>
+  </div>`;
+  const row = (key, title, small, enabled, extra) => `
+    <div class="partrow">
+      <input type="checkbox" id="p-${key}" ${state.parts[key] && enabled ? "checked" : ""} ${enabled ? "" : "disabled"}>
+      <label for="p-${key}">${title}<small>${enabled ? small : "niet beschikbaar — " + small}</small></label>
+      ${enabled && extra ? `<span class="selwrap">${extra}</span>` : ""}
+    </div>`;
+  let body;
+  if (state.route === "standard") {
+    body = `
+    <div class="card">
+      ${row("kpi", "KPI-tegels", "grote cijfers met trend en verschil t.o.v. vorige periode", true, "")}
+      ${row("line", "Trendgrafiek per week", hasDate ? "kies zelf de metriek en de vorm" : "vereist een datumkolom", hasDate,
+          `toon ${metricSelect("o-line-m", chartMetric("line"))} als <select id="o-line-t"><option value="lijn" ${state.chartTypes.line==="lijn"?"selected":""}>lijn</option><option value="kolommen" ${state.chartTypes.line==="kolommen"?"selected":""}>kolommen</option></select>` +
+          (hasCat ? ` · uitsplitsen per ${catSelect("o-split", state.splitCol, true)}` : ""))}
+      ${row("bar", "Vergelijking per categorie", hasCat ? "kies zelf de metriek en de vorm" : "vereist een categoriekolom", hasCat,
+          `toon ${metricSelect("o-bar-m", chartMetric("bar"))} als <select id="o-bar-t"><option value="staaf" ${state.chartTypes.bar==="staaf"?"selected":""}>liggende staven</option><option value="kolommen" ${state.chartTypes.bar==="kolommen"?"selected":""}>staande kolommen</option></select> per ${catSelect("o-group", state.groupCol, false)}`)}
+      ${row("dist", "Verdeling (gestapelde balk)", hasCat && hasCountable ? "aandeel van elke groep in het totaal" : (hasCat ? "vereist een som- of tel-metriek" : "vereist een categoriekolom"), hasCat && hasCountable,
+          `van ${metricSelect("o-dist-m", distMetric(), true)} per ${catSelect("o-dist", state.distCol, false)}`)}
+      ${row("weekday", "Weekdag-patroon", hasDate ? "drukte per dag van de week" : "vereist een datumkolom", hasDate,
+          `toon ${metricSelect("o-wd-m", chartMetric("weekday"))}`)}
+      ${row("table", "Overzichtstabel", "alle metrieken per groep, sorteerbaar op de eerste metriek", true, "")}
+      ${row("tabs", "Tabjes per categorie", hasCat ? "elk tabje filtert het hele dashboard op één waarde" : "vereist een categoriekolom", hasCat,
+          `op ${catSelect("o-tab", state.tabCol, false)}`)}
+      ${timeCols().length > 1 ? `<div class="partrow"><span class="selwrap">Tijdas: <select id="o-date">${timeCols().map(c=>`<option ${c.name===state.dateCol?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>` : ""}
+    </div>`;
+  } else {
+    if (!state.kpis.length && !state.charts.length) suggestCustom();
+    body = `
+    <div class="card">
+      <h2>KPI-tegels <span class="hint">· max. ${MAX_KPIS}</span></h2>
+      <p class="hint">Koppel kolommen als KPI en kies per stuk de samenvatting. Ook categorieën en ID's kunnen als "unieke waarden".</p>
+      ${state.kpis.map((k, i) => `<div class="brow">${colAggSelects("k" + i, k)}<button type="button" class="xbtn" data-del-kpi="${i}" aria-label="KPI verwijderen">✕</button></div>`).join("")}
+      <div class="btnrow" style="margin-top:10px">
+        <button type="button" class="addbtn" id="addKpi" ${state.kpis.length >= MAX_KPIS ? "disabled" : ""}>+ KPI toevoegen</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Grafieken <span class="hint">· max. ${MAX_CHARTS}</span></h2>
+      <p class="hint">Bepaal per grafiek de x-as, de vorm en de series (y-as). Op een tijd-as kun je tot ${MAX_SERIES} metrieken combineren op één gedeelde as.</p>
+      ${state.charts.map((ch, i) => {
+        const isCat = ch.x.startsWith("cat:") || ch.x === "weekdag";
+        return `<div class="chartbox">
+        <div class="bhead">
+          <strong>Grafiek ${i+1}</strong>
+          x-as: <select class="mini" data-cx="${i}">${xAxisOptions(ch.x)}</select>
+          vorm: <select class="mini" data-cf="${i}">${formOptions(ch)}</select>
+          <button type="button" class="xbtn" data-del-chart="${i}" aria-label="Grafiek verwijderen">✕</button>
+        </div>
+        ${ch.series.map((s, si) => `<div class="brow">y-as: ${colAggSelects("c" + i + "s" + si, s)}<button type="button" class="xbtn" data-del-serie="${i}:${si}" aria-label="Serie verwijderen" ${ch.series.length<=1?"disabled":""}>✕</button></div>`).join("")}
+        <div class="btnrow" style="margin-top:8px">
+          <button type="button" class="addbtn" data-add-serie="${i}" ${isCat || ch.series.length >= MAX_SERIES ? "disabled" : ""}>+ serie</button>
+          ${isCat ? `<span class="hint">meerdere series kan alleen op een tijd-as</span>` : ""}
+        </div>
+      </div>`;}).join("")}
+      <div class="btnrow" style="margin-top:10px">
+        <button type="button" class="addbtn" id="addChart" ${state.charts.length >= MAX_CHARTS ? "disabled" : ""}>+ Grafiek toevoegen</button>
+        <button type="button" class="ghost" id="suggestBtn">Suggesties opnieuw laden</button>
+      </div>
+    </div>
+    <div class="card">
+      ${row("table", "Overzichtstabel", "je KPI's per groep", true, hasCat ? `per ${catSelect("o-group", state.groupCol, false)}` : "")}
+      ${row("tabs", "Tabjes per categorie", hasCat ? "elk tabje filtert het hele dashboard op één waarde" : "vereist een categoriekolom", hasCat,
+          `op ${catSelect("o-tab", state.tabCol, false)}`)}
+      ${timeCols().length > 1 ? `<div class="partrow"><span class="selwrap">Tijdas: <select id="o-date">${timeCols().map(c=>`<option ${c.name===state.dateCol?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>` : ""}
+    </div>`;
+  }
+  return `
+  <h1 class="display">Stap 4 · Onderdelen &amp; tabjes</h1>
+  <p class="sub">Kies je route: de standaard-indeling met suggesties, of custom — dan bepaal jij precies welke KPI's en grafieken er komen. Wisselen kan altijd.</p>
+  ${routeCards}
+  ${body}
+  ${navRow("Verder naar weergave")}`;
+}
+function bindColAgg(prefix, entry, after){
+  const colEl = document.querySelector(`[data-cs="${prefix}-col"]`);
+  const aggEl = document.querySelector(`[data-cs="${prefix}-agg"]`);
+  if (colEl) colEl.addEventListener("change", () => {
+    entry.col = colEl.value;
+    if (!aggOptionsFor(entry.col).includes(entry.agg)) entry.agg = aggOptionsFor(entry.col)[0] || "distinct";
+    after();
+  });
+  if (aggEl) aggEl.addEventListener("change", () => { entry.agg = aggEl.value; after(); });
+}
+function bindStep4(){
+  $("#backBtn").addEventListener("click", () => goto(3));
+  $("#nextBtn").addEventListener("click", () => goto(5));
+  document.querySelectorAll("[data-route]").forEach(b => b.addEventListener("click", () => {
+    state.route = b.dataset.route; render();
+  }));
+  for (const key of ["kpi","line","bar","dist","weekday","table","tabs"]) {
+    const el = $("#p-" + key);
+    if (el) el.addEventListener("change", () => { state.parts[key] = el.checked; });
+  }
+  const bind = (id, key, resetRows) => {
+    const el = $(id);
+    if (el) el.addEventListener("change", () => { state[key] = el.value || null; if (resetRows) state.rows = null; });
+  };
+  bind("#o-split", "splitCol"); bind("#o-group", "groupCol"); bind("#o-dist", "distCol"); bind("#o-tab", "tabCol");
+  bind("#o-date", "dateCol", true);
+  const bindSel = (id, fn) => { const el = $(id); if (el) el.addEventListener("change", () => fn(el.value)); };
+  bindSel("#o-line-m", v => { state.chartMetrics.line = v; });
+  bindSel("#o-line-t", v => { state.chartTypes.line = v; });
+  bindSel("#o-bar-m", v => { state.chartMetrics.bar = v; });
+  bindSel("#o-bar-t", v => { state.chartTypes.bar = v; });
+  bindSel("#o-dist-m", v => { state.chartMetrics.dist = v; });
+  bindSel("#o-wd-m", v => { state.chartMetrics.weekday = v; });
+  if (state.route !== "custom") return;
+  const rerender = () => render();
+  state.kpis.forEach((k, i) => bindColAgg("k" + i, k, rerender));
+  state.charts.forEach((ch, i) => ch.series.forEach((s, si) => bindColAgg("c" + i + "s" + si, s, rerender)));
+  document.querySelectorAll("[data-del-kpi]").forEach(b => b.addEventListener("click", () => { state.kpis.splice(+b.dataset.delKpi, 1); render(); }));
+  document.querySelectorAll("[data-del-chart]").forEach(b => b.addEventListener("click", () => { state.charts.splice(+b.dataset.delChart, 1); render(); }));
+  document.querySelectorAll("[data-del-serie]").forEach(b => b.addEventListener("click", () => {
+    const [ci, si] = b.dataset.delSerie.split(":").map(Number);
+    if (state.charts[ci].series.length > 1) { state.charts[ci].series.splice(si, 1); render(); }
+  }));
+  document.querySelectorAll("[data-add-serie]").forEach(b => b.addEventListener("click", () => {
+    const ch = state.charts[+b.dataset.addSerie];
+    const used = ch.series.map(s => s.col);
+    const next = metricCandidates().find(c => !used.includes(c.name)) || metricCandidates()[0];
+    if (next && ch.series.length < MAX_SERIES) { ch.series.push({ col: next.name, agg: defaultAgg(next.name) }); render(); }
+  }));
+  document.querySelectorAll("[data-cx]").forEach(sel => sel.addEventListener("change", () => {
+    const ch = state.charts[+sel.dataset.cx];
+    ch.x = sel.value;
+    const isCat = ch.x.startsWith("cat:") || ch.x === "weekdag";
+    if (isCat) { ch.series = ch.series.slice(0, 1); if (!["staven","kolommen"].includes(ch.form)) ch.form = "kolommen"; }
+    else if (!["lijn","kolommen"].includes(ch.form)) ch.form = "lijn";
+    render();
+  }));
+  document.querySelectorAll("[data-cf]").forEach(sel => sel.addEventListener("change", () => {
+    state.charts[+sel.dataset.cf].form = sel.value; render();
+  }));
+  const addKpi = $("#addKpi");
+  if (addKpi) addKpi.addEventListener("click", () => {
+    const used = state.kpis.map(k => k.col);
+    const next = kpiCandidates().find(c => !used.includes(c.name)) || kpiCandidates()[0];
+    if (next && state.kpis.length < MAX_KPIS) { state.kpis.push({ col: next.name, agg: defaultAgg(next.name) }); render(); }
+  });
+  const addChart = $("#addChart");
+  if (addChart) addChart.addEventListener("click", () => {
+    if (state.charts.length >= MAX_CHARTS) return;
+    const m0 = state.metricCols[0] || (metricCandidates()[0] || {}).name;
+    if (!m0) return;
+    const x = state.dateCol ? "week" : (catCols()[0] ? "cat:" + catCols()[0].name : null);
+    if (!x) return;
+    state.charts.push({ x, form: state.dateCol ? "lijn" : "kolommen", series: [{ col: m0, agg: defaultAgg(m0) }] });
+    render();
+  });
+  const sug = $("#suggestBtn");
+  if (sug) sug.addEventListener("click", () => { suggestCustom(); render(); showToast("Suggesties geladen op basis van je kolommen."); });
+}
+
+/* ---------- stap 5: weergave ---------- */
+function renderStep5(){
+  return `
+  <h1 class="display">Stap 5 · Kleuren &amp; thema</h1>
+  <p class="sub">Bijna klaar — kies nog even hoe je dashboard eruitziet.</p>
+  <div class="optgrid">
+    <fieldset>
+      <legend>Thema</legend>
+      <div class="optrow"><label for="o-theme">Licht of donker</label>
+        <select id="o-theme">
+          <option value="auto" ${state.theme==="auto"?"selected":""}>Automatisch (volgt je systeem)</option>
+          <option value="light" ${state.theme==="light"?"selected":""}>Licht</option>
+          <option value="dark" ${state.theme==="dark"?"selected":""}>Donker</option>
+        </select></div>
+    </fieldset>
+    <fieldset>
+      <legend>Accentkleur</legend>
+      <div class="swatchrow" role="radiogroup" aria-label="Accentkleur">
+        ${["blauw","terracotta","groen"].map(a =>
+          `<button type="button" class="swatch sw-${a} ${state.accent===a?"sel":""}" data-accent="${a}" aria-label="${a}" role="radio" aria-checked="${state.accent===a}"></button>`).join("")}
+      </div>
+      <p class="hint">De accentkleur stuurt knoppen en tabjes; grafiekseries houden een vaste, kleurenblind-veilige volgorde.</p>
+    </fieldset>
+  </div>
+  ${navRow("Bouw mijn dashboard →", "buildBtn")}`;
+}
+function bindStep5(){
+  $("#backBtn").addEventListener("click", () => goto(4));
+  $("#o-theme").addEventListener("change", (e) => { state.theme = e.target.value; applyTheme(); });
+  document.querySelectorAll(".swatch").forEach(b => b.addEventListener("click", () => {
+    state.accent = b.dataset.accent; applyTheme();
+    document.querySelectorAll(".swatch").forEach(s => { s.classList.toggle("sel", s === b); s.setAttribute("aria-checked", s === b); });
+  }));
+  $("#buildBtn").addEventListener("click", () => {
+    state.view = { tab: null, filters: {}, period: state.view.period || "all" };
+    goto(6);
+  });
+}
+
+/* ---------- stap 6: dashboard ---------- */
+function filteredRows(){
+  let rows = state.rows;
+  if (state.view.period !== "all" && state.maxMs) {
+    const cut = state.maxMs - (+state.view.period)*86400000;
+    rows = rows.filter(r => r.__date && r.__date.getTime() > cut);
+  }
+  if (state.parts.tabs && state.tabCol && state.view.tab) rows = rows.filter(r => r[state.tabCol] === state.view.tab);
+  for (const [col, val] of Object.entries(state.view.filters)) if (val) rows = rows.filter(r => r[col] === val);
+  return rows;
+}
+const MONTHS = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+const WEEKDAYS = ["ma","di","wo","do","vr","za","zo"];
+const weekKey = (d) => Math.floor(d.getTime() / (7*86400000));
+const dayLabel = (d) => d.getDate() + " " + MONTHS[d.getMonth()];
+
+function sparkline(values, w, h){
+  if (values.length < 2) return "";
+  const max = Math.max(...values, 1), min = Math.min(...values, 0);
+  const pts = values.map((v, i) => [ (i/(values.length-1)) * (w-6) + 3, h - 3 - ((v-min)/(max-min || 1)) * (h-8) ]);
+  const path = pts.map((p,i) => (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const last = pts[pts.length-1];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+    <path d="${path}" fill="none" stroke="var(--baseline)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="4.5" fill="var(--surface)"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="var(--accent)"/>
+  </svg>`;
+}
+function niceMax(v){
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m*p >= v) return m*p;
+  return 10*p;
+}
+function chartMetric(key){
+  const m = state.chartMetrics[key];
+  if (m && metricCandidates().some(c => c.name === m)) return m;
+  return state.metricCols[0];
+}
+const isCountable = (name) => { const r = roleOf(name); return !!r && ["sum","distinct"].includes(r.agg); };
+function distMetric(){
+  if (state.chartMetrics.dist && isCountable(state.chartMetrics.dist)) return state.chartMetrics.dist;
+  return state.metricCols.find(isCountable)
+    || (metricCandidates().find(c => ["sum","distinct"].includes(ROLES[c.role].agg)) || {}).name
+    || null;
+}
+const datedRows = (rows) => rows.filter(r => r.__date);
+
+/* --- KPI's --- */
+function kpiTile(rows, col, agg, extraHtml){
+  const hasDates = !!state.maxMs;
+  let deltaHtml = "", sparkHtml = "";
+  const total = aggAll(rows, col, agg);
+  if (hasDates) {
+    const cut1 = state.maxMs - 30*86400000, cut2 = state.maxMs - 60*86400000;
+    const dated = datedRows(rows);
+    const cur = aggAll(dated.filter(r => r.__date.getTime() > cut1), col, agg);
+    const prev = aggAll(dated.filter(r => r.__date.getTime() > cut2 && r.__date.getTime() <= cut1), col, agg);
+    const relative = agg === "sum" || agg === "distinct";
+    const diff = cur - prev;
+    const up = diff >= 0;
+    const role = roleOf(col);
+    let deltaTxt;
+    if (relative) deltaTxt = prev ? nf1.format(Math.abs((diff/prev)*100)) + "%" : "—";
+    else if (agg === "pctYes" || (role && role.pct)) deltaTxt = nf1.format(Math.abs(diff)) + " pt";
+    else deltaTxt = nf1.format(Math.abs(diff));
+    deltaHtml = `<div class="delta ${up?"up":"down"}">${up?"▲":"▼"} ${deltaTxt} <span class="vs">t.o.v. vorige 30 dagen</span></div>`;
+    const weeks = [...aggBy(dated, r => weekKey(r.__date), col, agg).entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]);
+    sparkHtml = sparkline(weeks.slice(-12), 160, 30);
+  }
+  return `<div class="kpi">
+    <div class="label">${esc(col)} <span class="hint">· ${AGG_KPI[agg]}</span>${extraHtml && extraHtml.remove ? `<button type="button" class="xbtn" data-krm="${extraHtml.i}" aria-label="KPI verwijderen">✕</button>` : ""}</div>
+    <div class="value">${fmt(total, col, true, agg)}</div>
+    ${deltaHtml}${sparkHtml}
+    ${extraHtml && extraHtml.aggEdit ? `<div class="kpiedit"><select class="mini" data-kagg="${extraHtml.i}">${aggOptionsFor(col).map(a => `<option value="${a}" ${a===agg?"selected":""}>${AGG_LABEL[a]}</option>`).join("")}</select></div>` : ""}
+  </div>`;
+}
+function renderKpisStandard(rows){
+  return `<div class="kpis">` + state.metricCols.map(col => kpiTile(rows, col, defaultAgg(col), null)).join("") + `</div>`;
+}
+function renderKpisCustom(rows){
+  const tiles = state.kpis.map((k, i) => kpiTile(rows, k.col, k.agg, { i, aggEdit: true, remove: true })).join("");
+  const addTile = state.kpis.length < MAX_KPIS ? `
+    <div class="kpi add">
+      <span class="hint">KPI toevoegen</span>
+      <select class="mini" id="kpiAddSel">
+        <option value="">+ kies kolom…</option>
+        ${kpiCandidates().map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("")}
+      </select>
+    </div>` : "";
+  return `<div class="kpis">${tiles}${addTile}</div>`;
+}
+
+/* --- generieke grafiek (custom route) --- */
+function timeBucketsFor(x, rows){
+  if (x === "dag")   return { keyFn: r => Math.floor(r.__date.getTime()/86400000), labelFn: k => dayLabel(new Date(k*86400000 + 43200000)) };
+  if (x === "maand") return { keyFn: r => r.__date.getFullYear()*12 + r.__date.getMonth(), labelFn: k => MONTHS[k%12] + " '" + String(Math.floor(k/12)).slice(-2) };
+  return { keyFn: r => weekKey(r.__date), labelFn: k => dayLabel(new Date(k * 7*86400000)) };
+}
+function unitsHint(series){
+  const units = new Set(series.map(s => unitOf(s.col, s.agg)));
+  return units.size > 1 ? `<p class="hint" style="margin:8px 0 0">Let op: deze series hebben verschillende eenheden en delen één as.</p>` : "";
+}
+function renderCustomChart(rows, ch, ci){
+  const controls = `<div class="chartctl">
+    <span class="hint">x-as</span><select class="mini" data-dcx="${ci}">${xAxisOptions(ch.x)}</select>
+    <span class="hint">vorm</span><select class="mini" data-dcf="${ci}">${formOptions(ch)}</select>
+  </div>`;
+  const s0 = ch.series[0];
+  if (!s0) return "";
+  const title = ch.series.map(s => esc(s.col)).join(" + ");
+  const aggNote = ch.series.length === 1 ? ` <span class="hint">· ${AGG_WORD[s0.agg]}</span>` : "";
+
+  /* categorie- of weekdag-as: één serie, staven of kolommen */
+  if (ch.x.startsWith("cat:") || ch.x === "weekdag") {
+    let items;
+    if (ch.x === "weekdag") {
+      const dr = datedRows(rows);
+      if (!dr.length) return "";
+      const m = aggBy(dr, r => (r.__date.getDay()+6)%7, s0.col, s0.agg);
+      items = WEEKDAYS.map((w, i) => [w, m.get(i) || 0]);
+    } else {
+      const col = ch.x.slice(4);
+      items = [...aggBy(rows, r => r[col], s0.col, s0.agg).entries()].sort((a,b)=>b[1]-a[1]).slice(0, 8);
+    }
+    if (!items.length) return "";
+    const max = Math.max(...items.map(t => t[1]), 1);
+    const xlabel = ch.x === "weekdag" ? "weekdag" : ch.x.slice(4);
+    let bodyHtml;
+    if (ch.form === "staven") {
+      bodyHtml = `<div class="hbar">` + items.map(([label, v]) => `
+        <div class="blabel" title="${esc(label)}">${esc(label)}</div>
+        <div class="btrack" data-tip="${esc(label)}: ${fmt(v, s0.col, false, s0.agg)}">
+          <div class="bfill" style="width:${Math.max(1,(v/max)*100).toFixed(1)}%"></div>
+          <span class="bval">${fmt(v, s0.col, true, s0.agg)}</span>
+        </div>`).join("") + `</div>`;
+    } else {
+      bodyHtml = `<div class="cols">` + items.map(([label, v]) => `
+        <div class="col" data-tip="${esc(label)}: ${fmt(v, s0.col, false, s0.agg)}">
+          <span class="cval">${fmt(v, s0.col, true, s0.agg)}</span>
+          <div class="cbar" style="height:${Math.max(2,(v/max)*100).toFixed(1)}%"></div>
+          <span class="clab" title="${esc(label)}">${esc(label)}</span>
+        </div>`).join("") + `</div>`;
+    }
+    return `<div class="chartcard">
+      <h2>${title} per ${esc(xlabel)}${aggNote}</h2>
+      ${controls}${bodyHtml}
+    </div>`;
+  }
+
+  /* tijd-as: lijn (≤4 series) of kolommen (1 serie) */
+  const dr = datedRows(rows);
+  if (!dr.length) return "";
+  const { keyFn, labelFn } = timeBucketsFor(ch.x, dr);
+  const allKeys = [...new Set(dr.map(keyFn))].sort((a,b)=>a-b);
+  if (allKeys.length < 2) return "";
+  const series = ch.series.slice(0, MAX_SERIES).map((s, si) => ({
+    ...s, color: SERIES_VARS[si],
+    values: (() => { const m = aggBy(dr, keyFn, s.col, s.agg); return allKeys.map(k => m.get(k) || 0); })(),
+  }));
+  const W = 720, H = 250, PL = 62, PR = 16, PT = 14, PB = 26;
+  const yMax = niceMax(Math.max(...series.flatMap(s => s.values)));
+  const x = (i) => PL + (i/(allKeys.length-1)) * (W-PL-PR);
+  const y = (v) => PT + (1 - v/yMax) * (H-PT-PB);
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => f*yMax);
+  const lblEvery = Math.ceil(allKeys.length / 6);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${title}">`;
+  for (const t of ticks) svg += `<line x1="${PL}" y1="${y(t)}" x2="${W-PR}" y2="${y(t)}" stroke="${t===0?"var(--baseline)":"var(--grid)"}" stroke-width="1"/>
+    <text class="tick" x="${PL-8}" y="${y(t)+4}" text-anchor="end">${fmt(t, s0.col, true, s0.agg)}</text>`;
+  allKeys.forEach((k, i) => {
+    if (i % lblEvery !== 0) return;
+    const anchor = i === 0 ? "start" : (i > allKeys.length - lblEvery ? "end" : "middle");
+    svg += `<text x="${x(i)}" y="${H-8}" text-anchor="${anchor}">${labelFn(k)}</text>`;
+  });
+  const asColumns = ch.form === "kolommen" && series.length === 1;
+  if (asColumns) {
+    const bw = (W-PL-PR)/allKeys.length;
+    const cw = Math.min(24, bw*0.7);
+    series[0].values.forEach((v, i) => {
+      const y0 = y(v), hgt = (H-PB) - y0;
+      if (hgt <= 0) return;
+      const x0 = x(i) - cw/2;
+      if (hgt < 6) svg += `<rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${cw.toFixed(1)}" height="${hgt.toFixed(1)}" fill="var(--s1)"/>`;
+      else svg += `<path d="M${x0.toFixed(1)} ${H-PB} L${x0.toFixed(1)} ${(y0+4).toFixed(1)} Q${x0.toFixed(1)} ${y0.toFixed(1)} ${(x0+4).toFixed(1)} ${y0.toFixed(1)} L${(x0+cw-4).toFixed(1)} ${y0.toFixed(1)} Q${(x0+cw).toFixed(1)} ${y0.toFixed(1)} ${(x0+cw).toFixed(1)} ${(y0+4).toFixed(1)} L${(x0+cw).toFixed(1)} ${H-PB} Z" fill="var(--s1)"/>`;
+    });
+  } else {
+    for (const s of series) {
+      const path = s.values.map((v,i) => (i?"L":"M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+      svg += `<path d="${path}" fill="none" stroke="var(${s.color})" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const li = s.values.length-1;
+      svg += `<circle cx="${x(li)}" cy="${y(s.values[li])}" r="6.5" fill="var(--surface)"/>
+              <circle cx="${x(li)}" cy="${y(s.values[li])}" r="4.5" fill="var(${s.color})"/>`;
+    }
+  }
+  allKeys.forEach((k, i) => {
+    const tip = `${labelFn(k)} — ` + series.map(s => `${esc(s.col)}: ${fmt(s.values[i], s.col, true, s.agg)}`).join(" · ");
+    const bw = (W-PL-PR)/allKeys.length;
+    svg += `<rect x="${x(i)-bw/2}" y="${PT}" width="${bw}" height="${H-PT-PB}" fill="transparent" data-tip="${esc(tip)}"/>`;
+  });
+  svg += `</svg>`;
+  const legend = series.length > 1
+    ? `<div class="legend">` + series.map(s => `<span><i style="background:var(${s.color})"></i>${esc(s.col)} <span class="lval">${AGG_WORD[s.agg]}</span></span>`).join("") + `</div>` : "";
+  const xword = ch.x === "dag" ? "per dag" : ch.x === "maand" ? "per maand" : "per week";
+  return `<div class="chartcard">
+    <h2>${title} ${xword}${aggNote}</h2>
+    ${controls}${legend}<div class="chartwrap">${svg}</div>${unitsHint(series)}
+  </div>`;
+}
+
+/* --- standaard-grafieken --- */
+function renderLineChart(rows){
+  rows = datedRows(rows);
+  const metric = chartMetric("line");
+  const asColumns = state.chartTypes.line === "kolommen";
+  const aggWord = AGG_WORD[defaultAgg(metric)];
+  const W = 720, H = 250, PL = 62, PR = 16, PT = 14, PB = 26;
+  let seriesDefs, splitNote = "";
+  if (state.splitCol && !asColumns) {
+    const totals = [...aggBy(rows, r => r[state.splitCol], metric).entries()].sort((a,b)=>b[1]-a[1]);
+    seriesDefs = totals.slice(0,4).map(([v]) => ({ name: v, match: r => r[state.splitCol] === v }));
+    splitNote = totals.length > 4 ? " (top 4)" : "";
+  } else {
+    seriesDefs = [{ name: metric, match: () => true }];
+  }
+  const allWeeks = [...new Set(rows.map(r => weekKey(r.__date)))].sort((a,b)=>a-b);
+  if (allWeeks.length < 2) return "";
+  const series = seriesDefs.map((def, si) => {
+    const m = aggBy(rows.filter(def.match), r => weekKey(r.__date), metric);
+    return { name: def.name, color: SERIES_VARS[si], values: allWeeks.map(w => m.get(w) || 0) };
+  });
+  const yMax = niceMax(Math.max(...series.flatMap(s => s.values)));
+  const x = (i) => PL + (i/(allWeeks.length-1)) * (W-PL-PR);
+  const y = (v) => PT + (1 - v/yMax) * (H-PT-PB);
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => f*yMax);
+  const weekDates = allWeeks.map(w => new Date(w * 7*86400000));
+  const lblEvery = Math.ceil(allWeeks.length / 6);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Trend van ${esc(metric)} per week">`;
+  for (const t of ticks) svg += `<line x1="${PL}" y1="${y(t)}" x2="${W-PR}" y2="${y(t)}" stroke="${t===0?"var(--baseline)":"var(--grid)"}" stroke-width="1"/>
+    <text class="tick" x="${PL-8}" y="${y(t)+4}" text-anchor="end">${fmt(t, metric, true)}</text>`;
+  weekDates.forEach((d, i) => {
+    if (i % lblEvery !== 0) return;
+    const anchor = i === 0 ? "start" : (i > allWeeks.length - lblEvery ? "end" : "middle");
+    svg += `<text x="${x(i)}" y="${H-8}" text-anchor="${anchor}">${dayLabel(d)}</text>`;
+  });
+  if (asColumns) {
+    const bw = (W-PL-PR)/allWeeks.length;
+    const cw = Math.min(24, bw*0.7);
+    series[0].values.forEach((v, i) => {
+      const y0 = y(v), hgt = (H-PB) - y0;
+      if (hgt <= 0) return;
+      const x0 = x(i) - cw/2;
+      if (hgt < 6) svg += `<rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${cw.toFixed(1)}" height="${hgt.toFixed(1)}" fill="var(--s1)"/>`;
+      else svg += `<path d="M${x0.toFixed(1)} ${H-PB} L${x0.toFixed(1)} ${(y0+4).toFixed(1)} Q${x0.toFixed(1)} ${y0.toFixed(1)} ${(x0+4).toFixed(1)} ${y0.toFixed(1)} L${(x0+cw-4).toFixed(1)} ${y0.toFixed(1)} Q${(x0+cw).toFixed(1)} ${y0.toFixed(1)} ${(x0+cw).toFixed(1)} ${(y0+4).toFixed(1)} L${(x0+cw).toFixed(1)} ${H-PB} Z" fill="var(--s1)"/>`;
+    });
+  } else {
+    for (const s of series) {
+      const path = s.values.map((v,i) => (i?"L":"M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+      svg += `<path d="${path}" fill="none" stroke="var(${s.color})" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const li = s.values.length-1;
+      svg += `<circle cx="${x(li)}" cy="${y(s.values[li])}" r="6.5" fill="var(--surface)"/>
+              <circle cx="${x(li)}" cy="${y(s.values[li])}" r="4.5" fill="var(${s.color})"/>`;
+    }
+  }
+  allWeeks.forEach((w, i) => {
+    const tip = `Week van ${dayLabel(weekDates[i])} — ` + series.map(s => `${esc(s.name)}: ${fmt(s.values[i], metric, true)}`).join(" · ");
+    const bw = (W-PL-PR)/allWeeks.length;
+    svg += `<rect x="${x(i)-bw/2}" y="${PT}" width="${bw}" height="${H-PT-PB}" fill="transparent" data-tip="${esc(tip)}"/>`;
+  });
+  svg += `</svg>`;
+  const legend = series.length > 1
+    ? `<div class="legend">` + series.map(s => `<span><i style="background:var(${s.color})"></i>${esc(s.name)}</span>`).join("") + `</div>` : "";
+  return `<div class="chartcard">
+    <h2>${esc(metric)} per week <span class="hint">· ${aggWord}</span></h2>
+    <p class="sub">${state.splitCol && !asColumns ? "Uitgesplitst naar " + esc(state.splitCol) + splitNote
+      : (asColumns && state.splitCol ? "Als kolommen — uitsplitsing geldt alleen voor de lijnvorm" : "Over de gekozen periode")}</p>
+    ${legend}<div class="chartwrap">${svg}</div>
+  </div>`;
+}
+function renderBarChart(rows){
+  const metric = chartMetric("bar");
+  const aggWord = AGG_WORD[defaultAgg(metric)];
+  const totals = [...aggBy(rows, r => r[state.groupCol], metric).entries()].sort((a,b)=>b[1]-a[1]).slice(0, 8);
+  if (!totals.length) return "";
+  const max = Math.max(...totals.map(t => t[1]), 1);
+  if (state.chartTypes.bar === "kolommen") {
+    return `<div class="chartcard">
+      <h2>${esc(metric)} per ${esc(state.groupCol)} <span class="hint">· ${aggWord}</span></h2>
+      <p class="sub">Over de gekozen periode</p>
+      <div class="cols">
+        ${totals.map(([label, v]) => `
+          <div class="col" data-tip="${esc(label)}: ${fmt(v, metric)}">
+            <span class="cval">${fmt(v, metric, true)}</span>
+            <div class="cbar" style="height:${Math.max(2,(v/max)*100).toFixed(1)}%"></div>
+            <span class="clab" title="${esc(label)}">${esc(label)}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }
+  return `<div class="chartcard">
+    <h2>${esc(metric)} per ${esc(state.groupCol)} <span class="hint">· ${aggWord}</span></h2>
+    <p class="sub">Over de gekozen periode</p>
+    <div class="hbar">
+      ${totals.map(([label, v]) => `
+        <div class="blabel" title="${esc(label)}">${esc(label)}</div>
+        <div class="btrack" data-tip="${esc(label)}: ${fmt(v, metric)}">
+          <div class="bfill" style="width:${Math.max(1,(v/max)*100).toFixed(1)}%"></div>
+          <span class="bval">${fmt(v, metric, true)}</span>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+function renderDistChart(rows){
+  const metric = distMetric();
+  if (!metric || !state.distCol) return "";
+  const totals = [...aggBy(rows, r => r[state.distCol], metric).entries()].sort((a,b)=>b[1]-a[1]);
+  if (!totals.length) return "";
+  const top = totals.slice(0, 4);
+  const restSum = totals.slice(4).reduce((a, t) => a + t[1], 0);
+  const segs = top.map(([name, v], i) => ({ name, v, color: SERIES_VARS[i] }));
+  if (restSum > 0) segs.push({ name: "Overig", v: restSum, color: null });
+  const total = segs.reduce((a, s) => a + s.v, 0) || 1;
+  const bar = segs.map(s => {
+    const pct = (s.v/total)*100;
+    const fill = s.color ? `var(${s.color})` : "var(--grid)";
+    const ink = s.color ? SEG_INK[s.color] : "var(--ink)";
+    const label = pct >= 12 ? `<span style="color:${ink}">${nf.format(Math.round(pct))}%</span>` : "";
+    return `<div class="seg" style="flex:${pct.toFixed(2)} 0 0; background:${fill}" data-tip="${esc(s.name)}: ${fmt(s.v, metric, true)} (${nf1.format(pct)}%)">${label}</div>`;
+  }).join("");
+  const legend = segs.map(s => `<span><i style="background:${s.color?`var(${s.color})`:"var(--grid)"}"></i>${esc(s.name)} <span class="lval">${fmt(s.v, metric, true)}</span></span>`).join("");
+  return `<div class="chartcard">
+    <h2>Verdeling van ${esc(metric)} per ${esc(state.distCol)} <span class="hint">· ${AGG_WORD[defaultAgg(metric)]}</span></h2>
+    <p class="sub">Aandeel in het totaal over de gekozen periode</p>
+    <div class="stack">${bar}</div>
+    <div class="legend" style="margin-top:10px">${legend}</div>
+  </div>`;
+}
+function renderWeekdayChart(rows){
+  rows = datedRows(rows);
+  if (!rows.length) return "";
+  const metric = chartMetric("weekday");
+  const m = aggBy(rows, r => (r.__date.getDay()+6)%7, metric);
+  const vals = WEEKDAYS.map((_, i) => m.get(i) || 0);
+  const max = Math.max(...vals, 1);
+  return `<div class="chartcard">
+    <h2>${esc(metric)} per weekdag <span class="hint">· ${AGG_WORD[defaultAgg(metric)]}</span></h2>
+    <p class="sub">Patroon over de gekozen periode</p>
+    <div class="cols">
+      ${vals.map((v, i) => `
+        <div class="col" data-tip="${WEEKDAYS[i]}: ${fmt(v, metric)}">
+          <span class="cval">${fmt(v, metric, true)}</span>
+          <div class="cbar" style="height:${Math.max(2,(v/max)*100).toFixed(1)}%"></div>
+          <span class="clab">${WEEKDAYS[i]}</span>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+function renderTable(rows){
+  const group = state.groupCol || (catCols()[0] || {}).name;
+  if (!group) return "";
+  const metrics = dashMetrics();
+  if (!metrics.length) return "";
+  const groups = new Map();
+  for (const r of rows) {
+    const k = r[group];
+    if (!groups.has(k)) groups.set(k, { n: 0, accs: metrics.map(() => makeAcc()) });
+    const g = groups.get(k); g.n++;
+    metrics.forEach((m, i) => accAdd(g.accs[i], r, m.col, m.agg));
+  }
+  const val = (g, i) => accVal(g.accs[i], metrics[i].agg);
+  const sorted = [...groups.entries()].sort((a,b) => val(b[1], 0) - val(a[1], 0));
+  return `<div class="chartcard" style="margin-top:14px">
+    <h2>Overzicht per ${esc(group)}</h2>
+    <div class="chartwrap"><table class="datatable">
+      <thead><tr><th>${esc(group)}</th><th class="num">Rijen</th>${metrics.map(m=>`<th class="num">${esc(m.col)} · ${AGG_WORD[m.agg]}</th>`).join("")}</tr></thead>
+      <tbody>${sorted.map(([k, g]) => `<tr><td>${esc(k)}</td><td class="num">${nf.format(g.n)}</td>${metrics.map((m, i)=>`<td class="num">${fmt(val(g, i), m.col, false, m.agg)}</td>`).join("")}</tr>`).join("")}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function renderStep6(){
+  const rows = filteredRows();
+  const cats = catCols().map(c => c.name);
+  const filterCols = cats.filter(c => !(state.parts.tabs && c === state.tabCol));
+  const srcNote = state.source === "own"
+    ? `live berekend uit <strong>${esc(state.fileName)}</strong> (${nf.format(state.rows.length)} rijen) — alles blijft lokaal`
+    : `voorbeeldweergave met gegenereerde data — koppel later je echte bron`;
+  let html = `
+  <div class="dashhead">
+    <h1 class="display">Je dashboard</h1>
+    <span class="hint">${srcNote}</span>
+    <div class="actions">
+      <button class="primary" id="saveBtn">Opslaan</button>
+      <button id="csvOverviewBtn" title="Overzichtstabel als CSV">⬇ Overzicht CSV</button>
+      <button id="csvDataBtn" title="Gefilterde data als CSV">⬇ Data CSV</button>
+      <button class="ghost" id="editBtn">Aanpassen</button>
+      <button class="ghost" id="restartBtn">Opnieuw</button>
+    </div>
+  </div>`;
+  if (state.parts.tabs && state.tabCol) {
+    const vals = state.catValues[state.tabCol] || [];
+    html += `<div class="tabs" role="tablist" aria-label="${esc(state.tabCol)}">
+      <button class="tab ${!state.view.tab?"active":""}" data-tab="" role="tab" aria-selected="${!state.view.tab}">Alles</button>
+      ${vals.map(v => `<button class="tab ${state.view.tab===v?"active":""}" data-tab="${esc(v)}" role="tab" aria-selected="${state.view.tab===v}">${esc(v)}</button>`).join("")}
+    </div>`;
+  }
+  html += `<div class="filters">
+    ${state.maxMs ? `<span class="hint">Periode:</span>
+      ${[["30","30 dagen"],["90","90 dagen"],["all","alles"]].map(([p, lbl]) =>
+        `<button class="tab ${state.view.period===p?"active":""}" data-period="${p}">${lbl}</button>`).join("")}` : ""}
+    ${filterCols.length ? `<span class="hint" style="margin-left:10px">Filter:</span>` + filterCols.map(col => `
+      <select data-filter="${esc(col)}" aria-label="Filter op ${esc(col)}">
+        <option value="">${esc(col)}: alles</option>
+        ${(state.catValues[col]||[]).map(v => `<option ${state.view.filters[col]===v?"selected":""}>${esc(v)}</option>`).join("")}
+      </select>`).join("") : ""}
+  </div>`;
+  if (!rows.length) {
+    html += `<div class="card"><h2>Geen data binnen deze selectie</h2><p class="sub">Pas de filters, periode of het tabje aan.</p></div>`;
+  } else if (state.route === "custom") {
+    html += renderKpisCustom(rows);
+    const cards = state.charts.map((ch, i) => renderCustomChart(rows, ch, i)).filter(Boolean);
+    for (let i = 0; i < cards.length; i += 2) {
+      const pair = cards.slice(i, i+2);
+      html += `<div class="charts even" style="${pair.length === 1 ? "grid-template-columns:1fr" : ""}">${pair.join("")}</div>`;
+    }
+    if (state.parts.table) html += renderTable(rows);
+  } else {
+    if (state.parts.kpi) html += renderKpisStandard(rows);
+    const line = (state.parts.line && state.dateCol) ? renderLineChart(rows) : "";
+    const bar = (state.parts.bar && state.groupCol) ? renderBarChart(rows) : "";
+    if (line || bar) html += `<div class="charts" style="${line && bar ? "" : "grid-template-columns:1fr"}">${line}${bar}</div>`;
+    const dist = state.parts.dist ? renderDistChart(rows) : "";
+    const wd = (state.parts.weekday && state.dateCol) ? renderWeekdayChart(rows) : "";
+    if (dist || wd) html += `<div class="charts" style="${dist && wd ? "grid-template-columns:1fr 1fr" : "grid-template-columns:1fr"}">${dist}${wd}</div>`;
+    if (state.parts.table) html += renderTable(rows);
+  }
+  return html;
+}
+function bindStep6(){
+  $("#editBtn").addEventListener("click", () => goto(4));
+  $("#saveBtn").addEventListener("click", saveConfig);
+  $("#restartBtn").addEventListener("click", () => {
+    state.columns = []; state.rows = null; state.rawRows = null; state.source = null; state.fileName = null;
+    resetForNewColumns();
+    goto(1);
+  });
+  $("#csvOverviewBtn").addEventListener("click", () => exportCsv("overzicht"));
+  $("#csvDataBtn").addEventListener("click", () => exportCsv("data"));
+  document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => {
+    state.view.tab = b.dataset.tab || null; render();
+  }));
+  document.querySelectorAll("[data-period]").forEach(b => b.addEventListener("click", () => {
+    state.view.period = b.dataset.period; render();
+  }));
+  document.querySelectorAll("[data-filter]").forEach(sel => sel.addEventListener("change", () => {
+    state.view.filters[sel.dataset.filter] = sel.value || null; render();
+  }));
+  if (state.route !== "custom") return;
+  /* aanpassen rechtstreeks op het dashboard */
+  document.querySelectorAll("[data-kagg]").forEach(sel => sel.addEventListener("change", () => {
+    state.kpis[+sel.dataset.kagg].agg = sel.value; render();
+  }));
+  document.querySelectorAll("[data-krm]").forEach(b => b.addEventListener("click", () => {
+    state.kpis.splice(+b.dataset.krm, 1); render();
+  }));
+  const addSel = $("#kpiAddSel");
+  if (addSel) addSel.addEventListener("change", () => {
+    if (!addSel.value) return;
+    state.kpis.push({ col: addSel.value, agg: defaultAgg(addSel.value) });
+    render();
+  });
+  document.querySelectorAll("[data-dcx]").forEach(sel => sel.addEventListener("change", () => {
+    const ch = state.charts[+sel.dataset.dcx];
+    ch.x = sel.value;
+    const isCat = ch.x.startsWith("cat:") || ch.x === "weekdag";
+    if (isCat) { ch.series = ch.series.slice(0, 1); if (!["staven","kolommen"].includes(ch.form)) ch.form = "kolommen"; }
+    else if (!["lijn","kolommen"].includes(ch.form)) ch.form = "lijn";
+    render();
+  }));
+  document.querySelectorAll("[data-dcf]").forEach(sel => sel.addEventListener("change", () => {
+    state.charts[+sel.dataset.dcf].form = sel.value; render();
+  }));
+}
+
+/* ---------- tooltip ---------- */
+const tooltip = document.getElementById("tooltip");
+document.addEventListener("mousemove", (e) => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (t) {
+    tooltip.textContent = t.dataset.tip;
+    tooltip.style.display = "block";
+    const pad = 14;
+    let lx = e.clientX + pad, ly = e.clientY + pad;
+    const r = tooltip.getBoundingClientRect();
+    if (lx + r.width > window.innerWidth - 8) lx = e.clientX - r.width - pad;
+    if (ly + r.height > window.innerHeight - 8) ly = e.clientY - r.height - pad;
+    tooltip.style.left = lx + "px"; tooltip.style.top = ly + "px";
+  } else {
+    tooltip.style.display = "none";
+  }
+});
+
+/* ---------- thema ---------- */
+function applyTheme(){
+  const root = document.documentElement;
+  if (state.theme === "auto") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", state.theme);
+  if (state.accent === "blauw") root.removeAttribute("data-accent");
+  else root.setAttribute("data-accent", state.accent);
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderStepper();
+  const main = $("#main");
+  const steps = { 1: [renderStep1, bindStep1], 2: [renderStep2, bindStep2], 3: [renderStep3, bindStep3],
+                  4: [renderStep4, bindStep4], 5: [renderStep5, bindStep5], 6: [renderStep6, bindStep6] };
+  const [r, b] = steps[state.step];
+  main.innerHTML = `<div class="step">` + r() + `</div>`;
+  b();
+}
+applyTheme();
+render();
+</script>
+<!-- ParseLab: ingebed in het dashboard -> zelfde tokens als de shell, geen eigen kop, voet of navigatie -->
+<style id="parselab-embed">
+  html.parselab-embed, html.parselab-embed[data-theme] {
+    color-scheme: light;
+    --page:#FBFAF6; --surface:#FFFFFF; --ink:#16293F; --ink-2:#16293F; --muted:#6B7A8C;
+    --grid:#E6E3D8; --baseline:#D8D5C8; --border:#E6E3D8;
+    --accent:#1F3A5F; --accent-ink:#F2F0E7; --radius:14px;
+    --shadow-card:0 18px 44px rgba(6,18,35,.10); --shadow-hover:0 18px 44px rgba(6,18,35,.14);
+  }
+  html.parselab-embed body, html.parselab-embed .display, html.parselab-embed h1, html.parselab-embed h2, html.parselab-embed h3 {
+    font-family: Poppins, -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  html.parselab-embed .site-header, html.parselab-embed .site-footer,
+  html.parselab-embed .wordmark, html.parselab-embed .tagline, html.parselab-embed body > footer { display:none !important; }
+  html.parselab-embed .topbar-wrap { display:none !important; }
+</style>
+<script>
+  (function () {
+    var embedded = false;
+    try { embedded = window.self !== window.top || /[?&]embed=1/.test(location.search); } catch (e) { embedded = true; }
+    if (!embedded) return;
+    document.documentElement.classList.add("parselab-embed");
+    function post(msg) { try { window.parent.postMessage(Object.assign({ source:"parselab-tool" }, msg), "*"); } catch (e) {} }
+    
+    // Stappen lopen via de zijbalk van het dashboard. Eigen stappenbalk is verborgen.
+    function report() {
+      try { post({ type:"parselab:section", section: String(state.step), max: state.step, labels: STEPS }); } catch (e) {}
+      // Statistieken voor het dashboard (dashboard.md: tellers via postMessage, niet via localStorage).
+      try {
+        var list = readConfigs(); var c = list[0] || null;
+        post({ type:"parselab:stats", tool:"board", saved: list.length > 0, fileName: c && c.fileName || null,
+               columns: c && Array.isArray(c.columns) ? c.columns.length : null,
+               tiles: c ? ((Array.isArray(c.kpis) ? c.kpis.length : 0) + (Array.isArray(c.charts) ? c.charts.length : 0)) : null });
+      } catch (e) {}
+    }
+    // Projecten = de opgeslagen overzichten. Openen = het betreffende overzicht laden.
+    function syncProjects() {
+      try { var list = readConfigs();
+        post({ type: "parselab:projects", tool: "board", list: list.map(function (cfg) {
+          return { id: "board:" + cfg.id, name: cfg.name || cfg.fileName || "Mijn overzicht", payload: { saved: true, id: cfg.id }, updated: cfg.savedAt || null };
+        }) }); } catch (e) {}
+    }
+    syncProjects();
+    var _setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { _setItem.apply(this, arguments); if (k === "paneel-configs" || k === "paneel-config") setTimeout(syncProjects, 0); };
+    var _removeItem = Storage.prototype.removeItem;
+    Storage.prototype.removeItem = function (k) { _removeItem.apply(this, arguments); if (k === "paneel-configs" || k === "paneel-config") setTimeout(syncProjects, 0); };
+    function boardId(id) { return (typeof id === "string" && id.indexOf("board:") === 0) ? id.slice(6) : null; }
+    window.addEventListener("message", function (ev) {
+      var d = ev.data || {};
+      if (d.type === "parselab:rename-project" && boardId(d.id)) {
+        try { var id = boardId(d.id); var list = readConfigs(); var hit = list.find(function (c) { return c.id === id; });
+          if (hit) { hit.name = uniqueConfigName(d.name, list, id); writeConfigs(list); if (state.step === 1) render(); } } catch (e) {}
+        return;
+      }
+      if (d.type === "parselab:delete-project" && boardId(d.id)) { try { deleteConfig(boardId(d.id)); if (state.step === 1) render(); } catch (e) {} return; }
+      if (d.type === "parselab:load-project" && d.project) {
+        try {
+          if (d.project.payload && d.project.payload.saved) {
+            var cfg = readConfig(d.project.payload.id || boardId(d.project.id) || null) || readConfig();
+            if (cfg) loadConfig(cfg); else goto(1);
+          } else { goto(1); }
+        } catch (e) {}
+      }
+    });
+    window.addEventListener("message", function (ev) {
+      var d = ev.data || {};
+      if (d.type !== "parselab:nav" || !d.section) return;
+      var n = parseInt(d.section, 10);
+      try { if (n >= 1 && n <= state.step) goto(n); else report(); } catch (e) {}
+    });
+    try {
+      var _render = render;
+      render = function () { _render.apply(this, arguments); report(); };
+    } catch (e) {}
+    window.addEventListener("load", report);
+    try { report(); post({ type:"parselab:ready", tool:"board" }); } catch (e) {}
+  })();
+</script>
+</body>
