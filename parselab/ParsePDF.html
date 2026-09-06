@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ParsePDF — ParseLab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: #FBFAF6; font-family: Poppins, -apple-system, "Segoe UI", system-ui, sans-serif; }
+  .pl-container { max-width: 1120px; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 767px) { .pl-container { padding: 32px 20px 64px; } }
+</style>
+</head>
+<body>
+<div class="pl-page"><div class="pl-light"><div class="pl-container"><div class="pl-section">
+<div id="pl-parsepdf-root"></div>
+<!-- 1-config-stijl.html -->
+<!--
+  ParsePDF — embed 1 van 5: configuratie en stijl
+  Plaats bovenaan de pagina, boven de lege container <div id="pl-parsepdf-root">.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+window.PARSELAB={supabaseUrl:"https://wgmwpwviqhcsyvfrwual.supabase.co",supabaseKey:"sb_publishable_3NaKuKqUgGfvF2q772MwIw_hfHdklwo",dashboardPath:"/dashboard",loginPath:"/inloggen",prices:{pro:"",business:""}};
+window.PARSELAB.client=window.supabase.createClient(window.PARSELAB.supabaseUrl,window.PARSELAB.supabaseKey,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+</script>
+<style>
+#pl-parsepdf-root{font-family:Poppins,-apple-system,"Segoe UI",system-ui,sans-serif;color:#16293F}
+.pld-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:32px}
+.pld-title{margin:0;font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.pld-sub{margin:6px 0 0;color:#4A5A6C;font-size:16px;line-height:1.55}
+.pld-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.pld-card{background:#FFF;color:#16293F;border-radius:20px;padding:28px;box-shadow:0 18px 44px rgba(6,18,35,.10);display:flex;flex-direction:column;gap:12px;min-width:0}
+.pld-card--navy{background:#1F3A5F;color:#F2F0E7;box-shadow:0 24px 60px rgba(6,18,35,.28)}
+.pld-caps{margin:0;font-size:13px;font-weight:500;letter-spacing:.02em;text-transform:uppercase;color:#4A5A6C}
+.pld-card--navy .pld-caps{color:rgba(242,240,231,.82)}
+.pld-num{margin:0;font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.pld-text{margin:0;color:#4A5A6C;font-size:16px;line-height:1.55}
+.pld-card--navy .pld-text{color:rgba(242,240,231,.82)}
+.pld-pill{display:inline-flex;align-items:center;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:600;background:#F2F0E7;color:#16293F;align-self:flex-start}
+.pld-pill--on{background:#DCE8F2;color:#215A88}
+.pld-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:15px 24px;border:0;border-radius:14px;font:600 16px/1 inherit;cursor:pointer;text-decoration:none;background:#1F3A5F;color:#F2F0E7}
+.pld-btn:hover{filter:brightness(1.08)}
+.pld-btn:focus-visible{outline:2px solid #C9A961;outline-offset:3px}
+.pld-btn:disabled{opacity:.6;cursor:default;filter:none}
+.pld-btn--cream{background:#F2F0E7;color:#16293F}
+.pld-btn--ghost{background:transparent;color:#1F3A5F;border:1px solid #1F3A5F}
+.pld-btn--sm{min-height:36px;padding:10px 16px;font-size:14px}
+.pld-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.pld-msg{margin:0 0 24px;padding:14px 18px;border-radius:14px;font-size:15px;line-height:1.5;background:#DCE8F2;color:#16293F}
+.pld-msg--warn{background:#EDE7D5;color:#16293F;border-left:3px solid #C9A961}
+.pld-bar{height:10px;border-radius:999px;background:#E6E3D8;overflow:hidden}
+.pld-bar>span{display:block;height:100%;background:#2C6FA8;border-radius:999px;transition:width .4s ease-out}
+.pld-bar--hot>span{background:#C9A961}
+.pld-in,.pld-sel{width:100%;min-height:44px;padding:12px 14px;border:1px solid #8A90A5;border-radius:12px;font:15px/1.4 inherit;color:#16293F;background:#FFF}
+.pld-in:focus,.pld-sel:focus{border-color:#2C6FA8;outline:2px solid #C9A961;outline-offset:2px}
+.pld-lbl{display:block;margin:0 0 6px;font-size:13px;font-weight:500;color:#4A5A6C}
+.pld-sect{margin:40px 0 16px}
+.plp-drop{border:2px dashed #8A90A5;border-radius:20px;background:#FFF;color:#16293F;padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.plp-drop--over{border-color:#2C6FA8;background:#DCE8F2}
+.plp-rule{display:grid;grid-template-columns:1.2fr 1fr 1.6fr 1fr auto;gap:12px;align-items:end}
+.plp-scroll{overflow-x:auto;min-width:0}
+.plp-table{width:100%;border-collapse:collapse;font-size:15px;color:#16293F}
+.plp-table th{text-align:left;padding:0 12px 12px 0;font-size:13px;font-weight:500;letter-spacing:.02em;text-transform:uppercase;color:#4A5A6C;white-space:nowrap}
+.plp-table td{padding:12px 12px 12px 0;border-top:1px solid #E6E3D8;vertical-align:top}
+.plp-table tbody tr:hover{background:#FBFAF6}
+.plp-mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:.02em;color:#4A5A6C}
+.plp-file{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #E6E3D8}
+.plp-file:first-of-type{border-top:0}
+.plp-skel{height:14px;border-radius:999px;background:#E6E3D8;animation:plp-pulse 1.2s ease-in-out infinite}
+@keyframes plp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.plp-skel{animation:none}.pld-bar>span{transition:none}}
+@media (max-width:767px){.plp-rule{grid-template-columns:1fr 1fr}.pld-card{padding:24px}}
+@media (max-width:479px){.pld-title{font-size:28px}.pld-num{font-size:26px}.plp-rule{grid-template-columns:1fr}.pld-card{padding:20px}.pld-btn{width:100%}}
+</style>
+<!-- 2-teksten.html -->
+<!-- ParsePDF — embed 2 van 5: teksten en startsjablonen -->
+<script>
+window.PLP_T={
+nl:{title:"ParsePDF",sub:"Haal velden uit je PDF's met regels die je één keer instelt. Alles gebeurt in je eigen browser; er wordt geen document verstuurd.",
+back:"Terug naar dashboard",loading:"Bezig met laden…",
+usage:"Verbruik deze maand",of:"van",pages:"pagina's",left:"nog over deze maand",
+rules:"Veldregels",rulesHint:"Elke regel wordt één kolom in je tabel. Begin met een sjabloon en pas het aan.",
+preset:"Sjabloon",presetInvoice:"Facturen",presetBank:"Bankafschrift",presetBlank:"Leeg",
+fname:"Kolomnaam",ftype:"Zoek op",fvalue:"Waarde",ffilter:"Opschonen",
+tLabel:"Label in de tekst",tRegex:"Patroon (regex)",tFile:"Bestandsnaam",
+xNone:"Niets",xAmount:"Bedrag",xDate:"Datum",
+add:"Regel toevoegen",del:"Verwijderen",save:"Regels bewaren",saved:"Regels bewaard in deze browser.",
+drop:"Sleep je PDF's hierheen",dropBtn:"Bestanden kiezen",dropHint:"Alleen PDF · maximaal 25 MB per bestand · 100 bestanden per keer",
+files:"Gekozen bestanden",clear:"Lijst legen",
+start:"Uitlezen starten",counting:"Pagina's tellen…",reading:"Uitlezen…",
+results:"Resultaat",download:"Download CSV",csvName:"parselab-export.csv",
+colFile:"Bestand",colPages:"Pagina's",
+empty:"Nog geen resultaat. Kies je bestanden en start het uitlezen.",
+errNoFiles:"Kies eerst een of meer PDF-bestanden.",
+errNoRules:"Stel eerst minstens één veldregel in.",
+errBig:"is groter dan 25 MB en is overgeslagen.",
+errType:"is geen PDF en is overgeslagen.",
+errRead:"kon niet worden gelezen. Mogelijk is het bestand beveiligd of beschadigd.",
+errLib:"De PDF-motor kon niet worden geladen. Controleer je verbinding en probeer opnieuw.",
+errUsage:"Het verbruik kon niet worden bijgewerkt. Probeer het opnieuw.",
+limitTitle:"Niet genoeg pagina's over",limitText:"Deze batch is {n} pagina's, je hebt er nog {r} over deze maand. Kies minder bestanden of upgrade je pakket.",
+upgrade:"Pakket bekijken",
+scanned:"bevat geen tekstlaag. Gescande documenten worden nog niet ondersteund."},
+
+en:{title:"ParsePDF",sub:"Pull fields out of your PDFs with rules you set once. Everything happens in your own browser; no document is uploaded.",
+back:"Back to dashboard",loading:"Loading…",
+usage:"Usage this month",of:"of",pages:"pages",left:"left this month",
+rules:"Field rules",rulesHint:"Each rule becomes one column in your table. Start from a template and adjust it.",
+preset:"Template",presetInvoice:"Invoices",presetBank:"Bank statement",presetBlank:"Blank",
+fname:"Column name",ftype:"Find by",fvalue:"Value",ffilter:"Clean up",
+tLabel:"Label in the text",tRegex:"Pattern (regex)",tFile:"File name",
+xNone:"Nothing",xAmount:"Amount",xDate:"Date",
+add:"Add rule",del:"Remove",save:"Save rules",saved:"Rules saved in this browser.",
+drop:"Drag your PDFs here",dropBtn:"Choose files",dropHint:"PDF only · max 25 MB per file · 100 files at a time",
+files:"Selected files",clear:"Clear list",
+start:"Start extraction",counting:"Counting pages…",reading:"Extracting…",
+results:"Result",download:"Download CSV",csvName:"parselab-export.csv",
+colFile:"File",colPages:"Pages",
+empty:"No result yet. Choose your files and start the extraction.",
+errNoFiles:"Choose one or more PDF files first.",
+errNoRules:"Set at least one field rule first.",
+errBig:"is larger than 25 MB and was skipped.",
+errType:"is not a PDF and was skipped.",
+errRead:"could not be read. The file may be protected or damaged.",
+errLib:"The PDF engine failed to load. Check your connection and try again.",
+errUsage:"Usage could not be updated. Please try again.",
+limitTitle:"Not enough pages left",limitText:"This batch is {n} pages and you have {r} left this month. Choose fewer files or upgrade your plan.",
+upgrade:"View plans",
+scanned:"has no text layer. Scanned documents are not supported yet."},
+
+de:{title:"ParsePDF",sub:"Hole Felder aus deinen PDFs mit Regeln, die du einmal festlegst. Alles läuft in deinem Browser; kein Dokument wird hochgeladen.",
+back:"Zurück zum Dashboard",loading:"Wird geladen…",
+usage:"Verbrauch diesen Monat",of:"von",pages:"Seiten",left:"diesen Monat übrig",
+rules:"Feldregeln",rulesHint:"Jede Regel wird eine Spalte in deiner Tabelle. Beginne mit einer Vorlage und passe sie an.",
+preset:"Vorlage",presetInvoice:"Rechnungen",presetBank:"Kontoauszug",presetBlank:"Leer",
+fname:"Spaltenname",ftype:"Suchen nach",fvalue:"Wert",ffilter:"Bereinigen",
+tLabel:"Label im Text",tRegex:"Muster (Regex)",tFile:"Dateiname",
+xNone:"Nichts",xAmount:"Betrag",xDate:"Datum",
+add:"Regel hinzufügen",del:"Entfernen",save:"Regeln speichern",saved:"Regeln in diesem Browser gespeichert.",
+drop:"Ziehe deine PDFs hierher",dropBtn:"Dateien wählen",dropHint:"Nur PDF · max. 25 MB pro Datei · 100 Dateien pro Durchgang",
+files:"Gewählte Dateien",clear:"Liste leeren",
+start:"Auslesen starten",counting:"Seiten zählen…",reading:"Wird ausgelesen…",
+results:"Ergebnis",download:"CSV herunterladen",csvName:"parselab-export.csv",
+colFile:"Datei",colPages:"Seiten",
+empty:"Noch kein Ergebnis. Wähle deine Dateien und starte das Auslesen.",
+errNoFiles:"Wähle zuerst eine oder mehrere PDF-Dateien.",
+errNoRules:"Lege zuerst mindestens eine Feldregel fest.",
+errBig:"ist größer als 25 MB und wurde übersprungen.",
+errType:"ist keine PDF und wurde übersprungen.",
+errRead:"konnte nicht gelesen werden. Die Datei ist möglicherweise geschützt oder beschädigt.",
+errLib:"Die PDF-Engine konnte nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.",
+errUsage:"Der Verbrauch konnte nicht aktualisiert werden. Bitte erneut versuchen.",
+limitTitle:"Nicht genug Seiten übrig",limitText:"Dieser Stapel hat {n} Seiten, du hast noch {r} übrig. Wähle weniger Dateien oder wechsle das Paket.",
+upgrade:"Pakete ansehen",
+scanned:"hat keine Textebene. Gescannte Dokumente werden noch nicht unterstützt."}};
+
+window.PLP_PRESETS={
+invoice:[{naam:"Factuurnummer",type:"label",waarde:"Factuurnummer",filter:"geen"},
+{naam:"Datum",type:"label",waarde:"Factuurdatum",filter:"datum"},
+{naam:"Totaal",type:"label",waarde:"Totaal",filter:"bedrag"},
+{naam:"BTW",type:"label",waarde:"BTW",filter:"bedrag"},
+{naam:"Bestand",type:"bestand",waarde:"",filter:"geen"}],
+bank:[{naam:"Rekening",type:"regex",waarde:"[A-Z]{2}\\d{2}[A-Z0-9]{10,}",filter:"geen"},
+{naam:"Periode",type:"label",waarde:"Periode",filter:"geen"},
+{naam:"Eindsaldo",type:"label",waarde:"Eindsaldo",filter:"bedrag"}],
+blank:[{naam:"Veld 1",type:"label",waarde:"",filter:"geen"}]};
+</script>
+<!-- 3-motor.html -->
+<!-- ParsePDF — embed 3 van 5: uitleesmotor. Draait volledig lokaal in de browser. -->
+<script>
+window.PLP=(function(){
+var LIB="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+var WORKER="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+var MAXBYTES=25*1024*1024, MAXFILES=100;
+var laden=null;
+
+function motor(){
+  if(window.pdfjsLib){window.pdfjsLib.GlobalWorkerOptions.workerSrc=WORKER;return Promise.resolve(window.pdfjsLib);}
+  if(laden)return laden;
+  laden=new Promise(function(ok,fout){
+    var s=document.createElement("script");s.src=LIB;s.async=true;
+    s.onload=function(){
+      if(!window.pdfjsLib){fout(new Error("pdfjs"));return;}
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc=WORKER;ok(window.pdfjsLib);
+    };
+    s.onerror=function(){laden=null;fout(new Error("pdfjs"));};
+    document.head.appendChild(s);
+  });
+  return laden;
+}
+
+function buffer(file){
+  return new Promise(function(ok,fout){
+    var r=new FileReader();
+    r.onload=function(){ok(r.result);};
+    r.onerror=function(){fout(new Error("read"));};
+    r.readAsArrayBuffer(file);
+  });
+}
+
+function open(file){
+  return motor().then(function(pdfjs){
+    return buffer(file).then(function(buf){
+      return pdfjs.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise;
+    });
+  });
+}
+
+// Alleen het aantal pagina's, om vooraf tegen de limiet te kunnen toetsen.
+function tel(file){
+  return open(file).then(function(doc){var n=doc.numPages;doc.destroy();return n;});
+}
+
+// Tekstfragmenten terugbrengen tot leesbare regels: groeperen op hoogte, sorteren op x.
+function regels(tc){
+  var rijen={};
+  tc.items.forEach(function(it){
+    if(!it.str||!it.str.trim())return;
+    var y=Math.round(it.transform[5]/2)*2;
+    (rijen[y]=rijen[y]||[]).push({x:it.transform[4],s:it.str});
+  });
+  return Object.keys(rijen).map(Number).sort(function(a,b){return b-a;}).map(function(y){
+    return rijen[y].sort(function(a,b){return a.x-b.x;}).map(function(o){return o.s;})
+      .join(" ").replace(/\s+/g," ").trim();
+  }).filter(Boolean);
+}
+
+function lees(file){
+  return open(file).then(function(doc){
+    var uit=[],keten=Promise.resolve();
+    for(var i=1;i<=doc.numPages;i++){
+      (function(p){
+        keten=keten.then(function(){return doc.getPage(p);})
+                   .then(function(pg){return pg.getTextContent();})
+                   .then(function(tc){uit.push(regels(tc));});
+      })(i);
+    }
+    return keten.then(function(){
+      var alle=[].concat.apply([],uit);
+      doc.destroy();
+      return {naam:file.naam||file.name,paginas:uit.length,regels:alle,tekst:alle.join("\n")};
+    });
+  });
+}
+
+function esc(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+
+var BEDRAG=/-?(?:€\s*)?\d{1,3}(?:[.\s]\d{3})*,\d{2}|-?\d+[.,]\d{2}/;
+var DATUM=/\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}|\d{1,2}\s+(?:jan|feb|mrt|maa|apr|mei|jun|jul|aug|sep|okt|nov|dec)[a-z]*\.?\s+\d{4}/i;
+
+function schoon(waarde,filter){
+  if(!waarde)return "";
+  if(filter==="bedrag"){var m=String(waarde).match(BEDRAG);return m?m[0].replace(/€\s*/,"").trim():"";}
+  if(filter==="datum"){var d=String(waarde).match(DATUM);return d?d[0].trim():"";}
+  return String(waarde).trim();
+}
+
+function pasToe(regel,doc){
+  if(regel.type==="bestand")return doc.naam;
+  if(regel.type==="regex"){
+    if(!regel.waarde)return "";
+    var re;try{re=new RegExp(regel.waarde,"i");}catch(e){return "";}
+    var m=doc.tekst.match(re);
+    if(!m)return "";
+    return schoon(m[1]!==undefined?m[1]:m[0],regel.filter);
+  }
+  if(regel.type==="label"){
+    if(!regel.waarde)return "";
+    var lab=esc(regel.waarde), grens="(?![A-Za-z0-9\u00C0-\u024F])";
+    // Eerst regels die met het label beginnen, dan het label als los woord,
+    // pas als laatste een losse match. Zo pakt "Totaal" niet "Subtotaal".
+    var patronen=[
+      new RegExp("^\\s*"+lab+grens+"\\s*[:\\-–]?\\s*(.*)","i"),
+      new RegExp("(?:^|\\s)"+lab+grens+"\\s*[:\\-–]?\\s*(.*)","i"),
+      new RegExp(lab+"\\s*[:\\-–]?\\s*(.*)","i")
+    ];
+    for(var p=0;p<patronen.length;p++){
+      for(var i=0;i<doc.regels.length;i++){
+        var t=doc.regels[i].match(patronen[p]);
+        if(!t)continue;
+        var rest=(t[1]||"").trim();
+        if(!rest)rest=(doc.regels[i+1]||"").trim();
+        var w=schoon(rest,regel.filter);
+        if(w)return w;
+      }
+    }
+    return "";
+  }
+  return "";
+}
+
+function rij(doc,regelset){
+  var velden={};
+  regelset.forEach(function(r,i){velden["k"+i]=pasToe(r,doc);});
+  return {naam:doc.naam,paginas:doc.paginas,velden:velden,leeg:doc.regels.length===0};
+}
+
+function csv(regelset,rijen,kopBestand,kopPaginas){
+  var S=";";
+  function cel(v){v=v==null?"":String(v);return /[";\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+  var uit=[[kopBestand,kopPaginas].concat(regelset.map(function(r){return r.naam;})).map(cel).join(S)];
+  rijen.forEach(function(r){
+    uit.push([r.naam,r.paginas].concat(regelset.map(function(x,i){return r.velden["k"+i];})).map(cel).join(S));
+  });
+  return "﻿"+uit.join("\r\n");
+}
+
+function bewaar(naam,tekst){
+  var blob=new Blob([tekst],{type:"text/csv;charset=utf-8;"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");a.href=url;a.download=naam;a.style.display="none";
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},0);
+}
+
+return {tel:tel,lees:lees,rij:rij,csv:csv,bewaar:bewaar,MAXBYTES:MAXBYTES,MAXFILES:MAXFILES};
+})();
+</script>
+<!-- 4-scherm.html -->
+<!-- ParsePDF — embed 4 van 5: schermopbouw -->
+<script>
+window.PLP_S={regels:[],bestanden:[],rijen:[],verbruik:null,taal:"nl",t:null,root:null};
+window.PLP_UI=(function(){
+var S=window.PLP_S,P=window.PLP,CFG=window.PARSELAB;
+var LOC={nl:"nl-NL",en:"en-GB",de:"de-DE"};
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+function nr(n){return Number(n||0).toLocaleString(LOC[S.taal]||"nl-NL");}
+function veld(l,i){var w=el("div");w.appendChild(el("label","pld-lbl",l));w.appendChild(i);return w;}
+function melding(tekst,soort){var p=el("p","pld-msg"+(soort==="warn"?" pld-msg--warn":""),tekst);p.setAttribute("role",soort==="warn"?"alert":"status");return p;}
+function meld(tekst,soort){S.root.insertBefore(melding(tekst,soort),S.root.firstChild);window.scrollTo({top:0,behavior:"smooth"});}
+function over(){if(!S.verbruik)return Infinity;return Math.max(0,Number(S.verbruik.monthly_limit||0)-Number(S.verbruik.used||0));}
+function bewaarRegels(){try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}}
+function laadRegels(){try{var r=JSON.parse(localStorage.getItem("pl_parsepdf_regels")||"null");if(r&&r.length)return r;}catch(e){}
+return JSON.parse(JSON.stringify(window.PLP_PRESETS.invoice));}
+
+function teken(){
+var t=S.t,root=S.root;root.innerHTML="";
+var kop=el("div","pld-head"),links=el("div");
+links.appendChild(el("h1","pld-title",t.title));
+links.appendChild(el("p","pld-sub",t.sub));
+kop.appendChild(links);
+var terug=el("a","pld-btn pld-btn--ghost",t.back);terug.href=CFG.dashboardPath;
+kop.appendChild(terug);root.appendChild(kop);
+if(S.verbruik){
+var vk=el("div","pld-card");
+vk.appendChild(el("p","pld-caps",t.usage));
+var lim=Number(S.verbruik.monthly_limit||0),gebr=Number(S.verbruik.used||0);
+var pct=lim?Math.min(100,Math.round(gebr/lim*100)):0;
+vk.appendChild(el("p","pld-num",nr(gebr)+" "+t.of+" "+nr(lim)));
+var bar=el("div","pld-bar"+(pct>=80?" pld-bar--hot":""));
+bar.setAttribute("role","progressbar");bar.setAttribute("aria-valuemin","0");
+bar.setAttribute("aria-valuemax",String(lim));bar.setAttribute("aria-valuenow",String(gebr));
+var vul=el("span");vul.style.width=pct+"%";bar.appendChild(vul);vk.appendChild(bar);
+vk.appendChild(el("p","pld-text",nr(over())+" "+t.pages+" "+t.left));
+root.appendChild(vk);}
+root.appendChild(el("p","pld-caps pld-sect",t.rules));
+root.appendChild(regelKaart());
+root.appendChild(el("p","pld-caps pld-sect",t.files));
+root.appendChild(bestandKaart());
+root.appendChild(el("p","pld-caps pld-sect",t.results));
+root.appendChild(resultaatKaart());
+}
+
+function regelKaart(){
+var t=S.t,k=el("div","pld-card");
+k.appendChild(el("p","pld-text",t.rulesHint));
+var kies=el("select","pld-sel");
+[["","— "+t.preset+" —"],["invoice",t.presetInvoice],["bank",t.presetBank],["blank",t.presetBlank]]
+.forEach(function(o){var op=el("option","",o[1]);op.value=o[0];kies.appendChild(op);});
+kies.addEventListener("change",function(){var p=window.PLP_PRESETS[kies.value];if(!p)return;
+S.regels=JSON.parse(JSON.stringify(p));bewaarRegels();teken();});
+k.appendChild(veld(t.preset,kies));
+S.regels.forEach(function(r,i){
+var rij=el("div","plp-rule");
+var naam=el("input","pld-in");naam.value=r.naam||"";
+naam.addEventListener("input",function(){r.naam=naam.value;});
+var type=el("select","pld-sel");
+[["label",t.tLabel],["regex",t.tRegex],["bestand",t.tFile]].forEach(function(o){
+var op=el("option","",o[1]);op.value=o[0];if(o[0]===r.type)op.selected=true;type.appendChild(op);});
+var waarde=el("input","pld-in");waarde.value=r.waarde||"";waarde.disabled=r.type==="bestand";
+waarde.addEventListener("input",function(){r.waarde=waarde.value;});
+type.addEventListener("change",function(){r.type=type.value;waarde.disabled=r.type==="bestand";});
+var filter=el("select","pld-sel");
+[["geen",t.xNone],["bedrag",t.xAmount],["datum",t.xDate]].forEach(function(o){
+var op=el("option","",o[1]);op.value=o[0];if(o[0]===r.filter)op.selected=true;filter.appendChild(op);});
+filter.addEventListener("change",function(){r.filter=filter.value;});
+var weg=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.del);weg.type="button";
+weg.addEventListener("click",function(){S.regels.splice(i,1);bewaarRegels();teken();});
+rij.appendChild(veld(t.fname,naam));rij.appendChild(veld(t.ftype,type));
+rij.appendChild(veld(t.fvalue,waarde));rij.appendChild(veld(t.ffilter,filter));
+rij.appendChild(weg);k.appendChild(rij);});
+var rij2=el("div","pld-row");
+var plus=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.add);plus.type="button";
+plus.addEventListener("click",function(){S.regels.push({naam:"",type:"label",waarde:"",filter:"geen"});bewaarRegels();teken();});
+var opslaan=el("button","pld-btn pld-btn--sm",t.save);opslaan.type="button";
+var gemeld=el("p","pld-text");
+opslaan.addEventListener("click",function(){bewaarRegels();gemeld.textContent=t.saved;});
+rij2.appendChild(plus);rij2.appendChild(opslaan);rij2.appendChild(gemeld);
+k.appendChild(rij2);return k;}
+
+function bestandKaart(){
+var t=S.t,k=el("div","pld-card");
+var zone=el("div","plp-drop");
+zone.appendChild(el("p","pld-num",t.drop));
+var invoer=document.createElement("input");
+invoer.type="file";invoer.accept="application/pdf,.pdf";invoer.multiple=true;
+invoer.style.cssText="position:absolute;width:1px;height:1px;opacity:0";
+var knop=el("button","pld-btn",t.dropBtn);knop.type="button";
+knop.addEventListener("click",function(){invoer.click();});
+invoer.addEventListener("change",function(){voegToe(invoer.files);invoer.value="";});
+zone.appendChild(knop);zone.appendChild(invoer);
+zone.appendChild(el("p","pld-text",t.dropHint));
+["dragenter","dragover"].forEach(function(e){zone.addEventListener(e,function(ev){ev.preventDefault();zone.classList.add("plp-drop--over");});});
+["dragleave","drop"].forEach(function(e){zone.addEventListener(e,function(ev){ev.preventDefault();zone.classList.remove("plp-drop--over");});});
+zone.addEventListener("drop",function(ev){if(ev.dataTransfer&&ev.dataTransfer.files)voegToe(ev.dataTransfer.files);});
+k.appendChild(zone);
+if(S.bestanden.length){
+S.bestanden.forEach(function(f,i){
+var r=el("div","plp-file"),l=el("div");
+l.appendChild(el("p","pld-text",f.name));
+l.appendChild(el("p","plp-mono",(f.size/1048576).toFixed(1)+" MB"));
+var w=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.del);w.type="button";
+w.addEventListener("click",function(){S.bestanden.splice(i,1);teken();});
+r.appendChild(l);r.appendChild(w);k.appendChild(r);});
+var rij=el("div","pld-row");
+var start=el("button","pld-btn",t.start);start.type="button";
+start.addEventListener("click",function(){if(window.PLP_RUN)window.PLP_RUN(start,rij);});
+var leeg=el("button","pld-btn pld-btn--ghost",t.clear);leeg.type="button";
+leeg.addEventListener("click",function(){S.bestanden=[];teken();});
+rij.appendChild(start);rij.appendChild(leeg);k.appendChild(rij);}
+return k;}
+
+function voegToe(lijst){
+var t=S.t,fouten=[];
+Array.prototype.slice.call(lijst).forEach(function(f){
+if(S.bestanden.length>=P.MAXFILES)return;
+if(!(/\.pdf$/i.test(f.name)||f.type==="application/pdf")){fouten.push(f.name+" "+t.errType);return;}
+if(f.size>P.MAXBYTES){fouten.push(f.name+" "+t.errBig);return;}
+S.bestanden.push(f);});
+teken();
+if(fouten.length)meld(fouten.join(" "),"warn");}
+
+function resultaatKaart(){
+var t=S.t,k=el("div","pld-card");
+if(!S.rijen.length){k.appendChild(el("p","pld-text",t.empty));return k;}
+var wrap=el("div","plp-scroll"),tab=el("table","plp-table"),thead=el("thead"),tr=el("tr");
+[t.colFile,t.colPages].concat(S.regels.map(function(r){return r.naam||"—";}))
+.forEach(function(h){tr.appendChild(el("th","",h));});
+thead.appendChild(tr);tab.appendChild(thead);
+var tb=el("tbody");
+S.rijen.forEach(function(r){
+var row=el("tr");
+row.appendChild(el("td","",r.naam));
+row.appendChild(el("td","plp-mono",String(r.paginas)));
+S.regels.forEach(function(x,i){
+row.appendChild(el("td",(x.filter==="bedrag"||x.filter==="datum")?"plp-mono":"",r.velden["k"+i]||"—"));});
+tb.appendChild(row);});
+tab.appendChild(tb);wrap.appendChild(tab);k.appendChild(wrap);
+var dl=el("button","pld-btn",t.download);dl.type="button";
+dl.addEventListener("click",function(){P.bewaar(t.csvName,P.csv(S.regels,S.rijen,t.colFile,t.colPages));});
+k.appendChild(dl);return k;}
+
+function limietKaart(n,r){
+var t=S.t,k=el("div","pld-card pld-card--navy");
+k.appendChild(el("p","pld-caps",t.limitTitle));
+k.appendChild(el("p","pld-text",t.limitText.replace("{n}",nr(n)).replace("{r}",nr(r))));
+var a=el("a","pld-btn pld-btn--cream",t.upgrade);a.href=CFG.dashboardPath;
+k.appendChild(a);k.style.marginBottom="24px";return k;}
+
+return {el:el,nr:nr,teken:teken,meld:meld,over:over,laadRegels:laadRegels,limietKaart:limietKaart};
+})();
+</script>
+<!-- 5-verwerken.html -->
+<!-- ParsePDF — embed 5 van 5: verwerking en opstarten. Plaats als laatste. -->
+<script>
+(function(){
+var CFG=window.PARSELAB,P=window.PLP,T=window.PLP_T,S=window.PLP_S,U=window.PLP_UI;
+if(!CFG||!CFG.client||!P||!T||!S||!U){console.error("ParsePDF: onderdelen ontbreken");return;}
+var sb=CFG.client;
+
+window.PLP_RUN=function(knop,rij){
+var t=S.t;
+if(!S.bestanden.length){U.meld(t.errNoFiles,"warn");return;}
+var actief=S.regels.filter(function(r){return r.naam&&(r.type==="bestand"||r.waarde);});
+if(!actief.length){U.meld(t.errNoRules,"warn");return;}
+knop.disabled=true;knop.textContent=t.counting;
+var stand=U.el("p","pld-text");stand.setAttribute("role","status");rij.appendChild(stand);
+var lijst=S.bestanden.slice(),totaal=0,fouten=[],keten=Promise.resolve();
+lijst.forEach(function(f){
+keten=keten.then(function(){return P.tel(f);})
+.then(function(n){totaal+=n;})
+.catch(function(){fouten.push(f.name+" "+t.errRead);});});
+keten.then(function(){
+if(!totaal){herstel(knop);U.meld(fouten.join(" ")||t.errLib,"warn");return null;}
+var over=U.over();
+if(totaal>over){herstel(knop);S.root.insertBefore(U.limietKaart(totaal,over),S.root.firstChild);
+window.scrollTo({top:0,behavior:"smooth"});return null;}
+return sb.rpc("record_usage",{p_tool:"parsepdf",p_pages:totaal}).then(function(r){
+if(r.error)throw new Error("usage");
+knop.textContent=t.reading;
+var uit=[],n=0,k2=Promise.resolve();
+lijst.forEach(function(f){
+k2=k2.then(function(){return P.lees(f);})
+.then(function(doc){
+var r2=P.rij(doc,actief);
+if(r2.leeg)fouten.push(f.name+" "+t.scanned);
+uit.push(r2);n++;stand.textContent=n+" / "+lijst.length;})
+.catch(function(){fouten.push(f.name+" "+t.errRead);});});
+return k2.then(function(){
+S.rijen=uit;S.regels=actief;
+if(S.verbruik)S.verbruik.used=Number(S.verbruik.used||0)+totaal;
+S.bestanden=[];U.teken();
+if(fouten.length)U.meld(fouten.join(" "),"warn");});});
+}).catch(function(e){
+console.error(e);herstel(knop);
+U.meld(e&&e.message==="usage"?t.errUsage:t.errLib,"warn");});
+};
+
+function herstel(knop){knop.disabled=false;knop.textContent=S.t.start;}
+
+function start(){
+var root=document.getElementById("pl-parsepdf-root");
+if(!root)return;
+S.root=root;S.t=T.nl;
+root.innerHTML="";
+var laden=document.createElement("p");laden.className="pld-text";laden.textContent=T.nl.loading;
+root.appendChild(laden);
+sb.auth.getSession().then(function(r){
+if(!r.data.session){window.location.replace(CFG.loginPath);return;}
+return Promise.all([
+sb.from("profiles").select("locale").eq("id",r.data.session.user.id).maybeSingle(),
+sb.rpc("usage_summary")
+]).then(function(res){
+var p=(res[0]&&res[0].data)||{};
+S.taal=T[p.locale]?p.locale:"nl";S.t=T[S.taal];
+document.documentElement.lang=S.taal;
+var u=res[1]&&res[1].data;if(Array.isArray(u))u=u[0];
+S.verbruik=u||null;S.regels=U.laadRegels();U.teken();});
+}).catch(function(e){
+console.error(e);root.innerHTML="";
+var p=document.createElement("p");p.className="pld-msg pld-msg--warn";
+p.textContent=S.t.err||S.t.errRead;root.appendChild(p);});
+}
+document.readyState!=="loading"?start():document.addEventListener("DOMContentLoaded",start);
+})();
+</script>
+</div></div></div></div>
+</body>
+</html>

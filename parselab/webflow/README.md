@@ -14,6 +14,14 @@ Plaatsing, wat de gebruiker ziet en wat er nog niet in zit staat in [`../docs/IN
 
 De volgorde ligt vast: embed 5 gebruikt wat 1 tot en met 4 klaarzetten. Ze staan onder de lege container `<div id="pl-parsepdf-root">`. Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens; splits je iets, zet het nieuwe deel dan vóór embed 5.
 
+## Dezelfde tool als één bestand
+
+```
+node parselab/webflow/bouw-pagina.mjs      # maakt parselab/ParsePDF.html
+```
+
+`parselab/ParsePDF.html` is de vijf embeds achter elkaar in één pagina, met dezelfde Supabase erachter. Zet dat bestand op elke webhost en de tool werkt; handig als je nog geen Webflow-pagina wilt maken. Verander je iets in `webflow/`, bouw dan opnieuw, anders lopen de twee uit elkaar. De lancering zelf staat in [`../docs/LANCERING.md`](../docs/LANCERING.md).
+
 ## Zelf uitproberen zonder Webflow
 
 ```
@@ -27,7 +35,7 @@ Met de adresregel stel je de namaak-Supabase in: `?ingelogd=0` (geen sessie), `?
 
 ## Testen
 
-`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 32 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze en het smalle scherm.
+`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 36 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm en de losse pagina uit `bouw-pagina.mjs`.
 
 ## Nog met de hand te doen in Webflow
 

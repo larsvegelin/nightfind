@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const map = path.join(here, 'proef');
 execFileSync(process.execPath, [path.join(here, 'webflow-proef.mjs'), map], { stdio: 'inherit' });
+execFileSync(process.execPath, [path.join(here, '..', 'webflow', 'bouw-pagina.mjs'), path.join(map, 'ParsePDF.html')], { stdio: 'inherit' });
 
 const TYPE = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.pdf':'application/pdf' };
 const srv = http.createServer((req, res) => {
@@ -142,6 +143,31 @@ const smal = await p.evaluate(() => ({
 ok('geen horizontale schuif op 375px', smal.schuif <= 0, smal.schuif);
 ok('regelvelden staan onder elkaar op 375px', smal.kolommen === 1, smal.kolommen);
 ok('knoppen blijven minstens 44px hoog', smal.knop >= 44, smal.knop);
+
+// 12. de losse pagina uit bouw-pagina.mjs: zelfde embeds, echte cdn-adressen.
+// Die adressen zijn hier onbereikbaar, dus ze worden onderweg vervangen door de lokale kopie.
+const p2 = await ctx.newPage();
+const fouten2 = [];
+p2.on('pageerror', e => fouten2.push(e.message));
+async function stuurOm(patroon, bestand, type) {
+  await p2.route(patroon, r => r.fulfill({ status: 200, contentType: type, body: fs.readFileSync(path.join(map, bestand)) }));
+}
+await stuurOm('**/@supabase/**', 'supabase-stub.js', 'text/javascript');
+await stuurOm('**/pdf.min.js', 'pdf.min.js', 'text/javascript');
+await stuurOm('**/pdf.worker.min.js', 'pdf.worker.min.js', 'text/javascript');
+await p2.route('**/fonts.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+await p2.goto('http://127.0.0.1:8123/ParsePDF.html?gebruikt=10&limiet=100', { waitUntil: 'load' });
+await p2.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
+await p2.reload({ waitUntil: 'load' });
+await p2.waitForSelector('.plp-drop', { timeout: 8000 });
+ok('losse pagina toont ParsePDF met verbruiksmeter', await p2.textContent('.pld-title') === 'ParsePDF' && (await p2.textContent('.pld-num')).includes('10 van 100'));
+ok('losse pagina staat niet in Google', await p2.getAttribute('meta[name=robots]', 'content') === 'noindex, nofollow');
+await p2.setInputFiles('input[type=file]', [path.join(map, 'factuur-b.pdf')]);
+await p2.click('button:has-text("Uitlezen starten")');
+await p2.waitForSelector('.plp-table', { timeout: 30000 });
+const los = await p2.evaluate(() => [...document.querySelectorAll('.plp-table tbody td')].map(td => td.textContent).join('|'));
+ok('losse pagina leest een factuur uit', los.includes('2026-119') && los.includes('968,00'), los);
+ok('geen JS-fouten op de losse pagina', fouten2.length === 0, fouten2.slice(0, 2).join(' || '));
 
 ok('geen JS-fouten', errs.length === 0, errs.slice(0, 3).join(' || '));
 await b.close();
