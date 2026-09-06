@@ -43,3 +43,9 @@ parselab/server/node_modules/
 parselab/tests/shots/
 parselab/tests/qa-result.txt
 parselab/tests/qa-board.csv
+
+# Proefpagina van de Webflow-embeds; wordt gebouwd door tests/webflow-proef.mjs
+parselab/tests/proef/
+
+# Playwright voor de tests, lokaal geïnstalleerd
+node_modules/

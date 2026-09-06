@@ -15,9 +15,11 @@
     color-scheme: light;
     --navy:#1F3A5F; --navy-alt:#1A3253; --ink-deep:#16293F;
     --cream:#F2F0E7; --cream-white:#FBFAF6; --white:#FFFFFF;
-    --on-dark:#F2F0E7; --on-dark-muted:rgba(242,240,231,.72); --on-dark-faint:rgba(242,240,231,.58); --on-dark-label:rgba(242,240,231,.48);
-    --ink:#16293F; --muted:#6B7A8C; --hairline:#E6E3D8;
-    --gold:#C9A961; --gold-tint:#EDE7D5; --blue:#2C6FA8; --blue-tint:#DCE8F2;
+    /* Tekst op donker: nooit lichter dan .62, anders draagt het geen informatie meer (styleguide 2.2). */
+    --on-dark:#F2F0E7; --on-dark-muted:rgba(242,240,231,.82); --on-dark-faint:rgba(242,240,231,.72); --on-dark-label:rgba(242,240,231,.66);
+    --ink:#16293F; --muted:#4A5A6C; --hairline:#E6E3D8;
+    --gold:#C9A961; --gold-tint:#EDE7D5; --blue:#2C6FA8; --blue-on:#215A88; --blue-tint:#DCE8F2;
+    --field:#8A90A5; --danger:#8A3B2E; --dot-off:#B9C3CE;
     --chip-dark:rgba(242,240,231,.16); --nav-active:rgba(242,240,231,.14);
     --shadow-light:0 18px 44px rgba(6,18,35,.10); --shadow-dark:0 24px 60px rgba(6,18,35,.28);
     --font:Poppins,-apple-system,"Segoe UI",system-ui,sans-serif;
@@ -31,12 +33,13 @@
   [hidden] { display:none !important; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; } }
 
-  .caps { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; line-height:1.2; color:var(--muted); }
+  .caps, .pld-caps { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; line-height:1.2; color:var(--muted); }
   .caps-nav { font-size:13px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; }
   .mono { font-family:var(--mono); font-size:13px; letter-spacing:.02em; }
   .mono-12 { font-family:var(--mono); font-size:12px; letter-spacing:.02em; color:var(--muted); }
+  .num, .pld-num { font-family:var(--mono); font-size:30px; font-weight:700; line-height:1.1; letter-spacing:-.01em; color:var(--ink); }
   .title-24 { font-size:24px; font-weight:600; line-height:1.25; letter-spacing:-.01em; text-wrap:balance; }
-  .note { font-size:15px; line-height:1.5; color:var(--muted); text-wrap:pretty; }
+  .note, .pld-text { font-size:15px; line-height:1.5; color:var(--muted); text-wrap:pretty; max-width:66ch; }
   .strong { font-weight:500; color:var(--ink); }
 
   /* ===== Shell ===== */
@@ -47,13 +50,13 @@
   .logo-word { font-size:19px; font-weight:600; letter-spacing:-.02em; color:var(--on-dark); }
   .group { display:flex; flex-direction:column; gap:6px; }
   .group-label { padding:0 8px 6px; color:var(--on-dark-label); }
-  .nav-item { display:flex; align-items:center; gap:12px; width:100%; text-align:left; font-size:16px; font-weight:500; border-radius:14px; padding:12px 14px; color:var(--on-dark-muted); transition:background 150ms ease-out; }
+  .nav-item { display:flex; align-items:center; gap:12px; width:100%; min-height:44px; text-align:left; font-size:16px; font-weight:500; border-radius:14px; padding:12px 14px; color:var(--on-dark-muted); transition:background 150ms ease-out; }
   .nav-item:hover { background:rgba(242,240,231,.08); }
   .nav-item[aria-current="page"] { background:var(--nav-active); color:var(--on-dark); }
   .nav-item .label { flex:1; }
   .nav-item .meta { font-size:12px; font-weight:500; color:var(--on-dark-muted); border-radius:999px; padding:2px 9px; background:var(--chip-dark); white-space:nowrap; }
   .nav-sub { display:flex; flex-direction:column; gap:2px; padding:2px 0 6px 0; }
-  .nav-sub-item { display:flex; align-items:center; gap:10px; width:100%; text-align:left; font-size:15px; font-weight:500; border-radius:14px; padding:9px 14px 9px 52px; color:var(--on-dark-muted); transition:background 150ms ease-out; }
+  .nav-sub-item { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; text-align:left; font-size:15px; font-weight:500; border-radius:14px; padding:9px 14px 9px 52px; color:var(--on-dark-muted); transition:background 150ms ease-out; }
   .nav-sub-item:hover { background:rgba(242,240,231,.08); }
   .nav-sub-item[aria-current="page"] { background:var(--nav-active); color:var(--on-dark); }
   .nav-sub-item[disabled] { color:var(--on-dark-label); cursor:default; }
@@ -76,60 +79,67 @@
   .user-name { font-size:15px; font-weight:500; color:var(--on-dark); }
   .user-mail { font-size:13px; color:var(--on-dark-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .menu { position:absolute; left:8px; right:8px; bottom:calc(100% + 8px); background:var(--white); border-radius:14px; box-shadow:var(--shadow-dark); padding:8px; display:flex; flex-direction:column; gap:2px; z-index:20; }
-  .menu button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; border-radius:9px; font-size:15px; font-weight:500; color:var(--ink); }
+  .menu button { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; text-align:left; padding:10px 12px; border-radius:9px; font-size:15px; font-weight:500; color:var(--ink); }
   .menu button:hover { background:var(--cream); }
 
-  .work { padding:32px 48px 64px; display:flex; flex-direction:column; gap:32px; max-width:1240px; width:100%; min-width:0; }
+  .work { padding:32px 48px 64px; display:flex; flex-direction:column; gap:32px; max-width:1216px; width:100%; min-width:0; }
   .topbar { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
   .topbar-text { display:flex; flex-direction:column; gap:6px; flex:1; min-width:240px; }
   .topbar-text .caps-nav { color:var(--muted); }
   .topbar-text h1 { font-size:34px; font-weight:700; letter-spacing:-.01em; line-height:1.1; text-wrap:balance; }
   .topbar-text .sub { font-size:16px; color:var(--muted); }
   .topbar-actions { display:flex; align-items:center; gap:12px; }
-  .search { background:var(--white); border-radius:14px; padding:13px 18px; font-size:15px; color:var(--ink); box-shadow:var(--shadow-light); min-width:260px; border:0; font-family:inherit; }
+  .search { background:var(--white); border-radius:12px; padding:12px 14px; font-size:15px; color:var(--ink); border:1px solid var(--field); min-width:260px; min-height:44px; font-family:inherit; }
   .search::placeholder { color:var(--muted); }
 
-  .btn { display:inline-flex; align-items:center; gap:12px; font-size:16px; font-weight:600; line-height:1; border-radius:14px; padding:15px 24px; transition:transform 150ms ease-out, filter 150ms ease-out; white-space:nowrap; }
-  .btn:hover { transform:translateY(-1px); filter:brightness(1.03); }
+  .btn, .pld-btn { display:inline-flex; align-items:center; justify-content:center; gap:12px; font-size:16px; font-weight:600; line-height:1; border-radius:14px; padding:15px 24px; min-height:44px; transition:transform 150ms ease-out, filter 150ms ease-out; white-space:nowrap; }
+  .btn[disabled] { opacity:.6; cursor:default; transform:none; filter:none; }
+  .btn:not([disabled]):hover { transform:translateY(-1px); filter:brightness(1.08); }
   .btn .arrow { transition:transform 150ms ease-out; }
   .btn:hover .arrow { transform:translateX(4px); }
   .btn-navy { background:var(--navy); color:var(--on-dark); }
-  .btn-outline { background:var(--white); color:var(--navy); border:1px solid var(--navy); padding:14px 20px; }
-  .btn-small { padding:10px 16px; font-size:15px; }
+  .btn-outline, .pld-btn--ghost { background:transparent; color:var(--navy); border:1px solid var(--navy); padding:14px 23px; }
+  .btn-cream, .pld-btn--cream { background:var(--cream); color:var(--ink-deep); }
+  .btn-danger, .pld-btn--danger { background:transparent; color:var(--danger); border:1px solid var(--danger); padding:14px 23px; }
+  .btn-small, .pld-btn--sm { padding:10px 16px; font-size:14px; min-height:40px; }
   .link { font-size:15px; font-weight:600; color:var(--blue); }
 
-  .card { background:var(--white); border-radius:20px; padding:28px; box-shadow:var(--shadow-light); display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .card, .pld-card { background:var(--white); color:var(--ink); border-radius:20px; padding:28px; box-shadow:var(--shadow-light); display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .card--navy, .pld-card--navy { background:var(--navy); color:var(--on-dark); box-shadow:var(--shadow-dark); }
+  .card--compact { padding:20px; }
   .card-head { display:flex; align-items:center; gap:12px; }
   .card-head .caps { flex:1; }
   .hairline { height:1px; background:var(--hairline); }
   .stack { display:flex; flex-direction:column; gap:2px; }
   .lock { display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--muted); }
   .lock .ico { width:16px; height:16px; flex:none; }
-  .pill { display:inline-flex; align-items:center; border-radius:999px; padding:4px 12px; font-size:13px; font-weight:500; line-height:1.4; white-space:nowrap; }
-  .pill-live { background:var(--blue-tint); color:var(--blue); }
+  .pill, .pld-pill { display:inline-flex; align-items:center; border-radius:999px; padding:4px 12px; font-size:13px; font-weight:600; line-height:1.4; white-space:nowrap; }
+  .pill-live, .pld-pill--on { background:var(--blue-tint); color:var(--blue-on); }
   .pill-neutral { background:var(--cream); color:var(--ink-deep); }
+  .link { color:var(--blue-on); }
 
   /* ===== Overzicht (ParseLab Start): navy kaarten met een mini-visual per tool ===== */
-  .overview-title h1 { font-size:52px; letter-spacing:-.02em; line-height:1.05; color:var(--navy); }
-  .overview-title .sub { font-size:19px; }
-  .launch { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:22px; }
-  .launch button { display:flex; flex-direction:column; gap:18px; text-align:left; background:var(--navy); color:#fff; border-radius:20px; padding:24px; box-shadow:0 18px 40px rgba(31,58,95,.18); transition:transform 180ms ease, box-shadow 180ms ease; }
-  .launch button:hover { transform:translateY(-4px); box-shadow:0 26px 54px rgba(31,58,95,.26); }
+  .overview-title h1 { font-size:34px; letter-spacing:-.01em; line-height:1.1; color:var(--navy); }
+  .overview-title .sub { font-size:16px; }
+  .launch, .pld-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:24px; }
+  .launch > *, .pld-grid > * { min-width:0; }
+  .launch button { display:flex; flex-direction:column; gap:16px; text-align:left; background:var(--navy); color:var(--on-dark); border-radius:20px; padding:28px; min-width:0; box-shadow:var(--shadow-dark); transition:transform 180ms ease; }
+  .launch button:hover { transform:translateY(-4px); }
   .launch .lh { display:flex; align-items:center; justify-content:space-between; width:100%; }
   .launch .ltile { width:38px; height:38px; border-radius:999px; color:var(--navy); font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; font-family:var(--font); }
-  .launch .lt { font-size:21px; font-weight:600; line-height:1.2; }
-  .launch .ls { font-size:14px; color:#A9BAD0; margin-top:8px; line-height:1.45; }
+  .launch .lt { font-size:24px; font-weight:600; line-height:1.2; letter-spacing:-.01em; }
+  .launch .ls { font-size:15px; color:var(--on-dark-muted); margin-top:8px; line-height:1.5; }
   .launch .lv { margin-top:auto; width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px; position:relative; overflow:hidden; height:96px; }
   .lv .rowl { display:flex; align-items:center; gap:6px; }
   .lv .lab { width:26px; height:5px; border-radius:3px; background:rgba(255,255,255,.22); flex:none; }
   .lv .fld { flex:1; height:14px; border-radius:5px; background:rgba(255,255,255,.14); }
-  .lv .fld.on { background:#CFDCEA; display:flex; align-items:center; padding:0 5px; }
+  .lv .fld.on { background:var(--blue-tint); display:flex; align-items:center; padding:0 5px; }
   .lv .caret { width:2px; height:8px; background:var(--navy); animation:pl-caret 2.6s infinite; }
   .lv .chip { position:absolute; left:14px; bottom:8px; font-family:var(--mono); font-size:9px; color:var(--navy); background:var(--gold); border-radius:4px; padding:2px 6px; animation:pl-fill 2.6s infinite; }
   .lv .scan { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:7px; }
   .lv .scan i { display:block; height:12px; border-radius:4px; background:rgba(255,255,255,.13); }
   .lv .scan .beam { position:absolute; inset:0 0 auto 0; height:12px; border-radius:4px; border:1.5px solid var(--gold); background:rgba(201,169,97,.18); animation:pl-scan 2.4s cubic-bezier(.6,0,.4,1) infinite alternate; }
-  .lv .arr { width:16px; display:flex; align-items:center; justify-content:center; color:#8D9AAB; font-size:11px; }
+  .lv .arr { width:16px; display:flex; align-items:center; justify-content:center; color:var(--on-dark-faint); font-size:11px; }
   .lv .rows { flex:1; display:grid; grid-template-rows:repeat(4,1fr); gap:7px; }
   .lv .rows i { display:block; border-radius:4px; background:rgba(207,220,234,.85); animation:pl-row 2.4s infinite; }
   .lv .rows i:nth-child(2) { opacity:.85; animation-delay:.2s; } .lv .rows i:nth-child(3) { opacity:.7; animation-delay:.4s; } .lv .rows i:nth-child(4) { opacity:.55; animation-delay:.6s; }
@@ -139,14 +149,14 @@
   .lv .tbl { flex:1; display:flex; flex-direction:column; gap:5px; font-family:var(--mono); font-size:8px; color:var(--navy); }
   .lv .tbl .tr2 { display:flex; gap:4px; } .lv .tbl .tr2 > i { display:flex; align-items:center; padding-left:3px; flex:1; background:rgba(255,255,255,.2); border-radius:3px; height:12px; font-style:normal; }
   .lv .tbl .tr2 > i.k { flex:none; width:22px; padding:0; } .lv .tbl .tr2.h > i.k { background:rgba(255,255,255,.2); }
-  .lv .tbl .tr2.d { animation:pl-row 2.6s infinite; } .lv .tbl .tr2.d > i { background:#EDEFF3; } .lv .tbl .tr2.d > i.k { background:var(--gold); }
+  .lv .tbl .tr2.d { animation:pl-row 2.6s infinite; } .lv .tbl .tr2.d > i { background:var(--cream-white); } .lv .tbl .tr2.d > i.k { background:var(--gold); }
   .lv .tbl .tr2.d2 { animation-delay:.25s; } .lv .tbl .tr2.d3 { animation-delay:.5s; } .lv .tbl .tr2.d3 > i { background:rgba(237,239,243,.65); } .lv .tbl .tr2.d3 > i.k { background:rgba(201,169,97,.6); }
   .lv .bars { display:flex; align-items:flex-end; gap:5px; height:44px; }
   .lv .bars i { flex:1; display:block; border-radius:3px 3px 0 0; background:rgba(207,220,234,.6); transform-origin:bottom; animation:pl-grow .9s ease-out both; }
   .lv .bars i.g { background:var(--gold); }
   .lv .spark { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
   .lv .spark path { stroke-dasharray:140; stroke-dashoffset:140; animation:pl-dash 1.4s ease-out .3s forwards; }
-  .lv .spark span { font-family:var(--mono); font-size:9px; color:#CFDCEA; }
+  .lv .spark span { font-family:var(--mono); font-size:11px; color:var(--on-dark-muted); }
   @keyframes pl-fill { 0%,12% { transform:translate(0,0); opacity:0; } 20% { opacity:1; } 60% { transform:translate(58px,-22px); opacity:1; } 72%,100% { transform:translate(58px,-22px); opacity:0; } }
   @keyframes pl-caret { 0%,55% { opacity:0; } 62%,100% { opacity:1; } }
   @keyframes pl-scan { 0% { transform:translateY(0); } 100% { transform:translateY(34px); } }
@@ -154,14 +164,17 @@
   @keyframes pl-grow { 0% { transform:scaleY(.15); } 100% { transform:scaleY(1); } }
   @keyframes pl-dash { to { stroke-dashoffset:0; } }
   @media (prefers-reduced-motion: reduce) { .lv * { animation:none !important; } .lv .spark path { stroke-dashoffset:0; } }
-  .proj-row .pname { font-size:19px; font-weight:600; color:var(--navy); overflow-wrap:anywhere; white-space:normal; }
+  .proj-row .pname { font-size:16px; font-weight:600; color:var(--navy); overflow-wrap:anywhere; white-space:normal; }
   .proj-row .ptool { display:flex; align-items:center; gap:16px; }
   .proj-row .mini { display:flex; align-items:flex-end; gap:2px; height:20px; }
-  .proj-row .mini i { display:block; width:4px; border-radius:1px; background:#DDE4EC; }
-  .proj-row .mini i.m { background:#C6D2E0; } .proj-row .mini i.d { background:var(--navy); }
-  .btn-pill { border:1.5px solid var(--navy); color:var(--navy); border-radius:999px; padding:10px 22px; font-size:15px; font-weight:600; background:var(--white); transition:background 150ms ease, color 150ms ease; }
-  .btn-pill:hover { background:var(--navy); color:#fff; }
-  .table { display:flex; flex-direction:column; }
+  .proj-row .mini i { display:block; width:4px; border-radius:1px; background:var(--hairline); }
+  .proj-row .mini i.m { background:var(--dot-off); } .proj-row .mini i.d { background:var(--navy); }
+  .btn-pill { border:1.5px solid var(--navy); color:var(--navy); border-radius:999px; padding:10px 22px; min-height:44px; font-size:15px; font-weight:600; background:var(--white); transition:background 150ms ease, color 150ms ease; }
+  .btn-pill:hover { background:var(--navy); color:var(--on-dark); }
+  .table, .pld-table { display:flex; flex-direction:column; }
+  .table .tr:hover, .pld-table .tr:hover { background:var(--cream-white); }
+  .table .num-cell { font-family:var(--mono); font-size:13px; text-align:right; }
+  .table-wrap { overflow-x:auto; min-width:0; }
   .tr { display:grid; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--hairline); width:100%; text-align:left; color:var(--ink); }
   .proj-row { grid-template-columns:minmax(0,1.6fr) 220px auto auto; padding:20px 0; }
   .files-row { grid-template-columns:1.6fr 1fr auto; }
@@ -169,6 +182,18 @@
   .cell-main > span:first-child { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .cell-tool { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--muted); }
   .empty { padding:8px 0; }
+
+  /* ===== Meter, dropzone en laden (styleguide 6.5, 6.9, 6.10) ===== */
+  .pld-bar { height:10px; border-radius:999px; background:var(--hairline); overflow:hidden; }
+  .pld-bar > i { display:block; height:100%; border-radius:999px; background:var(--blue); }
+  .pld-bar--hot > i { background:var(--gold); }
+  .pld-drop { border:2px dashed var(--field); border-radius:20px; padding:48px; text-align:center; background:var(--white); color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .pld-drop.over { border-color:var(--blue); background:var(--blue-tint); }
+  .skel { display:flex; flex-direction:column; gap:12px; }
+  .skel i { display:block; height:14px; border-radius:999px; background:var(--hairline); animation:pl-pulse 1.4s ease-in-out infinite; }
+  .skel i:nth-child(2) { width:72%; animation-delay:.15s; } .skel i:nth-child(3) { width:54%; animation-delay:.3s; }
+  @keyframes pl-pulse { 0%,100% { opacity:1; } 50% { opacity:.45; } }
+  @media (prefers-reduced-motion: reduce) { .skel i { animation:none; } }
 
   /* ===== Werkbank ===== */
   .bench { padding:0; overflow:hidden; gap:0; }
@@ -199,12 +224,16 @@
   .modal { background:var(--white); border-radius:20px; padding:28px; box-shadow:var(--shadow-dark); width:min(560px, 100%); display:flex; flex-direction:column; gap:16px; max-height:90vh; overflow:auto; }
   .modal .foot { display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
   .field { display:flex; flex-direction:column; gap:6px; }
-  .field label { font-size:13px; font-weight:500; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); }
-  .field input { border:1px solid var(--hairline); border-radius:14px; padding:13px 16px; font-size:16px; font-family:inherit; color:var(--ink); background:var(--white); }
-  .field input:focus { outline:0; border-color:var(--blue); background:var(--blue-tint); }
+  .field label { font-size:13px; font-weight:500; line-height:1.4; color:var(--muted); }
+  .field input, .field select, .pld-in, .pld-sel { width:100%; border:1px solid var(--field); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; color:var(--ink); background:var(--white); min-height:44px; }
+  .field input:focus, .field select:focus, .pld-in:focus, .pld-sel:focus { border-color:var(--blue); outline:2px solid var(--gold); outline-offset:3px; }
+  .field input[aria-invalid="true"] { border-color:var(--gold); }
+  .field .err { font-size:13px; color:var(--danger); }
   .toggle { display:flex; gap:12px; align-items:flex-start; cursor:pointer; }
   .toggle input { margin-top:5px; width:18px; height:18px; accent-color:var(--navy); flex:none; }
-  .server-hint { background:var(--cream); border-radius:14px; padding:14px 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .pld-msg { background:var(--blue-tint); color:var(--ink); border-radius:14px; padding:14px 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .pld-msg .note { color:var(--blue-on); }
+  .server-hint, .pld-msg--warn { background:var(--gold-tint); color:var(--ink); border-left:3px solid var(--gold); border-radius:14px; padding:14px 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   .server-hint .ico { width:18px; height:18px; flex:none; color:var(--muted); }
   .server-hint code { font-family:var(--mono); font-size:13px; background:var(--white); padding:2px 8px; border-radius:9px; }
 
@@ -217,12 +246,12 @@
   .login-card { width:min(440px, 100%); gap:20px; }
   .login .btn { justify-content:center; }
 
-  @media (max-width: 1100px) { .bench-body { grid-template-columns:1fr; } .help-grid { grid-template-columns:1fr; } .login { grid-template-columns:1fr; } .login-left { padding:40px 24px; } }
+  @media (max-width: 991px) { .bench-body { grid-template-columns:1fr; } .help-grid { grid-template-columns:1fr; } .login { grid-template-columns:1fr; } .login-left { padding:40px 24px; } .card { padding:24px; } }
   .side-head { display:flex; align-items:center; justify-content:space-between; }
   .side-body { display:contents; }
   .menu-btn { display:none; width:44px; height:44px; border-radius:14px; background:rgba(242,240,231,.10); flex-direction:column; align-items:center; justify-content:center; gap:5px; }
   .menu-btn span { display:block; width:20px; height:2px; background:var(--cream); border-radius:2px; }
-  @media (max-width: 860px) {
+  @media (max-width: 767px) {
     .shell { grid-template-columns:1fr; }
     .side { position:sticky; top:0; z-index:5; height:auto; padding:14px 20px; gap:16px; }
     .menu-btn { display:flex; }
@@ -234,6 +263,16 @@
     .topbar-text h1 { font-size:28px; }
     .proj-row, .files-row { grid-template-columns:1fr auto; }
     .proj-row > .cell-tool, .files-row > .cell-tool { display:none; }
+    .topbar { flex-direction:column; align-items:stretch; }
+    .topbar-actions { flex-direction:column; align-items:stretch; }
+    .topbar-actions .btn, .topbar-actions .search { width:100%; }
+  }
+  @media (max-width: 479px) {
+    .work { padding:20px 16px 48px; }
+    .card, .launch button { padding:20px; }
+    .topbar-text h1, .overview-title h1 { font-size:28px; }
+    .num, .pld-num { font-size:26px; }
+    .table-wrap { overflow-x:auto; }
   }
 </style>
 </head>
@@ -249,7 +288,17 @@
    ========================================================================= */
 
 const CONFIG = { webstoreUrl: "", lang: "nl", apiBase: "" };
-const TONE = { form:{ tile:"#DCE8F2", dot:"#2C6FA8" }, scrape:{ tile:"#EDE7D5", dot:"#C9A961" }, pdf:{ tile:"#F2F0E7", dot:"#6B7A8C" }, board:{ tile:"#D8D5C8", dot:"#16293F" } };
+/* Getallen volgen de taal van het profiel: 2.500 en niet 2500 (styleguide 3.2). */
+const LOCALE = { nl:"nl-NL", en:"en-GB", de:"de-DE" };
+/* Knop tijdens een actie: uitgeschakeld met "Bezig…"; bij een fout komt het oude label terug. */
+function busy(btn, on) {
+  if (!btn) return;
+  if (on) { if (!btn.dataset.label) btn.dataset.label = btn.innerHTML; btn.disabled = true; btn.textContent = "Bezig…"; }
+  else { btn.disabled = false; if (btn.dataset.label) { btn.innerHTML = btn.dataset.label; delete btn.dataset.label; } }
+}
+function nf(n) { const v = Number(n); return isFinite(v) ? v.toLocaleString(LOCALE[CONFIG.lang] || "nl-NL") : String(n); }
+try { document.documentElement.lang = CONFIG.lang; } catch (e) {}
+const TONE = { form:{ tile:"#DCE8F2", dot:"#2C6FA8" }, scrape:{ tile:"#EDE7D5", dot:"#C9A961" }, pdf:{ tile:"#F2F0E7", dot:"#4A5A6C" }, board:{ tile:"#D8D5C8", dot:"#16293F" } };
 
 /* ---------- sessie: inloglink per e-mail; zonder backend start de sessie op deze computer ---------- */
 const SESSION_KEY = "parselab-session";
@@ -303,14 +352,14 @@ function userHeaders() { const h = {}; if (state.user && state.user.email) h["x-
 const STORE_KEYS = { projects:PROJECTS_KEY, overrides:"parselab-project-overrides", settings:"parselab-settings" };
 let storeTimer = null, storeLoaded = false;
 function pushStore(key) {
-  if (serverOk !== true || !state.user || !storeLoaded) return;
+  if (!/^https?:$/.test(location.protocol) || serverOk !== true || !state.user || !storeLoaded) return;
   clearTimeout(storeTimer);
   storeTimer = setTimeout(async () => {
     for (const k of Object.keys(STORE_KEYS)) { try { await fetch(CONFIG.apiBase + "/api/store/" + k, { method:"PUT", headers:Object.assign({ "content-type":"application/json" }, userHeaders()), body:JSON.stringify({ value: JSON.parse(localStorage.getItem(STORE_KEYS[k]) || "null") }) }); } catch (e) {} }
   }, 800);
 }
 async function pullStore() {
-  if (serverOk !== true || !state.user) return;
+  if (!/^https?:$/.test(location.protocol) || serverOk !== true || !state.user) return;
   try {
     const r = await fetch(CONFIG.apiBase + "/api/store/projects", { headers:userHeaders() }); if (!r.ok) return;
     const remote = (await r.json()).value;
@@ -336,7 +385,11 @@ async function keepFile(d) {
 
 /* ---------- serverstatus: draait de ParseLab-server (node server/server.js)? ---------- */
 let serverOk = null;
-async function checkServer() { try { const r = await fetch(CONFIG.apiBase + "/api/scrape/status", { cache:"no-store" }); serverOk = r.ok; } catch (e) { serverOk = false; } return serverOk; }
+async function checkServer() {
+  // Als los bestand geopend (file://) is er geen server; niet proberen, dat geeft alleen een foutmelding in de console.
+  if (!/^https?:$/.test(location.protocol)) { serverOk = false; return serverOk; }
+  try { const r = await fetch(CONFIG.apiBase + "/api/scrape/status", { cache:"no-store" }); serverOk = r.ok; } catch (e) { serverOk = false; } return serverOk;
+}
 
 /* ---------- live tellers uit de tools (alleen via postMessage) ---------- */
 const stats = { pdf:null, board:null, scrape:null, extension:null };
@@ -480,7 +533,7 @@ function renderShell() {
     <main class="work">
       <div class="topbar">
         <div class="topbar-text"><div class="caps-nav" id="top-eyebrow"></div><h1 id="top-title"></h1><div class="sub" id="top-sub"></div></div>
-        <div class="topbar-actions"><input class="search" id="search" type="search" placeholder="Zoek een project…" aria-label="Zoeken"><button type="button" class="btn btn-navy" id="top-action"></button></div>
+        <div class="topbar-actions"><input class="pld-in search" id="search" type="search" placeholder="Zoek een project…" aria-label="Zoeken"><button type="button" class="pld-btn btn btn-navy" id="top-action"></button></div>
       </div>
       <section id="view"></section>
     </main>
@@ -508,11 +561,11 @@ function renderLogin() {
       <p>Log in met je e-mailadres. Je krijgt een link, geen wachtwoord om te onthouden.</p>
     </div>
     <div class="login-right">
-      <form class="card login-card" id="login-form">
+      <form class="pld-card card login-card" id="login-form">
         <div class="title-24">Inloggen</div>
         <div class="field"><label for="login-email">E-mailadres</label><input id="login-email" type="email" required placeholder="naam@kantoor.nl" autocomplete="email"></div>
-        <button type="submit" class="btn btn-navy">Stuur mij een inloglink <span class="arrow">→</span></button>
-        <div class="note" id="login-note" hidden></div>
+        <button type="submit" class="pld-btn btn btn-navy">Stuur mij een inloglink <span class="arrow">→</span></button>
+        <div class="pld-text note" id="login-note" hidden></div>
       </form>
     </div>
   </div>`;
@@ -521,6 +574,7 @@ function bindLogin() {
   const form = document.getElementById("login-form"), note = document.getElementById("login-note");
   form.onsubmit = e => {
     e.preventDefault(); const email = document.getElementById("login-email").value.trim(); if (!email) return;
+    busy(form.querySelector("button[type=submit]"), true);
     note.hidden = false; note.innerHTML = `Inloglink gestuurd naar <span class="strong">${esc(email)}</span>. In deze versie ben je meteen ingelogd.`;
     setTimeout(async () => { state.user = userFromEmail(email); writeSession(state.user); if (!location.hash) history.replaceState(null, "", "#overview"); render(); if (serverOk) { await pullStore(); renderNavOnly(); if (!state.bench) render(); } }, 700);
   };
@@ -555,21 +609,21 @@ function renderOverview(defs) {
     <div style="display:flex; flex-direction:column; gap:32px;">
       <div class="launch">
         ${defs.map(t => `<button type="button" data-bench="${t.key}">
-          <span class="lh"><span class="ltile" style="background:${t.key === "form" ? "#CFDCEA" : "#E7E2CE"}">${esc(t.mark)}</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span>
+          <span class="lh"><span class="ltile" style="background:${t.key === "form" ? "#DCE8F2" : "#EDE7D5"}">${esc(t.mark)}</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span>
           <span class="stack"><span class="lt">${esc(t.task)}</span><span class="ls">${esc(t.tagline)}</span></span>
           <span class="lv" aria-hidden="true">${visual(t.key)}</span>
         </button>`).join("")}
       </div>
-      <div class="card">
-        <div class="card-head"><div class="caps">Je projecten</div>${all.length ? `<span class="note">${all.length}</span>` : ""}</div>
-        ${all.length ? `<div class="table">${all.slice(0, 12).map(pr => { const t = byKey[pr.tool]; if (!t) return ""; return `
+      <div class="pld-card card">
+        <div class="card-head"><div class="pld-caps caps">Je projecten</div>${all.length ? `<span class="pld-text note">${all.length}</span>` : ""}</div>
+        ${all.length ? `<div class="pld-table table">${all.slice(0, 12).map(pr => { const t = byKey[pr.tool]; if (!t) return ""; return `
           <div class="tr proj-row">
             <div class="cell-main"><span class="pname">${esc(pr.name)}</span><span class="mono-12">${esc(t.projectWord)}${pr.updated ? " · " + esc(when(pr.updated)) : ""}</span></div>
             <div class="ptool"><span class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></span>${miniVisual(t.key, pr)}</div>
             <button type="button" class="btn-pill" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>
             <button type="button" class="link" data-edit-project="${esc(pr.id)}">Naam</button>
           </div>`; }).join("")}</div>` :
-        `<div class="note empty">Nog geen projecten. Kies hierboven waar je mee wilt beginnen; wat je bewaart komt hier te staan.</div>`}
+        `<div class="pld-text note empty">Nog geen projecten. Kies hierboven waar je mee wilt beginnen; wat je bewaart komt hier te staan.</div>`}
       </div>
     </div>`;
 }
@@ -593,36 +647,36 @@ function miniVisual(key, pr) {
 function renderBench(t) {
   let b = t.bench;
   const extPanel = b.kind === "extension" || (b.extensionSection && state.section === b.extensionSection);
-  const hint = (t.key === "scrape" && serverOk === false) ? `<div class="server-hint">${LOCK_ICO}<span class="note" style="flex:1"><span class="strong">De ParseLab-server draait niet.</span> Website uitlezen werkt via de server. Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.</span><button type="button" class="btn btn-outline btn-small" id="recheck-server">Opnieuw proberen</button></div>` : "";
-  if (!extPanel) return hint + `<div class="card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
+  const hint = (t.key === "scrape" && serverOk === false) ? `<div class="server-hint" role="status" aria-live="polite">${LOCK_ICO}<span class="pld-text note" style="flex:1"><span class="strong">De ParseLab-server draait niet.</span> ${!/^https?:$/.test(location.protocol) ? "Je hebt ParseLab als los bestand geopend; documenten en overzichten werken gewoon. Voor websites uitlezen heb je de map ParseLab nodig." : "Website uitlezen werkt via de server."} Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.</span><button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" id="recheck-server">Opnieuw proberen</button></div>` : "";
+  if (!extPanel) return hint + `<div class="pld-card card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
   const store = CONFIG.webstoreUrl, ext = stats.extension, title = b.extPanelTitle || b.panelTitle;
   return `
-    <div class="card bench">
+    <div class="pld-card card bench">
       <div class="bench-body">
         <div style="display:flex; flex-direction:column; gap:24px;">
           <div class="title-24" style="max-width:26ch;">${esc(title)}</div>
-          <div class="note" style="max-width:56ch; font-size:16px;">${esc(b.intro)}</div>
-          ${ext ? `<div class="bench-note">${lock("Extensie verbonden in deze browser · versie " + ext.version)}<span class="note">Open een website en klik op het ParseLab-icoon rechtsboven.</span></div>` : `
+          <div class="pld-text note" style="max-width:56ch; font-size:16px;">${esc(b.intro)}</div>
+          ${ext ? `<div class="bench-note">${lock("Extensie verbonden in deze browser · versie " + ext.version)}<span class="pld-text note">Open een website en klik op het ParseLab-icoon rechtsboven.</span></div>` : `
           <div class="bench-actions">
-            ${store ? `<a class="btn btn-navy" href="${esc(store)}" target="_blank" rel="noopener">Toevoegen aan Chrome <span class="arrow">→</span></a>` : `<button type="button" class="btn btn-navy" id="toggle-it">Installeren <span class="arrow">→</span></button>`}
-            <a class="btn btn-outline" href="#help">Handleiding</a>
+            ${store ? `<a class="pld-btn btn btn-navy" href="${esc(store)}" target="_blank" rel="noopener">Toevoegen aan Chrome <span class="arrow">→</span></a>` : `<button type="button" class="pld-btn btn btn-navy" id="toggle-it">Installeren <span class="arrow">→</span></button>`}
+            <a class="pld-btn pld-btn--ghost btn btn-outline" href="#help">Handleiding</a>
           </div>
-          <div class="note">Daarna staat het ParseLab-icoon rechtsboven in je browser. Zet het vast met de punaise.</div>
-          ${store ? "" : `<div class="note">De Chrome Web Store-vermelding is er nog niet; tot die tijd voegt IT-beheer de toevoeging toe via de route hieronder.</div>`}`}
+          <div class="pld-text note">Daarna staat het ParseLab-icoon rechtsboven in je browser. Zet het vast met de punaise.</div>
+          ${store ? "" : `<div class="pld-text note">De Chrome Web Store-vermelding is er nog niet; tot die tijd voegt IT-beheer de toevoeging toe via de route hieronder.</div>`}`}
           <details class="it" id="it-details">
             <summary>Voor IT-beheer</summary>
             <div>
               <div class="steps">
-                <div class="step"><span class="step-n">1</span><div class="stack"><span>Download het pakket</span><span class="note">Pak de zip uit in een map die blijft staan.</span></div></div>
-                <div class="step"><span class="step-n">2</span><div class="stack"><span>Laad het in Chrome, Edge of Brave</span><span class="note">chrome://extensions → Ontwikkelaarsmodus aan → Uitgepakte extensie laden.</span></div></div>
+                <div class="step"><span class="step-n">1</span><div class="stack"><span>Download het pakket</span><span class="pld-text note">Pak de zip uit in een map die blijft staan.</span></div></div>
+                <div class="step"><span class="step-n">2</span><div class="stack"><span>Laad het in Chrome, Edge of Brave</span><span class="pld-text note">chrome://extensions → Ontwikkelaarsmodus aan → Uitgepakte extensie laden.</span></div></div>
               </div>
-              <div class="bench-actions"><a class="btn btn-outline" href="tools/parselab-extension.zip" download="parselab-extension.zip">Download pakket (zip)</a><a class="btn btn-outline" href="tools/extension/README.md" target="_blank" rel="noopener">Technische notities</a></div>
-              <div class="kv"><span class="caps">Rechten</span><span class="mono">activeTab · storage · downloads · sitetoegang per website na toestemming</span><span class="caps">Gegevens</span><span class="mono">0 bytes verlaten je computer</span></div>
+              <div class="bench-actions"><a class="pld-btn pld-btn--ghost btn btn-outline" href="tools/parselab-extension.zip" download="parselab-extension.zip">Download pakket (zip)</a><a class="pld-btn pld-btn--ghost btn btn-outline" href="tools/extension/README.md" target="_blank" rel="noopener">Technische notities</a></div>
+              <div class="kv"><span class="pld-caps caps">Rechten</span><span class="mono">activeTab · storage · downloads · sitetoegang per website na toestemming</span><span class="pld-caps caps">Gegevens</span><span class="mono">0 bytes verlaten je computer</span></div>
             </div>
           </details>
         </div>
         <div class="bench-side">
-          <div class="bench-note"><span class="caps">Zo begin je</span>${t.steps.map((s, i) => `<span class="note"><span class="strong">${i + 1}. ${esc(s.title)}.</span> ${esc(s.body)}</span>`).join("")}</div>
+          <div class="bench-note"><span class="pld-caps caps">Zo begin je</span>${t.steps.map((s, i) => `<span class="pld-text note"><span class="strong">${i + 1}. ${esc(s.title)}.</span> ${esc(s.body)}</span>`).join("")}</div>
           <div class="bench-note">${lock(t.local)}</div>
         </div>
       </div>
@@ -641,8 +695,8 @@ function initFrame(f) {
 /* ---------- bestanden: alleen wat er echt is (uitvoeringen van de server) ---------- */
 function renderFiles() {
   const keep = readSettings().keepFiles;
-  return `<div class="card"><div class="card-head"><div class="caps">Bewaard in ParseLab</div>${keep ? "" : `<span class="note">Staat uit; zet aan onder Account</span>`}</div><div id="files-kept" class="note">Laden…</div></div>
-    <div class="card" style="margin-top:24px"><div class="card-head"><div class="caps">Uitgelezen websites</div><span class="note">Op de ParseLab-server</span></div><div id="files-list" class="note">Laden…</div></div>`;
+  return `<div class="pld-card card"><div class="card-head"><div class="pld-caps caps">Bewaard in ParseLab</div>${keep ? "" : `<span class="pld-text note">Staat uit; zet aan onder Account</span>`}</div><div id="files-kept" class="skel" aria-busy="true"><i></i><i></i><i></i></div></div>
+    <div class="pld-card card" style="margin-top:24px"><div class="card-head"><div class="pld-caps caps">Uitgelezen websites</div><span class="pld-text note">Op de ParseLab-server</span></div><div id="files-list" class="skel" aria-busy="true"><i></i><i></i><i></i></div></div>`;
 }
 async function loadFiles() {
   const kept = document.getElementById("files-kept");
@@ -650,18 +704,19 @@ async function loadFiles() {
     const list = (await filesAll()).sort((a, b) => String(b.when).localeCompare(String(a.when)));
     const byKey = Object.fromEntries(toolDefs().map(d => [d.key, d]));
     document.querySelectorAll("a[data-objurl]").forEach(a => URL.revokeObjectURL(a.href));
-    kept.className = list.length ? "table" : "note";
-    kept.innerHTML = list.length ? list.map(f => { const t = byKey[f.tool] || byKey.pdf; return `<div class="tr files-row"><div class="cell-main"><span>${esc(f.name)}</span><span class="mono-12">${esc(when(f.when))}${f.rows ? " · " + f.rows + " regels" : ""} · ${Math.max(1, Math.round(f.size / 1024))} kB</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div><span style="display:flex; gap:8px"><a class="btn btn-outline btn-small" data-objurl="1" href="${URL.createObjectURL(f.blob)}" download="${esc(f.name)}">Download</a><button type="button" class="link" data-del-file="${esc(f.id)}" title="Verwijderen">✕</button></span></div>`; }).join("") : `<div class="note empty">${readSettings().keepFiles ? "Nog geen bestanden. Wat je downloadt uit ParsePDF en ParseBoard komt hier te staan." : "Bestanden bewaren staat uit. Downloads gaan alleen naar je map Downloads."}</div>`;
+    kept.removeAttribute("aria-busy"); kept.className = list.length ? "pld-table table" : "note";
+    kept.innerHTML = list.length ? list.map(f => { const t = byKey[f.tool] || byKey.pdf; return `<div class="tr files-row"><div class="cell-main"><span>${esc(f.name)}</span><span class="mono-12">${esc(when(f.when))}${f.rows ? " · " + nf(f.rows) + " regels" : ""} · ${nf(Math.max(1, Math.round(f.size / 1024)))} kB</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div><span style="display:flex; gap:8px"><a class="pld-btn pld-btn--ghost btn btn-outline btn-small" data-objurl="1" href="${URL.createObjectURL(f.blob)}" download="${esc(f.name)}">Download</a><button type="button" class="link" data-del-file="${esc(f.id)}" title="Verwijderen">✕</button></span></div>`; }).join("") : `<div class="pld-text note empty">${readSettings().keepFiles ? "Nog geen bestanden. Wat je downloadt uit ParsePDF en ParseBoard komt hier te staan." : "Bestanden bewaren staat uit. Downloads gaan alleen naar je map Downloads."}</div>`;
     document.querySelectorAll("[data-del-file]").forEach(el => { el.onclick = async () => { await filesDel(el.getAttribute("data-del-file")); loadFiles(); }; });
   }
   const el = document.getElementById("files-list"); if (!el) return;
   try {
+    if (!/^https?:$/.test(location.protocol)) throw new Error();
     const res = await fetch(CONFIG.apiBase + "/api/scrape/tasks", { headers:userHeaders() }); if (!res.ok) throw new Error();
     const tasks = (await res.json()).filter(t => t.lastRunId && t.lastStatus !== "fout");
     const t = toolDefs().find(x => x.key === "scrape");
-    el.className = "table";
-    el.innerHTML = tasks.length ? tasks.map(x => `<div class="tr files-row"><div class="cell-main"><span>${esc(x.name)}</span><span class="mono-12">${esc(when(x.lastRun))} · ${x.lastRows || 0} regels</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>ParseScraper</span></div><a class="btn btn-outline btn-small" href="${CONFIG.apiBase}/api/scrape/runs/${esc(x.lastRunId)}.xlsx">Excel</a></div>`).join("") : `<div class="note empty">Nog geen uitgelezen websites.</div>`;
-  } catch (e) { el.className = "note"; el.innerHTML = `<span class="strong">De ParseLab-server draait niet.</span> Uitgelezen websites staan op de server. Start hem via <code>start.bat</code> of <code>start.sh</code> in de map <code>parselab</code>, of met <code>node server/server.js</code>, en open <code>http://localhost:8080</code>.`; }
+    el.removeAttribute("aria-busy"); el.className = "pld-table table";
+    el.innerHTML = tasks.length ? tasks.map(x => `<div class="tr files-row"><div class="cell-main"><span>${esc(x.name)}</span><span class="mono-12">${esc(when(x.lastRun))} · ${nf(x.lastRows || 0)} regels</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>ParseScraper</span></div><a class="pld-btn pld-btn--ghost btn btn-outline btn-small" href="${CONFIG.apiBase}/api/scrape/runs/${esc(x.lastRunId)}.xlsx">Excel</a></div>`).join("") : `<div class="pld-text note empty">Nog geen uitgelezen websites.</div>`;
+  } catch (e) { el.removeAttribute("aria-busy"); el.className = "note"; el.innerHTML = `<span class="strong">De ParseLab-server draait niet.</span> Uitgelezen websites staan op de server. Start hem via <code>start.bat</code> of <code>start.sh</code> in de map <code>parselab</code>, of met <code>node server/server.js</code>, en open <code>http://localhost:8080</code>.`; }
 }
 
 /* ---------- hulp ---------- */
@@ -673,13 +728,13 @@ function renderHelp(defs) {
     board:[ ["Kies een bron", "je bestand of de voorbeeldgegevens."], ["Kies je cijfers", "de suggesties staan klaar."], ["Sla op", "en download je overzicht."] ]
   };
   return `<div class="help-grid">${defs.map(t => `
-    <div class="card help-card">
-      <div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)}</div><button type="button" class="link" data-bench="${t.key}">Openen →</button></div>
+    <div class="pld-card card help-card">
+      <div class="card-head">${tile(t, 36)}<div class="pld-caps caps">${esc(t.name)}</div><button type="button" class="link" data-bench="${t.key}">Openen →</button></div>
       <div class="title-24">${esc(t.task)}</div>
       <ol>${guides[t.key].map(([a, b]) => `<li><span>${esc(a)}</span> ${esc(b)}</li>`).join("")}</ol>
       <div class="hairline"></div>${lock(t.local)}
     </div>`).join("")}
-    <div class="card help-card"><div class="caps">Woorden</div><ol><li><span>Taak</span> stappen die ParseLab voor je herhaalt.</li><li><span>Sjabloon</span> de velden die je één keer hebt aangewezen in een document.</li><li><span>Overzicht</span> cijfers en grafieken uit een bestand.</li><li><span>Regel</span> één rij in je lijst of bestand.</li></ol></div>
+    <div class="pld-card card help-card"><div class="pld-caps caps">Woorden</div><ol><li><span>Taak</span> stappen die ParseLab voor je herhaalt.</li><li><span>Sjabloon</span> de velden die je één keer hebt aangewezen in een document.</li><li><span>Overzicht</span> cijfers en grafieken uit een bestand.</li><li><span>Regel</span> één rij in je lijst of bestand.</li></ol></div>
   </div>`;
 }
 
@@ -692,44 +747,44 @@ function renderSearch(defs, q) {
   const steps = defs.flatMap(t => t.sections.filter(x => (x.label + " " + (x.hint || "")).toLowerCase().includes(lq)).map(x => ({ t, x })));
   const row = (main, sub, t, btn) => `<div class="tr proj-row"><div class="cell-main"><span>${main}</span><span class="mono-12">${sub}</span></div><div class="cell-tool">${dot(t.tone.dot)}<span>${esc(t.name)}</span></div>${btn}<span></span></div>`;
   const any = hits.length || tools.length || steps.length;
-  return `<div class="card"><div class="card-head"><div class="caps">Zoekresultaten voor “${esc(q)}”</div><button type="button" class="link" id="clear-search">Wissen</button></div>
-    <div class="table">${hits.map(pr => { const t = byKey[pr.tool]; return row(esc(pr.name), esc(t.projectWord), t, `<button type="button" class="btn btn-outline btn-small" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>`); }).join("")}
-    ${steps.map(({ t, x }) => row(esc(x.label), "Stap in " + esc(t.name), t, `<button type="button" class="btn btn-outline btn-small" data-go="${t.key}" data-section="${esc(x.id)}">Ga naar stap</button>`)).join("")}
-    ${tools.filter(t => !steps.some(s => s.t === t)).map(t => row(esc(t.name), esc(t.tagline || ""), t, `<button type="button" class="btn btn-outline btn-small" data-go="${t.key}">Openen</button>`)).join("")}
-    ${any ? "" : `<div class="note empty">Niets gevonden. Kijk bij Hulp voor uitleg per tool.</div>`}</div></div>`;
+  return `<div class="pld-card card"><div class="card-head"><div class="pld-caps caps">Zoekresultaten voor “${esc(q)}”</div><button type="button" class="link" id="clear-search">Wissen</button></div>
+    <div class="pld-table table">${hits.map(pr => { const t = byKey[pr.tool]; return row(esc(pr.name), esc(t.projectWord), t, `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen</button>`); }).join("")}
+    ${steps.map(({ t, x }) => row(esc(x.label), "Stap in " + esc(t.name), t, `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" data-go="${t.key}" data-section="${esc(x.id)}">Ga naar stap</button>`)).join("")}
+    ${tools.filter(t => !steps.some(s => s.t === t)).map(t => row(esc(t.name), esc(t.tagline || ""), t, `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" data-go="${t.key}">Openen</button>`)).join("")}
+    ${any ? "" : `<div class="pld-text note empty">Niets gevonden. Kijk bij Hulp voor uitleg per tool.</div>`}</div></div>`;
 }
 
 /* ---------- dialogen ---------- */
 function renderModal(m, defs) {
   let body = "";
   if (m.kind === "choose") {
-    body = `<div class="title-24">Wat wil je maken?</div><div class="table">${defs.map(t => `<button type="button" class="tr proj-row" data-new-project="${t.key}" style="text-align:left; cursor:pointer"><div class="cell-main"><span>${esc(t.task)}</span><span class="mono-12">Nieuwe ${esc(t.projectWord)} in ${esc(t.name)}</span></div><div class="cell-tool">${tile(t, 26)}</div><span class="arrow">→</span><span></span></button>`).join("")}</div>
-      <div class="foot"><button type="button" class="btn btn-outline" data-close>Annuleren</button></div>`;
+    body = `<div class="title-24">Wat wil je maken?</div><div class="pld-table table">${defs.map(t => `<button type="button" class="tr proj-row" data-new-project="${t.key}" style="text-align:left; cursor:pointer"><div class="cell-main"><span>${esc(t.task)}</span><span class="mono-12">Nieuwe ${esc(t.projectWord)} in ${esc(t.name)}</span></div><div class="cell-tool">${tile(t, 26)}</div><span class="arrow">→</span><span></span></button>`).join("")}</div>
+      <div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-close>Annuleren</button></div>`;
   } else if (m.kind === "newproject") {
     const t = defs.find(x => x.key === m.tool);
     const hints = { scrape:"Geef de taak een naam en plak daarna het webadres.", pdf:"Geef het sjabloon een naam en wijs daarna de kolommen aan.", board:"Geef het overzicht een naam en kies daarna een bron.", form:"Geef de taak een naam; de stappen neem je op in de extensie op het portaal zelf." };
-    body = `<div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)}</div></div><div class="title-24">Nieuwe ${esc(t.projectWord)}</div>
+    body = `<div class="card-head">${tile(t, 36)}<div class="pld-caps caps">${esc(t.name)}</div></div><div class="title-24">Nieuwe ${esc(t.projectWord)}</div>
       <form id="np-form" class="field"><label for="np-name">Naam</label><input id="np-name" type="text" required></form>
-      <div class="note">${esc(hints[t.key])}</div>
-      <div class="foot"><button type="button" class="btn btn-outline" data-close>Annuleren</button><button type="button" class="btn btn-navy" id="np-save">Starten <span class="arrow">→</span></button></div>`;
+      <div class="pld-text note">${esc(hints[t.key])}</div>
+      <div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-close>Annuleren</button><button type="button" class="pld-btn btn btn-navy" id="np-save">Starten <span class="arrow">→</span></button></div>`;
   } else if (m.kind === "project") {
     const pr = readProjects().find(x => x.id === m.id); if (!pr) return "";
     const t = defs.find(x => x.key === pr.tool);
-    body = `<div class="card-head">${tile(t, 36)}<div class="caps">${esc(t.name)} · ${esc(t.projectWord)}</div></div>
+    body = `<div class="card-head">${tile(t, 36)}<div class="pld-caps caps">${esc(t.name)} · ${esc(t.projectWord)}</div></div>
       <form id="ep-form" class="field"><label for="ep-name">Naam</label><input id="ep-name" type="text" value="${esc(pr.name)}" required></form>
-      <div class="foot"><button type="button" class="btn btn-outline" id="ep-delete">Uit lijst halen</button><button type="button" class="btn btn-outline" id="ep-save">Naam bewaren</button><button type="button" class="btn btn-navy" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen <span class="arrow">→</span></button></div>`;
+      <div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" id="ep-delete">Uit lijst halen</button><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" id="ep-save">Naam bewaren</button><button type="button" class="pld-btn btn btn-navy" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen <span class="arrow">→</span></button></div>`;
   } else if (m.kind === "account") {
     const st = readSettings();
-    body = `<div class="title-24">Account</div><div class="kv"><span class="caps">Naam</span><span>${esc(state.user.name)}</span><span class="caps">E-mail</span><span>${esc(state.user.email)}</span></div>
+    body = `<div class="title-24">Account</div><div class="kv"><span class="pld-caps caps">Naam</span><span>${esc(state.user.name)}</span><span class="pld-caps caps">E-mail</span><span>${esc(state.user.email)}</span></div>
       <div class="hairline"></div>
-      <div class="caps">Veiligheid</div>
-      <label class="toggle"><input type="checkbox" id="set-ai" ${st.ai ? "checked" : ""}><span class="stack"><span class="strong">AI-herkenning gebruiken</span><span class="note">Alleen als dit aan staat toont ParsePDF de knop "Laat ParseLab de velden herkennen". Daarbij gaat de tekst van dat ene document naar ParseLab, na jouw akkoord per document.</span></span></label>
-      <label class="toggle"><input type="checkbox" id="set-store" ${st.storeDocs ? "checked" : ""}><span class="stack"><span class="strong">Documenten bewaren op deze computer</span><span class="note">Uit: ParsePDF bewaart geüploade documenten niet in de browser; na sluiten zijn ze weg. Wat al bewaard was, wordt gewist.</span></span></label>
-      <label class="toggle"><input type="checkbox" id="set-keep" ${st.keepFiles ? "checked" : ""}><span class="stack"><span class="strong">Bestanden bewaren in ParseLab</span><span class="note">Aan: wat je downloadt uit ParsePDF en ParseBoard staat ook onder Bestanden, in deze browser. Uit: de bestanden gaan alleen naar je map Downloads en wat al bewaard was, wordt gewist.</span></span></label>
-      <div class="foot"><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
+      <div class="pld-caps caps">Veiligheid</div>
+      <label class="toggle"><input type="checkbox" id="set-ai" ${st.ai ? "checked" : ""}><span class="stack"><span class="strong">AI-herkenning gebruiken</span><span class="pld-text note">Alleen als dit aan staat toont ParsePDF de knop "Laat ParseLab de velden herkennen". Daarbij gaat de tekst van dat ene document naar ParseLab, na jouw akkoord per document.</span></span></label>
+      <label class="toggle"><input type="checkbox" id="set-store" ${st.storeDocs ? "checked" : ""}><span class="stack"><span class="strong">Documenten bewaren op deze computer</span><span class="pld-text note">Uit: ParsePDF bewaart geüploade documenten niet in de browser; na sluiten zijn ze weg. Wat al bewaard was, wordt gewist.</span></span></label>
+      <label class="toggle"><input type="checkbox" id="set-keep" ${st.keepFiles ? "checked" : ""}><span class="stack"><span class="strong">Bestanden bewaren in ParseLab</span><span class="pld-text note">Aan: wat je downloadt uit ParsePDF en ParseBoard staat ook onder Bestanden, in deze browser. Uit: de bestanden gaan alleen naar je map Downloads en wat al bewaard was, wordt gewist.</span></span></label>
+      <div class="foot"><button type="button" class="pld-btn btn btn-navy" data-close>Sluiten</button></div>`;
   } else if (m.kind === "extension") {
     const ext = stats.extension;
-    body = `<div class="title-24">Verbonden extensie</div><div class="note">${ext ? "ParseLab-extensie versie " + esc(ext.version) + " is verbonden in deze browser. Loskoppelen: chrome://extensions → ParseLab → Verwijderen." : "In deze browser is nog geen ParseLab-extensie gevonden."}</div><div class="foot"><button type="button" class="btn btn-outline" data-bench="form">Extensie toevoegen</button><button type="button" class="btn btn-navy" data-close>Sluiten</button></div>`;
+    body = `<div class="title-24">Verbonden extensie</div><div class="pld-text note">${ext ? "ParseLab-extensie versie " + esc(ext.version) + " is verbonden in deze browser. Loskoppelen: chrome://extensions → ParseLab → Verwijderen." : "In deze browser is nog geen ParseLab-extensie gevonden."}</div><div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-bench="form">Extensie toevoegen</button><button type="button" class="pld-btn btn btn-navy" data-close>Sluiten</button></div>`;
   }
   return `<div class="modal-bg" data-close-bg><div class="modal" role="dialog" aria-modal="true">${body}</div></div>`;
 }
@@ -790,7 +845,7 @@ function bindActions() {
   if (ss) ss.onchange = () => { const st = readSettings(); st.storeDocs = ss.checked; writeSettings(st); };
   const sk = document.getElementById("set-keep"); if (sk) sk.onchange = () => { const st = readSettings(); st.keepFiles = sk.checked; writeSettings(st); if (!sk.checked) filesClear(); };
   document.querySelectorAll("[data-del-file]").forEach(el => { el.onclick = async () => { await filesDel(el.getAttribute("data-del-file")); loadFiles(); }; });
-  const rs = document.getElementById("recheck-server"); if (rs) rs.onclick = async () => { await checkServer(); render(); };
+  const rs = document.getElementById("recheck-server"); if (rs) rs.onclick = async () => { busy(rs, true); await checkServer(); busy(rs, false); render(); };
   const lo = document.getElementById("logout"); if (lo) lo.onclick = () => { state.user = null; state.menu = null; state.modal = null; writeSession(null); location.hash = "#overview"; render(); };
 }
 

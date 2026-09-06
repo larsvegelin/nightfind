@@ -218,6 +218,8 @@ function syncProjects() { post({ type: "parselab:projects", tool: "scrape", list
 /* ---------- API ---------- */
 async function api(path, opts) {
   const headers = { "content-type": "application/json" }; if (state.token) headers["x-parselab-token"] = state.token; if (state.user) headers["x-parselab-user"] = state.user;
+  // Als los bestand geopend is er geen server; niet proberen te verbinden.
+  if (!/^https?:$/.test(location.protocol)) throw new Error("Website uitlezen werkt via de ParseLab-server. Open de map ParseLab en start hem met start.bat (Windows) of start.sh (Mac).");
   let res; try { res = await fetch(API + path, Object.assign({ headers }, opts || {})); } catch (e) { throw new Error("De ParseLab-server is niet bereikbaar. Start hem met: node server/server.js"); }
   const body = (res.headers.get("content-type") || "").includes("json") ? await res.json() : null;
   if (res.status === 401) { const t = prompt("De ParseLab-server vraagt een toegangscode:"); if (t) { state.token = t; sessionStorage.setItem("parselab-token", t); return api(path, opts); } }

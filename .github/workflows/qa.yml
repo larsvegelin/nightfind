@@ -29,6 +29,12 @@ jobs:
       - name: Testrun
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node qa.mjs
+      - name: Stijlgids
+        working-directory: parselab/tests
+        run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node styleguide.mjs
+      - name: Webflow-embeds van ParsePDF
+        working-directory: parselab/tests
+        run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node webflow.mjs
       - name: Resultaat en schermafbeeldingen bewaren
         if: always()
         uses: actions/upload-artifact@v4
