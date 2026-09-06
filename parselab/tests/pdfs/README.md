@@ -16,6 +16,7 @@ Het zijn geen echte facturen; er staan geen gegevens van klanten in. Wat ze wel 
 | `factuur-groot.pdf` | 6 | Zes pagina's: hiermee zie je het tellen en de maandlimiet werken |
 | `bankafschrift.pdf` | 1 | Voor het sjabloon Bankafschrift: IBAN, periode, eindsaldo |
 | `polis.pdf` | 1 | Andere woorden, zelfde soort velden: polisnummer, ingangsdatum, premie |
+| `factuur-webshop.pdf` | 1 | Nagebouwd naar een echte webshopfactuur: kolomkoppen met de waarden op de rij eronder, een regeltabel van drie regels, en "Totaal excl." vlak boven "Totaal incl." |
 | `gescand.pdf` | 1 | Geen tekstlaag, alleen een grijs vlak. Hoort de melding over gescande documenten te geven |
 
 ## Wat eruit hoort te komen
@@ -45,6 +46,19 @@ Met eigen regels voor de polis (Polisnummer, Ingangsdatum → datum, "Premie per
 | polis.pdf | P-2026-77120 | 01-01-2026 | 1.148,76 | 250,00 |
 
 Deze tabellen komen uit een echte run, niet uit een verwachting op papier. `tests/webflow.mjs` controleert alpha, beta en gamma automatisch, zodat ze niet stilletjes anders gaan uitpakken.
+
+## De maatstaf: factuur-webshop.pdf
+
+Dit is het document waar de huidige tool op stukloopt, en daarmee de maatstaf voor de volgende versie (zie [`../../docs/PARSEPDF-VOLGENDE-VERSIE.md`](../../docs/PARSEPDF-VOLGENDE-VERSIE.md)). Met het sjabloon Facturen komt er nu dit uit:
+
+| Kolom | Nu | Hoort te zijn |
+|---|---|---|
+| Factuurnummer | `Ordernummer Klantnummer Datum` | `INV10632` |
+| Datum | leeg | `21 Juni 2026` |
+| Totaal | `32,15` (dat is excl. btw) | `38,90` |
+| BTW | `6,75` | `6,75` |
+
+Eén van de vier goed. De oorzaak is niet het sjabloon maar de manier van lezen: alles op dezelfde hoogte wordt aan elkaar geplakt, waardoor de kolommen verdwijnen.
 
 ## Waar ze goed voor zijn
 

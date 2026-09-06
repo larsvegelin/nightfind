@@ -109,6 +109,8 @@ Kijk daar na twee weken naar en beslis dan pas wat er als tweede komt.
 
 ## 8. Daarna
 
+Hoe ParsePDF zelf beter wordt — sjablonen in mappen, automatische veldherkenning en de AI-controle — staat apart in [`PARSEPDF-VOLGENDE-VERSIE.md`](PARSEPDF-VOLGENDE-VERSIE.md). Fase 1 en 2 daarvan wegen zwaarder dan alles hieronder, want ze halen het intikwerk weg.
+
 De volgorde die ik zou aanhouden:
 
 1. **Regels aan het account koppelen** in plaats van aan de browser. Kleine tabel, groot verschil zodra iemand een tweede computer heeft.

@@ -47,6 +47,14 @@ function pdf(paginas) {
   return Buffer.from(body, "latin1");
 }
 
+// Een pagina kan ook losse tekstblokken op eigen plek hebben: {x, y, t, groot}.
+// Zo bouw je een kolommenlayout na, zoals webshops en boekhoudpakketten die maken.
+function vrij(blokken) {
+  return { teken: blokken.map(b =>
+    "BT /F1 " + (b.groot || 9) + " Tf 1 0 0 1 " + b.x + " " + b.y + " Tm (" +
+    String(b.t).replace(/([()\\])/g, "\\$1").replace(/€/g, "\\200") + ") Tj ET\n").join(""), regels: [] };
+}
+
 const bestanden = {
   // Rechttoe rechtaan: label en waarde op dezelfde regel.
   "factuur-alpha.pdf": [[
@@ -92,6 +100,36 @@ const bestanden = {
     ? ["Delta Logistiek", "Factuurnummer: 2026-5001", "Factuurdatum: 15-05-2026",
        "Subtotaal € 24.980,00", "BTW 21% € 5.245,80", "Totaal te voldoen € 30.225,80"]
     : ["Specificatie pagina " + (i + 1) + " van 6", "Rit " + (1000 + i) + "   Hoorn - Rotterdam   € " + (120 + i * 7) + ",50"]),
+  // Nagebouwd naar een echte webshopfactuur: kolomkoppen met de waarden op de regel
+  // eronder, een regeltabel, en "Totaal excl." vlak boven "Totaal incl.".
+  "factuur-webshop.pdf": [vrij([
+    { x: 50, y: 780, t: "Factuur INV10632", groot: 14 },
+    { x: 50, y: 762, t: "Order ORD10093", groot: 10 },
+    { x: 50, y: 700, t: "Wijnhandel Voorbeeld B.V." },
+    { x: 50, y: 688, t: "Voorbeeldstraat 1" },
+    { x: 50, y: 676, t: "1234 AB Voorbeeldstad" },
+    { x: 50, y: 588, t: "Factuurnummer" }, { x: 134, y: 588, t: "Ordernummer" },
+    { x: 218, y: 588, t: "Klantnummer" }, { x: 429, y: 588, t: "Datum" },
+    { x: 50, y: 576, t: "INV10632" }, { x: 134, y: 576, t: "ORD10093" },
+    { x: 218, y: 576, t: "227521416" }, { x: 429, y: 576, t: "Zondag 21 Juni 2026" },
+    { x: 51, y: 546, t: "Beschrijving" }, { x: 319, y: 546, t: "Artikelcode" }, { x: 370, y: 546, t: "Aantal" },
+    { x: 401, y: 546, t: "BTW" }, { x: 425, y: 546, t: "Item prijs" }, { x: 468, y: 546, t: "Korting" }, { x: 502, y: 546, t: "Subtotaal" },
+    { x: 52, y: 530, t: "Epicuro Wijnkado Italie" }, { x: 319, y: 530, t: "29967" }, { x: 391, y: 530, t: "1x" },
+    { x: 414, y: 530, t: "21" }, { x: 439, y: 530, t: "€28,95" }, { x: 476, y: 530, t: "€0,00" }, { x: 517, y: 530, t: "€28,95" },
+    { x: 52, y: 514, t: "Verzending & Afhandeling" }, { x: 391, y: 514, t: "1x" },
+    { x: 414, y: 514, t: "21" }, { x: 442, y: 514, t: "€9,95" }, { x: 476, y: 514, t: "€0,00" }, { x: 521, y: 514, t: "€9,95" },
+    { x: 52, y: 504, t: "PostNL verzending" },
+    { x: 52, y: 488, t: "Betaalkosten" }, { x: 391, y: 488, t: "1x" }, { x: 417, y: 488, t: "0" },
+    { x: 442, y: 488, t: "€0,00" }, { x: 476, y: 488, t: "€0,00" }, { x: 520, y: 488, t: "€0,00" },
+    { x: 400, y: 452, t: "Total discount" }, { x: 517, y: 452, t: "€ 0,00" },
+    { x: 400, y: 436, t: "Totaal excl. BTW" }, { x: 517, y: 436, t: "€32,15" },
+    { x: 400, y: 420, t: "BTW 21%" }, { x: 517, y: 420, t: "€6,75" },
+    { x: 400, y: 404, t: "Totaal incl. BTW" }, { x: 517, y: 404, t: "€38,90" },
+    { x: 50, y: 340, t: "Bedrijfsgegevens" }, { x: 250, y: 340, t: "Bankgegevens" },
+    { x: 50, y: 324, t: "KvK-nummer 54284198" }, { x: 250, y: 324, t: "Rekeninghouder Wijnhandel Voorbeeld" },
+    { x: 50, y: 310, t: "Btw-nummer NL002051640B39" }, { x: 250, y: 310, t: "Bank Rabobank" },
+    { x: 250, y: 296, t: "IBAN NL71 RABO 0169 2708 58" }, { x: 250, y: 282, t: "BIC RABONL2U" }
+  ])],
   // Geen tekstlaag, alleen een vlak: zo ziet een scan eruit voor de tool.
   "gescand.pdf": [{ teken: "0.85 0.85 0.85 rg 64 500 468 260 re f\n0.6 0.6 0.6 rg 64 460 300 20 re f\n", regels: [] }]
 };
