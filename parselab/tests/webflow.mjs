@@ -16,6 +16,10 @@ const TYPE = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; chars
 let aiAanroepen = 0;
 const srv = http.createServer((req, res) => {
   if (req.url.startsWith('/favicon.ico')) { res.writeHead(204); return res.end(); }
+  if (req.url === '/api/parsepdf/regel') {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    return res.end(JSON.stringify({ naam: 'Totaal', eis: { woord: 'Totaal', soort: 'bedrag', pagina: 1, kolom: null } }));
+  }
   if (req.url === '/api/parsepdf/velden') {
     aiAanroepen++;
     if (aiAanroepen === 1) { res.writeHead(501, { 'content-type': 'application/json' }); return res.end('{"error":"geen sleutel"}'); }
@@ -67,7 +71,8 @@ await p.waitForSelector('.plp-drop', { timeout: 8000 });
 ok('titel en ondertitel staan er', await p.textContent('.pld-title') === 'ParsePDF');
 const meter = await p.evaluate(() => {
   const b = document.querySelector('.pld-bar');
-  return { num: document.querySelector('.pld-num').textContent, now: b && b.getAttribute('aria-valuenow'), max: b && b.getAttribute('aria-valuemax'), rol: b && b.getAttribute('role') };
+  const num = b ? b.parentElement.querySelector('.pld-num') : null;
+  return { num: num ? num.textContent : '', now: b && b.getAttribute('aria-valuenow'), max: b && b.getAttribute('aria-valuemax'), rol: b && b.getAttribute('role') };
 });
 ok('verbruiksmeter toont gebruik van limiet', meter.num.includes('120') && meter.num.includes('2.500') && meter.now === '120' && meter.max === '2500' && meter.rol === 'progressbar', JSON.stringify(meter));
 const regels0 = await p.evaluate(() => window.PLP_S.regels.map(r => r.naam).join(','));
@@ -96,7 +101,8 @@ ok('tweede document ook gelezen', tabel[2][4] === '968,00' && tabel[2][1] === '1
 // 4. verbruik is geboekt vóór het lezen, met het juiste aantal pagina's
 const aanroep = await p.evaluate(() => JSON.stringify(window.PL_STUB_CALLS));
 ok('record_usage is aangeroepen met drie pagina\'s', /record_usage/.test(aanroep) && /"p_pages":3/.test(aanroep), aanroep);
-ok('de meter loopt meteen mee (120 + 3)', (await p.textContent('.pld-num')).includes('123'), await p.textContent('.pld-num'));
+const meterNa = await p.evaluate(() => document.querySelector('.pld-bar').parentElement.querySelector('.pld-num').textContent);
+ok('de meter loopt meteen mee (120 + 3)', meterNa.includes('123'), meterNa);
 
 // 5. CSV: puntkomma's, BOM en dezelfde kolommen
 const [dl] = await Promise.all([
@@ -336,6 +342,11 @@ await p.waitForTimeout(200);
 const naAlles = await p.$$eval('.plp-veldrij input[type=checkbox]', n => n.filter(x => x.checked).length);
 ok('alles selecteren zet alles aan', naAlles > 0 && naAlles === (await p.$$('.plp-veldrij')).length, naAlles + ' aan');
 ok('de stand staat erbij', /\d+ van \d+ aan/.test(await p.textContent('.plp-blad')), '');
+// één vinkje uitzetten: de teller loopt mee en het vlak in het document dooft.
+await p.uncheck('.plp-veldrij input[type=checkbox] >> nth=0');
+await p.waitForTimeout(200);
+const naEen = await p.evaluate(() => ({ stand: (document.querySelector('.plp-blad').textContent.match(/(\d+) van (\d+) aan/) || []).slice(1).join('/'), uit: document.querySelectorAll('.plp-vlak--uit').length, totaal: document.querySelectorAll('.plp-veldrij').length }));
+ok('een los vinkje uitzetten telt mee en dooft het vlak', naEen.stand === (naAlles - 1) + '/' + naAlles && naEen.uit >= 1, JSON.stringify(naEen));
 await sluitDoorkijk();
 
 // tekstherkenning: de motor wordt nagebootst, want cdnjs is hier niet bereikbaar.
@@ -372,6 +383,49 @@ ok('je kunt doorklikken tot de laatste stap', /Stap 5 van 5/.test(await p.textCo
 await p.click('.plp-modal button:has-text("Klaar")');
 await p.waitForTimeout(200);
 ok('klaar sluit de uitleg', (await p.$$('.plp-modal')).length === 0);
+
+// 11c6. de uitleg heeft een voorbeeld: één klik en het document staat open, met velden erin.
+await p.click('button:has-text("Hoe werkt ParsePDF?")');
+await p.waitForSelector('.plp-modal', { timeout: 5000 });
+await p.click('.plp-modal button:has-text("Probeer het met een voorbeeld")');
+await p.waitForSelector('.plp-doorkijk .plp-veldrij', { timeout: 15000 });
+const voorbeeldTekst = await p.textContent('.plp-doorkijk');
+ok('het voorbeeld opent meteen in het doorkijkscherm', (await p.$$('.plp-modal')).length === 0 && await p.isVisible('.plp-doorkijk'));
+ok('het voorbeeld levert echte velden op', /2026-0042/.test(voorbeeldTekst) && /info@voorbeeld\.nl/.test(voorbeeldTekst), voorbeeldTekst.slice(0, 120));
+await sluitDoorkijk();
+
+// 11c7. parsen op eisen: "een bedrag bij het woord Totaal" mag het Subtotaal niet pakken,
+// en de AI vult zo'n eis in uit een zin.
+await p.evaluate(() => { window.PLP_S.regels = []; window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.fill('input[placeholder="bijv. het totaalbedrag onderaan pagina 1"]', 'het totaalbedrag van de factuur');
+await p.click('button:has-text("Eis maken met AI")');
+await p.waitForFunction(() => document.querySelector('input[placeholder="bijv. Geboortedatum"]').value !== '', null, { timeout: 5000 });
+const eisWoord = await p.inputValue('input[placeholder="bijv. Geboortedatum"]');
+ok('de AI vult de eis in uit een zin', eisWoord === 'Totaal', eisWoord);
+await p.click('button:has-text("Eis toevoegen")');
+const eisRegel = await p.evaluate(() => JSON.stringify(window.PLP_S.regels[0]));
+ok('de eis staat bovenaan als regel', /"type":"eis"/.test(eisRegel) && /"soort":"bedrag"/.test(eisRegel), eisRegel);
+const eisOmschrijving = await p.evaluate(() => Array.from(document.querySelectorAll('.plp-rule input')).map(i => i.value).find(v => /Bedrag/.test(v)) || '');
+ok('de regel beschrijft zichzelf in het regelvenster', /Totaal.*Bedrag.*pagina 1/.test(eisOmschrijving), eisOmschrijving);
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf'), path.join(map, 'factuur-b.pdf')]);
+await sluitDoorkijk();
+await p.waitForSelector('.plp-file', { timeout: 5000 });
+
+// 11c8. controle over alle documenten: elke regel toont in hoeveel documenten hij iets vond.
+await p.click('button:has-text("Controleer alle documenten")');
+await p.waitForSelector('.plp-check', { timeout: 15000 });
+const checkTekst = await p.textContent('.plp-check');
+ok('de controle telt per regel over alle documenten', /gevonden in 2 van 2/.test(checkTekst), checkTekst.slice(0, 120));
+await p.evaluate(() => { window.PLP_S.regels.push({ naam: 'Nooit', type: 'label', waarde: 'Bestaatniet', filter: 'geen' }); window.PLP_UI.teken(); });
+await p.click('button:has-text("Controleer alle documenten")');
+await p.waitForFunction(() => /gevonden in 0 van 2/.test((document.querySelector('.plp-check') || {}).textContent || ''), null, { timeout: 15000 });
+const mist = await p.textContent('.plp-check');
+ok('een regel die niets vindt noemt de documenten waarin hij mist', /Niet in: factuur-a\.pdf, factuur-b\.pdf/.test(mist), mist.slice(0, 160));
+await p.evaluate(() => { window.PLP_S.regels.pop(); window.PLP_UI.teken(); });
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 30000 });
+const eisWaarden = await p.evaluate(() => Array.from(document.querySelectorAll('.plp-table tbody tr')).map(r => r.children[2].textContent).join('|'));
+ok('de eis leest het Totaal en niet het Subtotaal', eisWaarden === '1.506,45|968,00', eisWaarden);
 
 // 11d. mappen met sjablonen: twee soorten documenten in één map, gemengd uitlezen.
 await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
@@ -459,7 +513,7 @@ await p2.goto('http://127.0.0.1:8123/ParsePDF.html?gebruikt=10&limiet=100', { wa
 await p2.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
 await p2.reload({ waitUntil: 'load' });
 await p2.waitForSelector('.plp-drop', { timeout: 8000 });
-ok('losse pagina toont ParsePDF met verbruiksmeter', await p2.textContent('.pld-title') === 'ParsePDF' && (await p2.textContent('.pld-num')).includes('10 van 100'));
+ok('losse pagina toont ParsePDF met verbruiksmeter', await p2.textContent('.pld-title') === 'ParsePDF' && (await p2.evaluate(() => document.querySelector('.pld-bar').parentElement.querySelector('.pld-num').textContent)).includes('10 van 100'));
 ok('losse pagina staat niet in Google', await p2.getAttribute('meta[name=robots]', 'content') === 'noindex, nofollow');
 await p2.setInputFiles('input[type=file]', [path.join(map, 'factuur-b.pdf')]);
 await sluitDoorkijk(p2);

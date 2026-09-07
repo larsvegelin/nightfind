@@ -1,6 +1,6 @@
 # ParsePDF in het dashboard zetten
 
-Vijf embeds op één nieuwe Webflow-pagina. Reken op twintig minuten.
+Zestien embeds op één nieuwe Webflow-pagina, of één embed via `dist/embed-loader.html`. Reken op twintig minuten.
 Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 
 ---
@@ -12,17 +12,19 @@ Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 | `1-config-stijl.html` | Supabase-client, `window.PARSELAB`, alle `pld-` en `plp-` stijlen |
 | `2-teksten.html` | Teksten in nl, en, de plus drie startsjablonen |
 | `3-teksten-voorstel.html` | Teksten voor doorkijken, voorstel en AI |
+| `3b-teksten-labels.html` | Teksten voor labels, selectie, OCR, mappen, eisen en de documentcontrole |
 | `4-motor.html` | Uitleesmotor: pdf.js, cellen met x en y, regels toepassen, CSV maken |
 | `4b-ocr.html` | Tekstherkenning voor documenten zonder tekstlaag |
-| `5-scherm.html` | Schermopbouw: verbruiksmeter, regelkaart, dropzone, resultaattabel |
+| `5-scherm.html` | Schermopbouw: upload bovenaan, verbruiksmeter, mappen, Handmatig parsen, resultaattabel |
+| `5b-eisen.html` | Parsen op eisen: bij een woord, soort waarde, pagina, kolom; met een AI die een zin omzet in zo'n eis |
 | `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
 | `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
 | `8-voorstel.html` | Doorkijkscherm met gearceerde velden en het voorstel |
 | `9-labels.html` | Labels per vlak, alles selecteren, goedkeuren en het OCR-aanbod |
-| `9b-uitleg.html` | "Hoe werkt ParsePDF?" in vijf stappen |
+| `9b-uitleg.html` | "Hoe werkt ParsePDF?" in vijf stappen, met een voorbeeld dat je meteen kunt proberen |
 | `10-ai.html` | Uitlezen met AI: pakketcontrole, toestemming en tegoeden |
 | `11-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
-| `12-verwerken.html` | Verwerking, limietbewaking en opstarten |
+| `12-verwerken.html` | Verwerking, limietbewaking, controle over alle documenten en opstarten |
 
 Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens. Splits je later iets bij, houd die grens aan.
 
@@ -50,8 +52,10 @@ Body
                 ├── Embed 1-config-stijl
                 ├── Embed 2-teksten
                 ├── Embed 3-teksten-voorstel
+                ├── Embed 3b-teksten-labels
                 ├── Embed 4-motor
                 ├── Embed 5-scherm
+                ├── Embed 5b-eisen
                 ├── Embed 6-structuur
                 ├── Embed 7-velden
                 ├── Embed 8-voorstel
@@ -62,7 +66,7 @@ Body
 
 De id `pl-parsepdf-root` moet exact zo geschreven zijn. Zonder die container doet de tool niets en verschijnt er een melding in de console.
 
-De volgorde van de embeds is niet vrij. Embed 12 gebruikt wat 1 tot en met 11 klaarzetten.
+De volgorde van de embeds is niet vrij. Embed 12 gebruikt wat 1 tot en met 11 klaarzetten (3b hoort direct na 3, 4b na 4, 5b na 5, 9b na 9).
 
 ## 4. Koppelen aan het dashboard
 

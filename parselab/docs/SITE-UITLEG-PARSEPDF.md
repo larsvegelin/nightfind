@@ -10,6 +10,10 @@ Sleep je PDF's erin, klik op **Kijk wat erin staat**, vink aan wat je wilt hebbe
 
 ---
 
+## 0. Eerst even proberen
+
+Klik op **Hoe werkt ParsePDF?** voor de uitleg in vijf stappen. Onderaan elke stap staat **Probeer het met een voorbeeld**: een verzonnen factuur van één pagina gaat dan meteen open, zodat je ziet wat de tool eruit haalt voordat je je eigen documenten kiest.
+
 ## 1. Documenten kiezen
 
 Sleep ze in het vlak of klik op **Bestanden kiezen**. Alleen PDF, maximaal 25 MB per bestand en 100 bestanden per keer. Wat daarbuiten valt wordt overgeslagen, met de reden erbij.
@@ -52,6 +56,22 @@ Per veld kies je wat er uit de gevonden tekst gehaald wordt:
 ## 5. Regeltabellen
 
 Staat er een tabel met artikelregels in je factuur, dan meldt de tool dat: *Regeltabel gevonden — 3 regels met 6 kolommen*. Zet **Eén rij per tabelregel** aan als je elke regel apart in je tabel wilt, met de gegevens van de factuur erbij herhaald. Laat hem uit als je één regel per document wilt.
+
+## 5b. Parsen op eisen
+
+Soms weet je precies wat je zoekt, maar staat het elke keer ergens anders. Onder **Handmatig parsen** staat daarvoor de kaart *Parsen op eisen*. Je zegt niet wáár iets staat, maar wát het is:
+
+- **Bij het woord**: het label of woord dat bij de waarde hoort, bijvoorbeeld *Geboortedatum* of *Totaal*. De tool kijkt in dezelfde cel, in de cel rechts ervan en in de cel erboven. *Totaal* pakt daarbij niet *Subtotaal*: het woord moet los staan.
+- **Soort waarde**: datum, bedrag, IBAN, e-mailadres, kenmerk, postcode of telefoonnummer. De tool haalt dan alleen dat stuk uit de cel.
+- **Pagina** en **Kolom**: alleen op die pagina, of alleen in die kolom (geteld van links).
+
+Alles wat je invult moet kloppen; wat je leeg laat telt niet mee. Vind de tool meer dan één cel die voldoet, dan wint de bovenste. Met **Eis toevoegen** wordt het een regel met de kolomnaam die je opgaf; die regel werkt in sjablonen net als de andere.
+
+Liever in gewone taal? Typ een zin als *het totaalbedrag onderaan pagina 1* en klik op **Eis maken met AI**. De AI vult de vier velden in, jij controleert en klikt op Eis toevoegen. Daar gaat alleen je zin heen, nooit je document, en het hoort net als het andere AI-gebruik bij Pro en Business.
+
+## 5c. Controleer alle documenten
+
+Heb je meerdere documenten klaarstaan, dan staat onder de regels de knop **Controleer alle documenten**. Elke regel krijgt dan een stand als *gevonden in 5 van 5*. Vindt een regel in een document niets, dan staat erbij in welke bestanden hij mist, zodat je de regel of het sjabloon kunt bijstellen vóór je uitleest. Neem je een voorstel over terwijl er meer dan één document klaarstaat, dan draait deze controle vanzelf. Deze controle leest lokaal en kost geen pagina's van je tegoed.
 
 ## 6. Uitlezen met AI
 

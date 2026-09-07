@@ -81,7 +81,40 @@ console.error(e);herstel(knop);
 U.meld(e&&e.message==="usage"?t.errUsage:t.errLib,"warn");});
 };
 
-function bruikbaar(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="tabelkolom"||r.waarde);}
+// Controle over alle geladen documenten: welke regel vindt in welk document iets?
+// Leest lokaal en telt geen pagina's van je tegoed.
+window.PLP_CHECK=(function(){
+function knop(){var b=U.el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.checkAll);b.type="button";b.addEventListener("click",function(){run(false,b);});return b;}
+function run(stil,b){
+  var t=S.t,regels=S.regels.filter(bruikbaar),lijst=S.bestanden.slice();
+  if(stil&&lijst.length<2)return;
+  if(!lijst.length||!regels.length){if(!stil)U.meld(lijst.length?t.errNoRules:t.errNoFiles,"warn");return;}
+  if(b){b.disabled=true;b.textContent=t.checking;}
+  var tel=regels.map(function(){return {n:0,mist:[]};}),k=Promise.resolve();
+  lijst.forEach(function(f){
+    k=k.then(function(){return P.lees(f);})
+    .then(function(doc){var r=P.rij(doc,regels);regels.forEach(function(x,i){if(r.velden["k"+i])tel[i].n++;else tel[i].mist.push(f.name);});})
+    .catch(function(){regels.forEach(function(x,i){tel[i].mist.push(f.name);});});});
+  return k.then(function(){if(b){b.disabled=false;b.textContent=t.checkAll;}toon(regels,tel,lijst.length);});
+}
+function toon(regels,tel,n){
+  var t=S.t,oud=document.querySelector(".plp-check");if(oud)oud.remove();
+  var k=U.el("div","pld-card plp-check"),alles=tel.every(function(x){return x.n===n;});
+  k.appendChild(U.el("p","pld-text",(alles?t.checkAllOk:t.checkSome).replace("{n}",n)));
+  regels.forEach(function(r,i){
+    var rij=U.el("div","plp-file"),l=U.el("div");
+    l.appendChild(U.el("p","pld-text",r.naam));
+    if(tel[i].mist.length)l.appendChild(U.el("p","plp-mono",t.checkMissing+" "+tel[i].mist.join(", ")));
+    var pil=U.el("span","pld-pill"+(tel[i].n===n?" pld-pill--on":""),t.checkFound.replace("{g}",tel[i].n).replace("{n}",n));
+    rij.appendChild(l);rij.appendChild(pil);k.appendChild(rij);});
+  var koppen=S.root.querySelectorAll(".pld-sect"),laatste=koppen[koppen.length-1];
+  if(laatste)S.root.insertBefore(k,laatste);else S.root.appendChild(k);
+  k.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+return {knop:knop,run:run};
+})();
+
+function bruikbaar(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="eis"||r.type==="tabelkolom"||r.waarde);}
 
 // Staan er tabelkolommen in het sjabloon, dan wordt elke regel uit de tabel een rij,
 // met de kopvelden van het document erbij herhaald.

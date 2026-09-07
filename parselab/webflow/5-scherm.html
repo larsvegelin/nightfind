@@ -29,6 +29,9 @@ if(window.PLP_TOUR){
 var terug=el("a","pld-btn pld-btn--ghost",t.back);terug.href=CFG.dashboardPath;
 knoppen.appendChild(terug);
 kop.appendChild(knoppen);root.appendChild(kop);
+// Het uploadvlak staat bovenaan: dat is waar je begint.
+root.appendChild(el("p","pld-caps pld-sect",t.files));
+root.appendChild(bestandKaart());
 if(S.verbruik){
 var vk=el("div","pld-card");
 vk.appendChild(el("p","pld-caps",t.usage));
@@ -44,10 +47,9 @@ root.appendChild(vk);}
 if(window.PLP_SJ&&window.PLP_SJ.kaart){
 root.appendChild(el("p","pld-caps pld-sect",t.folders));
 root.appendChild(window.PLP_SJ.kaart());}
-root.appendChild(el("p","pld-caps pld-sect",t.rules));
+root.appendChild(el("p","pld-caps pld-sect",t.manual||t.rules));
 root.appendChild(regelKaart());
-root.appendChild(el("p","pld-caps pld-sect",t.files));
-root.appendChild(bestandKaart());
+if(window.PLP_EIS)root.appendChild(window.PLP_EIS.kaart());
 root.appendChild(el("p","pld-caps pld-sect",t.results));
 root.appendChild(resultaatKaart());
 }
@@ -61,16 +63,20 @@ var kies=el("select","pld-sel");
 kies.addEventListener("change",function(){var p=window.PLP_PRESETS[kies.value];if(!p)return;
 S.regels=JSON.parse(JSON.stringify(p));bewaarRegels();teken();});
 k.appendChild(veld(t.preset,kies));
+var boven=el("div","pld-row");
+var plus=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.add);plus.type="button";
+plus.addEventListener("click",function(){S.regels.unshift({naam:"",type:"label",waarde:"",filter:"geen"});bewaarRegels();teken();});
+boven.appendChild(plus);k.appendChild(boven);
 S.regels.forEach(function(r,i){
 var rij=el("div","plp-rule");
 var naam=el("input","pld-in");naam.value=r.naam||"";
 naam.addEventListener("input",function(){r.naam=naam.value;});
 var type=el("select","pld-sel");
-[["label",t.tLabel],["regex",t.tRegex],["bestand",t.tFile],["cel",t.tCel]].forEach(function(o){
+[["label",t.tLabel],["regex",t.tRegex],["bestand",t.tFile],["cel",t.tCel],["eis",t.tEis]].forEach(function(o){
 var op=el("option","",o[1]);op.value=o[0];if(o[0]===r.type)op.selected=true;type.appendChild(op);});
-var waarde=el("input","pld-in");waarde.value=r.waarde||"";waarde.disabled=r.type==="bestand"||r.type==="cel";
+var waarde=el("input","pld-in");waarde.value=r.waarde||"";waarde.disabled=/bestand|cel|eis/.test(r.type);
 waarde.addEventListener("input",function(){r.waarde=waarde.value;});
-type.addEventListener("change",function(){r.type=type.value;waarde.disabled=r.type==="bestand"||r.type==="cel";if(r.type!=="cel")delete r.vindregel;});
+type.addEventListener("change",function(){r.type=type.value;waarde.disabled=/bestand|cel|eis/.test(r.type);if(r.type!=="cel")delete r.vindregel;});
 var filter=el("select","pld-sel");
 [["geen",t.xNone],["bedrag",t.xAmount],["datum",t.xDate]].forEach(function(o){
 var op=el("option","",o[1]);op.value=o[0];if(o[0]===r.filter)op.selected=true;filter.appendChild(op);});
@@ -81,12 +87,10 @@ rij.appendChild(veld(t.fname,naam));rij.appendChild(veld(t.ftype,type));
 rij.appendChild(veld(t.fvalue,waarde));rij.appendChild(veld(t.ffilter,filter));
 rij.appendChild(weg);k.appendChild(rij);});
 var rij2=el("div","pld-row");
-var plus=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.add);plus.type="button";
-plus.addEventListener("click",function(){S.regels.push({naam:"",type:"label",waarde:"",filter:"geen"});bewaarRegels();teken();});
 var opslaan=el("button","pld-btn pld-btn--sm",t.save);opslaan.type="button";
 var gemeld=el("p","pld-text");
 opslaan.addEventListener("click",function(){bewaarRegels();gemeld.textContent=t.saved;});
-rij2.appendChild(plus);rij2.appendChild(opslaan);rij2.appendChild(gemeld);
+rij2.appendChild(opslaan);if(window.PLP_CHECK)rij2.appendChild(window.PLP_CHECK.knop());rij2.appendChild(gemeld);
 k.appendChild(rij2);return k;}
 
 function bestandKaart(){
@@ -134,7 +138,7 @@ if(f.size>P.MAXBYTES){fouten.push(f.name+" "+t.errBig);return;}
 S.bestanden.push(f);});
 teken();
 if(fouten.length)meld(fouten.join(" "),"warn");
-// Meteen laten zien wat er in het eerste document staat; wachten op een knop hoeft niet.
+// Meteen laten zien wat erin staat.
 if(S.bestanden.length>begin&&window.PLP_V&&!document.querySelector(".plp-doorkijk"))
   window.PLP_V.open(S.bestanden,begin);}
 

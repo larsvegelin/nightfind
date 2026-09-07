@@ -110,6 +110,20 @@ Staat er een map actief met sjablonen erin, dan gebruikt **Uitlezen starten** di
 
 Sleep dus gerust dertig facturen van vijf leveranciers in één keer erin. Mappen en sjablonen staan in `localStorage` van deze browser; ze reizen nog niet mee naar een andere computer.
 
+## 4c. Eisen en de controle over alle documenten
+
+Naast `label`, `regex`, `bestand`, `cel` en `tabelkolom` is er nu de veldregel **`eis`**. Die bewaart niet een vindplaats maar voorwaarden: `{woord, soort, pagina, kolom}`. `PLP_EIS.pas(doc, eis)` in `5b-eisen.html` loopt alle cellen langs en houdt over wat aan álle ingevulde voorwaarden voldoet:
+
+- `pagina` en `kolom` filteren op `c.pagina` en op de kolomindex uit `PLP_ST.kolommen` (van links geteld, met 6 punten speling).
+- `soort` is de naam van een patroon uit `6-structuur.html`; alleen het gematchte stuk wordt de waarde.
+- `woord` moet op een woordgrens staan (`(^|[^\p{L}])woord`), in de cel zelf, in de cel links ervan of in de cel erboven. Daardoor pakt *Totaal* niet *Subtotaal*.
+- Zonder `soort` wordt de rest van de cel na het woord de waarde, of anders de cel rechts of eronder.
+- Meer kandidaten: de bovenste op de vroegste pagina wint.
+
+De kaart eronder heeft ook **Eis maken met AI**: `POST /api/parsepdf/regel` krijgt alleen de zin en geeft `{naam, eis}` terug; de gebruiker controleert de vier velden en voegt de regel zelf toe. Dezelfde `magAi`-drempel als de andere AI-routes.
+
+**Controleer alle documenten** (`PLP_CHECK` in `12-verwerken.html`) leest elk klaargezet document met `P.lees`, past de actieve regels toe met `P.rij` en toont per regel *gevonden in g van n* plus de bestandsnamen waarin hij niets vond. Na **Overnemen** in het doorkijkscherm draait dit vanzelf zodra er meer dan één document klaarstaat. Het telt geen pagina's van het tegoed: er gaat niets naar de server.
+
 ## 5. Wat er in de embeds veranderde
 
 De pagina bestaat nu uit elf embeds in plaats van vijf. Vijf zijn nieuw en twee zijn afgesplitst, omdat Webflow niet meer dan ongeveer 10.000 tekens per embed aankan.
@@ -174,6 +188,6 @@ Zet `plans.ai` op `false` voor Gratis en op `true` voor Pro en Business. Zonder 
 ## 7. Wat hierna nog open staat
 
 - **Sjablonen aan het account koppelen.** Ze staan nu per browser; het datamodel voor Supabase ligt klaar in [`PARSEPDF-VOLGENDE-VERSIE.md`](PARSEPDF-VOLGENDE-VERSIE.md).
-- **Aanwijzen wat de tool miste**: klikken op een cel die niet gevonden werd en daar zelf een veld van maken.
+- **Aanwijzen wat de tool miste**: klikken op een cel die niet gevonden werd en daar zelf een veld van maken. (Met *Toon alle tekst* en een eis-regel kom je er nu al; het klikken zelf ontbreekt nog.)
 - **De AI-endpoint op Supabase** voor de Webflow-pagina.
 - **Gescande documenten** blijven buiten beeld tot er tekstherkenning is.

@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 9b van 12: de uitleg "Hoe werkt ParsePDF?" in vijf stappen. -->
+<!-- ParsePDF — embed 9b van 12: de uitleg "Hoe werkt ParsePDF?" in vijf stappen, met een voorbeeld om te proberen. -->
 <script>
 window.PLP_TOUR=(function(){
 var S=window.PLP_S;
@@ -19,6 +19,16 @@ de:[["Dokumente waehlen","Ziehe deine PDFs in das Feld oder klicke auf Dateien w
 ["Als Vorlage speichern","Gib deiner Auswahl einen Namen und lege sie in einen Ordner. Beim naechsten Stapel waehlt das Werkzeug die passende Vorlage pro Dokument selbst."],
 ["Auslesen und herunterladen","Klicke auf Auslesen starten. Du bekommst eine Tabelle mit allen Spalten und einen Download als CSV."]]};
 var TITEL={nl:"Hoe werkt ParsePDF?",en:"How does ParsePDF work?",de:"Wie funktioniert ParsePDF?"};
+var PROBEER={nl:"Probeer het met een voorbeeld",en:"Try it with a sample",de:"Mit einem Beispiel ausprobieren"};
+// Een klein voorbeeld-document (één pagina, verzonnen gegevens) zodat de uitleg meteen iets laat zien.
+var VOORBEELD="JVBERi0xLjQKMSAwIG9iaiA8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PiBlbmRvYmoKMiAwIG9iaiA8PC9UeXBlL1BhZ2VzL0tpZHNbNCAwIFJdL0NvdW50IDE+PiBlbmRvYmoKMyAwIG9iaiA8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2EvRW5jb2RpbmcvV2luQW5zaUVuY29kaW5nPj4gZW5kb2JqCjQgMCBvYmogPDwvVHlwZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgNTk1IDg0Ml0vUmVzb3VyY2VzPDwvRm9udDw8L0YxIDMgMCBSPj4+Pi9Db250ZW50cyA1IDAgUj4+IGVuZG9iago1IDAgb2JqIDw8L0xlbmd0aCAyNTk+PiBzdHJlYW0KQlQgL0YxIDExIFRmIDY0IDc3MCBUZCAxOSBUTAooVm9vcmJlZWxkIEIuVi4pIFRqIFQqCihGYWN0dXVyKSBUaiBUKgooRmFjdHV1cm51bW1lcjogMjAyNi0wMDQyKSBUaiBUKgooRmFjdHV1cmRhdHVtOiAxNS0wMy0yMDI2KSBUaiBUKgooS2xhbnRudW1tZXI6IEtMLTEwMDEpIFRqIFQqCihFLW1haWw6IGluZm9Adm9vcmJlZWxkLm5sKSBUaiBUKgooVG90YWFsIFwyMDAgMTIxLDAwKSBUaiBUKgooSUJBTiBOTDkxQUJOQTA0MTcxNjQzMDApIFRqIFQqCkVUCmVuZHN0cmVhbSBlbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTQgMDAwMDAgbiAKMDAwMDAwMDEwNSAwMDAwMCBuIAowMDAwMDAwMTkzIDAwMDAwIG4gCjAwMDAwMDAzMDUgMDAwMDAgbiAKdHJhaWxlciA8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgo2MTIKJSVFT0YK";
+function voorbeeld(){
+  var bin=atob(VOORBEELD),bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  var f=new File([bytes],"voorbeeld-factuur.pdf",{type:"application/pdf"});
+  S.bestanden.push(f);window.PLP_UI.teken();
+  if(window.PLP_V)window.PLP_V.open(S.bestanden,S.bestanden.length-1);
+}
 var WOORDEN={nl:["Volgende","Klaar","Stap {i} van {n}","Vorige"],en:["Next","Done","Step {i} of {n}","Back"],de:["Weiter","Fertig","Schritt {i} von {n}","Zurueck"]};
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
 function taal(){return STAPPEN[S.taal]?S.taal:"nl";}
@@ -47,11 +57,13 @@ function toon(){
     }
     var door=el("button","pld-btn",i<stappen.length-1?woorden[0]:woorden[1]);door.type="button";
     door.addEventListener("click",function(){if(i<stappen.length-1){i++;teken();}else weg();});
-    rij.appendChild(door);blad.appendChild(rij);
+    var proef=el("button","pld-btn pld-btn--ghost",PROBEER[taal()]);proef.type="button";
+    proef.addEventListener("click",function(){weg();voorbeeld();});
+    rij.appendChild(door);rij.appendChild(proef);blad.appendChild(rij);
     door.focus();
   }
   teken();
 }
-return {toon:toon,titel:function(){return TITEL[taal()];}};
+return {toon:toon,voorbeeld:voorbeeld,titel:function(){return TITEL[taal()];}};
 })();
 </script>

@@ -140,7 +140,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
     if(!regels.length)return;
     S.regels=regels;
     try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
-    sluit();window.PLP_UI.teken();window.PLP_UI.meld(t.taken);
+    sluit();window.PLP_UI.teken();window.PLP_UI.meld(t.taken);if(window.PLP_CHECK)window.PLP_CHECK.run(true);
   });
   ai.addEventListener("click",function(){window.PLP_AI.vraag(doc,velden,function(){teken();},melding,ai);});
 
@@ -152,7 +152,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
       var rij=el("div","plp-veldrij");
       var vink=document.createElement("input");vink.type="checkbox";vink.checked=v.aan;
       vink.setAttribute("aria-label",v.naam);
-      vink.addEventListener("change",function(){v.aan=vink.checked;tekenVlakken();});
+      vink.addEventListener("change",function(){v.aan=vink.checked;if(balk&&balk.bijwerken)balk.bijwerken();tekenVlakken();});
       var naam=el("input","pld-in");naam.value=v.naam;
       naam.addEventListener("input",function(){v.naam=naam.value;});
       var waarde=el("p","plp-mono",v.waarde);

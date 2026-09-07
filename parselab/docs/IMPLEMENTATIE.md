@@ -11,7 +11,7 @@ Alles wat er is, hoe je het live zet, en in welke volgorde. Eén document om van
 | `parselab/ParseLab.html` | Het hele dashboard met de drie webtools erin, 2,8 MB | Dubbelklikken en werken, zonder installatie. Website uitlezen vraagt de server. |
 | `parselab/ParsePDF.html` | ParsePDF als losse pagina, 101 kB | Op elke webhost te zetten; werkt met de Supabase-login. |
 | `parselab/dist/parsepdf.js` + `embed-loader.html` | Dezelfde ParsePDF als één script | **De makkelijkste weg voor Webflow:** één embed in plaats van veertien. |
-| `parselab/webflow/*.html` | De veertien embeds, elk onder de 10.000 tekens | De plakweg, als je liever geen extern script laadt. |
+| `parselab/webflow/*.html` | De zestien embeds, elk onder de 10.000 tekens | De plakweg, als je liever geen extern script laadt. |
 | `parselab/tools/parsescraper.html` | ParseScraper als los bestand | Werkt met de ParseLab-server ernaast; zonder server zegt hij dat. |
 | `parselab/tools/parseboard.html` | ParseBoard als los bestand | Werkt volledig in de browser, geen server nodig. |
 | `parselab/tools/parselab-extension.zip` | De browserextensie | Formulieren invullen en uitlezen op pagina's waar je moet inloggen. |
@@ -38,11 +38,11 @@ Alles wat er is, hoe je het live zet, en in welke volgorde. Eén document om van
 
 ### 3.2 Met de losse embeds
 
-Veertien blokken in deze volgorde onder dezelfde lege container: `1-config-stijl`, `2-teksten`, `3-teksten-voorstel`, `4-motor`, `4b-ocr`, `5-scherm`, `6-structuur`, `7-velden`, `8-voorstel`, `9-labels`, `9b-uitleg`, `10-ai`, `11-sjablonen`, `12-verwerken`. De volgorde ligt vast: de laatste gebruikt wat de rest klaarzet. Details in [`INTEGRATIE.md`](INTEGRATIE.md).
+Zestien blokken in deze volgorde onder dezelfde lege container: `1-config-stijl`, `2-teksten`, `3-teksten-voorstel`, `3b-teksten-labels`, `4-motor`, `4b-ocr`, `5-scherm`, `5b-eisen`, `6-structuur`, `7-velden`, `8-voorstel`, `9-labels`, `9b-uitleg`, `10-ai`, `11-sjablonen`, `12-verwerken`. De volgorde ligt vast: de laatste gebruikt wat de rest klaarzet. Details in [`INTEGRATIE.md`](INTEGRATIE.md).
 
 ### 3.3 Wat de gebruiker dan kan
 
-Documenten kiezen (het eerste gaat meteen open), zien wat er uitgelezen wordt met gearceerde vlakken, per vlak een eigen labelnaam geven, alles selecteren of niets, alle tekst tonen inclusief de bestandsgegevens, door een stapel bladeren en per document zien of een veld gevonden wordt, sjablonen in mappen bewaren die vanzelf herkend worden, tekst laten herkennen bij een scan, en met een betaald pakket de AI laten meekijken. Uitgebreid in [`PARSEPDF-DOORKIJKEN.md`](PARSEPDF-DOORKIJKEN.md); de uitleg voor bezoekers staat kant-en-klaar in [`SITE-UITLEG-PARSEPDF.md`](SITE-UITLEG-PARSEPDF.md).
+Documenten kiezen (het eerste gaat meteen open), zien wat er uitgelezen wordt met gearceerde vlakken, per vlak een eigen labelnaam geven, alles selecteren of niets, alle tekst tonen inclusief de bestandsgegevens, door een stapel bladeren en met **Controleer alle documenten** per regel zien in hoeveel documenten hij iets vindt, parsen op eisen (bij een woord, soort waarde, pagina, kolom; ook door een zin aan de AI te geven), sjablonen in mappen bewaren die vanzelf herkend worden, tekst laten herkennen bij een scan, en met een betaald pakket de AI laten meekijken. Uitgebreid in [`PARSEPDF-DOORKIJKEN.md`](PARSEPDF-DOORKIJKEN.md); de uitleg voor bezoekers staat kant-en-klaar in [`SITE-UITLEG-PARSEPDF.md`](SITE-UITLEG-PARSEPDF.md).
 
 ---
 
@@ -65,11 +65,12 @@ Online: `Dockerfile`, `railway.json` en `render.yaml` staan klaar. Kies de map `
 | `PARSELAB_AI_MODEL` | standaard `claude-opus-5` |
 | `PARSELAB_SUPABASE_URL` + `PARSELAB_SUPABASE_KEY` | zet je die, dan eisen de AI-eindpunten een ingelogde gebruiker met een pakket dat het toelaat |
 
-**De AI-eindpunten** (alle vier dezelfde regels: sleutel op de server, pas na een duidelijke ja van de gebruiker, één document of pagina per aanroep):
+**De AI-eindpunten** (alle vijf dezelfde regels: sleutel op de server, pas na een duidelijke ja van de gebruiker, één document of pagina per aanroep):
 
 | Eindpunt | Voor | Wat er heen gaat |
 |---|---|---|
 | `POST /api/parsepdf/velden` | ParsePDF | tekst van dat ene document plus de gevonden velden |
+| `POST /api/parsepdf/regel` | ParsePDF | alleen de zin van de gebruiker ("het totaalbedrag onderaan pagina 1"); nooit het document |
 | `POST /api/parsepdf/detect` | ParsePDF (tool) | tekst van dat ene document |
 | `POST /api/scrape/kolommen` | ParseScraper | kolomnamen en drie voorbeeldwaarden |
 | `POST /api/board/panelen` | ParseBoard | kolomnamen en drie voorbeeldrijen |
@@ -145,9 +146,9 @@ cd parselab/tests/site && python3 -m http.server 9000
 cd .. && python3 -m http.server 8765            # map boven parselab
 
 cd parselab/tests
-node qa.mjs          # 94 controles over het hele dashboard en de tools
+node qa.mjs          # 98 controles over het hele dashboard en de tools
 node styleguide.mjs  # 16 controles op de vormgeving
-node webflow.mjs     # 89 controles op de ParsePDF-embeds (start zelf wat hij nodig heeft)
+node webflow.mjs     # 101 controles op de ParsePDF-embeds (start zelf wat hij nodig heeft)
 ```
 
 In `parselab/tests/pdfs/` staan acht proefdocumenten met de uitkomsten die eruit horen te komen, waaronder een webshopfactuur met kolomkoppen, een formulier met labels naast de waarden, en een scan zonder tekstlaag.

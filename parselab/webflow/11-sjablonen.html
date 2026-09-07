@@ -124,11 +124,20 @@ function kaart(){
   if(!m.sjablonen.length)k.appendChild(el("p","pld-text",t.noTemplates));
   m.sjablonen.forEach(function(sj){
     var r=el("div","plp-file"),links=el("div");
-    links.appendChild(el("p","pld-text",sj.naam));
+    links.appendChild(el("p","pld-text"+(S.sjabloonId===sj.id?" plp-mono":""),sj.naam));
     links.appendChild(el("p","plp-mono",sj.regels.length+" "+t.fields+" · "+(sj.gebruikt||0)+" "+t.used));
+    var knoppen=el("div","pld-row");
+    // Openen zet de regels van dit sjabloon in het scherm, zodat je ze ziet en aanpast.
+    var openen=el("button","pld-btn pld-btn--sm",t.openTemplate);openen.type="button";
+    openen.addEventListener("click",function(){
+      S.regels=JSON.parse(JSON.stringify(sj.regels||[]));S.sjabloonId=sj.id;
+      try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
+      U.teken();U.meld(t.openedTemplate.replace("{naam}",sj.naam));
+    });
     var weg=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.delTemplate);weg.type="button";
     weg.addEventListener("click",function(){verwijderSjabloon(m.id,sj.id);U.teken();});
-    r.appendChild(links);r.appendChild(weg);k.appendChild(r);
+    knoppen.appendChild(openen);knoppen.appendChild(weg);
+    r.appendChild(links);r.appendChild(knoppen);k.appendChild(r);
   });
   if(m.sjablonen.length)k.appendChild(el("p","pld-text",t.useFolder));
   var onder=el("div","pld-row");

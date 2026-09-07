@@ -18,6 +18,7 @@
  *   POST /api/scrape/kolommen   { kolommen, titel }               → gevonden kolommen laten benoemen en filteren door Claude
  *   POST /api/board/panelen     { kolommen, rijen }               → een overzicht laten voorstellen door Claude
  *   POST /api/parsepdf/velden   { tekst, cellen, gevonden }       → de structuurcheck laten benoemen en natellen door Claude
+ *   POST /api/parsepdf/regel    { zin }                            → een omschrijving omzetten in een eis-regel (positie, soort, woord)
  *                               (met PARSELAB_SUPABASE_URL/KEY: alleen voor een ingelogde gebruiker
  *                                wiens pakket het toelaat, getoetst met de databasefunctie ai_allowed)
  *   GET/PUT /api/store/:key     (header x-parselab-user)         → projecten en instellingen van het dashboard per gebruiker
@@ -371,6 +372,31 @@ function validateRule(rule) {
     columns: rule.columns.slice(0, 40).map((c, i) => ({ name: String(c.name || "kolom " + (i + 1)).slice(0, 60), selector: sel(c.selector), attr: ["text", "href", "src"].includes(c.attr) ? c.attr : "text", number: !!c.number, off: !!c.off })) };
 }
 
+/* ---------------- ParsePDF: een zin omzetten in een eis (regel op positie, soort en woord) ---------------- */
+// "het totaalbedrag onderaan pagina 1" → {naam:"Totaal", eis:{woord:"Totaal", soort:"bedrag", pagina:1, kolom:null}}.
+// Er gaat alleen de zin van de gebruiker heen, nooit het document.
+const EIS_SOORTEN = ["tekst", "datum", "bedrag", "iban", "email", "kenmerk", "postcode", "telefoon"];
+async function noemRegel(body, req) {
+  await magAi(req);
+  if (!AI_KEY) throw httpError(501, "AI-hulp staat uit op deze server. Zet PARSELAB_ANTHROPIC_KEY en start opnieuw.");
+  const zin = String(body.zin || "").trim().slice(0, 500);
+  if (!zin) throw httpError(400, "Beschrijf wat je zoekt.");
+  const resp = await anthropic().messages.create({
+    model: AI_MODEL, max_tokens: 300,
+    system: "Iemand beschrijft in één zin welk veld uit een PDF gehaald moet worden. Zet dat om in een zoekregel. Antwoord uitsluitend met JSON: {\"naam\":\"korte kolomnaam\",\"eis\":{\"woord\":\"het woord of label dat bij de waarde staat, of leeg\",\"soort\":\"tekst|datum|bedrag|iban|email|kenmerk|postcode|telefoon\",\"pagina\":paginanummer of null,\"kolom\":kolomnummer of null}}. Gebruik alleen wat de zin echt zegt; verzin geen pagina of kolom. Geen uitleg.",
+    messages: [{ role: "user", content: zin }],
+  });
+  if (resp.stop_reason === "refusal") throw httpError(422, "ParseLab kon deze beschrijving niet verwerken.");
+  const txt = resp.content.filter(b => b.type === "text").map(b => b.text).join("");
+  let parsed = null; try { parsed = JSON.parse(txt); } catch (e) { const m = txt.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) {} } }
+  const eis = parsed && parsed.eis && typeof parsed.eis === "object" ? parsed.eis : {};
+  const nr = v => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
+  return {
+    naam: String((parsed && parsed.naam) || "").slice(0, 60),
+    eis: { woord: String(eis.woord || "").slice(0, 80), soort: EIS_SOORTEN.includes(eis.soort) ? eis.soort : "tekst", pagina: nr(eis.pagina), kolom: nr(eis.kolom) },
+  };
+}
+
 /* ---------------- ParsePDF: velden herkennen via Claude (alleen met sleutel op de server) ---------------- */
 const AI_KEY = process.env.PARSELAB_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY || "";
 const AI_MODEL = process.env.PARSELAB_AI_MODEL || "claude-opus-5";
@@ -494,6 +520,7 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname === "/api/scrape/kolommen") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemKolommen(await readBody(req), req)); }
     if (u.pathname === "/api/board/panelen") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemPanelen(await readBody(req), req)); }
     if (u.pathname === "/api/parsepdf/velden") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemVelden(await readBody(req), req)); }
+    if (u.pathname === "/api/parsepdf/regel") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemRegel(await readBody(req), req)); }
     if (u.pathname === "/api/parsepdf/detect") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await detectFields(await readBody(req))); }
     const sm = u.pathname.match(/^\/api\/store\/([a-z0-9_-]{1,40})$/i);
     if (sm) {

@@ -146,6 +146,7 @@ function pasToe(regel,doc){
   if(regel.type==="bestand")return doc.naam;
   // Uit het voorstel: de vindregel weet zelf waar de waarde staat.
   if(regel.type==="cel")return window.PLP_ST?schoon(window.PLP_ST.pas(doc,regel.vindregel),regel.filter):"";
+  if(regel.type==="eis")return window.PLP_EIS?schoon(window.PLP_EIS.pas(doc,regel.eis||{}),regel.filter):"";
   if(regel.type==="regex"){
     if(!regel.waarde)return "";
     var re;try{re=new RegExp(regel.waarde,"i");}catch(e){return "";}

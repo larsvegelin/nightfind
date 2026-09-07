@@ -229,7 +229,7 @@ manyUnknown:"{n} documenten pasten bij geen enkel sjabloon; die kolommen blijven
 useFolder:"Gebruik de sjablonen uit deze map",useRules:"Gebruik de veldregels hieronder",
 showAll:"Toon alle tekst ({n})",hideAll:"Alleen de herkende velden",allHint:"Alles wat in het document staat, plus de gegevens van het bestand zelf. Vink aan wat je wilt en laat de rest staan.",fromFile:"uit het bestand",srcPlek:"plek op de pagina",srcMeta:"bestandsgegeven",srcBestand:"bestandsnaam",
 docOf:"Document {i} van {n}",prevDoc:"Vorige",nextDoc:"Volgende",notFound:"niet gevonden",checkHint:"Blader door je documenten en zie per veld of het gevonden wordt.",
-aiPlan:"AI-hulp hoort bij Pro en Business",aiPlanText:"Uitlezen met AI draait op onze Claude-tegoeden en zit daarom bij een betaald pakket. Je gratis pakket leest gewoon door op de structuurcheck; die kost niets en werkt op de meeste documenten.",aiUpgrade:"Pakketten bekijken",aiCredits:"Deze controle kostte 1 AI-tegoed."},
+aiPlan:"AI-hulp hoort bij Pro en Business",aiUpgrade:"Pakketten bekijken",aiCredits:"Deze controle kostte 1 AI-tegoed."},
 en:{look:"See what is in it",lookHint:"The tool opens the document, highlights what it can read and suggests names. Hover a box to see the name.",
 proposal:"Proposal",proposalHint:"This is what the tool found by itself. Tick what you want and adjust the names.",
 fName:"Name",fValue:"Value",source:"Found via",
@@ -256,7 +256,7 @@ manyUnknown:"{n} documents matched no template; those columns stay empty.",
 useFolder:"Use the templates in this folder",useRules:"Use the field rules below",
 showAll:"Show all text ({n})",hideAll:"Only the recognised fields",allHint:"Everything in the document, plus the details of the file itself. Tick what you want and leave the rest.",fromFile:"from the file",srcPlek:"place on the page",srcMeta:"file detail",srcBestand:"file name",
 docOf:"Document {i} of {n}",prevDoc:"Previous",nextDoc:"Next",notFound:"not found",checkHint:"Page through your documents and see per field whether it is found.",
-aiPlan:"AI help is part of Pro and Business",aiPlanText:"Extracting with AI runs on our Claude credits and is therefore part of a paid plan. Your free plan keeps working on the structure check; that costs nothing and handles most documents.",aiUpgrade:"View plans",aiCredits:"This check used 1 AI credit."},
+aiPlan:"AI help is part of Pro and Business",aiUpgrade:"View plans",aiCredits:"This check used 1 AI credit."},
 de:{look:"Sieh nach, was drinsteht",lookHint:"Das Werkzeug oeffnet das Dokument, hebt hervor was es lesen kann und schlaegt Namen vor. Fahre ueber ein Feld, um den Namen zu sehen.",
 proposal:"Vorschlag",proposalHint:"Das hat das Werkzeug selbst gefunden. Hake an, was du willst, und passe die Namen an.",
 fName:"Name",fValue:"Wert",source:"Gefunden ueber",
@@ -283,7 +283,22 @@ manyUnknown:"{n} Dokumente passten zu keiner Vorlage; diese Spalten bleiben leer
 useFolder:"Die Vorlagen aus diesem Ordner verwenden",useRules:"Die Feldregeln unten verwenden",
 showAll:"Allen Text zeigen ({n})",hideAll:"Nur die erkannten Felder",allHint:"Alles im Dokument, dazu die Angaben der Datei selbst. Hake an, was du willst, und lass den Rest stehen.",fromFile:"aus der Datei",srcPlek:"Stelle auf der Seite",srcMeta:"Dateiangabe",srcBestand:"Dateiname",
 docOf:"Dokument {i} von {n}",prevDoc:"Zurueck",nextDoc:"Weiter",notFound:"nicht gefunden",checkHint:"Blaettere durch deine Dokumente und sieh pro Feld, ob es gefunden wird.",
-aiPlan:"KI-Hilfe gehoert zu Pro und Business",aiPlanText:"Auslesen mit KI laeuft ueber unsere Claude-Guthaben und gehoert deshalb zu einem bezahlten Paket. Dein kostenloses Paket arbeitet weiter mit der Strukturpruefung; die kostet nichts und reicht fuer die meisten Dokumente.",aiUpgrade:"Pakete ansehen",aiCredits:"Diese Pruefung hat 1 KI-Guthaben gekostet."}
+aiPlan:"KI-Hilfe gehoert zu Pro und Business",aiUpgrade:"Pakete ansehen",aiCredits:"Diese Pruefung hat 1 KI-Guthaben gekostet."}
+};
+Object.keys(EXTRA).forEach(function(taal){
+  if(!T[taal])return;
+  Object.keys(EXTRA[taal]).forEach(function(k){T[taal][k]=EXTRA[taal][k];});
+});
+})();
+</script>
+<!-- 3b-teksten-labels.html -->
+<!-- ParsePDF — embed 3b van 12: teksten voor labels, selectie, OCR, mappen en de structuurcontrole. -->
+<script>
+(function(){var T=window.PLP_T;if(!T)return;
+var EXTRA={
+nl:{aiPlanText:"Uitlezen met AI draait op onze Claude-tegoeden en zit daarom bij een betaald pakket. Je gratis pakket leest gewoon door op de structuurcheck; die kost niets en werkt op de meeste documenten.",tEis:"Op eisen (positie, soort, woord)",eisHint:"Zeg wat je zoekt in plaats van waar het staat: een datum na het woord Geboortedatum, een bedrag in kolom 3 op pagina 1. Alles wat je invult moet kloppen; wat je leeg laat telt niet mee. Of beschrijf het in een zin en laat de AI de eis invullen.",eisWord:"Bij het woord",eisWordPh:"bijv. Geboortedatum",eisKind:"Soort waarde",eisAny:"Alles",eisColPh:"Kolom (nr)",eisAdd:"Eis toevoegen",eisAi:"Eis maken met AI",eisAiPh:"bijv. het totaalbedrag onderaan pagina 1",eisAiDone:"De AI vulde de eis in. Controleer en voeg toe.",eisAdded:"Regel {naam} toegevoegd.",eisAfter:"na \u2018{w}\u2019",eisPage:"pagina {n}",eisCol:"kolom {n}",eis_email:"E-mailadres",eis_kenmerk:"Kenmerk of nummer",eis_postcode:"Postcode",eis_telefoon:"Telefoonnummer",eis_iban:"IBAN",eis_datum:"Datum",eis_bedrag:"Bedrag",checkAll:"Controleer alle documenten",checking:"Controleren\u2026",checkAllOk:"Alle regels vinden iets in elk van de {n} documenten.",checkSome:"Niet elke regel vindt iets in alle {n} documenten. Kijk welke ontbreken en pas de regel of het sjabloon aan.",checkFound:"gevonden in {g} van {n}",checkMissing:"Niet in:",manual:"Handmatig parsen",openTemplate:"Openen",openedTemplate:"Sjabloon {naam} staat nu in het scherm. Pas de regels aan en bewaar ze opnieuw.",matchOn:"Lijkt op sjabloon {naam} · {g} van {t} velden gevonden",matchMaybe:"Lijkt op {naam}, maar de indeling wijkt af: {g} van {t} velden gevonden. Controleer het of maak er een eigen sjabloon van.",matchNone:"Past bij geen enkel sjabloon in deze map. Bewaar dit als nieuw sjabloon.",keepField:"Overnemen",dropField:"Weglaten",autoNamed:"naam automatisch",selectAll:"Alles selecteren",selectNone:"Niets selecteren",chosen:"{n} van {t} aan",aiChanged:"De AI wijzigde {n} velden.",approve:"Goedkeuren",undo:"Ongedaan maken",approved:"Goedgekeurd.",undone:"Teruggezet.",ocr:"Tekst herkennen (OCR)",ocrBusy:"Tekst herkennen…",ocrDone:"{n} stukken tekst herkend. Controleer ze goed; herkenning is niet altijd juist.",ocrOff:"Tekstherkenning kon niet worden geladen. Controleer je verbinding.",ocrHint:"Dit document heeft geen tekstlaag. Laat de tekst herkennen om er toch velden uit te halen."},
+en:{aiPlanText:"Extracting with AI runs on our Claude credits and is therefore part of a paid plan. Your free plan keeps working on the structure check; that costs nothing and handles most documents.",tEis:"By requirement (position, kind, word)",eisHint:"Say what you are looking for instead of where it is: a date after the word Date of birth, an amount in column 3 on page 1. Everything you fill in must match; what you leave empty is ignored. Or describe it in a sentence and let the AI fill in the requirement.",eisWord:"Near the word",eisWordPh:"e.g. Date of birth",eisKind:"Kind of value",eisAny:"Anything",eisColPh:"Column (no.)",eisAdd:"Add requirement",eisAi:"Build with AI",eisAiPh:"e.g. the total amount at the bottom of page 1",eisAiDone:"The AI filled in the requirement. Check it and add it.",eisAdded:"Rule {naam} added.",eisAfter:"after \u2018{w}\u2019",eisPage:"page {n}",eisCol:"column {n}",eis_email:"E-mail address",eis_kenmerk:"Reference or number",eis_postcode:"Postcode",eis_telefoon:"Phone number",eis_iban:"IBAN",eis_datum:"Date",eis_bedrag:"Amount",checkAll:"Check all documents",checking:"Checking\u2026",checkAllOk:"Every rule finds something in each of the {n} documents.",checkSome:"Not every rule finds something in all {n} documents. See which are missing and adjust the rule or template.",checkFound:"found in {g} of {n}",checkMissing:"Not in:",manual:"Parse by hand",openTemplate:"Open",openedTemplate:"Template {naam} is now on screen. Adjust the rules and save again.",matchOn:"Looks like template {naam} · {g} of {t} fields found",matchMaybe:"Looks like {naam}, but the layout differs: {g} of {t} fields found. Check it or save it as its own template.",matchNone:"Matches no template in this folder. Save it as a new template.",keepField:"Use",dropField:"Leave out",autoNamed:"named automatically",selectAll:"Select all",selectNone:"Select none",chosen:"{n} of {t} on",aiChanged:"The AI changed {n} fields.",approve:"Approve",undo:"Undo",approved:"Approved.",undone:"Reverted.",ocr:"Recognise text (OCR)",ocrBusy:"Recognising text…",ocrDone:"{n} pieces of text recognised. Check them; recognition is not always right.",ocrOff:"Text recognition could not be loaded. Check your connection.",ocrHint:"This document has no text layer. Run text recognition to pull fields out of it anyway."},
+de:{aiPlanText:"Auslesen mit KI laeuft ueber unsere Claude-Guthaben und gehoert deshalb zu einem bezahlten Paket. Dein kostenloses Paket arbeitet weiter mit der Strukturpruefung; die kostet nichts und reicht fuer die meisten Dokumente.",tEis:"Nach Vorgabe (Position, Art, Wort)",eisHint:"Sag, was du suchst, statt wo es steht: ein Datum nach dem Wort Geburtsdatum, ein Betrag in Spalte 3 auf Seite 1. Alles, was du ausfuellst, muss passen; Leeres zaehlt nicht. Oder beschreibe es in einem Satz und lass die KI die Vorgabe ausfuellen.",eisWord:"Beim Wort",eisWordPh:"z.B. Geburtsdatum",eisKind:"Art des Werts",eisAny:"Alles",eisColPh:"Spalte (Nr.)",eisAdd:"Vorgabe hinzufuegen",eisAi:"Mit KI erstellen",eisAiPh:"z.B. der Gesamtbetrag unten auf Seite 1",eisAiDone:"Die KI hat die Vorgabe ausgefuellt. Pruefe sie und fuege sie hinzu.",eisAdded:"Regel {naam} hinzugefuegt.",eisAfter:"nach \u2018{w}\u2019",eisPage:"Seite {n}",eisCol:"Spalte {n}",eis_email:"E-Mail-Adresse",eis_kenmerk:"Kennzeichen oder Nummer",eis_postcode:"Postleitzahl",eis_telefoon:"Telefonnummer",eis_iban:"IBAN",eis_datum:"Datum",eis_bedrag:"Betrag",checkAll:"Alle Dokumente pruefen",checking:"Pruefen\u2026",checkAllOk:"Jede Regel findet in jedem der {n} Dokumente etwas.",checkSome:"Nicht jede Regel findet in allen {n} Dokumenten etwas. Sieh nach, welche fehlen, und passe Regel oder Vorlage an.",checkFound:"gefunden in {g} von {n}",checkMissing:"Nicht in:",manual:"Von Hand parsen",openTemplate:"Oeffnen",openedTemplate:"Vorlage {naam} steht jetzt im Bildschirm. Passe die Regeln an und speichere erneut.",matchOn:"Aehnelt Vorlage {naam} · {g} von {t} Feldern gefunden",matchMaybe:"Aehnelt {naam}, aber das Layout weicht ab: {g} von {t} Feldern gefunden. Pruefe es oder speichere eine eigene Vorlage.",matchNone:"Passt zu keiner Vorlage in diesem Ordner. Speichere es als neue Vorlage.",keepField:"Uebernehmen",dropField:"Weglassen",autoNamed:"automatisch benannt",selectAll:"Alles auswaehlen",selectNone:"Nichts auswaehlen",chosen:"{n} von {t} an",aiChanged:"Die KI hat {n} Felder geaendert.",approve:"Genehmigen",undo:"Rueckgaengig",approved:"Genehmigt.",undone:"Zurueckgesetzt.",ocr:"Text erkennen (OCR)",ocrBusy:"Text wird erkannt…",ocrDone:"{n} Textstuecke erkannt. Pruefe sie; die Erkennung ist nicht immer richtig.",ocrOff:"Texterkennung konnte nicht geladen werden. Pruefe deine Verbindung.",ocrHint:"Dieses Dokument hat keine Textebene. Lass den Text erkennen, um trotzdem Felder zu bekommen."}
 };
 Object.keys(EXTRA).forEach(function(taal){
   if(!T[taal])return;
@@ -440,6 +455,7 @@ function pasToe(regel,doc){
   if(regel.type==="bestand")return doc.naam;
   // Uit het voorstel: de vindregel weet zelf waar de waarde staat.
   if(regel.type==="cel")return window.PLP_ST?schoon(window.PLP_ST.pas(doc,regel.vindregel),regel.filter):"";
+  if(regel.type==="eis")return window.PLP_EIS?schoon(window.PLP_EIS.pas(doc,regel.eis||{}),regel.filter):"";
   if(regel.type==="regex"){
     if(!regel.waarde)return "";
     var re;try{re=new RegExp(regel.waarde,"i");}catch(e){return "";}
@@ -601,6 +617,9 @@ if(window.PLP_TOUR){
 var terug=el("a","pld-btn pld-btn--ghost",t.back);terug.href=CFG.dashboardPath;
 knoppen.appendChild(terug);
 kop.appendChild(knoppen);root.appendChild(kop);
+// Het uploadvlak staat bovenaan: dat is waar je begint.
+root.appendChild(el("p","pld-caps pld-sect",t.files));
+root.appendChild(bestandKaart());
 if(S.verbruik){
 var vk=el("div","pld-card");
 vk.appendChild(el("p","pld-caps",t.usage));
@@ -616,10 +635,9 @@ root.appendChild(vk);}
 if(window.PLP_SJ&&window.PLP_SJ.kaart){
 root.appendChild(el("p","pld-caps pld-sect",t.folders));
 root.appendChild(window.PLP_SJ.kaart());}
-root.appendChild(el("p","pld-caps pld-sect",t.rules));
+root.appendChild(el("p","pld-caps pld-sect",t.manual||t.rules));
 root.appendChild(regelKaart());
-root.appendChild(el("p","pld-caps pld-sect",t.files));
-root.appendChild(bestandKaart());
+if(window.PLP_EIS)root.appendChild(window.PLP_EIS.kaart());
 root.appendChild(el("p","pld-caps pld-sect",t.results));
 root.appendChild(resultaatKaart());
 }
@@ -633,16 +651,20 @@ var kies=el("select","pld-sel");
 kies.addEventListener("change",function(){var p=window.PLP_PRESETS[kies.value];if(!p)return;
 S.regels=JSON.parse(JSON.stringify(p));bewaarRegels();teken();});
 k.appendChild(veld(t.preset,kies));
+var boven=el("div","pld-row");
+var plus=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.add);plus.type="button";
+plus.addEventListener("click",function(){S.regels.unshift({naam:"",type:"label",waarde:"",filter:"geen"});bewaarRegels();teken();});
+boven.appendChild(plus);k.appendChild(boven);
 S.regels.forEach(function(r,i){
 var rij=el("div","plp-rule");
 var naam=el("input","pld-in");naam.value=r.naam||"";
 naam.addEventListener("input",function(){r.naam=naam.value;});
 var type=el("select","pld-sel");
-[["label",t.tLabel],["regex",t.tRegex],["bestand",t.tFile],["cel",t.tCel]].forEach(function(o){
+[["label",t.tLabel],["regex",t.tRegex],["bestand",t.tFile],["cel",t.tCel],["eis",t.tEis]].forEach(function(o){
 var op=el("option","",o[1]);op.value=o[0];if(o[0]===r.type)op.selected=true;type.appendChild(op);});
-var waarde=el("input","pld-in");waarde.value=r.waarde||"";waarde.disabled=r.type==="bestand"||r.type==="cel";
+var waarde=el("input","pld-in");waarde.value=r.waarde||"";waarde.disabled=/bestand|cel|eis/.test(r.type);
 waarde.addEventListener("input",function(){r.waarde=waarde.value;});
-type.addEventListener("change",function(){r.type=type.value;waarde.disabled=r.type==="bestand"||r.type==="cel";if(r.type!=="cel")delete r.vindregel;});
+type.addEventListener("change",function(){r.type=type.value;waarde.disabled=/bestand|cel|eis/.test(r.type);if(r.type!=="cel")delete r.vindregel;});
 var filter=el("select","pld-sel");
 [["geen",t.xNone],["bedrag",t.xAmount],["datum",t.xDate]].forEach(function(o){
 var op=el("option","",o[1]);op.value=o[0];if(o[0]===r.filter)op.selected=true;filter.appendChild(op);});
@@ -653,12 +675,10 @@ rij.appendChild(veld(t.fname,naam));rij.appendChild(veld(t.ftype,type));
 rij.appendChild(veld(t.fvalue,waarde));rij.appendChild(veld(t.ffilter,filter));
 rij.appendChild(weg);k.appendChild(rij);});
 var rij2=el("div","pld-row");
-var plus=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.add);plus.type="button";
-plus.addEventListener("click",function(){S.regels.push({naam:"",type:"label",waarde:"",filter:"geen"});bewaarRegels();teken();});
 var opslaan=el("button","pld-btn pld-btn--sm",t.save);opslaan.type="button";
 var gemeld=el("p","pld-text");
 opslaan.addEventListener("click",function(){bewaarRegels();gemeld.textContent=t.saved;});
-rij2.appendChild(plus);rij2.appendChild(opslaan);rij2.appendChild(gemeld);
+rij2.appendChild(opslaan);if(window.PLP_CHECK)rij2.appendChild(window.PLP_CHECK.knop());rij2.appendChild(gemeld);
 k.appendChild(rij2);return k;}
 
 function bestandKaart(){
@@ -706,7 +726,7 @@ if(f.size>P.MAXBYTES){fouten.push(f.name+" "+t.errBig);return;}
 S.bestanden.push(f);});
 teken();
 if(fouten.length)meld(fouten.join(" "),"warn");
-// Meteen laten zien wat er in het eerste document staat; wachten op een knop hoeft niet.
+// Meteen laten zien wat erin staat.
 if(S.bestanden.length>begin&&window.PLP_V&&!document.querySelector(".plp-doorkijk"))
   window.PLP_V.open(S.bestanden,begin);}
 
@@ -738,6 +758,136 @@ var a=el("a","pld-btn pld-btn--cream",t.upgrade);a.href=CFG.dashboardPath;
 k.appendChild(a);k.style.marginBottom="24px";return k;}
 
 return {el:el,nr:nr,teken:teken,meld:meld,over:over,laadRegels:laadRegels,limietKaart:limietKaart};
+})();
+</script>
+<!-- 5b-eisen.html -->
+<!-- ParsePDF — embed 5b van 12: parsen op eisen. Zeg wat je zoekt, in plaats van waar het staat. -->
+<script>
+window.PLP_EIS=(function(){
+var S=window.PLP_S;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+
+// Een eis: "een datum, na het woord Geboortedatum, op pagina 1, in kolom 2".
+// Elk deel is los te laten; wat je invult moet allemaal kloppen.
+function pas(doc,eis){
+  var ST=window.PLP_ST,cellen=doc.cellen||[],rijen=ST.perRij(cellen);
+  var kol=ST.kolommen(cellen).map(function(k){return k.x;}).sort(function(a,b){return a-b;});
+  var patroon=null;
+  if(eis.soort&&eis.soort!=="tekst")ST.patronen.forEach(function(p){if(p.naam===eis.soort)patroon=p;});
+  var woord=String(eis.woord||"").trim().toLowerCase();
+  var esc=woord.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),wre=woord?new RegExp("(^|[^\\p{L}])"+esc,"iu"):null;
+  function heeft(c){return !!(c&&wre&&wre.test(String(c.t)));}
+  var kandidaten=[];
+  cellen.forEach(function(c){
+    if(eis.pagina&&c.pagina!==Number(eis.pagina)-1)return;
+    if(eis.kolom&&kol.length){
+      var idx=0;for(var i=0;i<kol.length;i++)if(Math.abs(c.x-kol[i])<=6)idx=i+1;
+      if(idx!==Number(eis.kolom))return;
+    }
+    if(patroon){
+      var m=String(c.t).match(ST.re(patroon));
+      if(!m)return;
+      if(woord&&!heeft(c)&&!naWoord(c,heeft,rijen))return;
+      kandidaten.push({c:c,w:m[0]});return;
+    }
+    if(woord){
+      if(heeft(c)){
+        var rest=String(c.t).replace(new RegExp("^.*?"+esc+"\\s*[:\\-–]?\\s*","iu"),"").trim();
+        if(rest&&rest.toLowerCase()!==String(c.t).toLowerCase())kandidaten.push({c:c,w:rest});
+        else {var b=buur(c,rijen);if(b)kandidaten.push({c:b,w:b.t});}
+      }
+      return;
+    }
+    kandidaten.push({c:c,w:c.t});
+  });
+  if(!kandidaten.length)return "";
+  // Bij meer kandidaten wint de eerste op de pagina (van boven naar beneden, links naar rechts).
+  kandidaten.sort(function(a,b){return a.c.pagina-b.c.pagina||b.c.y-a.c.y||a.c.x-b.c.x;});
+  return kandidaten[0].w;
+}
+// Staat het woord links van deze cel op dezelfde regel, of er direct boven?
+function naWoord(c,heeft,rijen){return heeft(buurLinks(c,rijen))||heeft(cellBoven(c,rijen));}
+function buur(c,rijen){
+  for(var i=0;i<rijen.length;i++){
+    var rij=rijen[i];
+    var k=rij.indexOf(c);
+    if(k>=0)return rij[k+1]||((rijen[i+1]&&rijen[i+1][0].pagina===c.pagina)?rijen[i+1].filter(function(x){return Math.abs(x.x-c.x)<=6;})[0]:null);
+  }
+  return null;
+}
+function buurLinks(c,rijen){
+  for(var i=0;i<rijen.length;i++){var k=rijen[i].indexOf(c);if(k>0)return rijen[i][k-1];if(k===0)return null;}
+  return null;
+}
+function cellBoven(c,rijen){
+  for(var i=1;i<rijen.length;i++){
+    if(rijen[i].indexOf(c)<0)continue;
+    var vorige=rijen[i-1];
+    if(vorige[0].pagina!==c.pagina)return null;
+    return vorige.filter(function(x){return Math.abs(x.x-c.x)<=6;})[0]||null;
+  }
+  return null;
+}
+
+// Korte omschrijving van een eis, voor in het regelvenster.
+function omschrijf(eis){
+  var t=S.t,d=[];
+  if(eis.woord)d.push(t.eisAfter.replace("{w}",eis.woord));
+  if(eis.soort&&eis.soort!=="tekst")d.push(t["eis_"+eis.soort]||eis.soort);
+  if(eis.pagina)d.push(t.eisPage.replace("{n}",eis.pagina));
+  if(eis.kolom)d.push(t.eisCol.replace("{n}",eis.kolom));
+  return d.join(" · ")||t.eisAny;
+}
+
+// De kaart: vier velden en een knop, plus de AI die de eis voor je invult.
+function kaart(){
+  var t=S.t,k=el("div","pld-card");
+  k.appendChild(el("p","pld-text",t.eisHint));
+  var rij=el("div","plp-rule");
+  var naam=el("input","pld-in");naam.placeholder=t.fname;
+  var woord=el("input","pld-in");woord.placeholder=t.eisWordPh;
+  var soort=el("select","pld-sel");
+  ["tekst","datum","bedrag","iban","email","kenmerk","postcode","telefoon"].map(function(n){return [n,n==="tekst"?t.eisAny:t["eis_"+n]];})
+    .forEach(function(o){var op=el("option","",o[1]);op.value=o[0];soort.appendChild(op);});
+  var pagina=el("input","pld-in");pagina.type="number";pagina.min="1";pagina.placeholder=t.page;
+  var kolom=el("input","pld-in");kolom.type="number";kolom.min="1";kolom.placeholder=t.eisColPh;
+  var maak=el("button","pld-btn pld-btn--sm",t.eisAdd);maak.type="button";
+  function veld(l,i){var w=el("div");w.appendChild(el("label","pld-lbl",l));w.appendChild(i);return w;}
+  rij.appendChild(veld(t.fname,naam));rij.appendChild(veld(t.eisWord,woord));rij.appendChild(veld(t.eisKind,soort));
+  rij.appendChild(veld(t.page,pagina));rij.appendChild(veld(t.eisColPh,kolom));
+  k.appendChild(rij);
+  var onder=el("div","pld-row");onder.appendChild(maak);
+  var ai=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.eisAi);ai.type="button";
+  var zin=el("input","pld-in");zin.placeholder=t.eisAiPh;
+  onder.appendChild(zin);onder.appendChild(ai);
+  var melding=el("p","pld-text");onder.appendChild(melding);
+  k.appendChild(onder);
+  maak.addEventListener("click",function(){
+    var eis={woord:woord.value.trim(),soort:soort.value,pagina:pagina.value?Number(pagina.value):null,kolom:kolom.value?Number(kolom.value):null};
+    if(!naam.value.trim()){naam.focus();return;}
+    S.regels.unshift({naam:naam.value.trim(),type:"eis",waarde:omschrijf(eis),eis:eis,
+                      filter:eis.soort==="datum"||eis.soort==="bedrag"?eis.soort:"geen"});
+    try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
+    window.PLP_UI.teken();window.PLP_UI.meld(t.eisAdded.replace("{naam}",naam.value.trim()));
+  });
+  ai.addEventListener("click",function(){
+    if(!zin.value.trim())return;
+    if(window.PLP_AI&&!window.PLP_AI.mag()){melding.textContent=t.aiPlan;return;}
+    ai.disabled=true;melding.textContent=t.aiBusy;
+    var eind=(window.PARSELAB&&window.PARSELAB.regelEndpoint)||"/api/parsepdf/regel";
+    fetch(eind,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({zin:zin.value.trim()})})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(j){
+        ai.disabled=false;
+        if(!j||!j.eis){melding.textContent=t.aiOff;return;}
+        naam.value=j.naam||naam.value;woord.value=j.eis.woord||"";soort.value=j.eis.soort||"tekst";
+        pagina.value=j.eis.pagina||"";kolom.value=j.eis.kolom||"";
+        melding.textContent=t.eisAiDone;
+      }).catch(function(){ai.disabled=false;melding.textContent=t.aiOff;});
+  });
+  return k;
+}
+return {pas:pas,kaart:kaart,omschrijf:omschrijf};
 })();
 </script>
 <!-- 6-structuur.html -->
@@ -1231,7 +1381,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
     if(!regels.length)return;
     S.regels=regels;
     try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
-    sluit();window.PLP_UI.teken();window.PLP_UI.meld(t.taken);
+    sluit();window.PLP_UI.teken();window.PLP_UI.meld(t.taken);if(window.PLP_CHECK)window.PLP_CHECK.run(true);
   });
   ai.addEventListener("click",function(){window.PLP_AI.vraag(doc,velden,function(){teken();},melding,ai);});
 
@@ -1243,7 +1393,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
       var rij=el("div","plp-veldrij");
       var vink=document.createElement("input");vink.type="checkbox";vink.checked=v.aan;
       vink.setAttribute("aria-label",v.naam);
-      vink.addEventListener("change",function(){v.aan=vink.checked;tekenVlakken();});
+      vink.addEventListener("change",function(){v.aan=vink.checked;if(balk&&balk.bijwerken)balk.bijwerken();tekenVlakken();});
       var naam=el("input","pld-in");naam.value=v.naam;
       naam.addEventListener("input",function(){v.naam=naam.value;});
       var waarde=el("p","plp-mono",v.waarde);
@@ -1281,19 +1431,6 @@ return {open:open};
 <!-- 9-labels.html -->
 <!-- ParsePDF — embed 9 van 12: labels op de pagina, selectieknoppen en goedkeuren. -->
 <script>
-(function(){var T=window.PLP_T;if(!T)return;
-var EXTRA={
-nl:{matchOn:"Lijkt op sjabloon {naam} · {g} van {t} velden gevonden",matchMaybe:"Lijkt op {naam}, maar de indeling wijkt af: {g} van {t} velden gevonden. Controleer het of maak er een eigen sjabloon van.",matchNone:"Past bij geen enkel sjabloon in deze map. Bewaar dit als nieuw sjabloon.",keep:"Overnemen",drop:"Weglaten",autoNamed:"naam automatisch",selectAll:"Alles selecteren",selectNone:"Niets selecteren",chosen:"{n} van {t} aan",aiChanged:"De AI wijzigde {n} velden.",approve:"Goedkeuren",undo:"Ongedaan maken",approved:"Goedgekeurd.",undone:"Teruggezet.",ocr:"Tekst herkennen (OCR)",ocrBusy:"Tekst herkennen…",ocrDone:"{n} stukken tekst herkend. Controleer ze goed; herkenning is niet altijd juist.",ocrOff:"Tekstherkenning kon niet worden geladen. Controleer je verbinding.",ocrHint:"Dit document heeft geen tekstlaag. Laat de tekst herkennen om er toch velden uit te halen."},
-en:{matchOn:"Looks like template {naam} · {g} of {t} fields found",matchMaybe:"Looks like {naam}, but the layout differs: {g} of {t} fields found. Check it or save it as its own template.",matchNone:"Matches no template in this folder. Save it as a new template.",keep:"Use",drop:"Leave out",autoNamed:"named automatically",selectAll:"Select all",selectNone:"Select none",chosen:"{n} of {t} on",aiChanged:"The AI changed {n} fields.",approve:"Approve",undo:"Undo",approved:"Approved.",undone:"Reverted.",ocr:"Recognise text (OCR)",ocrBusy:"Recognising text…",ocrDone:"{n} pieces of text recognised. Check them; recognition is not always right.",ocrOff:"Text recognition could not be loaded. Check your connection.",ocrHint:"This document has no text layer. Run text recognition to pull fields out of it anyway."},
-de:{matchOn:"Aehnelt Vorlage {naam} · {g} von {t} Feldern gefunden",matchMaybe:"Aehnelt {naam}, aber das Layout weicht ab: {g} von {t} Feldern gefunden. Pruefe es oder speichere eine eigene Vorlage.",matchNone:"Passt zu keiner Vorlage in diesem Ordner. Speichere es als neue Vorlage.",keep:"Uebernehmen",drop:"Weglassen",autoNamed:"automatisch benannt",selectAll:"Alles auswaehlen",selectNone:"Nichts auswaehlen",chosen:"{n} von {t} an",aiChanged:"Die KI hat {n} Felder geaendert.",approve:"Genehmigen",undo:"Rueckgaengig",approved:"Genehmigt.",undone:"Zurueckgesetzt.",ocr:"Text erkennen (OCR)",ocrBusy:"Text wird erkannt…",ocrDone:"{n} Textstuecke erkannt. Pruefe sie; die Erkennung ist nicht immer richtig.",ocrOff:"Texterkennung konnte nicht geladen werden. Pruefe deine Verbindung.",ocrHint:"Dieses Dokument hat keine Textebene. Lass den Text erkennen, um trotzdem Felder zu bekommen."}
-};
-Object.keys(EXTRA).forEach(function(taal){
-  if(!T[taal])return;
-  Object.keys(EXTRA[taal]).forEach(function(k){T[taal][k]=EXTRA[taal][k];});
-});
-})();
-</script>
-<script>
 window.PLP_L=(function(){
 var S=window.PLP_S;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
@@ -1310,8 +1447,8 @@ function labelVenster(vlak,box,veld,klaar){
   var bron=el("p","plp-bron",(S.t[BRON[veld.bron]]||veld.bron)+(veld.slim?" · "+S.t.autoNamed:""));
   v.appendChild(bron);
   var rij=el("div","pld-row");
-  var ok=el("button","pld-btn pld-btn--sm",S.t.keep);ok.type="button";
-  var weg=el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.drop);weg.type="button";
+  var ok=el("button","pld-btn pld-btn--sm",S.t.keepField);ok.type="button";
+  var weg=el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.dropField);weg.type="button";
   rij.appendChild(ok);rij.appendChild(weg);v.appendChild(rij);
   var links=Math.max(4,Math.min(box.offsetLeft,(vlak.clientWidth||400)-260));
   v.style.left=links+"px";
@@ -1456,7 +1593,7 @@ return {vlakken:vlakken,ocrAanbod:ocrAanbod,labelVenster:labelVenster,selectieBa
 })();
 </script>
 <!-- 9b-uitleg.html -->
-<!-- ParsePDF — embed 9b van 12: de uitleg "Hoe werkt ParsePDF?" in vijf stappen. -->
+<!-- ParsePDF — embed 9b van 12: de uitleg "Hoe werkt ParsePDF?" in vijf stappen, met een voorbeeld om te proberen. -->
 <script>
 window.PLP_TOUR=(function(){
 var S=window.PLP_S;
@@ -1477,6 +1614,16 @@ de:[["Dokumente waehlen","Ziehe deine PDFs in das Feld oder klicke auf Dateien w
 ["Als Vorlage speichern","Gib deiner Auswahl einen Namen und lege sie in einen Ordner. Beim naechsten Stapel waehlt das Werkzeug die passende Vorlage pro Dokument selbst."],
 ["Auslesen und herunterladen","Klicke auf Auslesen starten. Du bekommst eine Tabelle mit allen Spalten und einen Download als CSV."]]};
 var TITEL={nl:"Hoe werkt ParsePDF?",en:"How does ParsePDF work?",de:"Wie funktioniert ParsePDF?"};
+var PROBEER={nl:"Probeer het met een voorbeeld",en:"Try it with a sample",de:"Mit einem Beispiel ausprobieren"};
+// Een klein voorbeeld-document (één pagina, verzonnen gegevens) zodat de uitleg meteen iets laat zien.
+var VOORBEELD="JVBERi0xLjQKMSAwIG9iaiA8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PiBlbmRvYmoKMiAwIG9iaiA8PC9UeXBlL1BhZ2VzL0tpZHNbNCAwIFJdL0NvdW50IDE+PiBlbmRvYmoKMyAwIG9iaiA8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2EvRW5jb2RpbmcvV2luQW5zaUVuY29kaW5nPj4gZW5kb2JqCjQgMCBvYmogPDwvVHlwZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgNTk1IDg0Ml0vUmVzb3VyY2VzPDwvRm9udDw8L0YxIDMgMCBSPj4+Pi9Db250ZW50cyA1IDAgUj4+IGVuZG9iago1IDAgb2JqIDw8L0xlbmd0aCAyNTk+PiBzdHJlYW0KQlQgL0YxIDExIFRmIDY0IDc3MCBUZCAxOSBUTAooVm9vcmJlZWxkIEIuVi4pIFRqIFQqCihGYWN0dXVyKSBUaiBUKgooRmFjdHV1cm51bW1lcjogMjAyNi0wMDQyKSBUaiBUKgooRmFjdHV1cmRhdHVtOiAxNS0wMy0yMDI2KSBUaiBUKgooS2xhbnRudW1tZXI6IEtMLTEwMDEpIFRqIFQqCihFLW1haWw6IGluZm9Adm9vcmJlZWxkLm5sKSBUaiBUKgooVG90YWFsIFwyMDAgMTIxLDAwKSBUaiBUKgooSUJBTiBOTDkxQUJOQTA0MTcxNjQzMDApIFRqIFQqCkVUCmVuZHN0cmVhbSBlbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTQgMDAwMDAgbiAKMDAwMDAwMDEwNSAwMDAwMCBuIAowMDAwMDAwMTkzIDAwMDAwIG4gCjAwMDAwMDAzMDUgMDAwMDAgbiAKdHJhaWxlciA8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgo2MTIKJSVFT0YK";
+function voorbeeld(){
+  var bin=atob(VOORBEELD),bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  var f=new File([bytes],"voorbeeld-factuur.pdf",{type:"application/pdf"});
+  S.bestanden.push(f);window.PLP_UI.teken();
+  if(window.PLP_V)window.PLP_V.open(S.bestanden,S.bestanden.length-1);
+}
 var WOORDEN={nl:["Volgende","Klaar","Stap {i} van {n}","Vorige"],en:["Next","Done","Step {i} of {n}","Back"],de:["Weiter","Fertig","Schritt {i} von {n}","Zurueck"]};
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
 function taal(){return STAPPEN[S.taal]?S.taal:"nl";}
@@ -1505,12 +1652,14 @@ function toon(){
     }
     var door=el("button","pld-btn",i<stappen.length-1?woorden[0]:woorden[1]);door.type="button";
     door.addEventListener("click",function(){if(i<stappen.length-1){i++;teken();}else weg();});
-    rij.appendChild(door);blad.appendChild(rij);
+    var proef=el("button","pld-btn pld-btn--ghost",PROBEER[taal()]);proef.type="button";
+    proef.addEventListener("click",function(){weg();voorbeeld();});
+    rij.appendChild(door);rij.appendChild(proef);blad.appendChild(rij);
     door.focus();
   }
   teken();
 }
-return {toon:toon,titel:function(){return TITEL[taal()];}};
+return {toon:toon,voorbeeld:voorbeeld,titel:function(){return TITEL[taal()];}};
 })();
 </script>
 <!-- 10-ai.html -->
@@ -1731,11 +1880,20 @@ function kaart(){
   if(!m.sjablonen.length)k.appendChild(el("p","pld-text",t.noTemplates));
   m.sjablonen.forEach(function(sj){
     var r=el("div","plp-file"),links=el("div");
-    links.appendChild(el("p","pld-text",sj.naam));
+    links.appendChild(el("p","pld-text"+(S.sjabloonId===sj.id?" plp-mono":""),sj.naam));
     links.appendChild(el("p","plp-mono",sj.regels.length+" "+t.fields+" · "+(sj.gebruikt||0)+" "+t.used));
+    var knoppen=el("div","pld-row");
+    // Openen zet de regels van dit sjabloon in het scherm, zodat je ze ziet en aanpast.
+    var openen=el("button","pld-btn pld-btn--sm",t.openTemplate);openen.type="button";
+    openen.addEventListener("click",function(){
+      S.regels=JSON.parse(JSON.stringify(sj.regels||[]));S.sjabloonId=sj.id;
+      try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
+      U.teken();U.meld(t.openedTemplate.replace("{naam}",sj.naam));
+    });
     var weg=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.delTemplate);weg.type="button";
     weg.addEventListener("click",function(){verwijderSjabloon(m.id,sj.id);U.teken();});
-    r.appendChild(links);r.appendChild(weg);k.appendChild(r);
+    knoppen.appendChild(openen);knoppen.appendChild(weg);
+    r.appendChild(links);r.appendChild(knoppen);k.appendChild(r);
   });
   if(m.sjablonen.length)k.appendChild(el("p","pld-text",t.useFolder));
   var onder=el("div","pld-row");
@@ -1872,7 +2030,40 @@ console.error(e);herstel(knop);
 U.meld(e&&e.message==="usage"?t.errUsage:t.errLib,"warn");});
 };
 
-function bruikbaar(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="tabelkolom"||r.waarde);}
+// Controle over alle geladen documenten: welke regel vindt in welk document iets?
+// Leest lokaal en telt geen pagina's van je tegoed.
+window.PLP_CHECK=(function(){
+function knop(){var b=U.el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.checkAll);b.type="button";b.addEventListener("click",function(){run(false,b);});return b;}
+function run(stil,b){
+  var t=S.t,regels=S.regels.filter(bruikbaar),lijst=S.bestanden.slice();
+  if(stil&&lijst.length<2)return;
+  if(!lijst.length||!regels.length){if(!stil)U.meld(lijst.length?t.errNoRules:t.errNoFiles,"warn");return;}
+  if(b){b.disabled=true;b.textContent=t.checking;}
+  var tel=regels.map(function(){return {n:0,mist:[]};}),k=Promise.resolve();
+  lijst.forEach(function(f){
+    k=k.then(function(){return P.lees(f);})
+    .then(function(doc){var r=P.rij(doc,regels);regels.forEach(function(x,i){if(r.velden["k"+i])tel[i].n++;else tel[i].mist.push(f.name);});})
+    .catch(function(){regels.forEach(function(x,i){tel[i].mist.push(f.name);});});});
+  return k.then(function(){if(b){b.disabled=false;b.textContent=t.checkAll;}toon(regels,tel,lijst.length);});
+}
+function toon(regels,tel,n){
+  var t=S.t,oud=document.querySelector(".plp-check");if(oud)oud.remove();
+  var k=U.el("div","pld-card plp-check"),alles=tel.every(function(x){return x.n===n;});
+  k.appendChild(U.el("p","pld-text",(alles?t.checkAllOk:t.checkSome).replace("{n}",n)));
+  regels.forEach(function(r,i){
+    var rij=U.el("div","plp-file"),l=U.el("div");
+    l.appendChild(U.el("p","pld-text",r.naam));
+    if(tel[i].mist.length)l.appendChild(U.el("p","plp-mono",t.checkMissing+" "+tel[i].mist.join(", ")));
+    var pil=U.el("span","pld-pill"+(tel[i].n===n?" pld-pill--on":""),t.checkFound.replace("{g}",tel[i].n).replace("{n}",n));
+    rij.appendChild(l);rij.appendChild(pil);k.appendChild(rij);});
+  var koppen=S.root.querySelectorAll(".pld-sect"),laatste=koppen[koppen.length-1];
+  if(laatste)S.root.insertBefore(k,laatste);else S.root.appendChild(k);
+  k.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+return {knop:knop,run:run};
+})();
+
+function bruikbaar(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="eis"||r.type==="tabelkolom"||r.waarde);}
 
 // Staan er tabelkolommen in het sjabloon, dan wordt elke regel uit de tabel een rij,
 // met de kopvelden van het document erbij herhaald.
