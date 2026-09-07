@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NightFind Plan - Laat AI je perfecte avond, dag of weekend plannen. Restaurants, bars, clubs, activiteiten en hotels in steden wereldwijd, met de beste deals.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nightfind.app/plan.html">
+    <meta property="og:title" content="NightFind Plan - Jouw route, gemaakt door AI">
+    <meta property="og:description" content="Beantwoord 6 vragen en krijg een route op maat met restaurants, bars, clubs, activiteiten en hotels.">
+    <meta property="og:image" content="https://nightfind.app/assets/logo.svg">
+    <title>NightFind Plan - Jouw route, gemaakt door AI</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.svg" alt="NightFind Logo">
+                <span>NightFind</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="plan.html" class="active">Plan</a></li>
+                <li><a href="bars.html">Bars</a></li>
+                <li><a href="clubs.html">Clubs</a></li>
+                <li><a href="events.html">Events</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero nf-hero">
+        <div class="hero-content">
+            <h1>Plan je perfecte uitje</h1>
+            <p>Beantwoord zes korte vragen. Onze AI bouwt een route met restaurants, bars, clubs, activiteiten en hotels — met de beste deals direct erbij.</p>
+            <div class="nf-cats">
+                <a class="nf-cat" href="#planner">🍽️ Restaurants</a>
+                <a class="nf-cat" href="bars.html">🍸 Bars</a>
+                <a class="nf-cat" href="clubs.html">🪩 Clubs</a>
+                <a class="nf-cat" href="#planner">🎟️ Activiteiten</a>
+                <a class="nf-cat" href="#planner">🏨 Hotels</a>
+                <a class="nf-cat" href="events.html">🎉 Events</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Planner -->
+    <section class="container" id="planner">
+        <div id="nfOnboarding" class="nf-wizard fade-in-up">
+            <div class="nf-progress"><div id="nfProgress" style="width: 16%"></div></div>
+            <div class="nf-step-label" id="nfStepLabel">Stap 1 van 6</div>
+            <h2 id="nfStepTitle">Waar ga je heen?</h2>
+            <p class="nf-sub" id="nfStepSub">Kies een land en stad.</p>
+            <div id="nfStepBody"></div>
+            <div class="nf-nav">
+                <button class="btn btn-secondary" id="nfBack">← Terug</button>
+                <button class="btn btn-primary" id="nfNext">Volgende</button>
+            </div>
+        </div>
+        <div id="nfRoute" style="display: none; scroll-margin-top: 100px;"></div>
+    </section>
+
+    <!-- Hoe werkt het -->
+    <section class="container">
+        <div class="content-section text-center" style="text-align: center;">
+            <h2 style="font-size: 2.2rem; margin-bottom: 2rem; border: none;">Hoe werkt het?</h2>
+            <div class="nf-how">
+                <div class="card scroll-reveal"><div class="nf-num">1</div><h3>Vertel wat je zoekt</h3><p>Stad, gezelschap, budget en vibe. Duurt een halve minuut.</p></div>
+                <div class="card scroll-reveal"><div class="nf-num">2</div><h3>AI bouwt je route</h3><p>Van diner tot afterparty, op basis van onze database met bars en clubs.</p></div>
+                <div class="card scroll-reveal"><div class="nf-num">3</div><h3>Boek met één klik</h3><p>Elke stop linkt naar Booking.com, Viator of TripAdvisor voor de beste deal.</p></div>
+                <div class="card scroll-reveal"><div class="nf-num">4</div><h3>Pas aan via de chat</h3><p>Rustiger, luxer, meer eten? Vraag het de assistent rechtsonder.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Partners -->
+    <section class="container">
+        <div class="content-section" style="text-align: center;">
+            <p style="color: var(--gray-light); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.8rem;">Boeken via onze partners</p>
+            <div class="nf-partners"><span>Booking.com</span><span>Viator</span><span>TripAdvisor</span></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="legal.html">Privacy Policy</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="legal.html">Terms of Service</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="legal.html">Cookies Policy</a>
+                <span style="color: var(--gray-light);">|</span>
+                <a href="contact.html">Contact</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 NightFind • All rights reserved • <a href="mailto:info@nightfind.com">info@nightfind.com</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/nightfind-config.js"></script>
+    <script src="assets/js/affiliates.js"></script>
+    <script src="assets/js/route-builder.js"></script>
+    <script src="assets/js/chatbot.js"></script>
+    <script>
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+        });
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
+        navToggle.addEventListener('click', () => { navMenu.classList.toggle('active'); navToggle.classList.toggle('active'); });
+        document.querySelectorAll('.nav-menu a').forEach(l => l.addEventListener('click', () => { navMenu.classList.remove('active'); navToggle.classList.remove('active'); }));
+        const reveal = () => document.querySelectorAll('.scroll-reveal').forEach(el => { if (el.getBoundingClientRect().top < window.innerHeight - 100) el.classList.add('revealed'); });
+        window.addEventListener('scroll', reveal); window.addEventListener('load', reveal);
+    </script>
+</body>
+</html>
