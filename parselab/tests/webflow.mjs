@@ -202,6 +202,17 @@ await (await p.$('.plp-vlak:not(.plp-vlak--label)')).hover();
 await p.waitForTimeout(250);
 ok('zweven toont de naam bij het vlak', /=/.test(await p.$eval('.plp-tip', n => n.textContent)), await p.$eval('.plp-tip', n => n.textContent));
 const tabelkaart = await p.textContent('.plp-blad .pld-card');
+const alleKnop = await p.textContent('button:has-text("Toon alle tekst")');
+ok('alle overige tekst is op te vragen', /Toon alle tekst \(\d+\)/.test(alleKnop), alleKnop);
+await p.click('button:has-text("Toon alle tekst")');
+await p.waitForTimeout(300);
+const allesLijst = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '|' + r.querySelector('.plp-bron').textContent));
+ok('met alles aan staat er meer in de lijst dan alleen de herkende velden', allesLijst.length > voorstel.length, allesLijst.length + ' vs ' + voorstel.length);
+ok('de bestandsnaam en de pdf-gegevens staan erbij',
+  allesLijst.some(v => /^Bestandsnaam\|bestandsnaam/.test(v)) && allesLijst.some(v => /\|bestandsgegeven/.test(v)),
+  allesLijst.filter(v => /bestandsnaam|bestandsgegeven/.test(v)).slice(0, 3).join(' · '));
+await p.click('button:has-text("Alleen de herkende velden")');
+await p.waitForTimeout(200);
 ok('regeltabel gevonden en aan te zetten', /3 regels met 6 kolommen/.test(tabelkaart), tabelkaart.replace(/\s+/g, ' ').slice(0, 70));
 await p.check('.plp-blad .pld-card input[type=checkbox]');
 // AI vraagt eerst toestemming en doet zonder ja niets
@@ -236,6 +247,23 @@ ok('waarden kloppen na het overnemen',
   cel(alles[1], 'Factuurnummer van de leverancier') === 'INV10632' && cel(alles[1], 'Datum') === '21 Juni 2026' && cel(alles[1], 'Totaal incl. BTW') === '38,90',
   [cel(alles[1], 'Factuurnummer van de leverancier'), cel(alles[1], 'Datum'), cel(alles[1], 'Totaal incl. BTW')].join(' · '));
 ok('de tabelregels verschillen per rij', cel(alles[1], 'Beschrijving') !== cel(alles[2], 'Beschrijving'), cel(alles[1], 'Beschrijving') + ' / ' + cel(alles[2], 'Beschrijving'));
+
+// 11c2. het pakket beslist of de AI-knop iets doet.
+await p.goto(BASIS + '?plan=gratis&limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-alpha.pdf'));
+await p.click('button:has-text("Kijk wat erin staat")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.click('button:has-text("Uitlezen met AI")');
+await p.waitForSelector('.plp-modal', { timeout: 5000 });
+const slot = await p.textContent('.plp-modal');
+ok('gratis pakket krijgt geen AI maar een uitleg', /Pro en Business/.test(slot) && !/tekst van dit ene document/.test(slot), slot.replace(/\s+/g, ' ').slice(0, 80));
+ok('de uitleg wijst naar de pakketten', await p.isVisible('.plp-modal a:has-text("Pakketten bekijken")'));
+await p.click('.plp-modal button:has-text("Annuleren")');
+await p.click('button:has-text("Annuleren")');
+await p.waitForTimeout(200);
 
 // 11d. mappen met sjablonen: twee soorten documenten in één map, gemengd uitlezen.
 await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });

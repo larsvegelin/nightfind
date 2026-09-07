@@ -15,7 +15,7 @@ const uit = process.argv[2] || here;
 fs.mkdirSync(uit, { recursive: true });
 
 // Eén PDF met Helvetica en WinAnsi; het euroteken is daar byte 128.
-function pdf(paginas) {
+function pdf(paginas, info) {
   const objs = [];
   objs[1] = "<</Type/Catalog/Pages 2 0 R>>";
   objs[2] = "<</Type/Pages/Kids[" + paginas.map((_, i) => (4 + i * 2) + " 0 R").join(" ") + "]/Count " + paginas.length + ">>";
@@ -31,6 +31,12 @@ function pdf(paginas) {
     objs[4 + i * 2] = "<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 3 0 R>>>>/Contents " + (5 + i * 2) + " 0 R>>";
     objs[5 + i * 2] = { stroom };
   });
+  // Eigenschappen van het bestand zelf: titel, maker, datum. Die leest de tool ook uit.
+  let infoNr = 0;
+  if (info) {
+    infoNr = objs.length;
+    objs[infoNr] = "<</Title (" + info.titel + ")/Author (" + info.auteur + ")/Producer (ParseLab proefmaker)/CreationDate (D:20260315103000+01'00')>>";
+  }
   let body = "%PDF-1.4\n";
   const pos = [];
   for (let n = 1; n < objs.length; n++) {
@@ -43,7 +49,7 @@ function pdf(paginas) {
   const xref = body.length;
   body += "xref\n0 " + objs.length + "\n0000000000 65535 f \n";
   for (let n = 1; n < objs.length; n++) body += String(pos[n]).padStart(10, "0") + " 00000 n \n";
-  body += "trailer <</Size " + objs.length + "/Root 1 0 R>>\nstartxref\n" + xref + "\n%%EOF\n";
+  body += "trailer <</Size " + objs.length + "/Root 1 0 R" + (infoNr ? "/Info " + infoNr + " 0 R" : "") + ">>\nstartxref\n" + xref + "\n%%EOF\n";
   return Buffer.from(body, "latin1");
 }
 
@@ -134,7 +140,13 @@ const bestanden = {
   "gescand.pdf": [{ teken: "0.85 0.85 0.85 rg 64 500 468 260 re f\n0.6 0.6 0.6 rg 64 460 300 20 re f\n", regels: [] }]
 };
 
+// Alleen deze twee krijgen bestandseigenschappen mee; de rest juist niet.
+const INFO = {
+  "factuur-webshop.pdf": { titel: "Factuur INV10632", auteur: "Wijnhandel Voorbeeld B.V." },
+  "polis.pdf": { titel: "Polisblad P-2026-77120", auteur: "De Waerdse Assuradeuren" }
+};
+
 for (const [naam, paginas] of Object.entries(bestanden)) {
-  fs.writeFileSync(path.join(uit, naam), pdf(paginas));
+  fs.writeFileSync(path.join(uit, naam), pdf(paginas, INFO[naam]));
   console.log(naam);
 }

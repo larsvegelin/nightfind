@@ -1,5 +1,5 @@
 <!--
-  ParsePDF — embed 1 van 10: configuratie en stijl
+  ParsePDF — embed 1 van 11: configuratie en stijl
   Plaats bovenaan de pagina, boven de lege container <div id="pl-parsepdf-root">.
 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -53,9 +53,10 @@ window.PARSELAB.client=window.supabase.createClient(window.PARSELAB.supabaseUrl,
 .plp-skel{height:14px;border-radius:999px;background:#E6E3D8;animation:plp-pulse 1.2s ease-in-out infinite}
 @keyframes plp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.plp-skel{animation:none}.pld-bar>span{transition:none}}
-.plp-doorkijk{position:fixed;inset:0;z-index:9999;background:rgba(6,18,35,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px}
-.plp-blad{background:#FBFAF6;border-radius:20px;max-width:1120px;width:100%;padding:28px;display:flex;flex-direction:column;gap:20px;box-shadow:0 24px 60px rgba(6,18,35,.28)}
-.plp-twee{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.plp-doorkijk{position:fixed;inset:0;z-index:9999;background:rgba(6,18,35,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px}
+.plp-blad{background:#FBFAF6;border-radius:20px;max-width:1600px;width:100%;padding:28px;display:flex;flex-direction:column;gap:20px;box-shadow:0 24px 60px rgba(6,18,35,.28)}
+.plp-twee{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:start}
+.plp-twee>div:first-child{position:sticky;top:24px}
 .plp-pagina{position:relative;background:#FFF;border-radius:14px;border:1px solid #E6E3D8;overflow:hidden;line-height:0}
 .plp-pagina canvas{width:100%;height:auto;display:block}
 .plp-vlak{position:absolute;border-radius:3px;background:rgba(44,111,168,.18);border:1px solid rgba(44,111,168,.55);cursor:pointer}
@@ -65,7 +66,7 @@ window.PARSELAB.client=window.supabase.createClient(window.PARSELAB.supabaseUrl,
 .plp-tip{position:absolute;z-index:3;background:#1F3A5F;color:#F2F0E7;font-size:13px;line-height:1.3;padding:6px 10px;border-radius:9px;pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%)}
 .plp-mapkies{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .plp-mapkies>.pld-sel,.plp-mapkies>.pld-in{flex:1 1 220px;min-width:0;width:auto}
-.plp-lijst{display:flex;flex-direction:column;gap:10px;max-height:70vh;overflow:auto}
+.plp-lijst{display:flex;flex-direction:column;gap:10px;max-height:78vh;overflow:auto}
 .plp-veldrij{display:grid;grid-template-columns:auto minmax(0,1.1fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #E6E3D8}
 .plp-veldrij:first-child{border-top:0}
 .plp-veldrij input[type=checkbox]{width:20px;height:20px;accent-color:#2C6FA8}

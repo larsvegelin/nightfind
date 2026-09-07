@@ -1,9 +1,10 @@
-<!-- ParsePDF — embed 8 van 10: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
+<!-- ParsePDF — embed 8 van 11: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
 <script>
 window.PLP_V=(function(){
 var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,CFG=window.PARSELAB;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
-var BRON={kolomkop:"srcKolomkop",rechts:"srcRechts",inline:"srcInline",onder:"srcOnder",patroon:"srcPatroon",ai:"srcAi"};
+var BRON={kolomkop:"srcKolomkop",rechts:"srcRechts",inline:"srcInline",onder:"srcOnder",patroon:"srcPatroon",
+  ai:"srcAi",plek:"srcPlek",meta:"srcMeta",bestand:"srcBestand"};
 function open(file){
   var t=S.t,laag=el("div","plp-doorkijk"),blad=el("div","plp-blad");
   laag.appendChild(blad);document.body.appendChild(laag);
@@ -23,10 +24,15 @@ function open(file){
   P.lees(file).then(function(doc){
     laden.remove();
     var analyse=ST.analyse(doc),velden=analyse.velden.map(function(v){
-      return {aan:true,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,labelvak:v.labelvak,
+      return {aan:true,slim:true,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,labelvak:v.labelvak,
               vindregel:v.vindregel,filter:ST.filterVoor(v)};
     });
     if(!velden.length){blad.appendChild(el("p","pld-msg pld-msg--warn",t.noFields));return;}
+    // Alles wat de slimme herkenning liet liggen staat er ook in, uitgevinkt.
+    ST.alles(doc,analyse.velden).forEach(function(v){
+      velden.push({aan:false,slim:false,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,
+                   labelvak:null,vindregel:v.vindregel,filter:ST.filterVoor(v)});
+    });
     bouw(blad,file,doc,analyse,velden,sluit);
   }).catch(function(e){
     console.error(e);laden.remove();
@@ -35,7 +41,7 @@ function open(file){
 }
 
 function bouw(blad,file,doc,analyse,velden,sluit){
-  var t=S.t,pagina=0,tabelAan=false;
+  var t=S.t,pagina=0,tabelAan=false,alles=false;
   var twee=el("div","plp-twee"),linkerkant=el("div"),rechterkant=el("div");
   twee.appendChild(linkerkant);twee.appendChild(rechterkant);blad.appendChild(twee);
   var vlak=el("div","plp-pagina"),canvas=document.createElement("canvas");
@@ -49,7 +55,15 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   }
 
   var lijst=el("div","plp-lijst");rechterkant.appendChild(el("p","pld-caps",t.proposal));
-  rechterkant.appendChild(el("p","pld-text",t.proposalHint));rechterkant.appendChild(lijst);
+  rechterkant.appendChild(el("p","pld-text",t.proposalHint));
+  var meer=el("button","pld-btn pld-btn--ghost pld-btn--sm","");meer.type="button";
+  var aantalExtra=velden.filter(function(v){return !v.slim;}).length;
+  meer.textContent=t.showAll.replace("{n}",aantalExtra);
+  meer.addEventListener("click",function(){
+    alles=!alles;meer.textContent=alles?t.hideAll:t.showAll.replace("{n}",aantalExtra);tekenLijst();
+  });
+  if(aantalExtra)rechterkant.appendChild(meer);
+  rechterkant.appendChild(lijst);
 
   if(analyse.tabel){
     var kaart=el("div","pld-card");
@@ -85,11 +99,12 @@ function bouw(blad,file,doc,analyse,velden,sluit){
     try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
     sluit();window.PLP_UI.teken();window.PLP_UI.meld(t.taken);
   });
-  ai.addEventListener("click",function(){vraagAi(doc,velden,function(){teken();},melding,ai);});
+  ai.addEventListener("click",function(){window.PLP_AI.vraag(doc,velden,function(){teken();},melding,ai);});
 
   function tekenLijst(){
     lijst.innerHTML="";
     velden.forEach(function(v,i){
+      if(!alles&&!v.slim&&!v.aan)return;
       var rij=el("div","plp-veldrij");
       var vink=document.createElement("input");vink.type="checkbox";vink.checked=v.aan;
       vink.setAttribute("aria-label",v.naam);
@@ -142,7 +157,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   function teken(){
     tekenLijst();
     P.open(file).then(function(pdf){return pdf.getPage(pagina+1);}).then(function(pg){
-      var breed=Math.min(760,linkerkant.clientWidth||760);
+      var breed=Math.max(560,Math.min(1100,linkerkant.clientWidth||760));
       var v1=pg.getViewport({scale:1});
       schaal=breed/v1.width;
       var vp=pg.getViewport({scale:schaal});
@@ -155,49 +170,6 @@ function bouw(blad,file,doc,analyse,velden,sluit){
     }).catch(function(e){console.error(e);tekenVlakken();});
   }
   teken();
-}
-
-// De AI kijkt pas mee nadat de gebruiker ja zegt.
-function vraagAi(doc,velden,klaar,melding,knop){
-  var t=S.t,laag=document.createElement("div");laag.className="plp-modal";
-  var blad=el("div","plp-modal-blad");
-  blad.appendChild(el("p","pld-caps",t.aiTitle));
-  blad.appendChild(el("p","pld-text",t.aiText));
-  var rij=el("div","pld-row");
-  var ja=el("button","pld-btn",t.aiYes),nee=el("button","pld-btn pld-btn--ghost",t.aiNo);
-  ja.type="button";nee.type="button";
-  rij.appendChild(ja);rij.appendChild(nee);blad.appendChild(rij);
-  laag.appendChild(blad);document.body.appendChild(laag);
-  function weg(){laag.remove();}
-  nee.addEventListener("click",weg);
-  laag.addEventListener("click",function(e){if(e.target===laag)weg();});
-  ja.addEventListener("click",function(){
-    weg();knop.disabled=true;melding.textContent=t.aiBusy;
-    haalAi(doc,velden).then(function(nieuw){
-      knop.disabled=false;
-      if(!nieuw){melding.textContent=t.aiOff;return;}
-      nieuw.forEach(function(v){
-        var bestaand=velden.filter(function(x){return x.waarde===v.waarde;})[0];
-        if(bestaand){if(v.naam)bestaand.naam=v.naam;bestaand.bron="ai";}
-        else velden.push({aan:true,naam:v.naam,waarde:v.waarde,bron:"ai",vak:{pagina:-1},labelvak:null,
-                          vindregel:{type:"regexwaarde",waarde:v.waarde},filter:"geen"});
-      });
-      melding.textContent=t.aiDone;klaar();
-    }).catch(function(){knop.disabled=false;melding.textContent=t.aiOff;});
-  });
-}
-
-function haalAi(doc,velden){
-  var eind=(CFG&&CFG.aiEndpoint)||"/api/parsepdf/velden";
-  if(!/^https?:$/.test(location.protocol))return Promise.resolve(null);
-  return fetch(eind,{method:"POST",headers:{"content-type":"application/json"},
-    body:JSON.stringify({tekst:(doc.tekst||"").slice(0,20000),
-      cellen:(doc.cellen||[]).slice(0,400).map(function(c){return {t:c.t,x:Math.round(c.x),y:Math.round(c.y),p:c.pagina};}),
-      gevonden:velden.map(function(v){return {naam:v.naam,waarde:v.waarde};})})
-  }).then(function(r){
-    if(!r.ok)return null;
-    return r.json().then(function(j){return (j&&j.velden)||null;});
-  }).catch(function(){return null;});
 }
 
 return {open:open};

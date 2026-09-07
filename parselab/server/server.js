@@ -16,6 +16,8 @@
  *   GET  /api/scrape/status                                      → proxies, wachtrij, planning
  *   POST /api/parsepdf/detect   { text, fileName }               → velden herkennen met Claude (alleen met PARSELAB_ANTHROPIC_KEY)
  *   POST /api/parsepdf/velden   { tekst, cellen, gevonden }       → de structuurcheck laten benoemen en natellen door Claude
+ *                               (met PARSELAB_SUPABASE_URL/KEY: alleen voor een ingelogde gebruiker
+ *                                wiens pakket het toelaat, getoetst met de databasefunctie ai_allowed)
  *   GET/PUT /api/store/:key     (header x-parselab-user)         → projecten en instellingen van het dashboard per gebruiker
  *
  * Grenzen die bewust vaststaan (docs/parsescraper.md, "Wat het veiliger maakt"):
@@ -394,7 +396,28 @@ async function detectFields(body) {
 
 // De structuurcheck heeft de velden al gevonden; de AI benoemt ze en telt na.
 // Er gaat altijd maar één document heen, en pas nadat de gebruiker daar ja op zei.
-async function noemVelden(body) {
+// Wie mag de AI gebruiken? Staat Supabase ingesteld, dan moet de gebruiker ingelogd
+// zijn én een pakket hebben dat het toelaat; de database beslist dat, niet de browser.
+const SB_URL = (process.env.PARSELAB_SUPABASE_URL || "").replace(/\/+$/, "");
+const SB_KEY = process.env.PARSELAB_SUPABASE_KEY || "";
+async function magAi(req) {
+  if (!SB_URL || !SB_KEY) return null;                       // niet ingesteld: geen extra drempel
+  const auth = String(req.headers["authorization"] || "");
+  if (!/^Bearer .+/.test(auth)) throw httpError(401, "Log in om de AI-hulp te gebruiken.");
+  const kop = { authorization: auth, apikey: SB_KEY, "content-type": "application/json" };
+  const wie = await fetch(SB_URL + "/auth/v1/user", { headers: kop });
+  if (!wie.ok) throw httpError(401, "Je sessie is verlopen. Log opnieuw in.");
+  const r = await fetch(SB_URL + "/rest/v1/rpc/ai_allowed", { method: "POST", headers: kop, body: "{}" });
+  if (!r.ok) throw httpError(403, "De AI-hulp kon niet worden gecontroleerd. Probeer het later opnieuw.");
+  const mag = await r.json();
+  if (mag === false || (mag && mag.allowed === false)) {
+    throw httpError(402, "Uitlezen met AI hoort bij Pro en Business. Je pakket leest gewoon door op de structuurcheck.");
+  }
+  return (await wie.json()).id || null;
+}
+
+async function noemVelden(body, req) {
+  await magAi(req);
   if (!AI_KEY) throw httpError(501, "AI-hulp staat uit op deze server. Zet PARSELAB_ANTHROPIC_KEY en start opnieuw.");
   const tekst = String(body.tekst || "").slice(0, 40000);
   if (!tekst.trim()) throw httpError(400, "Het document bevat geen tekst.");
@@ -422,7 +445,7 @@ const server = http.createServer(async (req, res) => {
     // wie de server bereikt en een ander adres opgeeft, ziet die taken. Zet PARSELAB_API_TOKEN voor een echte drempel.
     const owner = String(req.headers["x-parselab-user"] || "").trim().toLowerCase().slice(0, 200) || null;
     const mine = tid => { const t = readTasks().find(x => x.id === tid); if (!t) throw httpError(404, "Taak niet gevonden"); if (t.owner && owner && t.owner !== owner) throw httpError(403, "Deze taak is van iemand anders."); return t; };
-    if (u.pathname === "/api/parsepdf/velden") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemVelden(await readBody(req))); }
+    if (u.pathname === "/api/parsepdf/velden") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemVelden(await readBody(req), req)); }
     if (u.pathname === "/api/parsepdf/detect") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await detectFields(await readBody(req))); }
     const sm = u.pathname.match(/^\/api\/store\/([a-z0-9_-]{1,40})$/i);
     if (sm) {

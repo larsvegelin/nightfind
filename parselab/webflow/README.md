@@ -14,12 +14,13 @@ Plaatsing, wat de gebruiker ziet en wat er nog niet in zit staat in [`../docs/IN
 | `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
 | `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
 | `8-voorstel.html` | Doorkijkscherm, voorstel en de AI-knop met toestemming |
-| `9-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
-| `10-verwerken.html` | Verwerking, limietbewaking en opstarten |
+| `9-ai.html` | Uitlezen met AI: pakketcontrole, toestemming en tegoeden |
+| `10-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
+| `11-verwerken.html` | Verwerking, limietbewaking en opstarten |
 
 Wat het doorkijkscherm doet en hoe de herkenning werkt staat in [`../docs/PARSEPDF-DOORKIJKEN.md`](../docs/PARSEPDF-DOORKIJKEN.md).
 
-De volgorde ligt vast: embed 10 gebruikt wat 1 tot en met 9 klaarzetten. Ze staan onder de lege container `<div id="pl-parsepdf-root">`. Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens; splits je iets, zet het nieuwe deel dan vóór embed 10.
+De volgorde ligt vast: embed 11 gebruikt wat 1 tot en met 10 klaarzetten. Ze staan onder de lege container `<div id="pl-parsepdf-root">`. Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens; splits je iets, zet het nieuwe deel dan vóór embed 11.
 
 ## Dezelfde tool als één bestand
 
@@ -42,7 +43,7 @@ Met de adresregel stel je de namaak-Supabase in: `?ingelogd=0` (geen sessie), `?
 
 ## Testen
 
-`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 66 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm, het doorkijkscherm met voorstel en AI-toestemming, mappen met sjablonen die per document herkend worden, en de losse pagina uit `bouw-pagina.mjs`.
+`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 71 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm, het doorkijkscherm met voorstel en AI-toestemming, mappen met sjablonen die per document herkend worden, en de losse pagina uit `bouw-pagina.mjs`.
 
 ## Nog met de hand te doen in Webflow
 

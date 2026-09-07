@@ -17,8 +17,9 @@ Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 | `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
 | `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
 | `8-voorstel.html` | Doorkijkscherm met gearceerde velden, het voorstel en de AI-knop |
-| `9-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
-| `10-verwerken.html` | Verwerking, limietbewaking en opstarten |
+| `9-ai.html` | Uitlezen met AI: pakketcontrole, toestemming en tegoeden |
+| `10-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
+| `11-verwerken.html` | Verwerking, limietbewaking en opstarten |
 
 Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens. Splits je later iets bij, houd die grens aan.
 
@@ -51,13 +52,14 @@ Body
                 ├── Embed 6-structuur
                 ├── Embed 7-velden
                 ├── Embed 8-voorstel
-                ├── Embed 9-sjablonen
-                └── Embed 10-verwerken
+                ├── Embed 9-ai
+                ├── Embed 10-sjablonen
+                └── Embed 11-verwerken
 ```
 
 De id `pl-parsepdf-root` moet exact zo geschreven zijn. Zonder die container doet de tool niets en verschijnt er een melding in de console.
 
-De volgorde van de embeds is niet vrij. Embed 10 gebruikt wat 1 tot en met 9 klaarzetten.
+De volgorde van de embeds is niet vrij. Embed 11 gebruikt wat 1 tot en met 10 klaarzetten.
 
 ## 4. Koppelen aan het dashboard
 
@@ -103,6 +105,10 @@ Belangrijk: het tellen gebeurt vóór het uitlezen. Gaat het uitlezen daarna mis
 ## 6b. Kijk wat erin staat
 
 Naast zelf veldregels intikken kan de gebruiker op **Kijk wat erin staat** klikken. De tool opent het document, arceert wat hij kan uitlezen, stelt namen voor en neemt die op verzoek over als veldregels. Er is ook een knop **Uitlezen met AI**, die eerst om toestemming vraagt en pas daarna de tekst van dat ene document naar `POST /api/parsepdf/velden` stuurt. Zonder zo'n endpoint blijft alles werken op de structuurcheck. Alles staat in [`PARSEPDF-DOORKIJKEN.md`](PARSEPDF-DOORKIJKEN.md); wijs `window.PARSELAB.aiEndpoint` naar je eigen functie als je de AI-knop wilt laten werken op Webflow.
+
+## 6c. Uitleg voor je bezoekers
+
+[`SITE-UITLEG-PARSEPDF.md`](SITE-UITLEG-PARSEPDF.md) is een kant-en-klare hulppagina voor op de site: hoe je documenten kiest, wat het doorkijkscherm doet, mappen met sjablonen, opschonen, regeltabellen, de AI-knop en wat er misgaat als het misgaat. Zet hem op `/hulp/parsepdf` en link ernaar vanaf de tool.
 
 ## 7b. Proef-PDF's
 

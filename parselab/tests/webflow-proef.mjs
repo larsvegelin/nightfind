@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const wortel = path.resolve(here, "..");
 const uit = process.argv[2] || path.join(here, "proef");
-const EMBEDS = ["1-config-stijl.html", "2-teksten.html", "3-teksten-voorstel.html", "4-motor.html", "5-scherm.html", "6-structuur.html", "7-velden.html", "8-voorstel.html", "9-sjablonen.html", "10-verwerken.html"];
+const EMBEDS = ["1-config-stijl.html", "2-teksten.html", "3-teksten-voorstel.html", "4-motor.html", "5-scherm.html", "6-structuur.html", "7-velden.html", "8-voorstel.html", "9-ai.html", "10-sjablonen.html", "11-verwerken.html"];
 
 fs.mkdirSync(uit, { recursive: true });
 
@@ -37,11 +37,12 @@ fs.writeFileSync(path.join(uit, "pdf.worker.min.js"), haalScript("<!-- pdf.js wo
 
 // Namaak-Supabase: geeft terug wat de echte teruggeeft en onthoudt de aanroepen.
 const stub = `/* Namaak-Supabase voor de proefpagina. Instellen via de adresregel:
-   ?ingelogd=0  ?gebruikt=45  ?limiet=50  ?taal=en  ?weigeren=1 */
+   ?ingelogd=0  ?gebruikt=45  ?limiet=50  ?taal=en  ?weigeren=1  ?plan=gratis */
 (function () {
   var q = new URLSearchParams(location.search);
   var cfg = {
     ingelogd: q.get("ingelogd") !== "0",
+    plan: q.get("plan") || "pro",
     gebruikt: Number(q.get("gebruikt") || 0),
     limiet: Number(q.get("limiet") || 2500),
     taal: q.get("taal") || "nl",
@@ -64,14 +65,15 @@ const stub = `/* Namaak-Supabase voor de proefpagina. Instellen via de adresrege
       return {
         auth: {
           getSession: function () {
-            return Promise.resolve({ data: { session: cfg.ingelogd ? { user: { id: "proef-gebruiker" } } : null }, error: null });
+            return Promise.resolve({ data: { session: cfg.ingelogd ? { user: { id: "proef-gebruiker" }, access_token: "proef-token" } : null }, error: null });
           }
         },
         from: function () { return keten({ locale: cfg.taal }); },
         rpc: function (naam, args) {
           window.PL_STUB_CALLS.push({ naam: naam, args: args });
           if (naam === "usage_summary") {
-            return Promise.resolve({ data: { used: cfg.gebruikt, monthly_limit: cfg.limiet }, error: null });
+            return Promise.resolve({ data: { used: cfg.gebruikt, monthly_limit: cfg.limiet, plan: cfg.plan,
+                                             ai_allowed: !/gratis|free/i.test(cfg.plan) }, error: null });
           }
           if (naam === "record_usage") {
             var n = Number((args && args.p_pages) || 0);

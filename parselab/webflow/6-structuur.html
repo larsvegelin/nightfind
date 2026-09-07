@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 6 van 10: cellen, kolommen en patronen. De basis van de herkenning. -->
+<!-- ParsePDF — embed 6 van 11: cellen, kolommen en patronen. De basis van de herkenning. -->
 <script>
 
 window.PLP_ST=(function(){
@@ -76,6 +76,18 @@ function kolommen(cellen){
 function pas(doc,vr){
   if(!vr||!vr.type)return "";
   var cellen=doc.cellen||[],rijen=perRij(cellen);
+  if(vr.type==="bestand")return doc.naam||"";
+  if(vr.type==="meta")return (doc.meta||{})[vr.sleutel]||"";
+  if(vr.type==="plek"){
+    // Dezelfde plek op de pagina, met wat speling voor tekst die verschuift.
+    var beste=null,best=1e9;
+    cellen.forEach(function(c){
+      if(c.pagina!==vr.pagina)return;
+      var d=Math.abs(c.x-vr.x)+Math.abs(c.y-vr.y)*1.5;
+      if(d<best&&Math.abs(c.x-vr.x)<26&&Math.abs(c.y-vr.y)<14){best=d;beste=c;}
+    });
+    return beste?beste.t:"";
+  }
   if(vr.type==="patroon"){
     for(var i=0;i<PAT.length;i++)if(PAT[i].naam===vr.patroon){var m=(doc.tekst||"").match(re(PAT[i]));return m?m[0]:"";}
     return "";

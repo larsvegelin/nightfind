@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 7 van 10: velden voorstellen. Gebruikt de cellen uit embed 6. -->
+<!-- ParsePDF — embed 7 van 11: velden voorstellen. Gebruikt de cellen uit embed 6. -->
 <script>
 (function(){
 var ST=window.PLP_ST;if(!ST)return;
@@ -136,6 +136,52 @@ function filterVoor(v){
   if(p==="datum"||(g&&g.patroon.naam==="datum"))return "datum";
   return "geen";
 }
-ST.analyse=analyse;ST.filterVoor=filterVoor;
+
+// Alles wat de slimme herkenning liet liggen: elke cel op de pagina, plus wat er
+// buiten de pagina om bekend is (bestandsnaam en de eigenschappen van het pdf-bestand).
+// De gebruiker vinkt weg wat hij niet wil.
+function alles(doc,gekozen){
+  var bezet={};
+  (gekozen||[]).forEach(function(v){
+    [v.vak,v.labelvak].forEach(function(k){if(k)bezet[k.pagina+":"+Math.round(k.x)+":"+Math.round(k.y)]=1;});
+  });
+  var uit=[],n=0,rijen=perRij(doc.cellen||[]);
+  var meta=doc.meta||{};
+  Object.keys(meta).forEach(function(k){
+    if(meta[k])uit.push(kandidaat(k,meta[k],0.5,{pagina:-1,x:0,y:0,b:0,h:0},{type:"meta",sleutel:k},null));
+  });
+  uit.push(kandidaat("Bestandsnaam",doc.naam,0.5,{pagina:-1,x:0,y:0,b:0,h:0},{type:"bestand"},null));
+  rijen.forEach(function(rij){
+    rij.forEach(function(c,i){
+      if(bezet[c.pagina+":"+Math.round(c.x)+":"+Math.round(c.y)])return;
+      n++;
+      uit.push(kandidaat(naamVoor(c,rij,i,n),c.t,0.3,c,
+        {type:"plek",pagina:c.pagina,x:Math.round(c.x),y:Math.round(c.y)},null));
+    });
+  });
+  return uit;
+}
+// Een naam voorstellen voor een losse cel: het label ervoor of erboven, anders het
+// patroon, anders geteld. Van een cel die zelf label en waarde bevat pakken we het label.
+function labelDeel(t){
+  for(var i=0;i<PAT.length;i++){
+    if(!PAT[i].sterk&&PAT[i].naam!=="bedrag")continue;
+    var m=String(t).match(new RegExp("^(.{2,36}?)[\\s:\\-–]+("+PAT[i].re+")$","i"));
+    if(m&&labelachtig(schoonLabel(m[1])))return schoonLabel(m[1]);
+  }
+  return labelachtig(t)?schoonLabel(t):"";
+}
+function naamVoor(c,rij,i,n){
+  for(var j=i-1;j>=0;j--){
+    var lab=labelDeel(rij[j].t);
+    if(lab&&lab.toLowerCase()!==String(c.t).toLowerCase())return lab;
+  }
+  var v=vind(c.t);
+  if(v&&v.waarde.length>=String(c.t).length-1)return v.patroon.toon;
+  var eigen=labelDeel(c.t);
+  if(eigen&&eigen.toLowerCase()!==String(c.t).toLowerCase())return eigen;
+  return "Tekst "+n;
+}
+ST.analyse=analyse;ST.filterVoor=filterVoor;ST.alles=alles;
 })();
 </script>

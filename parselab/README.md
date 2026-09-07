@@ -45,7 +45,7 @@ Per gebruiker: het dashboard stuurt het e-mailadres van wie is ingelogd mee (`x-
 | `tools/extension/` | Browserextensie voor ParseForm en voor ParseScraper op ingelogde pagina's. `tools/parselab-extension.zip` is dezelfde extensie als download. |
 | `ParsePDF.html` | ParsePDF als één losse pagina, gebouwd uit `webflow/` met `webflow/bouw-pagina.mjs`. Op elke webhost te zetten; werkt met de Supabase-login. |
 | `webflow/` | De vijf embeds van ParsePDF voor de Webflow-pagina met Supabase erachter (`webflow/README.md`, `docs/INTEGRATIE.md`). |
-| `docs/` | Analyse per tool, status van toepassing en `verbeterpunten.md` (laatste testronde), plus `LANCERING.md` en `INTEGRATIE.md` voor het live zetten `PARSEPDF-VOLGENDE-VERSIE.md` voor de volgende versie van ParsePDF en `PARSEPDF-DOORKIJKEN.md` voor het doorkijkscherm met het voorstel en de AI-knop. |
+| `docs/` | Analyse per tool, status van toepassing en `verbeterpunten.md` (laatste testronde), plus `LANCERING.md` en `INTEGRATIE.md` voor het live zetten `PARSEPDF-VOLGENDE-VERSIE.md` voor de volgende versie van ParsePDF `PARSEPDF-DOORKIJKEN.md` voor het doorkijkscherm met het voorstel en de AI-knop, en `SITE-UITLEG-PARSEPDF.md` als hulppagina voor bezoekers. |
 | `tests/` | Playwright-testrun over het hele dashboard (`tests/README.md`). |
 
 ## Twee manieren van uitlezen

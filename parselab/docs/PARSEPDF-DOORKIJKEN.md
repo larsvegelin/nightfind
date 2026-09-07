@@ -22,6 +22,8 @@ Wat er verandert ten opzichte van de vorige versie staat in [`PARSEPDF-VOLGENDE-
 4. Uitlezen starten → alle overgenomen kolommen in één tabel
 ```
 
+Naast de herkende velden staat een knop **Toon alle tekst (n)**. Die zet élk stukje tekst uit het document in de lijst, uitgevinkt, plus wat er buiten de pagina om bekend is: titel, auteur, programma en aanmaakdatum uit de eigenschappen van het pdf-bestand, en de bestandsnaam. Zo mist de tool niets en haal jij weg wat je niet wilt. Voor zo'n los stuk tekst bewaart het sjabloon de plek op de pagina; op het volgende document pakt hij de cel die daar het dichtst bij staat.
+
 Vindt de tool een regeltabel, dan verschijnt er een kaart: *Regeltabel gevonden — 3 regels met 6 kolommen*, met een schakelaar **Eén rij per tabelregel**. Aan betekent: elke artikelregel wordt een rij, met de kopvelden van het document erbij herhaald.
 
 ## 2. Hoe de tool velden vindt
@@ -35,6 +37,8 @@ De pagina wordt niet meer als losse tekstregels gelezen maar als cellen met een 
 | Label in de cel | Label en waarde in dezelfde cel, waarde herkenbaar aan zijn vorm | `IBAN NL71 RABO 0169 2708 58` | 0,80 |
 | Label erboven | Label met de waarde eronder in dezelfde kolom | `Factuurnummer` ⏎ `F-2026-0442` | 0,70 |
 | Patroon | Vorm die zichzelf verraadt, ook zonder label | e-mailadres, btw-nummer, KvK | 0,60 |
+| Bestandsgegeven | Titel, auteur, programma, aanmaakdatum en bestandsnaam | uit de eigenschappen van het bestand | 0,50 |
+| Plek op de pagina | Alle overige tekst, via **Toon alle tekst** | wat de vier vormen hierboven lieten liggen | 0,30 |
 
 Ingebouwde patronen: **IBAN, btw-nummer, KvK-nummer, e-mailadres, website, telefoonnummer, postcode, bedrag, datum, percentage en kenmerk** (letters met een reeks cijfers, zoals `INV10632`). De eerste zeven zijn sterk genoeg om zonder label een veld te worden; bedrag, datum, percentage en kenmerk komen alleen mee als er een label bij hoort, anders staat je voorstel vol losse getallen.
 
@@ -72,6 +76,7 @@ Zeg je ja, dan gaat de tekst van dat ene document plus de velden die de structuu
 
 Belangrijk aan de opzet:
 
+- **Alleen voor Pro en Business.** De AI draait op onze Claude-tegoeden, dus het zit aan een betaald pakket vast. Met het gratis pakket toont de knop een uitleg met een verwijzing naar de pakketten, en werkt de rest gewoon door op de structuurcheck. De browser bepaalt dat niet zelf: de server toetst het toegangsbewijs van de gebruiker bij Supabase en vraagt de databasefunctie `ai_allowed` of dit pakket het mag. Eén controle telt als één AI-tegoed (`record_usage('parsepdf-ai', 1)`).
 - **Per document, niet per stapel.** Je gebruikt de AI om een sjabloon goed te krijgen; daarna leest de structuurcheck de andere honderd documenten zonder AI en zonder kosten.
 - **De sleutel staat op de server**, nooit in de browser. Zonder `PARSELAB_ANTHROPIC_KEY` antwoordt de server met een nette 501 en zegt de tool: *AI-hulp is niet beschikbaar op deze server. Het voorstel komt uit de structuur van het document.* Er breekt niets.
 - **Op de Webflow-pagina** is er geen ParseLab-server. Daar wijs je `window.PARSELAB.aiEndpoint` naar een Supabase Edge Function die hetzelfde antwoord geeft; het model en de sleutel horen daar dan thuis. Zolang dat er niet is, blijft de knop staan en zegt hij netjes dat het niet beschikbaar is.
@@ -98,7 +103,7 @@ Sleep dus gerust dertig facturen van vijf leveranciers in één keer erin. Mappe
 
 ## 5. Wat er in de embeds veranderde
 
-De pagina bestaat nu uit tien embeds in plaats van vijf. Vier zijn nieuw en één is afgesplitst, omdat Webflow niet meer dan ongeveer 10.000 tekens per embed aankan.
+De pagina bestaat nu uit elf embeds in plaats van vijf. Vijf zijn nieuw en twee zijn afgesplitst, omdat Webflow niet meer dan ongeveer 10.000 tekens per embed aankan.
 
 | Embed | Wat | Nieuw? |
 |---|---|---|
@@ -110,16 +115,17 @@ De pagina bestaat nu uit tien embeds in plaats van vijf. Vier zijn nieuw en éé
 | `6-structuur.html` | Cellen, rijen, kolommen, patronen, en een bewaarde vindregel toepassen | **nieuw** |
 | `7-velden.html` | De vijf kandidaatvormen, ontdubbelen en de regeltabel | **nieuw** |
 | `8-voorstel.html` | Het doorkijkscherm, het voorstel en de AI-knop | **nieuw** |
-| `9-sjablonen.html` | Mappen, sjablonen, vingerafdruk en het herkennen van documenten | **nieuw** |
-| `10-verwerken.html` | Verwerking, limietbewaking, opstarten, rijen per tabelregel | bijgewerkt |
+| `9-ai.html` | Uitlezen met AI: pakketcontrole, toestemming, tegoed tellen | **nieuw** |
+| `10-sjablonen.html` | Mappen, sjablonen, vingerafdruk en het herkennen van documenten | **nieuw** |
+| `11-verwerken.html` | Verwerking, limietbewaking, opstarten, rijen per tabelregel | bijgewerkt |
 
-De volgorde blijft leidend: 10 gebruikt wat 1 tot en met 9 klaarzetten. In Webflow plak je ze opnieuw, in deze volgorde, onder dezelfde lege `<div id="pl-parsepdf-root">`.
+De volgorde blijft leidend: 11 gebruikt wat 1 tot en met 10 klaarzetten. In Webflow plak je ze opnieuw, in deze volgorde, onder dezelfde lege `<div id="pl-parsepdf-root">`.
 
 Er is een nieuw soort veldregel bijgekomen: **`cel`**. Die bewaart niet een woord om op te zoeken, maar hoe de waarde gevonden werd (kolomkop, label links, label in de cel, label erboven of patroon). Daardoor werkt een sjabloon dat je vandaag maakt ook op de factuur van volgende maand, ook als de bedragen verschuiven. De oude soorten (label, patroon, bestandsnaam) blijven gewoon bestaan.
 
 ## 6. Testen
 
-`node parselab/tests/webflow.mjs` — 66 controles, waarvan nieuw:
+`node parselab/tests/webflow.mjs` — 71 controles, waarvan nieuw:
 
 - het voorstel vindt factuurnummer, klantnummer en datum uit de kolomkoppen, zonder instellen
 - het scheidt `Totaal excl.` van `Totaal incl.`
@@ -130,7 +136,28 @@ Er is een nieuw soort veldregel bijgekomen: **`cel`**. Die bewaart niet een woor
 - zonder AI-sleutel komt er een melding en geen fout; met een antwoord hernoemt de AI een veld en vult er één aan
 - overnemen levert een sjabloon met `cel`-regels en tabelkolommen
 - uitlezen geeft 25 kolommen en één rij per tabelregel, met de juiste waarden
+- **Toon alle tekst** zet er meer in de lijst dan de herkende velden, met de bestandsnaam en de pdf-eigenschappen erbij
+- een gratis pakket krijgt bij de AI-knop een uitleg met een verwijzing naar de pakketten in plaats van het toestemmingsvenster
 - twee sjablonen in één map: drie gemengde documenten geven één tabel, elk met zijn eigen sjabloon in de kolom Sjabloon, de juiste waarden per rij, en het derde document als *onbekend*
+
+## 6b. Server: wat je moet instellen voor de AI
+
+| Variabele | Waarvoor |
+|---|---|
+| `PARSELAB_ANTHROPIC_KEY` | De Anthropic-sleutel waarmee de server Claude aanroept. Staat nooit in de browser. |
+| `PARSELAB_AI_MODEL` | Welk model, standaard `claude-opus-5`. |
+| `PARSELAB_SUPABASE_URL` en `PARSELAB_SUPABASE_KEY` | Zet je die, dan eist het eindpunt een geldig toegangsbewijs én een pakket dat het toelaat. |
+
+De databasefunctie `ai_allowed()` beslist. Iets in deze geest, met row level security eromheen:
+
+```sql
+create or replace function ai_allowed() returns boolean language sql security definer as $$
+  select coalesce((select p.ai from profiles pr join plans p on p.id = pr.plan_id
+                   where pr.id = auth.uid()), false);
+$$;
+```
+
+Zet `plans.ai` op `false` voor Gratis en op `true` voor Pro en Business. Zonder deze twee variabelen blijft het eindpunt open; dat is bedoeld voor een server die alleen jij kunt bereiken.
 
 ## 7. Wat hierna nog open staat
 

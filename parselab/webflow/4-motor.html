@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 4 van 10: uitleesmotor. Draait volledig lokaal in de browser. -->
+<!-- ParsePDF — embed 4 van 11: uitleesmotor. Draait volledig lokaal in de browser. -->
 <script>
 window.PLP=(function(){
 var LIB="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
@@ -95,7 +95,11 @@ function cellen(tc,pagina){
 
 function lees(file){
   return open(file).then(function(doc){
-    var uit=[],alleCellen=[],maten=[],keten=Promise.resolve();
+    var uit=[],alleCellen=[],maten=[],meta=null,keten=doc.getMetadata().then(function(m){
+      var i=(m&&m.info)||{};
+      meta={Titel:i.Title||"",Auteur:i.Author||"",Onderwerp:i.Subject||"",Trefwoorden:i.Keywords||"",
+            Programma:i.Producer||i.Creator||"",Gemaakt:datumUitPdf(i.CreationDate)};
+    }).catch(function(){meta={};});
     for(var i=1;i<=doc.numPages;i++){
       (function(p){
         keten=keten.then(function(){return doc.getPage(p);})
@@ -114,12 +118,19 @@ function lees(file){
       var alle=[].concat.apply([],uit);
       doc.destroy();
       return {naam:file.naam||file.name,paginas:uit.length,regels:alle,tekst:alle.join("\n"),
-              cellen:[].concat.apply([],alleCellen),maten:maten};
+              cellen:[].concat.apply([],alleCellen),maten:maten,meta:meta||{},
+              grootte:file.size||0,gewijzigd:file.lastModified?new Date(file.lastModified):null};
     });
   });
 }
 
 function esc(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+
+// PDF-datums staan als D:20260321143000+02'00'; daar maken we 21-03-2026 van.
+function datumUitPdf(d){
+  var m=String(d||"").match(/^D:(\d{4})(\d{2})(\d{2})/);
+  return m?m[3]+"-"+m[2]+"-"+m[1]:"";
+}
 
 var BEDRAG=/-?(?:€\s*)?\d{1,3}(?:[.\s]\d{3})*,\d{2}|-?\d+[.,]\d{2}/;
 var DATUM=/\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}|\d{1,2}\s+(?:jan|feb|mrt|maa|apr|mei|jun|jul|aug|sep|okt|nov|dec)[a-z]*\.?\s+\d{4}/i;
