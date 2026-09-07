@@ -851,10 +851,21 @@ window.addEventListener("message", ev => {
     if (state.user) { renderNavOnly(); renderTop(); } return;
   }
   if (d.type === "parselab:open" && d.view) { go(d.view, d.section); return; }
+  // De ene tool geeft rijen door aan de andere: bewaren, daarheen gaan, en zodra
+  // die tool klaar is de gegevens sturen. Zo hangen de tools aan elkaar.
+  if (d.type === "parselab:handover" && d.naar) {
+    state.doorgeven = { naar:d.naar, naam:d.naam || "Gegevens", kolommen:d.kolommen || [], rijen:d.rijen || [] };
+    go(d.naar, d.section || null);
+    return;
+  }
   if (d.type === "parselab:file") { keepFile(d); return; }
   if (d.type !== "parselab:section" && d.type !== "parselab:ready") return;
   const tool = toolDefs().find(t => t.key === state.view); if (!tool) return;
   const fr = document.querySelector("iframe.bench-frame");
+  if (fr && fr.contentWindow === ev.source && d.type === "parselab:ready" && state.doorgeven && state.doorgeven.naar === state.view) {
+    const pak = state.doorgeven; state.doorgeven = null;
+    fr.contentWindow.postMessage({ source:"parselab-shell", type:"parselab:data", naam:pak.naam, kolommen:pak.kolommen, rijen:pak.rijen }, "*");
+  }
   if (fr && fr.contentWindow === ev.source && fr.dataset.ready !== "1") { initFrame(fr); if (d.section && String(d.section) !== state.section) sendSection(fr, state.section); }
   if (d.type === "parselab:ready") return;
   if (d.max != null) state.toolMax = d.max;

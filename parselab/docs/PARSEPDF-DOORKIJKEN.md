@@ -26,6 +26,10 @@ Naast de herkende velden staat een knop **Toon alle tekst (n)**. Die zet élk st
 
 **Door je stapel bladeren.** Heb je meer documenten gekozen, dan staat bovenin *Document 1 van 5* met **Vorige** en **Volgende**. Neem je de velden over en blader je door, dan zie je per document of elk veld daar ook gevonden wordt; wat er niet in staat krijgt *niet gevonden*. Zo controleer je een stapel voordat je hem uitleest.
 
+**De vlakken liggen op de tekst.** Een vlak wordt getekend vanaf de basislijn van de tekst: erboven ongeveer 0,8 van de teksthoogte, eronder de staarten. Met een vaste hoogte liepen regels door elkaar heen op documenten met dicht op elkaar staande regels; nu sluit elk vlak om zijn eigen regel. Bij tekstherkenning komt de plek uit het woordvak zelf.
+
+**Herkent de tool of dit document bij een sjabloon past?** Staat er een map open, dan zegt het doorkijkscherm het meteen: *Lijkt op sjabloon Wijnleverancier · 12 van 14 velden gevonden*. Is het dezelfde afzender met een andere indeling, dan komt er een waarschuwing: *Lijkt op Wijnleverancier, maar de indeling wijkt af: 3 van 14 velden gevonden.* Past het bij niets, dan stelt hij voor er een nieuw sjabloon van te maken. Bij het uitlezen van een stapel komt diezelfde melding per document terug, zodat je niet achteraf ontdekt dat er lege kolommen in je tabel staan.
+
 **Label en waarde blijven bij elkaar.** Staat er `Geboortedatum   01-01-1990` op een regel, dan is dat één veld met de naam *Geboortedatum* en de waarde *01-01-1990* — niet twee losse dingen. De tool zoekt daarvoor de labelkolom van het document: de x-positie waar drie of meer regels een label hebben met steeds op dezelfde plek de waarde ernaast. Alleen die regels worden zo gekoppeld, zodat kolomkoppen (waar de waarde eronder staat) niet per ongeluk aan hun buur worden geplakt.
 
 Vindt de tool een regeltabel, dan verschijnt er een kaart: *Regeltabel gevonden — 3 regels met 6 kolommen*, met een schakelaar **Eén rij per tabelregel**. Aan betekent: elke artikelregel wordt een rij, met de kopvelden van het document erbij herhaald.
@@ -130,7 +134,7 @@ Er is een nieuw soort veldregel bijgekomen: **`cel`**. Die bewaart niet een woor
 
 ## 6. Testen
 
-`node parselab/tests/webflow.mjs` — 77 controles, waarvan nieuw:
+`node parselab/tests/webflow.mjs` — 92 controles, waarvan nieuw:
 
 - het voorstel vindt factuurnummer, klantnummer en datum uit de kolomkoppen, zonder instellen
 - het scheidt `Totaal excl.` van `Totaal incl.`

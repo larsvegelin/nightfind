@@ -164,7 +164,7 @@
       <div class="card">
         <div class="row"><span class="pill pill-neutral" id="done-pill">Nog niet uitgelezen</span><span class="note" id="done-note"></span><span style="flex:1"></span><button class="btn btn-outline btn-small" id="rerun">Opnieuw uitlezen</button></div>
         <div id="done-msg" hidden></div>
-        <div class="row" id="dl-row" hidden><a class="btn btn-navy" id="dl-xlsx" href="#">Download voor Excel</a><a class="link" id="dl-csv" href="#">Als CSV</a></div>
+        <div class="row" id="dl-row" hidden><button type="button" class="btn btn-outline" id="naar-board">Overzicht maken van deze rijen</button><a class="btn btn-navy" id="dl-xlsx" href="#">Download voor Excel</a><a class="link" id="dl-csv" href="#">Als CSV</a></div>
         <div class="table-wrap" id="done-table"></div>
       </div>
       <div class="card" style="margin-top:24px" id="save-card">
@@ -461,6 +461,11 @@ function renderRun() {
   $("#done-pill").textContent = run.rows.length + " regels · " + run.pages + " pagina" + (run.pages === 1 ? "" : "'s");
   $("#done-note").textContent = empty ? empty + " regels met een lege cel" : "";
   $("#dl-row").hidden = false; $("#dl-xlsx").href = API + "/runs/" + run.id + ".xlsx"; $("#dl-csv").href = API + "/runs/" + run.id + ".csv";
+  // Deze rijen kunnen door naar ParseBoard; het dashboard geeft ze daar af.
+  const naarBoard = $("#naar-board");
+  if (naarBoard) naarBoard.onclick = () => post({ type:"parselab:handover", naar:"board", section:"1",
+    naam: (state.currentTask && state.currentTask.name) || (state.snapshot && state.snapshot.title) || "Uitgelezen website",
+    kolommen: cols, rijen: run.rows });
   $("#done-table").innerHTML = `<table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${run.rows.slice(0, 100).map(r => `<tr>${cols.map(c => `<td class="${typeof r[c] === "number" ? "num" : ""} ${r[c] === "" || r[c] == null ? "empty" : ""}" title="${esc(r[c])}">${esc(r[c])}</td>`).join("")}</tr>`).join("")}</tbody></table>${run.rows.length > 100 ? `<div class="note" style="margin-top:8px">Eerste 100 van ${run.rows.length} regels; het bestand bevat alles.</div>` : ""}`;
   if (!$("#task-name").value && state.snapshot) { try { $("#task-name").value = new URL(state.snapshot.url).hostname.replace(/^www\./, ""); } catch (e) {} }
 }

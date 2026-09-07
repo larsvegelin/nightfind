@@ -1310,6 +1310,7 @@
                 <div class="dl-primary">
                     <button class="btn" id="exportXlsxBtn" disabled><svg class="ico" aria-hidden="true"><use href="#i-download"></use></svg>Download voor Excel</button>
                     <button class="btn btn-secondary" id="toFormBtn" disabled>Vul hiermee een formulier in</button>
+                    <button class="btn btn-secondary" id="toBoardBtn" disabled>Maak er een overzicht van</button>
                     <span class="status-line" id="dlStatus" style="margin-top:0;"></span>
                 </div>
                 <div class="dl-other">
@@ -3637,11 +3638,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         }
         function updateDownloadState() {
             var has = !!results;
-            var csv = $('exportCsvBtn'), x = $('exportXlsxBtn'), c = $('copyBtn'), f = $('toFormBtn'), h = $('dlHint');
+            var csv = $('exportCsvBtn'), x = $('exportXlsxBtn'), c = $('copyBtn'), f = $('toFormBtn'), h = $('dlHint'), bd = $('toBoardBtn');
             if (csv) csv.disabled = !has;
             if (x) x.disabled = !has || !window.XLSX;
             if (c) c.disabled = !has;
             if (f) f.disabled = !has || !window.XLSX;
+            if (bd) bd.disabled = !has;
             if (h) h.textContent = has
                 ? results.rows.length + (results.rows.length === 1 ? ' regel' : ' regels') + ' klaar om te downloaden.'
                 : 'Nog niets om te downloaden. Lees eerst je documenten uit op stap 3.';
@@ -4893,6 +4895,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 this.value = '';
             });
             $('toFormBtn').addEventListener('click', sendToForm);
+            // De uitgelezen tabel doorgeven aan ParseBoard; het dashboard levert hem daar af.
+            var naarBoard = $('toBoardBtn');
+            if (naarBoard) naarBoard.addEventListener('click', function () {
+                if (!results || !results.rows.length) return;
+                try {
+                    window.parent.postMessage({ source: 'parselab-tool', tool: 'pdf', type: 'parselab:handover',
+                        naar: 'board', section: '1', naam: exportName('xlsx').replace(/\.xlsx$/, ''),
+                        kolommen: results.headers, rijen: results.rows }, '*');
+                } catch (e) {}
+            });
             $('reviewToggle').addEventListener('click', function () {
                 reviewFilterOn = !reviewFilterOn;
                 applyReviewFilter();

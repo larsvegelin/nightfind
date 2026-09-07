@@ -135,6 +135,16 @@ await step('scraper', async () => {
   const other = await (await fetch('http://127.0.0.1:8080/api/scrape/tasks', { headers:{ 'x-parselab-user':'iemand.anders@kantoor.nl' } })).json();
   ok('andere gebruiker ziet deze taak niet', !other.some(x => x.name === 'QA testshop'), other.length);
   ok('taak op server met planning en laatste run', !!tk && tk.schedule === 'dag' && !!tk.lastRunId, JSON.stringify(tk||{}).slice(0,160));
+  // De rijen doorgeven aan ParseBoard: de tools hangen aan elkaar.
+  await t.locator('#naar-board').click(); await p.waitForTimeout(2500);
+  ok('scraper → board: het dashboard schakelt naar ParseBoard', /board\//.test(await hash()), await hash());
+  const bt = tool();
+  ok('scraper → board: de rijen staan er en de stap is de kolommenstap',
+    /Stap 2|stap 2/i.test(await bt.locator('#main').innerText().catch(() => '')) || /board\/2/.test(await hash()),
+    (await bt.locator('#main').innerText().catch(() => '')).split('\n')[0]);
+  const kolommen = await bt.locator('#main').innerText().catch(() => '');
+  ok('scraper → board: de kolomnamen van de scraper komen mee', /Titel|Prijs|Voorraad/i.test(kolommen), kolommen.slice(0, 80).replace(/\n/g, ' '));
+
   await p.screenshot({ path:S+'/shots/qa-done.png', fullPage:true });
 });
 
@@ -197,6 +207,14 @@ await step('parsepdf', async () => {
   await p.click('.nav-sub-item[data-section="download"]'); await p.waitForTimeout(600);
   const dlb = t.locator('#page-download button', { hasText:/Excel|xlsx|Download/i }).first();
   if (await dlb.count()) { await dlb.click(); await p.waitForTimeout(1500); }
+  // Ook vanuit ParsePDF gaan de rijen door naar ParseBoard.
+  const naarBoard = t.locator('#toBoardBtn');
+  if (await naarBoard.count() && !(await naarBoard.isDisabled())) {
+    await naarBoard.click(); await p.waitForTimeout(2500);
+    ok('pdf → board: het dashboard schakelt naar ParseBoard', /board\//.test(await hash()), await hash());
+    await p.goto(U + '#pdf/download'); await p.waitForTimeout(1500);
+  } else ok('pdf → board: knop beschikbaar na uitlezen', false, 'knop uit');
+
   await p.click('.nav-item[data-go="files"]'); await p.waitForTimeout(1200);
   ok('pdf: Excel bewaard onder Bestanden', await p.locator('#files-kept .files-row').count() >= 1, (await p.locator('#files-kept').innerText()).slice(0,80).replace(/\n/g,' '));
   await p.screenshot({ path:S+'/shots/qa-files.png', fullPage:true });

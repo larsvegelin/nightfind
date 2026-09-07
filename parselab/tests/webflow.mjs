@@ -415,6 +415,29 @@ ok('de waarden staan in de goede rij',
   cel2(gemengd[1], 'Factuurnummer') === 'INV10632' && cel2(gemengd[1], 'Polisnummer') === '—' &&
   cel2(gemengd[2], 'Polisnummer') === 'P-2026-77120' && cel2(gemengd[2], 'Premie per jaar') === '1.148,76',
   [cel2(gemengd[1], 'Factuurnummer'), cel2(gemengd[2], 'Polisnummer'), cel2(gemengd[2], 'Premie per jaar')].join(' · '));
+// De structuurcontrole zegt of dit document bij een sjabloon past en of de velden
+// er ook echt in te vinden zijn.
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-webshop.pdf'));
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(600);
+const zelfde = await p.textContent('.plp-blad .pld-msg');
+ok('bekend document: sjabloon herkend met het aantal gevonden velden', /Lijkt op sjabloon Wijnleverancier · \d+ van \d+ velden gevonden/.test(zelfde), zelfde.slice(0, 80));
+await sluitDoorkijk();
+await p.evaluate(() => { window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-alpha.pdf'));
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(600);
+const ander = await p.textContent('.plp-blad .pld-msg');
+ok('ander document: gezegd dat het bij geen sjabloon past of dat de indeling afwijkt',
+  /Past bij geen enkel sjabloon|indeling wijkt af/.test(ander), ander.slice(0, 80));
+await sluitDoorkijk();
+await p.evaluate(() => { window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.setInputFiles('input[type=file]', ['factuur-webshop.pdf', 'polis.pdf', 'bankafschrift.pdf'].map(f => path.join(pdfmap, f)));
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const gemengd2 = await p.evaluate(() => [...document.querySelectorAll('.plp-table tr')].map(tr => [...tr.children].map(td => td.textContent)));
+ok('de gemengde stapel levert nog steeds één tabel', gemengd2.length === 4, (gemengd2.length - 1) + ' rijen');
 ok('een document dat nergens bij past heet onbekend', cel2(gemengd[3], 'Sjabloon') === 'onbekend', cel2(gemengd[3], 'Sjabloon'));
 const samenvatting = await p.textContent('.pld-msg');
 ok('de melding vertelt wat herkend werd', /1 . Wijnleverancier/.test(samenvatting) && /1 document/.test(samenvatting), samenvatting.replace(/\s+/g, ' ').slice(0, 90));

@@ -537,7 +537,8 @@ function ocr(file,melden){
           ((res&&res.data&&res.data.words)||[]).forEach(function(w){
             if(!w.text||!w.text.trim()||(w.confidence||0)<40)return;
             var b=w.bbox||{};
-            uit.push({t:w.text.trim(),x:b.x0/2,y:maten[nr-1].hoog-b.y1/2,
+            // top is hier bekend uit het woordvak zelf; de weergave gebruikt dat rechtstreeks.
+            uit.push({t:w.text.trim(),x:b.x0/2,y:maten[nr-1].hoog-b.y1/2,top:b.y0/2,
                       b:(b.x1-b.x0)/2,h:(b.y1-b.y0)/2,rij:Math.round((maten[nr-1].hoog-b.y1/2)/-6),pagina:nr-1});
           });
         });
@@ -557,7 +558,7 @@ function ocr(file,melden){
           open2.t+=" "+w.t;open2.b=w.x+w.b-open2.x;
         }else{
           if(open2)cellen.push(open2);
-          open2={t:w.t,x:w.x,y:w.y,b:w.b,h:w.h,rij:rij,pagina:w.pagina};
+          open2={t:w.t,x:w.x,y:w.y,top:w.top,b:w.b,h:w.h,rij:rij,pagina:w.pagina};
         }
       });
       if(open2)cellen.push(open2);
@@ -1172,6 +1173,19 @@ function bouw(blad,file,doc,analyse,velden,sluit){
     })(i);
   }
 
+  // Past dit document bij een sjabloon uit de gekozen map, en zijn de velden te vinden?
+  if(window.PLP_SJ&&window.PLP_SJ.controle){
+    var d=window.PLP_SJ.lees();
+    if(d.actief){
+      var c=window.PLP_SJ.controle(d.actief,doc,analyse);
+      var regelC=el("p","pld-msg");
+      if(!c.sjabloon)regelC.textContent=t.matchNone;
+      else if(c.anders)regelC.textContent=t.matchMaybe.replace("{naam}",c.sjabloon.naam).replace("{g}",c.gevonden).replace("{t}",c.totaal);
+      else regelC.textContent=t.matchOn.replace("{naam}",c.sjabloon.naam).replace("{g}",c.gevonden).replace("{t}",c.totaal);
+      if(c.anders)regelC.className="pld-msg pld-msg--warn";
+      rechterkant.appendChild(regelC);
+    }
+  }
   var lijst=el("div","plp-lijst");rechterkant.appendChild(el("p","pld-caps",t.proposal));
   rechterkant.appendChild(el("p","pld-text",t.proposalHint));
   var meer=el("button","pld-btn pld-btn--ghost pld-btn--sm","");meer.type="button";
@@ -1269,9 +1283,9 @@ return {open:open};
 <script>
 (function(){var T=window.PLP_T;if(!T)return;
 var EXTRA={
-nl:{keep:"Overnemen",drop:"Weglaten",autoNamed:"naam automatisch",selectAll:"Alles selecteren",selectNone:"Niets selecteren",chosen:"{n} van {t} aan",aiChanged:"De AI wijzigde {n} velden.",approve:"Goedkeuren",undo:"Ongedaan maken",approved:"Goedgekeurd.",undone:"Teruggezet.",ocr:"Tekst herkennen (OCR)",ocrBusy:"Tekst herkennen…",ocrDone:"{n} stukken tekst herkend. Controleer ze goed; herkenning is niet altijd juist.",ocrOff:"Tekstherkenning kon niet worden geladen. Controleer je verbinding.",ocrHint:"Dit document heeft geen tekstlaag. Laat de tekst herkennen om er toch velden uit te halen."},
-en:{keep:"Use",drop:"Leave out",autoNamed:"named automatically",selectAll:"Select all",selectNone:"Select none",chosen:"{n} of {t} on",aiChanged:"The AI changed {n} fields.",approve:"Approve",undo:"Undo",approved:"Approved.",undone:"Reverted.",ocr:"Recognise text (OCR)",ocrBusy:"Recognising text…",ocrDone:"{n} pieces of text recognised. Check them; recognition is not always right.",ocrOff:"Text recognition could not be loaded. Check your connection.",ocrHint:"This document has no text layer. Run text recognition to pull fields out of it anyway."},
-de:{keep:"Uebernehmen",drop:"Weglassen",autoNamed:"automatisch benannt",selectAll:"Alles auswaehlen",selectNone:"Nichts auswaehlen",chosen:"{n} von {t} an",aiChanged:"Die KI hat {n} Felder geaendert.",approve:"Genehmigen",undo:"Rueckgaengig",approved:"Genehmigt.",undone:"Zurueckgesetzt.",ocr:"Text erkennen (OCR)",ocrBusy:"Text wird erkannt…",ocrDone:"{n} Textstuecke erkannt. Pruefe sie; die Erkennung ist nicht immer richtig.",ocrOff:"Texterkennung konnte nicht geladen werden. Pruefe deine Verbindung.",ocrHint:"Dieses Dokument hat keine Textebene. Lass den Text erkennen, um trotzdem Felder zu bekommen."}
+nl:{matchOn:"Lijkt op sjabloon {naam} · {g} van {t} velden gevonden",matchMaybe:"Lijkt op {naam}, maar de indeling wijkt af: {g} van {t} velden gevonden. Controleer het of maak er een eigen sjabloon van.",matchNone:"Past bij geen enkel sjabloon in deze map. Bewaar dit als nieuw sjabloon.",keep:"Overnemen",drop:"Weglaten",autoNamed:"naam automatisch",selectAll:"Alles selecteren",selectNone:"Niets selecteren",chosen:"{n} van {t} aan",aiChanged:"De AI wijzigde {n} velden.",approve:"Goedkeuren",undo:"Ongedaan maken",approved:"Goedgekeurd.",undone:"Teruggezet.",ocr:"Tekst herkennen (OCR)",ocrBusy:"Tekst herkennen…",ocrDone:"{n} stukken tekst herkend. Controleer ze goed; herkenning is niet altijd juist.",ocrOff:"Tekstherkenning kon niet worden geladen. Controleer je verbinding.",ocrHint:"Dit document heeft geen tekstlaag. Laat de tekst herkennen om er toch velden uit te halen."},
+en:{matchOn:"Looks like template {naam} · {g} of {t} fields found",matchMaybe:"Looks like {naam}, but the layout differs: {g} of {t} fields found. Check it or save it as its own template.",matchNone:"Matches no template in this folder. Save it as a new template.",keep:"Use",drop:"Leave out",autoNamed:"named automatically",selectAll:"Select all",selectNone:"Select none",chosen:"{n} of {t} on",aiChanged:"The AI changed {n} fields.",approve:"Approve",undo:"Undo",approved:"Approved.",undone:"Reverted.",ocr:"Recognise text (OCR)",ocrBusy:"Recognising text…",ocrDone:"{n} pieces of text recognised. Check them; recognition is not always right.",ocrOff:"Text recognition could not be loaded. Check your connection.",ocrHint:"This document has no text layer. Run text recognition to pull fields out of it anyway."},
+de:{matchOn:"Aehnelt Vorlage {naam} · {g} von {t} Feldern gefunden",matchMaybe:"Aehnelt {naam}, aber das Layout weicht ab: {g} von {t} Feldern gefunden. Pruefe es oder speichere eine eigene Vorlage.",matchNone:"Passt zu keiner Vorlage in diesem Ordner. Speichere es als neue Vorlage.",keep:"Uebernehmen",drop:"Weglassen",autoNamed:"automatisch benannt",selectAll:"Alles auswaehlen",selectNone:"Nichts auswaehlen",chosen:"{n} von {t} an",aiChanged:"Die KI hat {n} Felder geaendert.",approve:"Genehmigen",undo:"Rueckgaengig",approved:"Genehmigt.",undone:"Zurueckgesetzt.",ocr:"Text erkennen (OCR)",ocrBusy:"Text wird erkannt…",ocrDone:"{n} Textstuecke erkannt. Pruefe sie; die Erkennung ist nicht immer richtig.",ocrOff:"Texterkennung konnte nicht geladen werden. Pruefe deine Verbindung.",ocrHint:"Dieses Dokument hat keine Textebene. Lass den Text erkennen, um trotzdem Felder zu bekommen."}
 };
 Object.keys(EXTRA).forEach(function(taal){
   if(!T[taal])return;
@@ -1755,7 +1769,21 @@ function opslaanKnop(regelsVan,doc,analyse,melding){
   return doos;
 }
 
-return {kaart:kaart,opslaanKnop:opslaanKnop,lees:lees,bewaar:bewaar,nieuweMap:nieuweMap,verwijderMap:verwijderMap,map:map,kiesMap:kiesMap,
+// Past dit document bij een sjabloon, en zijn de velden er ook echt in te vinden?
+// Twee documenten van dezelfde afzender kunnen een andere indeling hebben; dan
+// herkent hij het sjabloon wel, maar blijven de velden leeg. Dat zeggen we erbij.
+function controle(mid,doc,analyse){
+  var keus=kies(mid,doc,analyse);
+  if(!keus)return {sjabloon:null,score:0,zeker:false,gevonden:0,totaal:0};
+  var regels=(keus.sjabloon.regels||[]).filter(function(r){return r.type==="cel"&&r.vindregel;});
+  var gevonden=0;
+  regels.forEach(function(r){if(String(ST.pas(doc,r.vindregel)||"").trim())gevonden++;});
+  return {sjabloon:keus.sjabloon,score:keus.score,zeker:keus.zeker,
+          gevonden:gevonden,totaal:regels.length,
+          anders:regels.length>0&&gevonden<Math.ceil(regels.length/2)};
+}
+
+return {controle:controle,kaart:kaart,opslaanKnop:opslaanKnop,lees:lees,bewaar:bewaar,nieuweMap:nieuweMap,verwijderMap:verwijderMap,map:map,kiesMap:kiesMap,
         bewaarSjabloon:bewaarSjabloon,verwijderSjabloon:verwijderSjabloon,telGebruik:telGebruik,
         vingerafdruk:vingerafdruk,kies:kies,score:score};
 })();
@@ -1797,9 +1825,14 @@ k2=k2.then(function(){return P.lees(f);})
 .then(function(doc){
 var regels=actief,naam=null;
 if(perMap){
-  var keus=SJ.kies(mapId,doc,window.PLP_ST.analyse(doc));
-  if(keus){regels=keus.sjabloon.regels.filter(bruikbaar);naam=keus.sjabloon.naam;
-           SJ.telGebruik(mapId,keus.sjabloon.id);geteld[naam]=(geteld[naam]||0)+1;}
+  var c=SJ.controle?SJ.controle(mapId,doc,window.PLP_ST.analyse(doc)):null;
+  var keus=c&&c.sjabloon?{sjabloon:c.sjabloon}:SJ.kies(mapId,doc,window.PLP_ST.analyse(doc));
+  if(keus&&keus.sjabloon){
+    regels=keus.sjabloon.regels.filter(bruikbaar);naam=keus.sjabloon.naam;
+    SJ.telGebruik(mapId,keus.sjabloon.id);geteld[naam]=(geteld[naam]||0)+1;
+    // Zelfde afzender, andere indeling: het sjabloon past wel maar de velden niet.
+    if(c&&c.anders)fouten.push(f.name+" "+t.matchMaybe.replace("{naam}",naam).replace("{g}",c.gevonden).replace("{t}",c.totaal));
+  }
   else {regels=[];onbekend++;}
 }
 regels.forEach(function(x){if(kolommen.indexOf(x.naam)<0)kolommen.push(x.naam);});

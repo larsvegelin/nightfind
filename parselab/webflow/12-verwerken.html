@@ -34,9 +34,14 @@ k2=k2.then(function(){return P.lees(f);})
 .then(function(doc){
 var regels=actief,naam=null;
 if(perMap){
-  var keus=SJ.kies(mapId,doc,window.PLP_ST.analyse(doc));
-  if(keus){regels=keus.sjabloon.regels.filter(bruikbaar);naam=keus.sjabloon.naam;
-           SJ.telGebruik(mapId,keus.sjabloon.id);geteld[naam]=(geteld[naam]||0)+1;}
+  var c=SJ.controle?SJ.controle(mapId,doc,window.PLP_ST.analyse(doc)):null;
+  var keus=c&&c.sjabloon?{sjabloon:c.sjabloon}:SJ.kies(mapId,doc,window.PLP_ST.analyse(doc));
+  if(keus&&keus.sjabloon){
+    regels=keus.sjabloon.regels.filter(bruikbaar);naam=keus.sjabloon.naam;
+    SJ.telGebruik(mapId,keus.sjabloon.id);geteld[naam]=(geteld[naam]||0)+1;
+    // Zelfde afzender, andere indeling: het sjabloon past wel maar de velden niet.
+    if(c&&c.anders)fouten.push(f.name+" "+t.matchMaybe.replace("{naam}",naam).replace("{g}",c.gevonden).replace("{t}",c.totaal));
+  }
   else {regels=[];onbekend++;}
 }
 regels.forEach(function(x){if(kolommen.indexOf(x.naam)<0)kolommen.push(x.naam);});

@@ -27,6 +27,8 @@ Het dashboard is de schil om de vier tools heen: inloggen, overzicht, je project
 | `parselab:open {view, section}` | tool → schil | open een andere tool |
 | `parselab:file {…}` | tool → schil | een bestand voor Bestanden |
 | `parselab:extension {version}` | extensie → schil | de extensie is aanwezig |
+| `parselab:handover {naar, naam, kolommen, rijen}` | tool → schil | geef deze rijen door aan die andere tool |
+| `parselab:data {naam, kolommen, rijen}` | schil → tool | hier zijn de rijen uit de vorige tool |
 
 **Opslag.** `parselab-projects`, `parselab-project-overrides` (een naam of verwijdering uit de schil wint van wat de tool zegt), `parselab-settings`, `parselab-session`, en IndexedDB `parselab-files` voor bewaarde documenten. Met server erbij gaat hetzelfde via `/api/store/:key`, gesleuteld op het e-mailadres, zodat je het op een tweede computer terugziet.
 
@@ -84,6 +86,10 @@ Eén plek waar staat wat er is gebeurd terwijl je weg was: taken die liepen, tak
 
 ### 4.7 Verbruik zichtbaar
 Wat de Webflow-versie van ParsePDF al toont (pagina's van je maandlimiet) hoort in de schil te staan, voor alle tools samen: pagina's, uitleesronden en AI-tegoeden, met een balk en een grens.
+
+### 4.7b De flow tussen de tools (gebouwd)
+
+Wat de ene tool oplevert gaat met één klik door naar de volgende: ParseScraper en ParsePDF hebben allebei een knop die hun tabel doorgeeft aan ParseBoard, dat de rijen inlaadt en op de kolommenstap opent. De schil regelt de overdracht met `parselab:handover` en `parselab:data`; er verlaat niets de browser. Wat er nog bij kan: rijen uit ParseBoard terug naar ParseForm om ze in te vullen, en een zichtbare flow op het overzicht die laat zien welke tool waar uitkomt.
 
 ### 4.8 Werkbank per tool
 ParseBoard krijgt het volle scherm zodra hij een overzicht toont; ParseForm krijgt uitleg plus de extensieknop in plaats van een lege werkbank. Kleine ingreep, groot verschil in hoe af het voelt.

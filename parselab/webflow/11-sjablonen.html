@@ -162,7 +162,21 @@ function opslaanKnop(regelsVan,doc,analyse,melding){
   return doos;
 }
 
-return {kaart:kaart,opslaanKnop:opslaanKnop,lees:lees,bewaar:bewaar,nieuweMap:nieuweMap,verwijderMap:verwijderMap,map:map,kiesMap:kiesMap,
+// Past dit document bij een sjabloon, en zijn de velden er ook echt in te vinden?
+// Twee documenten van dezelfde afzender kunnen een andere indeling hebben; dan
+// herkent hij het sjabloon wel, maar blijven de velden leeg. Dat zeggen we erbij.
+function controle(mid,doc,analyse){
+  var keus=kies(mid,doc,analyse);
+  if(!keus)return {sjabloon:null,score:0,zeker:false,gevonden:0,totaal:0};
+  var regels=(keus.sjabloon.regels||[]).filter(function(r){return r.type==="cel"&&r.vindregel;});
+  var gevonden=0;
+  regels.forEach(function(r){if(String(ST.pas(doc,r.vindregel)||"").trim())gevonden++;});
+  return {sjabloon:keus.sjabloon,score:keus.score,zeker:keus.zeker,
+          gevonden:gevonden,totaal:regels.length,
+          anders:regels.length>0&&gevonden<Math.ceil(regels.length/2)};
+}
+
+return {controle:controle,kaart:kaart,opslaanKnop:opslaanKnop,lees:lees,bewaar:bewaar,nieuweMap:nieuweMap,verwijderMap:verwijderMap,map:map,kiesMap:kiesMap,
         bewaarSjabloon:bewaarSjabloon,verwijderSjabloon:verwijderSjabloon,telGebruik:telGebruik,
         vingerafdruk:vingerafdruk,kies:kies,score:score};
 })();

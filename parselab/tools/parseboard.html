@@ -2069,6 +2069,17 @@ render();
     });
     window.addEventListener("message", function (ev) {
       var d = ev.data || {};
+      // Rijen die uit een andere tool komen: meteen inladen en naar stap 2.
+      if (d.type === "parselab:data" && Array.isArray(d.rijen) && d.rijen.length) {
+        const namen = (d.kolommen && d.kolommen.length) ? d.kolommen : Object.keys(d.rijen[0] || {});
+        state.source = "own"; state.fileName = d.naam || "Uit een andere tool";
+        state.rawRows = d.rijen.map(r => Array.isArray(r) ? namen.reduce((o, n, i) => (o[n] = r[i], o), {}) : r);
+        state.columns = namen.map(name => ({ name, role: guessRole(name) }));
+        state.currentId = null;
+        resetForNewColumns();
+        goto(2);
+        return;
+      }
       if (d.type !== "parselab:nav" || !d.section) return;
       var n = parseInt(d.section, 10);
       try { if (n >= 1 && n <= state.step) goto(n); else report(); } catch (e) {}

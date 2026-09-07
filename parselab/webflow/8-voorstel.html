@@ -82,6 +82,19 @@ function bouw(blad,file,doc,analyse,velden,sluit){
     })(i);
   }
 
+  // Past dit document bij een sjabloon uit de gekozen map, en zijn de velden te vinden?
+  if(window.PLP_SJ&&window.PLP_SJ.controle){
+    var d=window.PLP_SJ.lees();
+    if(d.actief){
+      var c=window.PLP_SJ.controle(d.actief,doc,analyse);
+      var regelC=el("p","pld-msg");
+      if(!c.sjabloon)regelC.textContent=t.matchNone;
+      else if(c.anders)regelC.textContent=t.matchMaybe.replace("{naam}",c.sjabloon.naam).replace("{g}",c.gevonden).replace("{t}",c.totaal);
+      else regelC.textContent=t.matchOn.replace("{naam}",c.sjabloon.naam).replace("{g}",c.gevonden).replace("{t}",c.totaal);
+      if(c.anders)regelC.className="pld-msg pld-msg--warn";
+      rechterkant.appendChild(regelC);
+    }
+  }
   var lijst=el("div","plp-lijst");rechterkant.appendChild(el("p","pld-caps",t.proposal));
   rechterkant.appendChild(el("p","pld-text",t.proposalHint));
   var meer=el("button","pld-btn pld-btn--ghost pld-btn--sm","");meer.type="button";

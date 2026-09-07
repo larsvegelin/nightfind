@@ -113,6 +113,22 @@ De extensie werkt in je eigen browser met jouw sessie; die gegevens verlaten je 
 
 ---
 
+## 6b. De tools aan elkaar knopen
+
+De vier tools staan niet los van elkaar; wat de een oplevert gaat door naar de volgende.
+
+```
+Website uitlezen ─┐
+                  ├─► Overzicht maken (ParseBoard) ─► bewaren als project
+Documenten uitlezen ┘
+                  └─► Formulieren invullen (ParseForm, via de extensie)
+```
+
+- In **ParseScraper** staat na een ronde de knop *Overzicht maken van deze rijen*.
+- In **ParsePDF** staat op de downloadstap *Maak er een overzicht van*, naast *Vul hiermee een formulier in*.
+- Beide sturen `parselab:handover { naar, naam, kolommen, rijen }` naar de schil. Die onthoudt het pakket, gaat naar de gekozen tool en levert het af met `parselab:data` zodra die tool `parselab:ready` meldt. ParseBoard laadt de rijen als eigen bron en springt naar stap 2, waar je de kolomtypen controleert.
+- Er gaat niets over het internet: het blijft binnen de browser, van het ene iframe naar het andere via de schil.
+
 ## 7. Het dashboard
 
 `parselab/index.html` is de schil: inloggen, overzicht, projecten, bestanden, hulp, en per tool een werkbank. Elke tool heeft nu een knop **Hoe werkt …?** met een rondleiding van vijf stappen. Opbouw, berichtenprotocol, vormgeving en wat er nog ontbreekt: [`DASHBOARD-VOLGENDE-VERSIE.md`](DASHBOARD-VOLGENDE-VERSIE.md).
