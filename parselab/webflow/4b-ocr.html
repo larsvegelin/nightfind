@@ -29,7 +29,7 @@ function ocr(file,melden){
         maten[nr-1]={breed:vp.width/2,hoog:vp.height/2};
         if(melden)melden(nr,Math.min(pdf.numPages,10));
         return pg.render({canvasContext:doek.getContext("2d"),viewport:vp}).promise.then(function(){
-          return T.recognize(doek,"nld+eng");
+          return T.recognize(doek,(window.PLP_S&&window.PLP_S.opties&&window.PLP_S.opties.ocrTaal)||"nld+eng");
         }).then(function(res){
           ((res&&res.data&&res.data.words)||[]).forEach(function(w){
             if(!w.text||!w.text.trim()||(w.confidence||0)<40)return;
@@ -64,5 +64,17 @@ function ocr(file,melden){
   });
 }
 P.ocr=ocr;
+// Lezen, en als er geen tekstlaag is en de opties dat toestaan: meteen OCR.
+P.leesOfOcr=function(file){
+  return P.lees(file).then(function(doc){
+    var o=window.PLP_S&&window.PLP_S.opties;
+    if(doc.regels.length||!(o&&o.ocrAuto))return doc;
+    return ocr(file).then(function(res){
+      doc.cellen=res.cellen;doc.maten=res.maten;doc.ocr=true;
+      doc.regels=res.cellen.map(function(c){return c.t;});doc.tekst=doc.regels.join("\n");
+      return doc;
+    }).catch(function(){return doc;});
+  });
+};
 })();
 </script>

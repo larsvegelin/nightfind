@@ -109,6 +109,17 @@ function ocrAanbod(blad,file,doc,klaar){
     knop.disabled=true;stand.textContent=t.ocrBusy;
     P.ocr(file,function(n,tot){stand.textContent=t.ocrBusy+" "+n+" / "+tot;}).then(function(res){
       vraag.remove();
+      if(window.PLP_PDFUIT){
+        var pk=el("div","pld-card"),pr=el("div","pld-row"),pb=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.pdfSearchable);
+        pb.type="button";pk.appendChild(el("p","pld-text",t.pdfSearchableHint));pr.appendChild(pb);pk.appendChild(pr);blad.appendChild(pk);
+        pb.addEventListener("click",function(){
+          pb.disabled=true;pb.textContent=t.pdfSearchableBusy;
+          window.PLP_PDFUIT.maak(file,res).then(function(blob){
+            window.PLP_PDFUIT.bewaar(String(file.name||"scan.pdf").replace(/\.pdf$/i,"")+"-doorzoekbaar.pdf",blob);
+            pb.disabled=false;pb.textContent=t.pdfSearchable;
+          }).catch(function(){pb.disabled=false;pb.textContent=t.pdfSearchable;});
+        });
+      }
       doc.cellen=res.cellen;doc.maten=res.maten;doc.ocr=true;
       doc.tekst=res.cellen.map(function(c){return c.t;}).join("\n");
       var a2=ST.analyse(doc);

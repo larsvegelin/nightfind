@@ -32,6 +32,7 @@ kop.appendChild(knoppen);root.appendChild(kop);
 // Het uploadvlak staat bovenaan: dat is waar je begint.
 root.appendChild(el("p","pld-caps pld-sect",t.files));
 root.appendChild(bestandKaart());
+if(window.PLP_GRP){root.appendChild(el("p","pld-caps pld-sect",t.grpSection));root.appendChild(window.PLP_GRP.kaart());}
 if(S.verbruik){
 var vk=el("div","pld-card");
 vk.appendChild(el("p","pld-caps",t.usage));
@@ -50,8 +51,9 @@ root.appendChild(window.PLP_SJ.kaart());}
 root.appendChild(el("p","pld-caps pld-sect",t.manual||t.rules));
 root.appendChild(regelKaart());
 if(window.PLP_EIS)root.appendChild(window.PLP_EIS.kaart());
+if(window.PLP_OPT){root.appendChild(el("p","pld-caps pld-sect",t.optTitle));root.appendChild(window.PLP_OPT.kaart());}
 root.appendChild(el("p","pld-caps pld-sect",t.results));
-root.appendChild(resultaatKaart());
+root.appendChild(window.PLP_RES.kaart());
 }
 
 function regelKaart(){
@@ -122,7 +124,7 @@ w.addEventListener("click",function(){S.bestanden.splice(i,1);teken();});
 knoppen.appendChild(kijk);knoppen.appendChild(w);
 r.appendChild(l);r.appendChild(knoppen);k.appendChild(r);});
 var rij=el("div","pld-row");
-var start=el("button","pld-btn",t.start);start.type="button";
+var start=el("button","pld-btn plp-start",t.start);start.type="button";
 start.addEventListener("click",function(){if(window.PLP_RUN)window.PLP_RUN(start,rij);});
 var leeg=el("button","pld-btn pld-btn--ghost",t.clear);leeg.type="button";
 leeg.addEventListener("click",function(){S.bestanden=[];teken();});
@@ -141,26 +143,6 @@ if(fouten.length)meld(fouten.join(" "),"warn");
 // Meteen laten zien wat erin staat.
 if(S.bestanden.length>begin&&window.PLP_V&&!document.querySelector(".plp-doorkijk"))
   window.PLP_V.open(S.bestanden,begin);}
-
-function resultaatKaart(){
-var t=S.t,k=el("div","pld-card"),kol=(S.kolommen&&S.kolommen.length)?S.kolommen:S.regels;
-if(!S.rijen.length){k.appendChild(el("p","pld-text",t.empty));return k;}
-var wrap=el("div","plp-scroll"),tab=el("table","plp-table"),thead=el("thead"),tr=el("tr");
-[t.colFile,t.colPages].concat(kol.map(function(r){return r.naam||"—";}))
-.forEach(function(h){tr.appendChild(el("th","",h));});
-thead.appendChild(tr);tab.appendChild(thead);
-var tb=el("tbody");
-S.rijen.forEach(function(r){
-var row=el("tr");
-row.appendChild(el("td","",r.naam));
-row.appendChild(el("td","plp-mono",String(r.paginas)));
-kol.forEach(function(x,i){
-row.appendChild(el("td",(x.filter==="bedrag"||x.filter==="datum")?"plp-mono":"",r.velden["k"+i]||"—"));});
-tb.appendChild(row);});
-tab.appendChild(tb);wrap.appendChild(tab);k.appendChild(wrap);
-var dl=el("button","pld-btn",t.download);dl.type="button";
-dl.addEventListener("click",function(){P.bewaar(t.csvName,P.csv(kol,S.rijen,t.colFile,t.colPages));});
-k.appendChild(dl);return k;}
 
 function limietKaart(n,r){
 var t=S.t,k=el("div","pld-card pld-card--navy");

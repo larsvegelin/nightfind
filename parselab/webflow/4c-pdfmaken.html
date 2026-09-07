@@ -1,0 +1,73 @@
+<!-- ParsePDF — embed 4c: van een scan een doorzoekbare PDF maken (afbeelding met onzichtbare tekstlaag). -->
+<script>
+window.PLP_PDFUIT=(function(){
+var P=window.PLP;
+// Elke pagina wordt getekend en als JPEG in een nieuwe PDF gezet; de herkende woorden
+// komen er onzichtbaar (tekstmodus 3) bovenop, precies op hun plek. Zoeken, kopiëren
+// en opnieuw uitlezen werkt daarna zoals bij een gewone PDF.
+function latin(s){var u=[];for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);u.push(c<256?c:63);}return new Uint8Array(u);}
+function tekst(s){return String(s).replace(/[\\()]/g,function(m){return "\\"+m;}).replace(/[\r\n]/g," ");}
+function bytesUit(dataUrl){var b=atob(dataUrl.split(",")[1]),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function maak(file,res){
+  return P.open(file).then(function(pdf){
+    var paginas=[],keten=Promise.resolve(),n=Math.min(pdf.numPages,res.maten.length||pdf.numPages);
+    for(var i=1;i<=n;i++)(function(nr){
+      keten=keten.then(function(){return pdf.getPage(nr);}).then(function(pg){
+        var vp=pg.getViewport({scale:1.5}),doek=document.createElement("canvas");
+        doek.width=vp.width;doek.height=vp.height;
+        return pg.render({canvasContext:doek.getContext("2d"),viewport:vp}).promise.then(function(){
+          var m=res.maten[nr-1]||{breed:vp.width/1.5,hoog:vp.height/1.5};
+          paginas.push({jpeg:bytesUit(doek.toDataURL("image/jpeg",0.85)),px:doek.width,py:doek.height,breed:m.breed,hoog:m.hoog,
+                        cellen:res.cellen.filter(function(c){return c.pagina===nr-1;})});
+        });
+      });
+    })(i);
+    return keten.then(function(){pdf.destroy();return bouw(paginas);});
+  });
+}
+function bouw(paginas){
+  var objs=[],delen=[],plek=[],lengte=0;
+  function obj(n,kop,stroom){objs[n]={kop:kop,stroom:stroom||null};}
+  obj(1,"<</Type/Catalog/Pages 2 0 R>>");
+  obj(3,"<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>");
+  var kids=[];
+  paginas.forEach(function(p,i){
+    var nr=4+i*3,inhoud=[];
+    inhoud.push("q "+p.breed.toFixed(2)+" 0 0 "+p.hoog.toFixed(2)+" 0 0 cm /Im"+i+" Do Q");
+    inhoud.push("BT 3 Tr /F1 10 Tf");
+    p.cellen.forEach(function(c){
+      var maat=Math.max(4,Math.min(40,c.h*0.9)),breedte=Math.max(1,c.b);
+      // De tekst wordt horizontaal geschaald zodat hij precies het woordvak dekt.
+      var schaal=Math.min(300,Math.max(20,breedte/(String(c.t).length*maat*0.5)*100));
+      inhoud.push("/F1 "+maat.toFixed(1)+" Tf "+schaal.toFixed(0)+" Tz 1 0 0 1 "+c.x.toFixed(2)+" "+c.y.toFixed(2)+" Tm ("+tekst(c.t)+") Tj");
+    });
+    inhoud.push("ET");
+    var s=inhoud.join("\n");
+    obj(nr,"<</Type/Page/Parent 2 0 R/MediaBox[0 0 "+p.breed.toFixed(2)+" "+p.hoog.toFixed(2)+"]/Resources<</Font<</F1 3 0 R>>/XObject<</Im"+i+" "+(nr+2)+" 0 R>>>>/Contents "+(nr+1)+" 0 R>>");
+    obj(nr+1,"<</Length "+latin(s).length+">>",latin(s));
+    obj(nr+2,"<</Type/XObject/Subtype/Image/Width "+p.px+"/Height "+p.py+"/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length "+p.jpeg.length+">>",p.jpeg);
+    kids.push(nr+" 0 R");
+  });
+  obj(2,"<</Type/Pages/Kids["+kids.join(" ")+"]/Count "+paginas.length+">>");
+  function push(u){delen.push(u);lengte+=u.length;}
+  push(latin("%PDF-1.4\n%\u00E2\u00E3\u00CF\u00D3\n"));
+  for(var n=1;n<objs.length;n++){
+    if(!objs[n])continue;
+    plek[n]=lengte;
+    push(latin(n+" 0 obj\n"+objs[n].kop+"\n"));
+    if(objs[n].stroom){push(latin("stream\n"));push(objs[n].stroom);push(latin("\nendstream\n"));}
+    push(latin("endobj\n"));
+  }
+  var xref=lengte,regels=["xref","0 "+objs.length,"0000000000 65535 f "];
+  for(var k=1;k<objs.length;k++)regels.push(String(plek[k]||0).padStart(10,"0")+" 00000 n ");
+  push(latin(regels.join("\n")+"\ntrailer\n<</Size "+objs.length+"/Root 1 0 R>>\nstartxref\n"+xref+"\n%%EOF\n"));
+  return new Blob(delen,{type:"application/pdf"});
+}
+function bewaar(naam,blob){
+  var url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=naam;a.style.display="none";document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},0);
+}
+return {maak:maak,bewaar:bewaar};
+})();
+</script>

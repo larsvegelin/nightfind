@@ -203,6 +203,27 @@ Object.keys(EXTRA).forEach(function(taal){
 })();
 
 
+/* ---- 3c-teksten-auto.html ---- */
+
+(function(){var T=window.PLP_T;if(!T)return;
+var EXTRA={
+nl:{grpSection:"Documenten vergelijken en automatisch uitlezen",optTitle:"Opties en omzetten",grpHint:"Lees uit doet alles vanzelf: de documenten worden vergeleken, wat op elkaar lijkt komt in een groep, per groep kiest de tool zelf hoe elk veld het best te vinden is (structuur, woord, patroon of plek), en het resultaat komt in een tabel. Wil je eerst zien wat hij vindt, kies dan Vergelijk documenten.",grpRead:"Lees uit",grpCompare:"Vergelijk documenten",grpBusy:"Bezig…",grpTitle:"Groep {n} · {d} documenten",grpNothing:"In deze groep is geen veld gevonden dat in de documenten terugkomt.",grpMissing:"niet in {lijst}",grpWarn:"{n} velden komen niet in alle documenten van deze groep voor. Ze blijven leeg waar ze missen.",grpMake:"Sjabloon maken van deze groep",grpMade:"Sjabloon {naam} bewaard in de map.",grpTemplate:"Groep {n} ({b})",grpAutoFolder:"Automatisch",grpDone:"Gelezen als {lijst}. De sjablonen staan in de map Automatisch.",strStructure:"op structuur",strWord:"op woord",strPattern:"op patroon",strPlace:"op plek",
+optHint:"Pagina's beperkt het lezen tot een deel van elk document: 1-2,5 · even · oneven · eerste 3 · laatste · -laatste (alles behalve de laatste) · niet 4. OCR bepaalt wat er gebeurt met een scan zonder tekstlaag. De uitvoer is CSV of Excel; met Direct downloaden krijg je het bestand meteen na Lees uit.",optPages:"Pagina's",optPagesPh:"alle · 1-2,5 · -laatste · even",optOcrLang:"OCR-taal",optOcrAuto:"automatisch bij scans",optOcrAsk:"alleen op verzoek",optOut:"Uitvoer",optAfter:"Na het lezen",optShow:"tabel tonen",optDirect:"direct downloaden",optConvert:"Waarden omzetten",optConvertHint:"Per kolom: een andere datumvorm, een getal met punt, hoofdletters, een afkorting die een heel woord wordt (afk=Heel woord; bv=bijvoorbeeld), of een standaard als er niets gevonden is.",optKind:"Omzetten",optNumber:"Getal met punt (1234.56)",optUpper:"HOOFDLETTERS",optLower:"kleine letters",optReplace:"Vervangen",optReplacePh:"afk=Heel woord; NL=Nederland",optDefault:"Standaard",optDefaultPh:"als leeg",
+downloadXlsx:"Download Excel",xlsxName:"parselab-export.xlsx",pdfSearchable:"Doorzoekbare PDF opslaan",pdfSearchableHint:"De herkende tekst kan als onzichtbare laag in een nieuwe PDF; die is dan te doorzoeken, te kopiëren en opnieuw uit te lezen.",pdfSearchableBusy:"PDF maken…",scannedAuto:"had geen tekstlaag; de tekst is herkend met OCR.",scanned:"bevat geen tekstlaag. Zet bij Opties OCR op automatisch, of open het document en laat de tekst herkennen; daar kun je er ook een doorzoekbare PDF van maken."},
+en:{grpSection:"Compare documents and read automatically",optTitle:"Options and conversion",grpHint:"Read does everything by itself: the documents are compared, similar ones form a group, per group the tool picks how each field is best found (structure, word, pattern or place), and the result lands in a table. Want to see what it finds first? Choose Compare documents.",grpRead:"Read",grpCompare:"Compare documents",grpBusy:"Working…",grpTitle:"Group {n} · {d} documents",grpNothing:"No field in this group recurs across its documents.",grpMissing:"not in {lijst}",grpWarn:"{n} fields do not occur in every document of this group. They stay empty where they are missing.",grpMake:"Make a template from this group",grpMade:"Template {naam} saved in the folder.",grpTemplate:"Group {n} ({b})",grpAutoFolder:"Automatic",grpDone:"Read as {lijst}. The templates are in the folder Automatic.",strStructure:"by structure",strWord:"by word",strPattern:"by pattern",strPlace:"by place",
+optHint:"Pages limits reading to part of each document: 1-2,5 · even · odd · first 3 · last · -last (all but the last) · not 4. OCR decides what happens with a scan without a text layer. Output is CSV or Excel; with Download right away you get the file straight after Read.",optPages:"Pages",optPagesPh:"all · 1-2,5 · -last · even",optOcrLang:"OCR language",optOcrAuto:"automatic for scans",optOcrAsk:"only on request",optOut:"Output",optAfter:"After reading",optShow:"show table",optDirect:"download right away",optConvert:"Convert values",optConvertHint:"Per column: another date format, a number with a dot, capitals, an abbreviation that becomes a full word (abbr=Full word; e.g.=for example), or a default when nothing was found.",optKind:"Convert",optNumber:"Number with dot (1234.56)",optUpper:"CAPITALS",optLower:"lower case",optReplace:"Replace",optReplacePh:"abbr=Full word; NL=Netherlands",optDefault:"Default",optDefaultPh:"when empty",
+downloadXlsx:"Download Excel",xlsxName:"parselab-export.xlsx",pdfSearchable:"Save searchable PDF",pdfSearchableHint:"The recognised text can go into a new PDF as an invisible layer; it can then be searched, copied and read again.",pdfSearchableBusy:"Making PDF…",scannedAuto:"had no text layer; the text was recognised with OCR.",scanned:"has no text layer. Set OCR to automatic under Options, or open the document and run text recognition; there you can also save it as a searchable PDF."},
+de:{grpSection:"Dokumente vergleichen und automatisch auslesen",optTitle:"Optionen und Umwandlung",grpHint:"Auslesen macht alles von selbst: die Dokumente werden verglichen, Aehnliches bildet eine Gruppe, pro Gruppe waehlt das Werkzeug, wie jedes Feld am besten zu finden ist (Struktur, Wort, Muster oder Ort), und das Ergebnis landet in einer Tabelle. Erst sehen, was es findet? Waehle Dokumente vergleichen.",grpRead:"Auslesen",grpCompare:"Dokumente vergleichen",grpBusy:"Laeuft…",grpTitle:"Gruppe {n} · {d} Dokumente",grpNothing:"In dieser Gruppe kommt kein Feld in den Dokumenten wieder vor.",grpMissing:"nicht in {lijst}",grpWarn:"{n} Felder kommen nicht in allen Dokumenten dieser Gruppe vor. Sie bleiben leer, wo sie fehlen.",grpMake:"Vorlage aus dieser Gruppe machen",grpMade:"Vorlage {naam} im Ordner gespeichert.",grpTemplate:"Gruppe {n} ({b})",grpAutoFolder:"Automatisch",grpDone:"Gelesen als {lijst}. Die Vorlagen liegen im Ordner Automatisch.",strStructure:"nach Struktur",strWord:"nach Wort",strPattern:"nach Muster",strPlace:"nach Ort",
+optHint:"Seiten beschraenkt das Lesen auf einen Teil jedes Dokuments: 1-2,5 · gerade · ungerade · erste 3 · letzte · -letzte (alles ausser der letzten) · nicht 4. OCR bestimmt, was mit einem Scan ohne Textebene passiert. Ausgabe ist CSV oder Excel; mit Sofort herunterladen bekommst du die Datei direkt nach Auslesen.",optPages:"Seiten",optPagesPh:"alle · 1-2,5 · -letzte · gerade",optOcrLang:"OCR-Sprache",optOcrAuto:"automatisch bei Scans",optOcrAsk:"nur auf Wunsch",optOut:"Ausgabe",optAfter:"Nach dem Lesen",optShow:"Tabelle zeigen",optDirect:"sofort herunterladen",optConvert:"Werte umwandeln",optConvertHint:"Pro Spalte: ein anderes Datumsformat, eine Zahl mit Punkt, Grossbuchstaben, eine Abkuerzung, die ein ganzes Wort wird (Abk=Ganzes Wort; z.B.=zum Beispiel), oder ein Standard, wenn nichts gefunden wurde.",optKind:"Umwandeln",optNumber:"Zahl mit Punkt (1234.56)",optUpper:"GROSSBUCHSTABEN",optLower:"kleinbuchstaben",optReplace:"Ersetzen",optReplacePh:"Abk=Ganzes Wort; NL=Niederlande",optDefault:"Standard",optDefaultPh:"wenn leer",
+downloadXlsx:"Excel herunterladen",xlsxName:"parselab-export.xlsx",pdfSearchable:"Durchsuchbare PDF speichern",pdfSearchableHint:"Der erkannte Text kann als unsichtbare Ebene in eine neue PDF; die ist dann durchsuchbar, kopierbar und erneut auslesbar.",pdfSearchableBusy:"PDF wird erstellt…",scannedAuto:"hatte keine Textebene; der Text wurde per OCR erkannt.",scanned:"hat keine Textebene. Stelle OCR unter Optionen auf automatisch, oder oeffne das Dokument und lass den Text erkennen; dort kannst du es auch als durchsuchbare PDF speichern."}
+};
+Object.keys(EXTRA).forEach(function(taal){
+  if(!T[taal])return;
+  Object.keys(EXTRA[taal]).forEach(function(k){T[taal][k]=EXTRA[taal][k];});
+});
+})();
+
+
 /* ---- 4-motor.html ---- */
 
 window.PLP=(function(){
@@ -305,7 +326,9 @@ function lees(file){
       meta={Titel:i.Title||"",Auteur:i.Author||"",Onderwerp:i.Subject||"",Trefwoorden:i.Keywords||"",
             Programma:i.Producer||i.Creator||"",Gemaakt:datumUitPdf(i.CreationDate)};
     }).catch(function(){meta={};});
+    var set=window.PLP_OPT?window.PLP_OPT.paginaSet(doc.numPages):null;
     for(var i=1;i<=doc.numPages;i++){
+      if(set&&!set[i-1])continue;   // Opties: alleen de gekozen pagina's
       (function(p){
         keten=keten.then(function(){return doc.getPage(p);})
                    .then(function(pg){
@@ -387,7 +410,7 @@ function pasToe(regel,doc){
 
 function rij(doc,regelset){
   var velden={};
-  regelset.forEach(function(r,i){velden["k"+i]=pasToe(r,doc);});
+  regelset.forEach(function(r,i){var w=pasToe(r,doc);velden["k"+i]=window.PLP_OPT?window.PLP_OPT.zet(r.naam,w):w;});
   return {naam:doc.naam,paginas:doc.paginas,velden:velden,leeg:doc.regels.length===0};
 }
 
@@ -444,7 +467,7 @@ function ocr(file,melden){
         maten[nr-1]={breed:vp.width/2,hoog:vp.height/2};
         if(melden)melden(nr,Math.min(pdf.numPages,10));
         return pg.render({canvasContext:doek.getContext("2d"),viewport:vp}).promise.then(function(){
-          return T.recognize(doek,"nld+eng");
+          return T.recognize(doek,(window.PLP_S&&window.PLP_S.opties&&window.PLP_S.opties.ocrTaal)||"nld+eng");
         }).then(function(res){
           ((res&&res.data&&res.data.words)||[]).forEach(function(w){
             if(!w.text||!w.text.trim()||(w.confidence||0)<40)return;
@@ -479,6 +502,92 @@ function ocr(file,melden){
   });
 }
 P.ocr=ocr;
+// Lezen, en als er geen tekstlaag is en de opties dat toestaan: meteen OCR.
+P.leesOfOcr=function(file){
+  return P.lees(file).then(function(doc){
+    var o=window.PLP_S&&window.PLP_S.opties;
+    if(doc.regels.length||!(o&&o.ocrAuto))return doc;
+    return ocr(file).then(function(res){
+      doc.cellen=res.cellen;doc.maten=res.maten;doc.ocr=true;
+      doc.regels=res.cellen.map(function(c){return c.t;});doc.tekst=doc.regels.join("\n");
+      return doc;
+    }).catch(function(){return doc;});
+  });
+};
+})();
+
+
+/* ---- 4c-pdfmaken.html ---- */
+
+window.PLP_PDFUIT=(function(){
+var P=window.PLP;
+// Elke pagina wordt getekend en als JPEG in een nieuwe PDF gezet; de herkende woorden
+// komen er onzichtbaar (tekstmodus 3) bovenop, precies op hun plek. Zoeken, kopiëren
+// en opnieuw uitlezen werkt daarna zoals bij een gewone PDF.
+function latin(s){var u=[];for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);u.push(c<256?c:63);}return new Uint8Array(u);}
+function tekst(s){return String(s).replace(/[\\()]/g,function(m){return "\\"+m;}).replace(/[\r\n]/g," ");}
+function bytesUit(dataUrl){var b=atob(dataUrl.split(",")[1]),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function maak(file,res){
+  return P.open(file).then(function(pdf){
+    var paginas=[],keten=Promise.resolve(),n=Math.min(pdf.numPages,res.maten.length||pdf.numPages);
+    for(var i=1;i<=n;i++)(function(nr){
+      keten=keten.then(function(){return pdf.getPage(nr);}).then(function(pg){
+        var vp=pg.getViewport({scale:1.5}),doek=document.createElement("canvas");
+        doek.width=vp.width;doek.height=vp.height;
+        return pg.render({canvasContext:doek.getContext("2d"),viewport:vp}).promise.then(function(){
+          var m=res.maten[nr-1]||{breed:vp.width/1.5,hoog:vp.height/1.5};
+          paginas.push({jpeg:bytesUit(doek.toDataURL("image/jpeg",0.85)),px:doek.width,py:doek.height,breed:m.breed,hoog:m.hoog,
+                        cellen:res.cellen.filter(function(c){return c.pagina===nr-1;})});
+        });
+      });
+    })(i);
+    return keten.then(function(){pdf.destroy();return bouw(paginas);});
+  });
+}
+function bouw(paginas){
+  var objs=[],delen=[],plek=[],lengte=0;
+  function obj(n,kop,stroom){objs[n]={kop:kop,stroom:stroom||null};}
+  obj(1,"<</Type/Catalog/Pages 2 0 R>>");
+  obj(3,"<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>");
+  var kids=[];
+  paginas.forEach(function(p,i){
+    var nr=4+i*3,inhoud=[];
+    inhoud.push("q "+p.breed.toFixed(2)+" 0 0 "+p.hoog.toFixed(2)+" 0 0 cm /Im"+i+" Do Q");
+    inhoud.push("BT 3 Tr /F1 10 Tf");
+    p.cellen.forEach(function(c){
+      var maat=Math.max(4,Math.min(40,c.h*0.9)),breedte=Math.max(1,c.b);
+      // De tekst wordt horizontaal geschaald zodat hij precies het woordvak dekt.
+      var schaal=Math.min(300,Math.max(20,breedte/(String(c.t).length*maat*0.5)*100));
+      inhoud.push("/F1 "+maat.toFixed(1)+" Tf "+schaal.toFixed(0)+" Tz 1 0 0 1 "+c.x.toFixed(2)+" "+c.y.toFixed(2)+" Tm ("+tekst(c.t)+") Tj");
+    });
+    inhoud.push("ET");
+    var s=inhoud.join("\n");
+    obj(nr,"<</Type/Page/Parent 2 0 R/MediaBox[0 0 "+p.breed.toFixed(2)+" "+p.hoog.toFixed(2)+"]/Resources<</Font<</F1 3 0 R>>/XObject<</Im"+i+" "+(nr+2)+" 0 R>>>>/Contents "+(nr+1)+" 0 R>>");
+    obj(nr+1,"<</Length "+latin(s).length+">>",latin(s));
+    obj(nr+2,"<</Type/XObject/Subtype/Image/Width "+p.px+"/Height "+p.py+"/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length "+p.jpeg.length+">>",p.jpeg);
+    kids.push(nr+" 0 R");
+  });
+  obj(2,"<</Type/Pages/Kids["+kids.join(" ")+"]/Count "+paginas.length+">>");
+  function push(u){delen.push(u);lengte+=u.length;}
+  push(latin("%PDF-1.4\n%\u00E2\u00E3\u00CF\u00D3\n"));
+  for(var n=1;n<objs.length;n++){
+    if(!objs[n])continue;
+    plek[n]=lengte;
+    push(latin(n+" 0 obj\n"+objs[n].kop+"\n"));
+    if(objs[n].stroom){push(latin("stream\n"));push(objs[n].stroom);push(latin("\nendstream\n"));}
+    push(latin("endobj\n"));
+  }
+  var xref=lengte,regels=["xref","0 "+objs.length,"0000000000 65535 f "];
+  for(var k=1;k<objs.length;k++)regels.push(String(plek[k]||0).padStart(10,"0")+" 00000 n ");
+  push(latin(regels.join("\n")+"\ntrailer\n<</Size "+objs.length+"/Root 1 0 R>>\nstartxref\n"+xref+"\n%%EOF\n"));
+  return new Blob(delen,{type:"application/pdf"});
+}
+function bewaar(naam,blob){
+  var url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=naam;a.style.display="none";document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},0);
+}
+return {maak:maak,bewaar:bewaar};
 })();
 
 
@@ -516,6 +625,7 @@ kop.appendChild(knoppen);root.appendChild(kop);
 // Het uploadvlak staat bovenaan: dat is waar je begint.
 root.appendChild(el("p","pld-caps pld-sect",t.files));
 root.appendChild(bestandKaart());
+if(window.PLP_GRP){root.appendChild(el("p","pld-caps pld-sect",t.grpSection));root.appendChild(window.PLP_GRP.kaart());}
 if(S.verbruik){
 var vk=el("div","pld-card");
 vk.appendChild(el("p","pld-caps",t.usage));
@@ -534,8 +644,9 @@ root.appendChild(window.PLP_SJ.kaart());}
 root.appendChild(el("p","pld-caps pld-sect",t.manual||t.rules));
 root.appendChild(regelKaart());
 if(window.PLP_EIS)root.appendChild(window.PLP_EIS.kaart());
+if(window.PLP_OPT){root.appendChild(el("p","pld-caps pld-sect",t.optTitle));root.appendChild(window.PLP_OPT.kaart());}
 root.appendChild(el("p","pld-caps pld-sect",t.results));
-root.appendChild(resultaatKaart());
+root.appendChild(window.PLP_RES.kaart());
 }
 
 function regelKaart(){
@@ -606,7 +717,7 @@ w.addEventListener("click",function(){S.bestanden.splice(i,1);teken();});
 knoppen.appendChild(kijk);knoppen.appendChild(w);
 r.appendChild(l);r.appendChild(knoppen);k.appendChild(r);});
 var rij=el("div","pld-row");
-var start=el("button","pld-btn",t.start);start.type="button";
+var start=el("button","pld-btn plp-start",t.start);start.type="button";
 start.addEventListener("click",function(){if(window.PLP_RUN)window.PLP_RUN(start,rij);});
 var leeg=el("button","pld-btn pld-btn--ghost",t.clear);leeg.type="button";
 leeg.addEventListener("click",function(){S.bestanden=[];teken();});
@@ -625,26 +736,6 @@ if(fouten.length)meld(fouten.join(" "),"warn");
 // Meteen laten zien wat erin staat.
 if(S.bestanden.length>begin&&window.PLP_V&&!document.querySelector(".plp-doorkijk"))
   window.PLP_V.open(S.bestanden,begin);}
-
-function resultaatKaart(){
-var t=S.t,k=el("div","pld-card"),kol=(S.kolommen&&S.kolommen.length)?S.kolommen:S.regels;
-if(!S.rijen.length){k.appendChild(el("p","pld-text",t.empty));return k;}
-var wrap=el("div","plp-scroll"),tab=el("table","plp-table"),thead=el("thead"),tr=el("tr");
-[t.colFile,t.colPages].concat(kol.map(function(r){return r.naam||"—";}))
-.forEach(function(h){tr.appendChild(el("th","",h));});
-thead.appendChild(tr);tab.appendChild(thead);
-var tb=el("tbody");
-S.rijen.forEach(function(r){
-var row=el("tr");
-row.appendChild(el("td","",r.naam));
-row.appendChild(el("td","plp-mono",String(r.paginas)));
-kol.forEach(function(x,i){
-row.appendChild(el("td",(x.filter==="bedrag"||x.filter==="datum")?"plp-mono":"",r.velden["k"+i]||"—"));});
-tb.appendChild(row);});
-tab.appendChild(tb);wrap.appendChild(tab);k.appendChild(wrap);
-var dl=el("button","pld-btn",t.download);dl.type="button";
-dl.addEventListener("click",function(){P.bewaar(t.csvName,P.csv(kol,S.rijen,t.colFile,t.colPages));});
-k.appendChild(dl);return k;}
 
 function limietKaart(n,r){
 var t=S.t,k=el("div","pld-card pld-card--navy");
@@ -784,6 +875,239 @@ function kaart(){
   return k;
 }
 return {pas:pas,kaart:kaart,omschrijf:omschrijf};
+})();
+
+
+/* ---- 5c-resultaat.html ---- */
+
+window.PLP_RES=(function(){
+var S=window.PLP_S,P=window.PLP;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+function kolommen(){return (S.kolommen&&S.kolommen.length)?S.kolommen:S.regels;}
+// Download in de vorm die bij Opties gekozen is; Excel als PLP_XLSX geladen is.
+function download(vorm){
+  var t=S.t,kol=kolommen();
+  if(vorm==="xlsx"&&window.PLP_XLSX){
+    window.PLP_XLSX.bewaar(t.xlsxName||"parselab-export.xlsx",window.PLP_XLSX.maak(kol,S.rijen,t.colFile,t.colPages));
+  }else P.bewaar(t.csvName,P.csv(kol,S.rijen,t.colFile,t.colPages));
+}
+function kaart(){
+  var t=S.t,k=el("div","pld-card"),kol=kolommen();
+  if(!S.rijen.length){k.appendChild(el("p","pld-text",t.empty));return k;}
+  var wrap=el("div","plp-scroll"),tab=el("table","plp-table"),thead=el("thead"),tr=el("tr");
+  [t.colFile,t.colPages].concat(kol.map(function(r){return r.naam||"—";}))
+    .forEach(function(h){tr.appendChild(el("th","",h));});
+  thead.appendChild(tr);tab.appendChild(thead);
+  var tb=el("tbody");
+  S.rijen.forEach(function(r){
+    var row=el("tr");
+    row.appendChild(el("td","",r.naam));
+    row.appendChild(el("td","plp-mono",String(r.paginas)));
+    kol.forEach(function(x,i){
+      row.appendChild(el("td",(x.filter==="bedrag"||x.filter==="datum")?"plp-mono":"",r.velden["k"+i]||"—"));});
+    tb.appendChild(row);});
+  tab.appendChild(tb);wrap.appendChild(tab);k.appendChild(wrap);
+  var rij=el("div","pld-row");
+  var csv=el("button","pld-btn",t.download);csv.type="button";
+  csv.addEventListener("click",function(){download("csv");});
+  rij.appendChild(csv);
+  if(window.PLP_XLSX){
+    var x=el("button","pld-btn pld-btn--ghost",t.downloadXlsx||"Download Excel");x.type="button";
+    x.addEventListener("click",function(){download("xlsx");});
+    rij.appendChild(x);
+  }
+  k.appendChild(rij);return k;
+}
+return {kaart:kaart,download:download};
+})();
+
+
+/* ---- 5d-opties.html ---- */
+
+window.PLP_OPT=(function(){
+var S=window.PLP_S,SLEUTEL="pl_parsepdf_opties";
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+function lees(){
+  var o={paginas:"",ocrTaal:"nld+eng",ocrAuto:true,uitvoer:"csv",direct:false,omzet:{}};
+  try{var b=JSON.parse(localStorage.getItem(SLEUTEL)||"null");if(b)Object.keys(b).forEach(function(k){o[k]=b[k];});}catch(e){}
+  return o;
+}
+S.opties=lees();
+function bewaar(){try{localStorage.setItem(SLEUTEL,JSON.stringify(S.opties));}catch(e){}}
+
+// Pagina's kiezen: "1-2,5", "even", "oneven", "eerste 3", "laatste", "-laatste" (alles behalve
+// de laatste), "niet 4". Insluiten gaat voor, uitsluiten haalt daar weer van af. Leeg = alles.
+var PW={eerste:"eerste",first:"eerste",erste:"eerste",laatste:"laatste",last:"laatste",letzte:"laatste",
+        even:"even",gerade:"even",oneven:"oneven",odd:"oneven",ungerade:"oneven"};
+function paginaSet(n){
+  var s=String(S.opties.paginas||"").trim().toLowerCase();if(!s||!n)return null;
+  var in_={},uit={},insl=false;
+  function zet(doel,i){if(i>=0&&i<n)doel[i]=true;}
+  function deel(d,doel){
+    var w=d.replace(/\s+/g," ").trim(),m;
+    if(!w)return false;
+    if((m=w.match(/^(\d+)(?:-(\d+))?$/))){var lo=+m[1],hi=+(m[2]||m[1]);for(var i=Math.min(lo,hi);i<=Math.max(lo,hi);i++)zet(doel,i-1);return true;}
+    var k=w.split(" "),soort=PW[k[0]],tal=Number(k[1]||1);
+    if(soort==="eerste"){for(var a=0;a<tal;a++)zet(doel,a);return true;}
+    if(soort==="laatste"){for(var b=0;b<tal;b++)zet(doel,n-1-b);return true;}
+    if(soort==="even"||soort==="oneven"){for(var c=0;c<n;c++)if((c+1)%2===(soort==="even"?0:1))zet(doel,c);return true;}
+    return false;
+  }
+  s.split(/[,;]+/).forEach(function(d){
+    d=d.trim();var m=d.match(/^(?:-|!|niet |not |nicht )\s*(.*)$/);
+    if(m)deel(m[1],uit);else if(deel(d,in_))insl=true;
+  });
+  var set={},ok=false;
+  for(var i=0;i<n;i++){if((insl?in_[i]:true)&&!uit[i]){set[i]=true;ok=true;}}
+  return ok?set:null;
+}
+
+var MAAND=["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
+function datum(v,vorm){
+  var d,m,y,t=v.match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+  if(t){d=+t[1];m=+t[2];y=+t[3];}
+  else{
+    t=v.match(/(\d{1,2})\s+([a-z]{3,})\.?\s+(\d{4})/i);
+    if(!t)return v;
+    d=+t[1];y=+t[3];m=-1;
+    MAAND.forEach(function(n,i){if(n.indexOf(t[2].toLowerCase().slice(0,3))===0)m=i+1;});
+    if(m<0)return v;
+  }
+  if(y<100)y+=2000;
+  function p(n){return (n<10?"0":"")+n;}
+  if(vorm==="jjjj-mm-dd")return y+"-"+p(m)+"-"+p(d);
+  if(vorm==="dd/mm/jjjj")return p(d)+"/"+p(m)+"/"+y;
+  if(vorm==="d maand jjjj")return d+" "+(MAAND[m-1]||m)+" "+y;
+  return p(d)+"-"+p(m)+"-"+y;
+}
+function getal(v){
+  var s=v.replace(/[€\s]/g,""),m=s.match(/-?\d{1,3}(?:\.\d{3})+(?:,\d+)?|-?\d+,\d+|-?\d+(?:\.\d+)?/);
+  if(!m)return v;s=m[0];
+  if(s.indexOf(",")>=0)s=s.replace(/\./g,"").replace(",",".");
+  else if(/\.\d{3}$/.test(s))s=s.replace(/\./g,"");
+  return s;
+}
+// Per kolom kun je zeggen wat er met de waarde moet gebeuren: een andere datumvorm,
+// een getal met punt, hoofdletters, een afkorting die een heel woord wordt, of een
+// standaard als er niets gevonden is.
+function zet(naam,waarde){
+  var o=S.opties.omzet&&S.opties.omzet[naam];
+  var v=String(waarde==null?"":waarde).trim();
+  if(!o)return v;
+  if(!v)return o.standaard||"";
+  if(o.vervang){
+    String(o.vervang).split(/[;\n]/).forEach(function(paar){
+      var i=paar.indexOf("=");if(i<1)return;
+      var van=paar.slice(0,i).trim(),naar=paar.slice(i+1).trim();
+      if(!van)return;
+      if(v.toLowerCase()===van.toLowerCase()){v=naar;return;}
+      var re=new RegExp("(^|[^\\p{L}\\d])"+van.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?=$|[^\\p{L}\\d])","giu");
+      v=v.replace(re,function(a,b){return b+naar;});
+    });
+  }
+  if(o.soort&&o.soort.indexOf("datum:")===0)v=datum(v,o.soort.slice(6));
+  else if(o.soort==="getal")v=getal(v);
+  else if(o.soort==="hoofd")v=v.toUpperCase();
+  else if(o.soort==="klein")v=v.toLowerCase();
+  return v;
+}
+
+function veld(l,i){var w=el("div");w.appendChild(el("label","pld-lbl",l));w.appendChild(i);return w;}
+function keuze(lijst,waarde){var s=el("select","pld-sel");lijst.forEach(function(o){var op=el("option","",o[1]);op.value=o[0];if(o[0]===waarde)op.selected=true;s.appendChild(op);});return s;}
+function kaart(){
+  var t=S.t,o=S.opties,k=el("div","pld-card");
+  k.appendChild(el("p","pld-text",t.optHint));
+  var rij=el("div","plp-rule");
+  var pag=el("input","pld-in");pag.value=o.paginas||"";pag.placeholder=t.optPagesPh;
+  pag.addEventListener("input",function(){o.paginas=pag.value;bewaar();});
+  var taal=keuze([["nld+eng","Nederlands + Engels"],["nld","Nederlands"],["eng","English"],["deu","Deutsch"],["deu+eng","Deutsch + English"]],o.ocrTaal);
+  taal.addEventListener("change",function(){o.ocrTaal=taal.value;bewaar();});
+  var auto=keuze([["1",t.optOcrAuto],["0",t.optOcrAsk]],o.ocrAuto?"1":"0");
+  auto.addEventListener("change",function(){o.ocrAuto=auto.value==="1";bewaar();});
+  var uit=keuze([["csv","CSV"],["xlsx","Excel (.xlsx)"]],o.uitvoer);
+  uit.addEventListener("change",function(){o.uitvoer=uit.value;bewaar();});
+  var direct=keuze([["0",t.optShow],["1",t.optDirect]],o.direct?"1":"0");
+  direct.addEventListener("change",function(){o.direct=direct.value==="1";bewaar();});
+  rij.appendChild(veld(t.optPages,pag));rij.appendChild(veld(t.optOcrLang,taal));rij.appendChild(veld("OCR",auto));
+  rij.appendChild(veld(t.optOut,uit));rij.appendChild(veld(t.optAfter,direct));
+  k.appendChild(rij);
+  // Omzetten per kolom: de kolommen van het laatste resultaat, anders die van de regels.
+  var kol=[];(S.regels||[]).concat(S.kolommen||[]).forEach(function(r){if(r.naam&&kol.indexOf(r.naam)<0)kol.push(r.naam);});
+  if(kol.length){
+    k.appendChild(el("p","pld-caps",t.optConvert));
+    k.appendChild(el("p","pld-text",t.optConvertHint));
+    o.omzet=o.omzet||{};
+    kol.forEach(function(naam){
+      var c=o.omzet[naam]||(o.omzet[naam]={soort:"",vervang:"",standaard:""}),r=el("div","plp-rule");
+      var soort=keuze([["",t.xNone],["datum:dd-mm-jjjj",t.xDate+" dd-mm-jjjj"],["datum:jjjj-mm-dd",t.xDate+" jjjj-mm-dd"],["datum:dd/mm/jjjj",t.xDate+" dd/mm/jjjj"],["datum:d maand jjjj",t.xDate+" 1 maart 2026"],["getal",t.optNumber],["hoofd",t.optUpper],["klein",t.optLower]],c.soort);
+      soort.addEventListener("change",function(){c.soort=soort.value;bewaar();});
+      var ver=el("input","pld-in");ver.value=c.vervang||"";ver.placeholder=t.optReplacePh;
+      ver.addEventListener("input",function(){c.vervang=ver.value;bewaar();});
+      var std=el("input","pld-in");std.value=c.standaard||"";std.placeholder=t.optDefaultPh;
+      std.addEventListener("input",function(){c.standaard=std.value;bewaar();});
+      r.appendChild(veld(t.fname,el("p","pld-text",naam)));r.appendChild(veld(t.optKind,soort));
+      r.appendChild(veld(t.optReplace,ver));r.appendChild(veld(t.optDefault,std));
+      k.appendChild(r);
+    });
+  }
+  return k;
+}
+return {kaart:kaart,zet:zet,paginaSet:paginaSet,bewaar:bewaar,datum:datum,getal:getal};
+})();
+
+
+/* ---- 5e-excel.html ---- */
+
+window.PLP_XLSX=(function(){
+// Een .xlsx is een zip met wat XML erin. We bouwen die zip zelf, zonder compressie,
+// zodat er geen bibliotheek van buiten nodig is.
+var CRC=(function(){var t=[],c;for(var n=0;n<256;n++){c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function utf8(s){return new TextEncoder().encode(s);}
+function le(n,b){var u=new Uint8Array(b);for(var i=0;i<b;i++)u[i]=(n>>>(8*i))&0xFF;return u;}
+function samen(delen){var n=0;delen.forEach(function(d){n+=d.length;});var u=new Uint8Array(n),p=0;delen.forEach(function(d){u.set(d,p);p+=d.length;});return u;}
+function zip(bestanden){
+  var lokaal=[],centraal=[],plek=0;
+  bestanden.forEach(function(f){
+    var naam=utf8(f.naam),data=utf8(f.tekst),crc=crc32(data);
+    var kop=samen([le(0x04034b50,4),le(20,2),le(0,2),le(0,2),le(0,2),le(0x21,2),le(crc,4),le(data.length,4),le(data.length,4),le(naam.length,2),le(0,2),naam,data]);
+    centraal.push(samen([le(0x02014b50,4),le(20,2),le(20,2),le(0,2),le(0,2),le(0,2),le(0x21,2),le(crc,4),le(data.length,4),le(data.length,4),le(naam.length,2),le(0,2),le(0,2),le(0,2),le(0,2),le(0,4),le(plek,4),naam]));
+    lokaal.push(kop);plek+=kop.length;
+  });
+  var cd=samen(centraal);
+  var eind=samen([le(0x06054b50,4),le(0,2),le(0,2),le(bestanden.length,2),le(bestanden.length,2),le(cd.length,4),le(plek,4),le(0,2)]);
+  return new Blob([samen(lokaal.concat([cd,eind]))],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+function x(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");}
+function kol(n){var s="";n++;while(n>0){var r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26);}return s;}
+// Een getal met punt als decimaalteken wordt een echt getal in Excel; de rest blijft tekst.
+function cel(v,r,c){
+  var ref=kol(c)+(r+1),s=String(v==null?"":v);
+  if(/^-?\d+(\.\d+)?$/.test(s))return '<c r="'+ref+'"><v>'+s+'</v></c>';
+  return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+x(s)+'</t></is></c>';
+}
+function maak(regelset,rijen,kopBestand,kopPaginas){
+  var koppen=[kopBestand,kopPaginas].concat(regelset.map(function(r){return r.naam;}));
+  var xml=['<row r="1">'+koppen.map(function(h,i){return cel(h,0,i);}).join("")+'</row>'];
+  rijen.forEach(function(r,i){
+    var w=[r.naam,r.paginas].concat(regelset.map(function(x,j){return r.velden["k"+j];}));
+    xml.push('<row r="'+(i+2)+'">'+w.map(function(v,j){return cel(v,i+1,j);}).join("")+'</row>');
+  });
+  var blad='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+xml.join("")+'</sheetData></worksheet>';
+  return zip([
+    {naam:"[Content_Types].xml",tekst:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'},
+    {naam:"_rels/.rels",tekst:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {naam:"xl/workbook.xml",tekst:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="ParseLab" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+    {naam:"xl/_rels/workbook.xml.rels",tekst:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'},
+    {naam:"xl/worksheets/sheet1.xml",tekst:blad}
+  ]);
+}
+function bewaar(naam,blob){
+  var url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=naam;a.style.display="none";document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},0);
+}
+return {maak:maak,bewaar:bewaar,zip:zip};
 })();
 
 
@@ -1436,6 +1760,17 @@ function ocrAanbod(blad,file,doc,klaar){
     knop.disabled=true;stand.textContent=t.ocrBusy;
     P.ocr(file,function(n,tot){stand.textContent=t.ocrBusy+" "+n+" / "+tot;}).then(function(res){
       vraag.remove();
+      if(window.PLP_PDFUIT){
+        var pk=el("div","pld-card"),pr=el("div","pld-row"),pb=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.pdfSearchable);
+        pb.type="button";pk.appendChild(el("p","pld-text",t.pdfSearchableHint));pr.appendChild(pb);pk.appendChild(pr);blad.appendChild(pk);
+        pb.addEventListener("click",function(){
+          pb.disabled=true;pb.textContent=t.pdfSearchableBusy;
+          window.PLP_PDFUIT.maak(file,res).then(function(blob){
+            window.PLP_PDFUIT.bewaar(String(file.name||"scan.pdf").replace(/\.pdf$/i,"")+"-doorzoekbaar.pdf",blob);
+            pb.disabled=false;pb.textContent=t.pdfSearchable;
+          }).catch(function(){pb.disabled=false;pb.textContent=t.pdfSearchable;});
+        });
+      }
       doc.cellen=res.cellen;doc.maten=res.maten;doc.ocr=true;
       doc.tekst=res.cellen.map(function(c){return c.t;}).join("\n");
       var a2=ST.analyse(doc);
@@ -1843,6 +2178,186 @@ return {controle:controle,kaart:kaart,opslaanKnop:opslaanKnop,lees:lees,bewaar:b
 })();
 
 
+/* ---- 11b-groepen.html ---- */
+
+window.PLP_GRP=(function(){
+var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,SJ=window.PLP_SJ;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+var STRAT={structuur:"strStructure",woord:"strWord",patroon:"strPattern",plek:"strPlace"};
+
+// Elk document lezen (met OCR als dat nodig en toegestaan is), ontleden en een
+// vingerafdruk maken; dan bij elkaar zetten wat op elkaar lijkt.
+function vergelijk(stand){
+  var lijst=S.bestanden.slice(),leden=[],keten=Promise.resolve(),n=0;
+  lijst.forEach(function(f){
+    keten=keten.then(function(){return (P.leesOfOcr||P.lees)(f);}).then(function(doc){
+      var a=ST.analyse(doc);
+      leden.push({doc:doc,analyse:a,va:SJ.vingerafdruk(doc,a),bestand:f});
+      n++;if(stand)stand(n,lijst.length);
+    }).catch(function(){});
+  });
+  return keten.then(function(){
+    var groepen=[];
+    leden.forEach(function(l){
+      var g=null;
+      groepen.forEach(function(x){if(!g&&x.leden.some(function(y){return SJ.score(y.va,l.va)>=3;}))g=x;});
+      if(g)g.leden.push(l);else groepen.push({leden:[l]});
+    });
+    groepen.forEach(function(g,i){g.nr=i+1;g.auto=window.PLP_AUTO.regels(g.leden);});
+    S.groepen=groepen;return groepen;
+  });
+}
+
+function mapVoor(naam){
+  var d=SJ.lees(),m=d.mappen.filter(function(x){return x.naam===naam;})[0];
+  return m||SJ.nieuweMap(naam);
+}
+function sjabloonVan(g,mid){
+  var t=S.t,naam=t.grpTemplate.replace("{n}",g.nr).replace("{b}",g.leden[0].doc.naam);
+  return SJ.bewaarSjabloon(mid,{naam:naam,regels:g.auto.regels,vingerafdruk:g.leden[0].va,groep:g.nr});
+}
+
+// Wat er gevonden is, per groep: welke velden, in hoeveel documenten, met welke strategie.
+function groepKaart(g){
+  var t=S.t,k=el("div","pld-card plp-groep"),n=g.leden.length;
+  k.appendChild(el("p","pld-caps",t.grpTitle.replace("{n}",g.nr).replace("{d}",n)));
+  k.appendChild(el("p","plp-mono",g.leden.map(function(l){return l.doc.naam;}).join(" · ")));
+  if(!g.auto.regels.length)k.appendChild(el("p","pld-text",t.grpNothing));
+  g.auto.regels.forEach(function(r){
+    var rij=el("div","plp-file"),l=el("div");
+    l.appendChild(el("p","pld-text",r.naam));
+    var mis=g.auto.ontbreekt.filter(function(o){return o.naam===r.naam;})[0];
+    l.appendChild(el("p","plp-mono",(t[STRAT[r.strategie]]||r.strategie)+(mis?" · "+t.grpMissing.replace("{lijst}",mis.mist.join(", ")):"")));
+    var pil=el("span","pld-pill"+(r.dekking===n?" pld-pill--on":""),t.checkFound.replace("{g}",r.dekking).replace("{n}",n));
+    rij.appendChild(l);rij.appendChild(pil);k.appendChild(rij);
+  });
+  if(g.auto.ontbreekt.length)k.appendChild(el("p","pld-msg pld-msg--warn",t.grpWarn.replace("{n}",g.auto.ontbreekt.length)));
+  var rij2=el("div","pld-row"),maak=el("button","pld-btn pld-btn--sm",t.grpMake),gemeld=el("p","pld-text");
+  maak.type="button";
+  maak.addEventListener("click",function(){
+    var d=SJ.lees(),mid=d.actief||mapVoor(t.grpAutoFolder).id;
+    var sj=sjabloonVan(g,mid);SJ.kiesMap(mid);
+    gemeld.textContent=t.grpMade.replace("{naam}",sj.naam);
+  });
+  rij2.appendChild(maak);rij2.appendChild(gemeld);k.appendChild(rij2);
+  return k;
+}
+
+// Lees uit: vergelijken, per groep een sjabloon in de map Automatisch, uitlezen, en
+// downloaden in de gekozen vorm. Eén knop, geen vragen.
+function leesUit(knop,rij){
+  var t=S.t,U=window.PLP_UI;
+  if(!S.bestanden.length){U.meld(t.errNoFiles,"warn");return Promise.resolve();}
+  knop.disabled=true;knop.textContent=t.grpBusy;
+  var stand=el("p","pld-text");stand.setAttribute("role","status");rij.appendChild(stand);
+  return vergelijk(function(n,tot){stand.textContent=n+" / "+tot;}).then(function(groepen){
+    var m=mapVoor(t.grpAutoFolder);
+    m.sjablonen.slice().forEach(function(s){SJ.verwijderSjabloon(m.id,s.id);});
+    groepen.forEach(function(g){sjabloonVan(g,m.id);});
+    SJ.kiesMap(m.id);
+    U.teken();
+    var start=document.querySelector(".plp-start")||knop;
+    return window.PLP_RUN(start,rij);
+  }).then(function(){
+    if(S.rijen.length&&S.opties&&S.opties.direct&&window.PLP_RES)window.PLP_RES.download(S.opties.uitvoer);
+    var tekst=S.groepen.map(function(g){return t.grpTitle.replace("{n}",g.nr).replace("{d}",g.leden.length);}).join(" · ");
+    if(tekst)U.meld(t.grpDone.replace("{lijst}",tekst));
+  }).catch(function(e){console.error(e);U.meld(t.errLib,"warn");})
+  .then(function(){knop.disabled=false;knop.textContent=t.grpRead;});
+}
+
+function kaart(){
+  var t=S.t,k=el("div","pld-card");
+  k.appendChild(el("p","pld-text",t.grpHint));
+  var rij=el("div","pld-row");
+  var lees=el("button","pld-btn plp-leesuit",t.grpRead);lees.type="button";
+  lees.addEventListener("click",function(){leesUit(lees,rij);});
+  var verg=el("button","pld-btn pld-btn--ghost",t.grpCompare);verg.type="button";
+  verg.addEventListener("click",function(){
+    if(!S.bestanden.length){window.PLP_UI.meld(t.errNoFiles,"warn");return;}
+    verg.disabled=true;verg.textContent=t.grpBusy;
+    vergelijk().then(function(){window.PLP_UI.teken();}).catch(function(){verg.disabled=false;verg.textContent=t.grpCompare;});
+  });
+  rij.appendChild(lees);rij.appendChild(verg);k.appendChild(rij);
+  (S.groepen||[]).forEach(function(g){k.appendChild(groepKaart(g));});
+  return k;
+}
+return {kaart:kaart,vergelijk:vergelijk,leesUit:leesUit};
+})();
+
+
+/* ---- 11c-auto.html ---- */
+
+window.PLP_AUTO=(function(){
+var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST;
+var VOLGORDE=["structuur","woord","patroon","plek"];
+function esc(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+// Hoeveel documenten van de groep leveren met deze regel iets op?
+function dekking(leden,regel){
+  var g=0,mist=[];
+  leden.forEach(function(l){
+    var w=P.rij(l.doc,[regel]).velden.k0;
+    if(w)g++;else mist.push(l.doc.naam);
+  });
+  return {g:g,mist:mist};
+}
+// De kandidaten voor één veld, in de volgorde waarin we ze liever hebben.
+function kandidaten(naam,vondsten,filter){
+  var uit=[],gezien={};
+  vondsten.forEach(function(v){
+    var vr=v.vindregel||{};
+    if(vr.type&&vr.type!=="plek"&&!gezien["s:"+JSON.stringify(vr)]){
+      gezien["s:"+JSON.stringify(vr)]=1;
+      uit.push({strategie:"structuur",regel:{naam:naam,type:"cel",waarde:vr.label||vr.patroon||"",filter:filter,vindregel:vr}});
+    }
+  });
+  var label=(vondsten[0].vindregel&&vondsten[0].vindregel.label)||"";
+  if(label&&!ST.vind(label))uit.push({strategie:"woord",regel:{naam:naam,type:"label",waarde:label,filter:filter}});
+  var pat=null;vondsten.forEach(function(v){if(!pat){var f=ST.vind(v.waarde);if(f)pat=f.patroon;}});
+  if(pat){
+    var re=label?"(?:^|[^A-Za-z])"+esc(label)+"[\\s:\\-–]*("+pat.re+")":"("+pat.re+")";
+    uit.push({strategie:"patroon",regel:{naam:naam,type:"regex",waarde:re,filter:filter}});
+  }
+  vondsten.forEach(function(v){
+    if(!v.vak||uit.some(function(k){return k.strategie==="plek";}))return;
+    uit.push({strategie:"plek",regel:{naam:naam,type:"cel",waarde:"",filter:filter,vindregel:{type:"plek",pagina:v.vak.pagina,x:v.vak.x,y:v.vak.y}}});
+  });
+  return uit;
+}
+// Voor een groep documenten (elk {doc, analyse}) de regels die overal het meest opleveren.
+function regels(leden){
+  var perNaam={},namen=[];
+  leden.forEach(function(l){
+    (l.analyse.velden||[]).forEach(function(v){
+      if(v.score<0.7||!v.naam)return;
+      var k=v.naam.toLowerCase();
+      if(!perNaam[k]){perNaam[k]={naam:v.naam,vondsten:[],docs:{}};namen.push(k);}
+      if(perNaam[k].docs[l.doc.naam])return;
+      perNaam[k].docs[l.doc.naam]=1;perNaam[k].vondsten.push(v);
+    });
+  });
+  var uit=[],ontbreekt=[];
+  namen.forEach(function(k){
+    var veld=perNaam[k],filter=ST.filterVoor(veld.vondsten[0]),beste=null;
+    kandidaten(veld.naam,veld.vondsten,filter).forEach(function(kand){
+      var d=dekking(leden,kand.regel);
+      if(!beste||d.g>beste.g||(d.g===beste.g&&VOLGORDE.indexOf(kand.strategie)<VOLGORDE.indexOf(beste.strategie))){
+        beste={g:d.g,mist:d.mist,strategie:kand.strategie,regel:kand.regel};
+      }
+    });
+    if(!beste||!beste.g)return;
+    beste.regel.strategie=beste.strategie;beste.regel.dekking=beste.g;beste.regel.van=leden.length;
+    uit.push(beste.regel);
+    if(beste.g<leden.length)ontbreekt.push({naam:veld.naam,mist:beste.mist});
+  });
+  // Regeltabellen (één rij per artikelregel) blijven hier bewust buiten: die zet je aan
+  // in het doorkijkscherm, anders wordt elke factuur onverwacht vijf rijen.
+  return {regels:uit,ontbreekt:ontbreekt};
+}
+return {regels:regels,dekking:dekking};
+})();
+
+
 /* ---- 12-verwerken.html ---- */
 
 (function(){
@@ -1865,7 +2380,7 @@ lijst.forEach(function(f){
 keten=keten.then(function(){return P.tel(f);})
 .then(function(n){totaal+=n;})
 .catch(function(){fouten.push(f.name+" "+t.errRead);});});
-keten.then(function(){
+return keten.then(function(){
 if(!totaal){herstel(knop);U.meld(fouten.join(" ")||t.errLib,"warn");return null;}
 var over=U.over();
 if(totaal>over){herstel(knop);S.root.insertBefore(U.limietKaart(totaal,over),S.root.firstChild);
@@ -1875,7 +2390,7 @@ if(r.error)throw new Error("usage");
 knop.textContent=t.reading;
 var uit=[],kolommen=[],geteld={},onbekend=0,n=0,k2=Promise.resolve();
 lijst.forEach(function(f){
-k2=k2.then(function(){return P.lees(f);})
+k2=k2.then(function(){return (P.leesOfOcr||P.lees)(f);})
 .then(function(doc){
 var regels=actief,naam=null;
 if(perMap){
@@ -1891,7 +2406,7 @@ if(perMap){
 }
 regels.forEach(function(x){if(kolommen.indexOf(x.naam)<0)kolommen.push(x.naam);});
 var r2=P.rij(doc,regels);
-if(r2.leeg)fouten.push(f.name+" "+t.scanned);
+if(r2.leeg)fouten.push(f.name+" "+t.scanned);else if(doc.ocr)fouten.push(f.name+" "+t.scannedAuto);
 perRegel(doc,r2,regels).forEach(function(rr){
   var op={};regels.forEach(function(x,i){op[x.naam]=rr.velden["k"+i];});
   uit.push({naam:rr.naam,paginas:rr.paginas,sjabloon:naam,opNaam:op,leeg:rr.leeg});

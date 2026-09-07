@@ -1,6 +1,6 @@
 # ParsePDF als Webflow-pagina
 
-Deze zestien bestanden zijn de embeds die op de Webflow-pagina `/tools/parsepdf-tool` staan. Ze horen bij het Webflow-dashboard met Supabase erachter, niet bij het dashboard in `parselab/index.html`. Beide versies van ParsePDF blijven bestaan: die in `tools/parsepdf.html` draait naast de ParseLab-server, deze draait naast Supabase.
+Deze drieëntwintig bestanden zijn de embeds die op de Webflow-pagina `/tools/parsepdf-tool` staan. Ze horen bij het Webflow-dashboard met Supabase erachter, niet bij het dashboard in `parselab/index.html`. Beide versies van ParsePDF blijven bestaan: die in `tools/parsepdf.html` draait naast de ParseLab-server, deze draait naast Supabase.
 
 Plaatsing, wat de gebruiker ziet en wat er nog niet in zit staat in [`../docs/INTEGRATIE.md`](../docs/INTEGRATIE.md). Kort:
 
@@ -27,13 +27,13 @@ Wat het doorkijkscherm doet en hoe de herkenning werkt staat in [`../docs/PARSEP
 
 De volgorde ligt vast: embed 12 gebruikt wat 1 tot en met 11 klaarzetten. Ze staan onder de lege container `<div id="pl-parsepdf-root">`. Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens; splits je iets, zet het nieuwe deel dan vóór embed 11.
 
-## Eén embed in plaats van zestien
+## Eén embed in plaats van drieëntwintig
 
 ```
 node parselab/webflow/bouw-bundel.mjs     # maakt parselab/dist/parsepdf.js en embed-loader.html
 ```
 
-Publiceer `parsepdf.js` op een vast adres (GitHub Pages doet dat al) en plaats in Webflow alleen `embed-loader.html`. Dat scheelt vijftien blokken en de limiet van 10.000 tekens per embed speelt niet meer. Bij een nieuwe versie bouw je opnieuw en publiceer je het script; de pagina blijft ongemoeid.
+Publiceer `parsepdf.js` op een vast adres (GitHub Pages doet dat al) en plaats in Webflow alleen `embed-loader.html`. Dat scheelt tweeëntwintig blokken en de limiet van 10.000 tekens per embed speelt niet meer. Bij een nieuwe versie bouw je opnieuw en publiceer je het script; de pagina blijft ongemoeid.
 
 ## Dezelfde tool als één bestand
 

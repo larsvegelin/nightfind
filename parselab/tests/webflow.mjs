@@ -115,6 +115,15 @@ const csv = fs.readFileSync(csvPad);
 const tekst = csv.toString('utf8').replace(/^\uFEFF/, '');
 ok('CSV heet parselab-export.csv', dl.suggestedFilename() === 'parselab-export.csv', dl.suggestedFilename());
 ok('CSV begint met een UTF-8 BOM', csv[0] === 0xEF && csv[1] === 0xBB && csv[2] === 0xBF);
+// 5b. Excel: een echte .xlsx (zip zonder compressie) met dezelfde kolommen en waarden.
+const [dlx] = await Promise.all([p.waitForEvent('download'), p.click('button:has-text("Download Excel")')]);
+const xlsxPad = path.join(map, 'uit.xlsx');
+await dlx.saveAs(xlsxPad);
+const xlsx = fs.readFileSync(xlsxPad);
+const xlsxTekst = xlsx.toString('latin1');
+ok('Excel heet parselab-export.xlsx en is een zip', dlx.suggestedFilename() === 'parselab-export.xlsx' && xlsx[0] === 0x50 && xlsx[1] === 0x4B, dlx.suggestedFilename());
+ok('het werkblad staat erin met de factuurnummers', /xl\/worksheets\/sheet1\.xml/.test(xlsxTekst) && /2026-118/.test(xlsxTekst) && /2026-119/.test(xlsxTekst));
+ok('Excel opent de zip zonder klachten (centrale map klopt)', (() => { try { execFileSync('python3', ['-c', 'import zipfile,sys;z=zipfile.ZipFile(sys.argv[1]);assert z.testzip() is None;print(len(z.namelist()))', xlsxPad]); return true; } catch (e) { return false; } })());
 ok('CSV scheidt met puntkomma\'s', tekst.split('\r\n')[0] === "Bestand;Pagina's;Factuurnummer;Datum;Totaal;BTW;Bestand", tekst.split('\r\n')[0]);
 ok('CSV bevat het eindbedrag', tekst.includes(';1.506,45;'), tekst.split('\r\n')[1]);
 
@@ -134,6 +143,32 @@ await p.click('button:has-text("Uitlezen starten")');
 await p.waitForSelector('.plp-table', { timeout: 30000 });
 const iban = await p.evaluate(() => document.querySelectorAll('.plp-table tbody td')[2].textContent);
 ok('regex vindt de IBAN op de tweede pagina', iban === 'NL91ABNA0417164300', iban);
+
+// 7b. Opties: de laatste pagina uitsluiten, dan is de IBAN van pagina twee weg.
+await p.fill('input[placeholder="alle · 1-2,5 · -laatste · even"]', '-laatste');
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf')]);
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForFunction(() => document.querySelectorAll('.plp-table tbody tr').length === 1 && !/NL91/.test(document.querySelector('.plp-table tbody').textContent), null, { timeout: 30000 }).catch(() => {});
+const zonderLaatste = await p.evaluate(() => document.querySelectorAll('.plp-table tbody td')[2].textContent);
+ok('met -laatste telt de tweede pagina niet mee', zonderLaatste === '—', zonderLaatste);
+await p.fill('input[placeholder="alle · 1-2,5 · -laatste · even"]', '');
+ok('de paginakeuze wordt onthouden in de opties', await p.evaluate(() => JSON.parse(localStorage.getItem('pl_parsepdf_opties')).paginas === ''));
+
+// 7c. Waarden omzetten: datum naar jjjj-mm-dd, bedrag naar getal met punt, afkorting naar heel woord.
+await p.evaluate(() => {
+  window.PLP_S.regels = [{ naam: 'Datum', type: 'label', waarde: 'Factuurdatum', filter: 'datum' }, { naam: 'Totaal', type: 'label', waarde: 'Totaal te voldoen', filter: 'bedrag' }, { naam: 'Munt', type: 'regex', waarde: '(EUR)', filter: 'geen' }];
+  window.PLP_S.opties.omzet = { Datum: { soort: 'datum:jjjj-mm-dd' }, Totaal: { soort: 'getal' }, Munt: { vervang: 'EUR=euro', soort: 'hoofd' } };
+  window.PLP_OPT.bewaar(); window.PLP_UI.teken();
+});
+ok('de omzetkaart toont de kolommen', (await p.$$eval('select.pld-sel', s => s.map(x => x.value))).includes('datum:jjjj-mm-dd'));
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf')]);
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForFunction(() => /2026-03-12/.test(document.body.textContent), null, { timeout: 30000 }).catch(() => {});
+const omgezet = await p.evaluate(() => Array.from(document.querySelectorAll('.plp-table tbody td')).slice(2).map(x => x.textContent).join('|'));
+ok('datum, getal en afkorting zijn omgezet', omgezet === '2026-03-12|1506.45|EURO', omgezet);
+await p.evaluate(() => { window.PLP_S.opties.omzet = {}; window.PLP_OPT.bewaar(); });
 
 // 8. document zonder tekstlaag geeft een nette melding
 await p.setInputFiles('input[type=file]', [path.join(map, 'gescand.pdf')]);
@@ -369,6 +404,15 @@ await p.click('button:has-text("Tekst herkennen")');
 await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
 const naOcr = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
 ok('na tekstherkenning staan er velden uit de scan', naOcr.some(v => /2026-777/.test(v)), naOcr.slice(0, 3).join(' · '));
+// 11c4b. na OCR kan de scan als doorzoekbare PDF bewaard worden: afbeelding plus onzichtbare tekst.
+{
+  const [dlp] = await Promise.all([p.waitForEvent('download'), p.click('.plp-doorkijk button:has-text("Doorzoekbare PDF opslaan")')]);
+  const pdfPad = path.join(map, 'doorzoekbaar.pdf');
+  await dlp.saveAs(pdfPad);
+  const pdfTekst = fs.readFileSync(pdfPad).toString('latin1');
+  ok('de doorzoekbare PDF heet naar het origineel', /gescand-doorzoekbaar\.pdf$/.test(dlp.suggestedFilename()), dlp.suggestedFilename());
+  ok('het is een PDF met een afbeelding en onzichtbare tekst', /^%PDF-1\.4/.test(pdfTekst) && /DCTDecode/.test(pdfTekst) && /3 Tr/.test(pdfTekst) && /\(Factuurnummer\) Tj/.test(pdfTekst));
+}
 await sluitDoorkijk();
 
 // 11c5. de uitleg "Hoe werkt ParsePDF?" in vijf stappen
@@ -426,6 +470,37 @@ await p.click('button:has-text("Uitlezen starten")');
 await p.waitForSelector('.plp-table', { timeout: 30000 });
 const eisWaarden = await p.evaluate(() => Array.from(document.querySelectorAll('.plp-table tbody tr')).map(r => r.children[2].textContent).join('|'));
 ok('de eis leest het Totaal en niet het Subtotaal', eisWaarden === '1.506,45|968,00', eisWaarden);
+
+// 11c9. documenten vergelijken: twee facturen van dezelfde afzender en een polis worden twee groepen,
+// per groep staat welk veld in hoeveel documenten zit en hoe het gevonden wordt.
+await p.evaluate(() => { localStorage.removeItem('pl_parsepdf_mappen'); window.PLP_S.regels = []; window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.setInputFiles('input[type=file]', [path.join(pdfmap, 'factuur-webshop.pdf'), path.join(pdfmap, 'factuur-webshop.pdf'), path.join(pdfmap, 'polis.pdf')]);
+await sluitDoorkijk();
+await p.click('button:has-text("Vergelijk documenten")');
+await p.waitForSelector('.plp-groep', { timeout: 60000 });
+const groepen = await p.$$eval('.plp-groep', g => g.map(x => x.querySelector('.pld-caps').textContent));
+ok('gelijke documenten komen bij elkaar, de polis apart', groepen.length === 2 && /Groep 1 · 2 documenten/.test(groepen[0]) && /Groep 2 · 1 document/.test(groepen[1]), groepen.join(' | '));
+const groep1 = await p.textContent('.plp-groep');
+ok('per veld staat in hoeveel documenten het zit en hoe', /gevonden in 2 van 2/.test(groep1) && /op (structuur|woord|patroon|plek)/.test(groep1), groep1.slice(0, 160));
+await p.click('.plp-groep button:has-text("Sjabloon maken van deze groep")');
+await p.waitForFunction(() => /Sjabloon Groep 1/.test(document.body.textContent), null, { timeout: 5000 });
+const automap = await p.evaluate(() => JSON.parse(localStorage.getItem('pl_parsepdf_mappen')).mappen.map(m => m.naam + ':' + m.sjablonen.length).join(','));
+ok('het sjabloon van de groep staat in de map Automatisch', automap === 'Automatisch:1', automap);
+
+// 11c10. Lees uit: één knop die vergelijkt, sjablonen maakt, uitleest en het resultaat toont.
+await p.evaluate(() => { window.PLP_S.opties.uitvoer = 'xlsx'; window.PLP_S.opties.direct = true; window.PLP_OPT.bewaar(); });
+const [dla] = await Promise.all([p.waitForEvent('download', { timeout: 90000 }), p.click('button.plp-leesuit')]);
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const leesUit = await p.evaluate(() => ({
+  koppen: Array.from(document.querySelectorAll('.plp-table thead th')).map(x => x.textContent),
+  rijen: document.querySelectorAll('.plp-table tbody tr').length,
+  sjablonen: Array.from(document.querySelectorAll('.plp-table tbody tr')).map(r => r.children[2].textContent),
+  melding: (document.querySelector('.pld-msg') || {}).textContent || '' }));
+ok('Lees uit leest alle drie de documenten in één tabel', leesUit.rijen === 3 && leesUit.koppen.includes('Sjabloon'), JSON.stringify(leesUit).slice(0, 200));
+ok('elk document kreeg het sjabloon van zijn groep', leesUit.sjablonen.filter(s => /Groep 1/.test(s)).length === 2 && leesUit.sjablonen.filter(s => /Groep 2/.test(s)).length === 1, leesUit.sjablonen.join(' | '));
+ok('de melding zegt hoe er gelezen is', /Gelezen als Groep 1 · 2 documenten/.test(leesUit.melding), leesUit.melding);
+ok('met Direct downloaden komt het Excel-bestand vanzelf', dla.suggestedFilename() === 'parselab-export.xlsx', dla.suggestedFilename());
+await p.evaluate(() => { window.PLP_S.opties.direct = false; window.PLP_S.opties.uitvoer = 'csv'; window.PLP_OPT.bewaar(); localStorage.removeItem('pl_parsepdf_mappen'); });
 
 // 11d. mappen met sjablonen: twee soorten documenten in één map, gemengd uitlezen.
 await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });

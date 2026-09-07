@@ -124,6 +124,22 @@ De kaart eronder heeft ook **Eis maken met AI**: `POST /api/parsepdf/regel` krij
 
 **Controleer alle documenten** (`PLP_CHECK` in `12-verwerken.html`) leest elk klaargezet document met `P.lees`, past de actieve regels toe met `P.rij` en toont per regel *gevonden in g van n* plus de bestandsnamen waarin hij niets vond. Na **Overnemen** in het doorkijkscherm draait dit vanzelf zodra er meer dan één document klaarstaat. Het telt geen pagina's van het tegoed: er gaat niets naar de server.
 
+## 4d. Vergelijken, groeperen en automatisch uitlezen
+
+`PLP_GRP.vergelijk()` in `11b-groepen.html` leest elk document (`P.leesOfOcr`: OCR als er geen tekstlaag is en de optie aanstaat), ontleedt het met `PLP_ST.analyse` en maakt de vingerafdruk uit `11-sjablonen.html`. Groepen ontstaan gulzig: een document komt bij de eerste groep waarvan een lid een `score` van 3 of meer haalt, anders begint het een nieuwe groep.
+
+Per groep kiest `PLP_AUTO.regels(leden)` in `11c-auto.html` de regels. Voor elk veld dat de structuurcheck in een van de documenten vond (score ≥ 0,7) worden kandidaten gemaakt, in de volgorde van voorkeur: **structuur** (de bewaarde vindregel als `cel`-regel), **woord** (een `label`-regel met het label), **patroon** (een `regex` van label plus het patroon van de waarde) en **plek** (een `cel`-regel van het type `plek`). Elke kandidaat wordt met `P.rij` op alle documenten van de groep losgelaten; de kandidaat met de hoogste dekking wint, bij gelijke stand de eerste in die volgorde. De regel krijgt `strategie`, `dekking` en `van` mee, zodat de kaart kan tonen *op woord · gevonden in 2 van 3 · niet in x.pdf*. Regeltabellen blijven hier buiten (anders wordt elke factuur onverwacht vijf rijen); die zet je aan in het doorkijkscherm.
+
+**Lees uit** (`PLP_GRP.leesUit`) doet vergelijk → sjablonen in de map *Automatisch* (oude sjablonen daar worden vervangen) → `PLP_RUN` → bij *Direct downloaden* `PLP_RES.download` in de gekozen vorm. `PLP_RUN` geeft daarvoor nu een belofte terug.
+
+## 4e. Opties, omzetten, Excel en doorzoekbare PDF
+
+- `5d-opties.html` (`PLP_OPT`): `S.opties` in `localStorage` (`pl_parsepdf_opties`). `paginaSet(n)` vertaalt `1-2,5 · even · oneven · eerste 3 · laatste · -laatste · niet 4` naar een set paginanummers; `P.lees` slaat de andere pagina's over. `zet(naam, waarde)` past per kolom vervangen, datumvorm, getal met punt of letters toe en vult de standaard in bij leeg; `P.rij` roept dat aan, dus tabel, CSV en Excel krijgen dezelfde waarde.
+- `5e-excel.html` (`PLP_XLSX`): een .xlsx is een zip met vijf XML-bestanden; de zip wordt zonder compressie geschreven (eigen CRC32), cellen zijn `inlineStr`, een waarde als `1234.56` wordt een echt getal.
+- `5c-resultaat.html` (`PLP_RES`): de tabel met *Download CSV* en *Download Excel*; uit `5-scherm.html` gehaald om die onder de 10.000 tekens te houden.
+- `4c-pdfmaken.html` (`PLP_PDFUIT`): elke pagina op schaal 1,5 als JPEG (`DCTDecode`) in een nieuwe PDF, met de OCR-cellen als onzichtbare tekst (`3 Tr`, Helvetica, horizontaal geschaald met `Tz` naar de breedte van het woordvak). In `9-labels.html` verschijnt na OCR de knop *Doorzoekbare PDF opslaan*.
+- `4b-ocr.html`: de OCR-taal komt uit de opties; `P.leesOfOcr` leest en doet OCR als dat mag en nodig is. `12-verwerken.html` gebruikt dat en meldt per bestand *had geen tekstlaag; de tekst is herkend met OCR* of, met OCR op verzoek, hoe je verder kunt.
+
 ## 5. Wat er in de embeds veranderde
 
 De pagina bestaat nu uit elf embeds in plaats van vijf. Vijf zijn nieuw en twee zijn afgesplitst, omdat Webflow niet meer dan ongeveer 10.000 tekens per embed aankan.

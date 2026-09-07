@@ -1,6 +1,6 @@
 # ParsePDF in het dashboard zetten
 
-Zestien embeds op één nieuwe Webflow-pagina, of één embed via `dist/embed-loader.html`. Reken op twintig minuten.
+Drieëntwintig embeds op één nieuwe Webflow-pagina, of één embed via `dist/embed-loader.html`. Reken op twintig minuten.
 Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 
 ---
@@ -53,9 +53,13 @@ Body
                 ├── Embed 2-teksten
                 ├── Embed 3-teksten-voorstel
                 ├── Embed 3b-teksten-labels
+                ├── Embed 3c-teksten-auto
                 ├── Embed 4-motor
                 ├── Embed 5-scherm
                 ├── Embed 5b-eisen
+                ├── Embed 5c-resultaat
+                ├── Embed 5d-opties
+                ├── Embed 5e-excel
                 ├── Embed 6-structuur
                 ├── Embed 7-velden
                 ├── Embed 8-voorstel
@@ -66,7 +70,7 @@ Body
 
 De id `pl-parsepdf-root` moet exact zo geschreven zijn. Zonder die container doet de tool niets en verschijnt er een melding in de console.
 
-De volgorde van de embeds is niet vrij. Embed 12 gebruikt wat 1 tot en met 11 klaarzetten (3b hoort direct na 3, 4b na 4, 5b na 5, 9b na 9).
+De volgorde van de embeds is niet vrij. Embed 12 gebruikt wat 1 tot en met 11 klaarzetten (letters horen direct na hun nummer: 3b en 3c na 3, 4b en 4c na 4, 5b tot en met 5e na 5, 9b na 9, 11b en 11c na 11).
 
 ## 4. Koppelen aan het dashboard
 

@@ -11,7 +11,7 @@ Alles wat er is, hoe je het live zet, en in welke volgorde. Eén document om van
 | `parselab/ParseLab.html` | Het hele dashboard met de drie webtools erin, 2,8 MB | Dubbelklikken en werken, zonder installatie. Website uitlezen vraagt de server. |
 | `parselab/ParsePDF.html` | ParsePDF als losse pagina, 101 kB | Op elke webhost te zetten; werkt met de Supabase-login. |
 | `parselab/dist/parsepdf.js` + `embed-loader.html` | Dezelfde ParsePDF als één script | **De makkelijkste weg voor Webflow:** één embed in plaats van veertien. |
-| `parselab/webflow/*.html` | De zestien embeds, elk onder de 10.000 tekens | De plakweg, als je liever geen extern script laadt. |
+| `parselab/webflow/*.html` | De drieëntwintig embeds, elk onder de 10.000 tekens | De plakweg, als je liever geen extern script laadt. |
 | `parselab/tools/parsescraper.html` | ParseScraper als los bestand | Werkt met de ParseLab-server ernaast; zonder server zegt hij dat. |
 | `parselab/tools/parseboard.html` | ParseBoard als los bestand | Werkt volledig in de browser, geen server nodig. |
 | `parselab/tools/parselab-extension.zip` | De browserextensie | Formulieren invullen en uitlezen op pagina's waar je moet inloggen. |
@@ -38,11 +38,11 @@ Alles wat er is, hoe je het live zet, en in welke volgorde. Eén document om van
 
 ### 3.2 Met de losse embeds
 
-Zestien blokken in deze volgorde onder dezelfde lege container: `1-config-stijl`, `2-teksten`, `3-teksten-voorstel`, `3b-teksten-labels`, `4-motor`, `4b-ocr`, `5-scherm`, `5b-eisen`, `6-structuur`, `7-velden`, `8-voorstel`, `9-labels`, `9b-uitleg`, `10-ai`, `11-sjablonen`, `12-verwerken`. De volgorde ligt vast: de laatste gebruikt wat de rest klaarzet. Details in [`INTEGRATIE.md`](INTEGRATIE.md).
+Drieëntwintig blokken in deze volgorde onder dezelfde lege container: `1-config-stijl`, `2-teksten`, `3-teksten-voorstel`, `3b-teksten-labels`, `3c-teksten-auto`, `4-motor`, `4b-ocr`, `4c-pdfmaken`, `5-scherm`, `5b-eisen`, `5c-resultaat`, `5d-opties`, `5e-excel`, `6-structuur`, `7-velden`, `8-voorstel`, `9-labels`, `9b-uitleg`, `10-ai`, `11-sjablonen`, `11b-groepen`, `11c-auto`, `12-verwerken`. De volgorde ligt vast: de laatste gebruikt wat de rest klaarzet. Details in [`INTEGRATIE.md`](INTEGRATIE.md).
 
 ### 3.3 Wat de gebruiker dan kan
 
-Documenten kiezen (het eerste gaat meteen open), zien wat er uitgelezen wordt met gearceerde vlakken, per vlak een eigen labelnaam geven, alles selecteren of niets, alle tekst tonen inclusief de bestandsgegevens, door een stapel bladeren en met **Controleer alle documenten** per regel zien in hoeveel documenten hij iets vindt, parsen op eisen (bij een woord, soort waarde, pagina, kolom; ook door een zin aan de AI te geven), sjablonen in mappen bewaren die vanzelf herkend worden, tekst laten herkennen bij een scan, en met een betaald pakket de AI laten meekijken. Uitgebreid in [`PARSEPDF-DOORKIJKEN.md`](PARSEPDF-DOORKIJKEN.md); de uitleg voor bezoekers staat kant-en-klaar in [`SITE-UITLEG-PARSEPDF.md`](SITE-UITLEG-PARSEPDF.md).
+Documenten kiezen (het eerste gaat meteen open), zien wat er uitgelezen wordt met gearceerde vlakken, per vlak een eigen labelnaam geven, alles selecteren of niets, alle tekst tonen inclusief de bestandsgegevens, door een stapel bladeren en met **Controleer alle documenten** per regel zien in hoeveel documenten hij iets vindt, parsen op eisen (bij een woord, soort waarde, pagina, kolom; ook door een zin aan de AI te geven), met **Lees uit** een stapel documenten laten vergelijken, groeperen en volledig automatisch uitlezen (per veld kiest de tool structuur, woord, patroon of plek), pagina's uitsluiten (-laatste, even, oneven, eerste n), waarden omzetten per kolom (datumvorm, getal met punt, afkorting naar heel woord, standaard), downloaden als CSV of Excel, en van een scan een doorzoekbare PDF maken, sjablonen in mappen bewaren die vanzelf herkend worden, tekst laten herkennen bij een scan, en met een betaald pakket de AI laten meekijken. Uitgebreid in [`PARSEPDF-DOORKIJKEN.md`](PARSEPDF-DOORKIJKEN.md); de uitleg voor bezoekers staat kant-en-klaar in [`SITE-UITLEG-PARSEPDF.md`](SITE-UITLEG-PARSEPDF.md).
 
 ---
 
@@ -148,7 +148,7 @@ cd .. && python3 -m http.server 8765            # map boven parselab
 cd parselab/tests
 node qa.mjs          # 98 controles over het hele dashboard en de tools
 node styleguide.mjs  # 16 controles op de vormgeving
-node webflow.mjs     # 101 controles op de ParsePDF-embeds (start zelf wat hij nodig heeft)
+node webflow.mjs     # 117 controles op de ParsePDF-embeds (start zelf wat hij nodig heeft)
 ```
 
 In `parselab/tests/pdfs/` staan acht proefdocumenten met de uitkomsten die eruit horen te komen, waaronder een webshopfactuur met kolomkoppen, een formulier met labels naast de waarden, en een scan zonder tekstlaag.

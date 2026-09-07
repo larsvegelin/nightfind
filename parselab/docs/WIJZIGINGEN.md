@@ -6,7 +6,41 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 14)
+## Wat er het laatst veranderde (ronde 15)
+
+**Vraag:** documenten aan elkaar koppelen en vergelijken of ze hetzelfde zijn, en daar sjablonen van maken (structuur, parsbaarheid, dezelfde kolommen en waarden); kolomkoppen tegen elkaar checken en melden als iets niet in elk document voorkomt; één knop *Lees uit* die alles doet; uitvoer naar Excel of CSV; waarden omzetten (datumvorm, afkorting naar heel woord, standaardwaarde); pagina's kiezen en uitsluiten (laatste, eerste n, even, oneven, nummers); OCR-opties; automatisch melden als er geen tekst te herkennen is en dan van de afbeelding een doorzoekbare PDF maken; een automatische functie die per veld kiest of er op plek, structuur, woord of patroon geparsed wordt. Alles zonder handwerk. Plus: witte tekst op wit valt niet weg (staat in de uitleg).
+
+### Vergelijken, groeperen, Lees uit (`webflow/11b-groepen.html`, `11c-auto.html`, nieuw)
+
+- **Vergelijk documenten**: elk document wordt gelezen (met OCR als dat nodig en toegestaan is), ontleed en van een vingerafdruk voorzien; documenten met een score van 3 of meer op elkaar komen in dezelfde groep. Per groep een kaart met de leden, per veld *gevonden in g van n*, de gekozen strategie (*op structuur / op woord / op patroon / op plek*) en, waar een veld mist, *niet in x.pdf* plus een waarschuwing hoeveel velden niet overal voorkomen. **Sjabloon maken van deze groep** bewaart de regels in de actieve map of in de map *Automatisch*.
+- **Automatische regelkeuze** (`PLP_AUTO`): voor elk veld dat de structuurcheck ergens in de groep vond worden vier kandidaten gemaakt en op alle documenten van de groep geprobeerd: structuur (de bewaarde vindregel), woord (labelregel), patroon (regex van label plus het patroon van de waarde) en plek (zelfde positie). De hoogste dekking wint; bij gelijke stand die volgorde. Regeltabellen blijven bewust buiten de automaat.
+- **Lees uit**: één knop die vergelijkt, per groep een sjabloon in de map *Automatisch* zet (oude worden vervangen), alles uitleest met de bestaande verwerking (kolom *Sjabloon*, samenvatting per groep) en bij *Direct downloaden* meteen het CSV- of Excel-bestand geeft. `PLP_RUN` geeft daarvoor nu een belofte terug.
+
+### Opties en omzetten (`webflow/5d-opties.html`, nieuw)
+
+- **Pagina's**: `1-2,5`, `even`, `oneven`, `eerste 3`, `laatste`, `-laatste` (alles behalve de laatste), `niet 4`, ook in het Engels en Duits; te combineren. `P.lees` slaat uitgesloten pagina's over.
+- **OCR**: taal (nld+eng, nld, eng, deu, deu+eng) en *automatisch bij scans* of *alleen op verzoek*. `P.leesOfOcr` in `4b-ocr.html` leest en doet OCR als er geen tekstlaag is; de verwerking meldt per bestand *had geen tekstlaag; de tekst is herkend met OCR* of, op verzoek, hoe je verder kunt.
+- **Uitvoer** CSV of Excel en **Na het lezen** tabel tonen of direct downloaden.
+- **Waarden omzetten** per kolom: datumvorm (dd-mm-jjjj, jjjj-mm-dd, dd/mm/jjjj, 1 maart 2026), getal met punt (1.234,56 → 1234.56), HOOFDLETTERS of kleine letters, vervangen (`afk=Heel woord; NL=Nederland`, hele waarde of los woord) en een standaard bij leeg. Toegepast in `P.rij`, dus tabel, CSV en Excel zijn gelijk. Bewaard in `localStorage` (`pl_parsepdf_opties`).
+
+### Excel en resultaat (`webflow/5e-excel.html`, `5c-resultaat.html`, nieuw)
+
+- `.xlsx` zonder bibliotheek: zip zonder compressie met eigen CRC32, vijf XML-delen, inline strings, getallen met punt als echte getallen. Onder de tabel staan *Download CSV* en *Download Excel*. De resultaatkaart is uit `5-scherm.html` gehaald om die onder de 10.000 tekens te houden.
+
+### Doorzoekbare PDF (`webflow/4c-pdfmaken.html`, nieuw; `9-labels.html`)
+
+- Na OCR in het doorkijkscherm: **Doorzoekbare PDF opslaan**. Elke pagina wordt op schaal 1,5 als JPEG in een nieuwe PDF gezet met de herkende woorden als onzichtbare tekst (`3 Tr`) op hun plek, horizontaal geschaald naar de breedte van het woordvak. Bestandsnaam `origineel-doorzoekbaar.pdf`.
+
+### Overig
+
+- `3c-teksten-auto.html` met alle nieuwe teksten in nl/en/de; `t.scanned` zegt nu wat je kunt doen.
+- Bouwscripts en proefharnas kennen de zeven nieuwe embeds (nu 23; bundelroute ongewijzigd).
+- Tests: `webflow.mjs` 101 → 117 (Excel als geldige zip, -laatste laat pagina twee weg, omzetten van datum/getal/afkorting, twee groepen uit drie documenten, sjabloon per groep, Lees uit met drie rijen en sjabloonkolom en directe Excel-download, doorzoekbare PDF met afbeelding en onzichtbare tekst). `qa.mjs` 98, `styleguide.mjs` 16.
+- Documentatie: `SITE-UITLEG-PARSEPDF.md` (1a Lees uit, 5d Opties met de waarschuwing over onzichtbare tekst zoals wit op wit, 5e Waarden omzetten, 5f Scans), `PARSEPDF-DOORKIJKEN.md` (4d, 4e), `INTEGRATIE.md`, `IMPLEMENTATIE.md`, `webflow/README.md`.
+
+---
+
+## Ronde 14
 
 **Vraag:** upload bovenaan; sjablonen netjes onder elkaar en te openen; "Regel toevoegen" boven de regels onder de kop *Handmatig parsen*; een tutorial die echt iets laat zien; alles uitvinken moet werken; parsen op specifieke eisen (positie, kolom, soort, een bepaald woord) met een AI die dat voor je invult; bij meerdere pdf's laten zien dat het op alle pdf's geparsed is; en dit document.
 

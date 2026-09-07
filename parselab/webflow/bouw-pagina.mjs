@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const uit = process.argv[2] || path.join(here, "..", "ParsePDF.html");
-const EMBEDS = ["1-config-stijl.html", "2-teksten.html", "3-teksten-voorstel.html", "3b-teksten-labels.html", "4-motor.html", "4b-ocr.html", "5-scherm.html", "5b-eisen.html", "6-structuur.html", "7-velden.html", "8-voorstel.html", "9-labels.html", "9b-uitleg.html", "10-ai.html", "11-sjablonen.html", "12-verwerken.html"];
+const EMBEDS = ["1-config-stijl.html", "2-teksten.html", "3-teksten-voorstel.html", "3b-teksten-labels.html", "3c-teksten-auto.html", "4-motor.html", "4b-ocr.html", "4c-pdfmaken.html", "5-scherm.html", "5b-eisen.html", "5c-resultaat.html", "5d-opties.html", "5e-excel.html", "6-structuur.html", "7-velden.html", "8-voorstel.html", "9-labels.html", "9b-uitleg.html", "10-ai.html", "11-sjablonen.html", "11b-groepen.html", "11c-auto.html", "12-verwerken.html"];
 
 const delen = EMBEDS.map(naam => "<!-- " + naam + " -->\n" + fs.readFileSync(path.join(here, naam), "utf8").trim());
 

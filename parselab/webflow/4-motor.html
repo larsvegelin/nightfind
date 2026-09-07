@@ -100,7 +100,9 @@ function lees(file){
       meta={Titel:i.Title||"",Auteur:i.Author||"",Onderwerp:i.Subject||"",Trefwoorden:i.Keywords||"",
             Programma:i.Producer||i.Creator||"",Gemaakt:datumUitPdf(i.CreationDate)};
     }).catch(function(){meta={};});
+    var set=window.PLP_OPT?window.PLP_OPT.paginaSet(doc.numPages):null;
     for(var i=1;i<=doc.numPages;i++){
+      if(set&&!set[i-1])continue;   // Opties: alleen de gekozen pagina's
       (function(p){
         keten=keten.then(function(){return doc.getPage(p);})
                    .then(function(pg){
@@ -182,7 +184,7 @@ function pasToe(regel,doc){
 
 function rij(doc,regelset){
   var velden={};
-  regelset.forEach(function(r,i){velden["k"+i]=pasToe(r,doc);});
+  regelset.forEach(function(r,i){var w=pasToe(r,doc);velden["k"+i]=window.PLP_OPT?window.PLP_OPT.zet(r.naam,w):w;});
   return {naam:doc.naam,paginas:doc.paginas,velden:velden,leeg:doc.regels.length===0};
 }
 

@@ -20,7 +20,7 @@ lijst.forEach(function(f){
 keten=keten.then(function(){return P.tel(f);})
 .then(function(n){totaal+=n;})
 .catch(function(){fouten.push(f.name+" "+t.errRead);});});
-keten.then(function(){
+return keten.then(function(){
 if(!totaal){herstel(knop);U.meld(fouten.join(" ")||t.errLib,"warn");return null;}
 var over=U.over();
 if(totaal>over){herstel(knop);S.root.insertBefore(U.limietKaart(totaal,over),S.root.firstChild);
@@ -30,7 +30,7 @@ if(r.error)throw new Error("usage");
 knop.textContent=t.reading;
 var uit=[],kolommen=[],geteld={},onbekend=0,n=0,k2=Promise.resolve();
 lijst.forEach(function(f){
-k2=k2.then(function(){return P.lees(f);})
+k2=k2.then(function(){return (P.leesOfOcr||P.lees)(f);})
 .then(function(doc){
 var regels=actief,naam=null;
 if(perMap){
@@ -46,7 +46,7 @@ if(perMap){
 }
 regels.forEach(function(x){if(kolommen.indexOf(x.naam)<0)kolommen.push(x.naam);});
 var r2=P.rij(doc,regels);
-if(r2.leeg)fouten.push(f.name+" "+t.scanned);
+if(r2.leeg)fouten.push(f.name+" "+t.scanned);else if(doc.ocr)fouten.push(f.name+" "+t.scannedAuto);
 perRegel(doc,r2,regels).forEach(function(rr){
   var op={};regels.forEach(function(x,i){op[x.naam]=rr.velden["k"+i];});
   uit.push({naam:rr.naam,paginas:rr.paginas,sjabloon:naam,opNaam:op,leeg:rr.leeg});
