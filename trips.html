@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="NightFind Trips - Kies je land, kies je reistype en laat de AI-planner in 7 vragen een stedentrip, uitgaansvakantie, feestvakantie of rondreis samenstellen. Boek via onze partners.">
+<title>NightFind Trips - Vind je reis in 7 vragen</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<style>
+/* ===== Zelfstandige pagina: tokens 1-op-1 uit assets/css/style.css ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--black:#000;--white:#fff;--purple:#7C3AED;--indigo:#5B21B6;--gray-dark:#1a1a1a;--gray-medium:#333;--gray-light:#666;--max-width:1100px;--radius:16px;--transition:all .3s ease}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Inter','Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--black);color:var(--white);line-height:1.6;overflow-x:hidden}
+::selection{background:var(--purple);color:var(--white)}
+a{color:inherit}
+/* nav */
+.navbar{position:fixed;top:0;left:0;width:100%;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(124,58,237,.2);z-index:1000;transition:var(--transition)}
+.navbar.scrolled{background:rgba(0,0,0,.95);box-shadow:0 4px 20px rgba(124,58,237,.15)}
+.nav-container{max-width:var(--max-width);margin:0 auto;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+.nav-logo{display:flex;align-items:center;gap:.75rem;text-decoration:none;color:var(--white);font-size:1.5rem;font-weight:700}
+.nav-logo img{height:40px;filter:drop-shadow(0 0 10px rgba(124,58,237,.5))}
+.nav-menu{display:flex;list-style:none;gap:2rem;align-items:center}
+.nav-menu a{color:var(--white);text-decoration:none;font-weight:500;font-size:.95rem;position:relative;transition:var(--transition)}
+.nav-menu a::after{content:'';position:absolute;bottom:-5px;left:0;width:0;height:2px;background:var(--purple);transition:width .3s ease}
+.nav-menu a:hover::after,.nav-menu a.active::after{width:100%}
+.nav-menu a:hover{color:var(--purple)}
+.nav-toggle{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer}
+.nav-toggle span{width:25px;height:3px;background:var(--white);border-radius:3px;transition:var(--transition)}
+/* layout */
+.container{max-width:var(--max-width);margin:0 auto;padding:3rem 2rem}
+.hero{min-height:70vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 3rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(124,58,237,.1) 0%,transparent 70%);animation:pulse 8s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.8}}
+.hero-content{position:relative;z-index:1;max-width:800px;animation:fadeInUp .8s ease}
+.grad{background:linear-gradient(135deg,var(--purple),var(--indigo));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero h1{font-size:3.5rem;font-weight:700;margin-bottom:1rem;line-height:1.2}
+.hero-tagline{font-size:1.6rem;color:var(--purple);font-weight:600;margin-bottom:1.5rem}
+.hero p{font-size:1.2rem;color:var(--gray-light);margin-bottom:2rem;line-height:1.8}
+h2.section{font-size:2.2rem;text-align:center;margin-bottom:.5rem}
+p.section-sub{text-align:center;color:var(--gray-light);margin-bottom:2.5rem;max-width:640px;margin-left:auto;margin-right:auto}
+/* buttons */
+.btn{display:inline-block;padding:1rem 2.5rem;font-size:1.1rem;font-weight:600;text-decoration:none;border-radius:var(--radius);transition:var(--transition);cursor:pointer;border:none;font-family:inherit;color:var(--white)}
+.btn-primary{background:linear-gradient(135deg,var(--purple),var(--indigo));box-shadow:0 10px 30px rgba(124,58,237,.4)}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 15px 40px rgba(124,58,237,.6)}
+.btn-secondary{background:transparent;border:2px solid var(--purple)}
+.btn-secondary:hover{background:var(--purple);transform:translateY(-3px)}
+.btn-sm{padding:.75rem 1.4rem;font-size:.95rem}
+/* cards */
+.card{background:var(--gray-dark);border-radius:var(--radius);padding:2rem;box-shadow:0 4px 20px rgba(0,0,0,.3);transition:var(--transition);border:1px solid rgba(124,58,237,.2)}
+.card:hover{transform:translateY(-5px);box-shadow:0 10px 40px rgba(124,58,237,.3);border-color:var(--purple)}
+.card h3{color:var(--purple);font-size:1.4rem;margin-bottom:.75rem}
+.card p{color:var(--gray-light);line-height:1.8}
+.grid{display:grid;gap:1.5rem}
+.grid-4{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+/* trip types */
+.type-card{cursor:pointer;position:relative;overflow:hidden}
+.type-card .ico{font-size:2.4rem;margin-bottom:.75rem}.type-card h3{font-size:1.2rem;overflow-wrap:anywhere}
+.type-card.selected{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple),0 10px 40px rgba(124,58,237,.35)}
+.type-card .tag{display:inline-block;margin-top:.75rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);font-weight:600}
+/* countries */
+.country{cursor:pointer;display:flex;flex-direction:column;gap:.4rem;padding:1.25rem 1.5rem}
+.country .flag{font-size:2rem}
+.country h4{font-size:1.1rem}
+.country small{color:var(--gray-light)}
+.country.selected{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple)}
+.country .fits{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.3rem}
+.country .fits span{font-size:.7rem;padding:.15rem .5rem;border-radius:999px;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.35)}
+/* quiz */
+.quiz{max-width:760px;margin:0 auto;background:var(--gray-dark);border:1px solid rgba(124,58,237,.2);border-radius:var(--radius);padding:2.5rem;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.progress{height:6px;background:var(--gray-medium);border-radius:6px;overflow:hidden;margin-bottom:.75rem}
+.progress>div{height:100%;background:linear-gradient(90deg,var(--purple),var(--indigo));transition:width .4s ease}
+.qlabel{color:var(--gray-light);font-size:.8rem;text-transform:uppercase;letter-spacing:.1em}
+.quiz h2{font-size:1.9rem;margin:.5rem 0 .25rem}
+.quiz .sub{color:var(--gray-light);margin-bottom:1.75rem}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.opt{display:flex;align-items:center;gap:1rem;padding:1.1rem 1.25rem;background:var(--gray-medium);border:1px solid rgba(124,58,237,.3);border-radius:14px;cursor:pointer;text-align:left;color:var(--white);font-family:inherit;font-size:1rem;transition:var(--transition)}
+.opt:hover{border-color:var(--purple);transform:translateY(-2px);box-shadow:0 6px 20px rgba(124,58,237,.3)}
+.opt .letter{flex:0 0 38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--indigo));display:flex;align-items:center;justify-content:center;font-weight:700}
+.opt .txt small{display:block;color:var(--gray-light);font-size:.8rem}
+.quiz-nav{display:flex;justify-content:space-between;margin-top:1.5rem}
+.link-btn{background:none;border:none;color:var(--gray-light);cursor:pointer;font-family:inherit;font-size:.95rem}
+.link-btn:hover{color:var(--purple)}
+/* result */
+.result-head{text-align:center;margin-bottom:2rem}
+.result-head h2{font-size:2.4rem}
+.result-head p{color:var(--gray-light)}
+.dest{display:grid;grid-template-columns:1fr;gap:1.5rem}
+.dest-card{display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem}
+.dest-card .rank{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--purple);font-weight:700}
+.dest-card h3{font-size:1.7rem;color:var(--white);margin:.25rem 0}
+.dest-card .why{color:var(--gray-light);margin-bottom:1rem}
+.match{display:inline-block;padding:.25rem .7rem;border-radius:999px;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.4);font-size:.8rem;font-weight:600;margin-left:.5rem}
+.plan{list-style:none;margin:.75rem 0 0;display:flex;flex-direction:column;gap:.4rem}
+.plan li{display:flex;gap:.6rem;color:var(--gray-light);font-size:.93rem}
+.plan li b{color:var(--purple);flex:0 0 58px}
+.book h4{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-light);margin-bottom:.6rem}
+.book a{display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;border-radius:12px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.35);text-decoration:none;color:var(--white);font-weight:600;font-size:.93rem;margin-bottom:.5rem;transition:var(--transition)}
+.book a:hover{background:var(--purple);transform:translateX(3px)}
+.book a small{color:var(--gray-light);font-weight:400;font-size:.75rem}
+.book a:hover small{color:#fff}
+.est{margin-top:.75rem;padding:.75rem 1rem;border-radius:12px;background:var(--gray-medium);font-size:.85rem;color:var(--gray-light)}
+.est b{color:var(--white)}
+.disclosure{color:var(--gray-light);font-size:.8rem;text-align:center;max-width:620px;margin:2rem auto 0}
+.actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:1rem}
+/* footer */
+.footer{background:var(--gray-dark);border-top:1px solid rgba(124,58,237,.2);padding:3rem 2rem;margin-top:4rem;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:2rem;margin-bottom:2rem;flex-wrap:wrap}
+.footer-links a{color:var(--gray-light);text-decoration:none}
+.footer-links a:hover{color:var(--purple)}
+.footer-copyright{color:var(--gray-light);font-size:.9rem}
+.footer-copyright a{color:var(--purple);text-decoration:none}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:fadeInUp .5s ease}
+.hidden{display:none!important}
+@media(max-width:768px){
+ .nav-menu{position:fixed;top:70px;right:-100%;width:70%;height:calc(100vh - 70px);background:rgba(0,0,0,.98);flex-direction:column;align-items:flex-start;padding:3rem;transition:right .3s ease;border-left:1px solid rgba(124,58,237,.2)}
+ .nav-menu.active{right:0}.nav-toggle{display:flex}
+ .hero h1{font-size:2.4rem}.hero-tagline{font-size:1.2rem}.hero p{font-size:1rem}
+ .options{grid-template-columns:1fr}.dest-card{grid-template-columns:1fr}.quiz{padding:1.5rem}.container{padding:2rem 1rem}
+}
+</style>
+</head>
+<body>
+<nav class="navbar" id="navbar"><div class="nav-container">
+  <a href="index.html" class="nav-logo"><img src="assets/logo.svg" alt="NightFind"><span>NightFind</span></a>
+  <ul class="nav-menu" id="navMenu">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="trips.html" class="active">Trips</a></li>
+    <li><a href="plan.html">Plan</a></li>
+    <li><a href="bars.html">Bars</a></li>
+    <li><a href="clubs.html">Clubs</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="contact.html">Contact</a></li>
+  </ul>
+  <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+</div></nav>
+
+<section class="hero"><div class="hero-content">
+  <h1 class="grad">Vind je reis in 7 vragen</h1>
+  <p class="hero-tagline">Stedentrip. Uitgaansvakantie. Feestvakantie. Rondreis.</p>
+  <p>Kies een land of laat het open. Beantwoord zeven korte vragen (A, B, C of D) en we stellen een reis voor, met hotels, vluchten en activiteiten die je direct kunt boeken.</p>
+  <a href="#quiz" class="btn btn-primary" id="startBtn">Start de vragen</a>
+</div></section>
+
+<!-- Reistypes -->
+<section class="container" id="types">
+  <h2 class="section">Wat voor reis zoek je?</h2>
+  <p class="section-sub">Optioneel. Kies een type, of laat de vragen het bepalen.</p>
+  <div class="grid grid-4" id="typeGrid"></div>
+</section>
+
+<!-- Landen -->
+<section class="container" id="countries">
+  <h2 class="section">Waar wil je heen?</h2>
+  <p class="section-sub">Kies een land, of laat open en wij stellen bestemmingen voor.</p>
+  <div class="grid grid-4" id="countryGrid"></div>
+</section>
+
+<!-- Vragen -->
+<section class="container" id="quiz">
+  <div class="quiz" id="quizBox">
+    <div class="progress"><div id="prog" style="width:14%"></div></div>
+    <div class="qlabel" id="qlabel">Vraag 1 van 7</div>
+    <h2 id="qtitle"></h2>
+    <p class="sub" id="qsub"></p>
+    <div class="options" id="qopts"></div>
+    <div class="quiz-nav"><button class="link-btn" id="qback">← Vorige</button><button class="link-btn" id="qskip">Overslaan →</button></div>
+  </div>
+  <div id="result" class="hidden" style="scroll-margin-top:100px"></div>
+</section>
+
+<footer class="footer">
+  <div class="footer-links"><a href="legal.html">Privacy</a><a href="legal.html">Voorwaarden</a><a href="legal.html">Cookies</a><a href="contact.html">Contact</a></div>
+  <div class="footer-copyright">© 2025 NightFind • All rights reserved • <a href="mailto:info@nightfind.com">info@nightfind.com</a></div>
+</footer>
+
+<script>
+// ===== Affiliate-config (vul je ID's in; leeg = link zonder tracking) =====
+const AFF = {
+  booking: { aid: '' },                 // Booking.com Affiliate Partner
+  viator: { pid: '' },                  // Viator partner ID
+  getyourguide: { partner_id: '' },     // GetYourGuide
+  tripadvisor: { m: '' },
+  skyscanner: { associateid: '' },      // Skyscanner via Impact/Travelpayouts
+  hostelworld: { affiliate: '' },
+  omio: { partner: '' }
+};
+const enc = encodeURIComponent;
+const LINKS = {
+  hotels: (city, nights) => `https://www.booking.com/searchresults.html?ss=${enc(city)}&group_adults=2&no_rooms=1${AFF.booking.aid ? '&aid=' + AFF.booking.aid : ''}`,
+  hostels: (city) => `https://www.hostelworld.com/search?search_keywords=${enc(city)}${AFF.hostelworld.affiliate ? '&affiliate=' + AFF.hostelworld.affiliate : ''}`,
+  flights: (iata) => `https://www.skyscanner.nl/transport/vluchten/ams/${enc(iata)}/${AFF.skyscanner.associateid ? '?associateid=' + AFF.skyscanner.associateid : ''}`,
+  train: (city) => `https://www.omio.nl/zoeken?to=${enc(city)}${AFF.omio.partner ? '&partner=' + AFF.omio.partner : ''}`,
+  activities: (city, kw) => `https://www.viator.com/searchResults/all?text=${enc(city + ' ' + kw)}${AFF.viator.pid ? '&pid=' + AFF.viator.pid + '&mcid=42383&medium=link' : ''}`,
+  gyg: (city) => `https://www.getyourguide.nl/s/?q=${enc(city)}${AFF.getyourguide.partner_id ? '&partner_id=' + AFF.getyourguide.partner_id : ''}`,
+  food: (city) => `https://www.tripadvisor.com/Search?q=${enc('restaurants ' + city)}${AFF.tripadvisor.m ? '&m=' + AFF.tripadvisor.m : ''}`,
+};
+
+// ===== Reistypes =====
+const TYPES = [
+  { id: 'city',   ico: '🏙️', name: 'Stedentrip',        desc: '2–4 dagen één stad: eten, bars, cultuur en een goede club.', tag: 'Weekend' },
+  { id: 'night',  ico: '🍸', name: 'Uitgaansvakantie',  desc: 'Een week op een plek waar het nachtleven het programma is.', tag: '5–8 dagen' },
+  { id: 'party',  ico: '🎉', name: 'Feestvakantie',     desc: 'Strand overdag, festivals en beachclubs \'s nachts.', tag: 'Zomer' },
+  { id: 'tour',   ico: '🗺️', name: 'Rondreis',          desc: 'Meerdere steden of eilanden in één trip, per trein, auto of boot.', tag: '1–3 weken' },
+];
+
+// ===== Bestemmingen (tags sturen de matching) =====
+// tags: reason(party|relax|culture|adventure), vibe(beach|city|underground|resort), season, price(1-4), types
+const DEST = [
+  { country: 'Spanje', flag: '🇪🇸', city: 'Barcelona', iata: 'bcn', types: ['city','night','party'], reason: ['party','culture'], vibe: ['city','beach'], season: ['summer','spring'], price: 3, train: true,
+    why: 'Strand én stad, wereldberoemde clubs en tapas tot laat.', plan: ['Dag 1','Gotische wijk, tapas, cocktailbar El Born','Dag 2','Strand Barceloneta, beachclub, club Razzmatazz','Dag 3','Sagrada Família, rooftopbar, chill'] },
+  { country: 'Spanje', flag: '🇪🇸', city: 'Ibiza', iata: 'ibz', types: ['party','night'], reason: ['party'], vibe: ['beach','resort','underground'], season: ['summer'], price: 4,
+    why: 'De feesthoofdstad van Europa: superclubs, boat parties en zonsondergang in Café del Mar.', plan: ['Dag 1','Playa d\'en Bossa, Ushuaïa','Dag 2','Boat party, Pacha','Dag 3','Formentera dagtrip, sunset San Antonio'] },
+  { country: 'Spanje', flag: '🇪🇸', city: 'Madrid', iata: 'mad', types: ['city','night'], reason: ['culture','party'], vibe: ['city'], season: ['spring','autumn'], price: 2, train: true,
+    why: 'Nachtleven tot 6 uur, betaalbaar, en eten dat je dag vult.', plan: ['Dag 1','Malasaña bars, tapas','Dag 2','Prado, Retiro, club Kapital','Dag 3','Rooftop, markt San Miguel'] },
+  { country: 'Nederland', flag: '🇳🇱', city: 'Amsterdam', iata: 'ams', types: ['city','night'], reason: ['party','culture'], vibe: ['city','underground'], season: ['summer','spring','autumn'], price: 3, train: true,
+    why: 'Wereldklasse techno (Shelter, De School-erfgoed), grachten en festivals in de zomer.', plan: ['Dag 1','Jordaan, bruin café','Dag 2','Museumplein, NDSM, club','Dag 3','Fiets, De Pijp, boot'] },
+  { country: 'Duitsland', flag: '🇩🇪', city: 'Berlijn', iata: 'ber', types: ['city','night'], reason: ['party','adventure'], vibe: ['underground','city'], season: ['summer','spring','autumn','flex'], price: 2, train: true,
+    why: 'Het meest legendarische clubcircuit ter wereld, betaalbaar en zonder sluitingstijd.', plan: ['Dag 1','Kreuzberg bars, Berghain-wachtrij','Dag 2','Slapen, Mauerpark, Sisyphos','Dag 3','Museuminsel, Klunkerkranich rooftop'] },
+  { country: 'Portugal', flag: '🇵🇹', city: 'Lissabon', iata: 'lis', types: ['city','night'], reason: ['relax','culture','party'], vibe: ['city','beach'], season: ['spring','autumn','summer'], price: 2,
+    why: 'Zon, heuvels, Bairro Alto-bars en Lux Frágil aan het water. Goede prijs-kwaliteit.', plan: ['Dag 1','Alfama, fado, Bairro Alto','Dag 2','Belém, LX Factory, Lux Frágil','Dag 3','Cascais strand, sunset Miradouro'] },
+  { country: 'Portugal', flag: '🇵🇹', city: 'Algarve', iata: 'fao', types: ['party','night'], reason: ['party','relax'], vibe: ['beach','resort'], season: ['summer'], price: 2,
+    why: 'Albufeira en Lagos: strandbars, betaalbaar en drukke Strip.', plan: ['Dag 1','Albufeira Strip','Dag 2','Boottocht Benagil','Dag 3','Lagos, beachclub'] },
+  { country: 'Tsjechië', flag: '🇨🇿', city: 'Praag', iata: 'prg', types: ['city','night'], reason: ['party','culture'], vibe: ['city'], season: ['spring','autumn','winter','flex'], price: 1, train: true,
+    why: 'Goedkoop bier, mooiste oude stad van Europa en clubs op vijf verdiepingen.', plan: ['Dag 1','Oude stad, bierhal','Dag 2','Burcht, Karel-brug, Karlovy Lázně','Dag 3','Vinohrady bars, brouwerij'] },
+  { country: 'Hongarije', flag: '🇭🇺', city: 'Boedapest', iata: 'bud', types: ['city','night','party'], reason: ['party','relax'], vibe: ['city'], season: ['summer','spring','autumn','flex'], price: 1, train: true,
+    why: 'Ruin bars, sparties in de thermaalbaden en een van de goedkoopste hoofdsteden.', plan: ['Dag 1','Szimpla Kert, Joodse wijk','Dag 2','Széchenyi-bad, sparty','Dag 3','Boottocht Donau, rooftop 360'] },
+  { country: 'Kroatië', flag: '🇭🇷', city: 'Split & Hvar', iata: 'spu', types: ['party','tour'], reason: ['party','relax','adventure'], vibe: ['beach','resort'], season: ['summer'], price: 2,
+    why: 'Eilandhoppen, Ultra Europe, Zrće beach en glashelder water.', plan: ['Dag 1-2','Split, Bačvice beach','Dag 3-4','Hvar, Carpe Diem Beach','Dag 5-6','Sail Croatia of Brač'] },
+  { country: 'Griekenland', flag: '🇬🇷', city: 'Mykonos', iata: 'jmk', types: ['party','tour'], reason: ['party','relax'], vibe: ['beach','resort'], season: ['summer'], price: 4,
+    why: 'Beachclubs van wereldklasse, Cavo Paradiso en witte dorpjes.', plan: ['Dag 1','Chora, Little Venice','Dag 2','Paradise Beach, Cavo Paradiso','Dag 3','Boot naar Delos of Santorini'] },
+  { country: 'Griekenland', flag: '🇬🇷', city: 'Kreta (Malia)', iata: 'her', types: ['party'], reason: ['party'], vibe: ['beach','resort'], season: ['summer'], price: 1,
+    why: 'De klassieke feestvakantie: strand, strip, all-inclusive en betaalbaar.', plan: ['Dag 1','Malia strip','Dag 2','Stalis beach, boat party','Dag 3','Knossos, Heraklion'] },
+  { country: 'Verenigd Koninkrijk', flag: '🇬🇧', city: 'Londen', iata: 'lon', types: ['city','night'], reason: ['culture','party'], vibe: ['city','underground'], season: ['flex','spring','autumn','winter'], price: 4, train: true,
+    why: 'Fabric, Printworks-erfgoed, Shoreditch en eindeloos veel eten. Niet goedkoop.', plan: ['Dag 1','Shoreditch, Soho','Dag 2','Musea, Camden, Fabric','Dag 3','Borough Market, Southbank'] },
+  { country: 'Italië', flag: '🇮🇹', city: 'Rome & Napels', iata: 'fco', types: ['city','tour'], reason: ['culture','relax'], vibe: ['city'], season: ['spring','autumn'], price: 3, train: true,
+    why: 'Cultuur en eten op het hoogste niveau; Trastevere en Napels-nachtleven als bonus.', plan: ['Dag 1-2','Rome centrum, Trastevere','Dag 3','Trein naar Napels, pizza','Dag 4','Amalfikust dagtrip'] },
+  { country: 'Thailand', flag: '🇹🇭', city: 'Bangkok & Koh Phangan', iata: 'bkk', types: ['tour','party'], reason: ['adventure','party'], vibe: ['beach','city'], season: ['winter','flex'], price: 2,
+    why: 'Full Moon Party, rooftops in Bangkok en een rondreis voor weinig geld.', plan: ['Dag 1-3','Bangkok, Khao San, Sky Bar','Dag 4-7','Koh Phangan, Full Moon','Dag 8-10','Koh Tao duiken'] },
+  { country: 'Frankrijk', flag: '🇫🇷', city: 'Parijs', iata: 'cdg', types: ['city'], reason: ['culture','relax'], vibe: ['city'], season: ['spring','autumn','flex'], price: 4, train: true,
+    why: 'De romantische stedentrip; met Rex Club en Pigalle-bars ook prima nachtleven.', plan: ['Dag 1','Marais, wijnbar','Dag 2','Louvre, Montmartre, Rex Club','Dag 3','Seine, Canal Saint-Martin'] },
+  { country: 'België', flag: '🇧🇪', city: 'Antwerpen & Gent', iata: 'bru', types: ['city','tour'], reason: ['culture','party'], vibe: ['city'], season: ['flex','spring','autumn'], price: 2, train: true,
+    why: 'Dichtbij, betaalbaar per trein, bier en de Antwerpse clubscene (Ampere).', plan: ['Dag 1','Antwerpen Zuid, Ampere','Dag 2','Gent, Overpoort','Dag 3','Brussel, Fuse'] },
+];
+
+// ===== Vragen: elk antwoord zet een profielwaarde =====
+const Q = [
+  { key: 'reason', title: 'Waarom ga je op reis?', sub: 'Kies wat het dichtst in de buurt komt.', opts: [
+    ['party', 'Feesten', 'Clubs, festivals, laat naar bed'], ['relax', 'Ontspannen met een goede avond uit', 'Overdag rustig, \'s avonds op pad'],
+    ['culture', 'Cultuur en eten', 'Musea, wijken, restaurants'], ['adventure', 'Avontuur en rondreizen', 'Meerdere plekken, onderweg zijn'] ] },
+  { key: 'group', title: 'Met wie ga je?', sub: '', opts: [
+    ['friends', 'Vrienden', '2–6 personen'], ['couple', 'Partner', 'Met z\'n tweeën'], ['solo', 'Alleen', 'Solo, hostel of hotel'], ['big', 'Grote groep / vrijgezellen', '7+ personen'] ] },
+  { key: 'duration', title: 'Hoe lang wil je gaan?', sub: '', opts: [
+    ['2', 'Weekend', '2–3 nachten'], ['5', 'Een korte week', '4–6 nachten'], ['9', 'Een tot twee weken', '7–14 nachten'], ['16', 'Langer', '15+ nachten'] ] },
+  { key: 'budget', title: 'Wat is je budget per persoon?', sub: 'Alles inclusief: reis, slapen, uitgaan.', opts: [
+    ['1', 'Tot € 300', 'Goedkoop, hostel, budgetvlucht of trein'], ['2', '€ 300 – € 700', 'Gemiddeld'], ['3', '€ 700 – € 1.500', 'Comfortabel'], ['4', '€ 1.500+', 'Luxe'] ] },
+  { key: 'vibe', title: 'Welke sfeer past bij je?', sub: '', opts: [
+    ['beach', 'Strand en zon', 'Beachclubs, boat parties'], ['city', 'Grote stad', 'Bars, restaurants, rooftops'], ['underground', 'Underground en techno', 'Warehouse, clubs zonder sluitingstijd'], ['resort', 'Resort / all-inclusive', 'Alles geregeld'] ] },
+  { key: 'season', title: 'Wanneer wil je gaan?', sub: '', opts: [
+    ['summer', 'Zomer', 'Juni – september'], ['winter', 'Winter', 'November – februari'], ['spring', 'Voorjaar of najaar', 'Maart – mei, oktober'], ['flex', 'Flexibel', 'Wanneer het goedkoop is'] ] },
+  { key: 'transport', title: 'Hoe wil je reizen?', sub: '', opts: [
+    ['fly', 'Vliegen', 'Snel, verder weg'], ['train', 'Trein', 'Duurzaam, Europa'], ['car', 'Auto', 'Vrijheid, rondreis'], ['any', 'Maakt niet uit', 'Goedkoopste optie'] ] },
+];
+
+// ===== State =====
+const profile = { type: null, country: null };
+let qi = 0;
+const $ = (id) => document.getElementById(id);
+
+// ===== Render types & landen =====
+$('typeGrid').innerHTML = TYPES.map(t => `<div class="card type-card" data-id="${t.id}"><div class="ico">${t.ico}</div><h3>${t.name}</h3><p>${t.desc}</p><span class="tag">${t.tag}</span></div>`).join('');
+$('typeGrid').addEventListener('click', e => {
+  const c = e.target.closest('.type-card'); if (!c) return;
+  profile.type = profile.type === c.dataset.id ? null : c.dataset.id;
+  document.querySelectorAll('.type-card').forEach(x => x.classList.toggle('selected', x.dataset.id === profile.type));
+});
+const COUNTRIES = [...new Map(DEST.map(d => [d.country, d])).values()].map(d => ({ name: d.country, flag: d.flag, cities: DEST.filter(x => x.country === d.country).map(x => x.city), types: [...new Set(DEST.filter(x => x.country === d.country).flatMap(x => x.types))] }));
+const TNAME = Object.fromEntries(TYPES.map(t => [t.id, t.name]));
+$('countryGrid').innerHTML = COUNTRIES.map(c => `<div class="card country" data-c="${c.name}"><span class="flag">${c.flag}</span><h4>${c.name}</h4><small>${c.cities.join(' · ')}</small><div class="fits">${c.types.map(t => `<span>${TNAME[t]}</span>`).join('')}</div></div>`).join('');
+$('countryGrid').addEventListener('click', e => {
+  const c = e.target.closest('.country'); if (!c) return;
+  profile.country = profile.country === c.dataset.c ? null : c.dataset.c;
+  document.querySelectorAll('.country').forEach(x => x.classList.toggle('selected', x.dataset.c === profile.country));
+});
+
+// ===== Quiz =====
+function renderQ() {
+  const q = Q[qi];
+  $('prog').style.width = `${((qi + 1) / Q.length) * 100}%`;
+  $('qlabel').textContent = `Vraag ${qi + 1} van ${Q.length}`;
+  $('qtitle').textContent = q.title; $('qsub').textContent = q.sub;
+  $('qopts').innerHTML = q.opts.map(([v, l, s], i) => `<button class="opt fade" data-v="${v}"><span class="letter">${'ABCD'[i]}</span><span class="txt">${l}<small>${s}</small></span></button>`).join('');
+  $('qback').style.visibility = qi ? 'visible' : 'hidden';
+}
+$('qopts').addEventListener('click', e => { const b = e.target.closest('.opt'); if (!b) return; profile[Q[qi].key] = b.dataset.v; next(); });
+$('qskip').onclick = () => { delete profile[Q[qi].key]; next(); };
+$('qback').onclick = () => { if (qi) { qi--; renderQ(); } };
+function next() { if (qi < Q.length - 1) { qi++; renderQ(); } else showResult(); }
+document.addEventListener('keydown', e => { const i = 'abcd'.indexOf(e.key.toLowerCase()); if (i >= 0 && !$('quizBox').classList.contains('hidden')) $('qopts').children[i]?.click(); });
+
+// ===== Matching =====
+function score(d) {
+  let s = 0;
+  if (profile.country && d.country !== profile.country) return -1;
+  const type = profile.type || inferType();
+  if (d.types.includes(type)) s += 3;
+  if (profile.reason && d.reason.includes(profile.reason)) s += 3;
+  if (profile.vibe && d.vibe.includes(profile.vibe)) s += 3;
+  if (profile.season && (d.season.includes(profile.season) || d.season.includes('flex'))) s += 2;
+  if (profile.budget) { const diff = Math.abs(d.price - +profile.budget); s += diff === 0 ? 3 : diff === 1 ? 1 : diff === 2 ? -1 : -3; }
+  if (profile.transport === 'train' && d.train) s += 2; if (profile.transport === 'train' && !d.train) s -= 2;
+  if (profile.transport === 'car' && d.train) s += 1;
+  if (profile.group === 'big' && d.reason.includes('party')) s += 1;
+  if (profile.group === 'couple' && d.reason.includes('culture')) s += 1;
+  if (+profile.duration >= 9 && d.types.includes('tour')) s += 2;
+  if (+profile.duration <= 2 && d.types.includes('city')) s += 1;
+  return s;
+}
+function inferType() {
+  if (profile.reason === 'adventure' || +profile.duration >= 9) return 'tour';
+  if (profile.vibe === 'beach' || profile.vibe === 'resort') return 'party';
+  if (+profile.duration >= 5 && profile.reason === 'party') return 'night';
+  return 'city';
+}
+function estimate(d) {
+  const nights = +profile.duration || 3;
+  const perNight = [0, 35, 70, 120, 220][d.price] || 70;
+  const travel = profile.transport === 'train' ? 90 : d.price >= 3 ? 220 : 130;
+  const fun = [0, 30, 50, 80, 150][d.price] * nights;
+  const lo = Math.round((perNight * nights / 2 + travel + fun) / 10) * 10;
+  return { nights, lo, hi: Math.round(lo * 1.5 / 10) * 10 };
+}
+
+// ===== Resultaat =====
+function showResult() {
+  const type = profile.type || inferType();
+  const ranked = DEST.map(d => ({ d, s: score(d) })).filter(x => x.s >= 0).sort((a, b) => b.s - a.s).slice(0, 3);
+  const max = Math.max(...ranked.map(r => r.s), 1);
+  $('quizBox').classList.add('hidden');
+  const R = $('result'); R.classList.remove('hidden');
+  R.innerHTML = `
+    <div class="result-head fade">
+      <div class="qlabel">Jouw match</div>
+      <h2 class="grad">${TNAME[type]}${profile.country ? ' in ' + profile.country : ''}</h2>
+      <p>${summary(type)}</p>
+      <div class="actions"><button class="btn btn-secondary btn-sm" id="again">↺ Opnieuw</button><button class="btn btn-secondary btn-sm" id="share">🔗 Deel</button></div>
+    </div>
+    <div class="dest">${ranked.map(({ d, s }, i) => card(d, i, Math.round(60 + 40 * s / max), type)).join('')}</div>
+    <p class="disclosure">Boek je via een van deze links, dan ontvangt NightFind een kleine vergoeding van de partner. Jij betaalt niets extra. Prijzen zijn indicaties, geen aanbiedingen.</p>`;
+  $('again').onclick = () => { qi = 0; R.classList.add('hidden'); $('quizBox').classList.remove('hidden'); renderQ(); $('quiz').scrollIntoView({ behavior: 'smooth' }); };
+  $('share').onclick = async () => { const u = location.origin + location.pathname + '?p=' + btoa(unescape(encodeURIComponent(JSON.stringify(profile)))); try { await navigator.clipboard.writeText(u); $('share').textContent = '✅ Gekopieerd'; } catch { prompt('Kopieer:', u); } };
+  R.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function summary(type) {
+  const g = { friends: 'met vrienden', couple: 'met je partner', solo: 'solo', big: 'met een grote groep' }[profile.group] || '';
+  const n = profile.duration ? `${profile.duration}+ nachten` : '';
+  const b = { 1: 'budget', 2: 'gemiddeld budget', 3: 'comfortabel', 4: 'luxe' }[profile.budget] || '';
+  return [g, n, b].filter(Boolean).join(' · ') || 'Op basis van je antwoorden.';
+}
+function card(d, i, pct, type) {
+  const est = estimate(d);
+  const budget = profile.budget === '1' || profile.group === 'solo';
+  return `<div class="card dest-card fade" style="animation-delay:${i * .1}s">
+    <div>
+      <div class="rank">#${i + 1} ${d.flag} ${d.country}<span class="match">${pct}% match</span></div>
+      <h3>${d.city}</h3>
+      <p class="why">${d.why}</p>
+      <ul class="plan">${d.plan.map((p, j) => j % 2 === 0 ? `<li><b>${p}</b>` : `<span>${p}</span></li>`).join('')}</ul>
+      <div class="est">Indicatie voor ${est.nights} nachten p.p.: <b>€ ${est.lo} – € ${est.hi}</b> (reis, slapen, uitgaan)</div>
+    </div>
+    <div class="book">
+      <h4>Boek deze reis</h4>
+      <a href="${LINKS.hotels(d.city)}" target="_blank" rel="noopener sponsored"><span>🏨 Hotels in ${d.city}<small><br>via Booking.com</small></span><span>→</span></a>
+      ${budget ? `<a href="${LINKS.hostels(d.city)}" target="_blank" rel="noopener sponsored"><span>🛏️ Hostels<small><br>via Hostelworld</small></span><span>→</span></a>` : ''}
+      ${profile.transport === 'train' && d.train ? `<a href="${LINKS.train(d.city)}" target="_blank" rel="noopener sponsored"><span>🚆 Treintickets<small><br>via Omio</small></span><span>→</span></a>` : `<a href="${LINKS.flights(d.iata)}" target="_blank" rel="noopener sponsored"><span>✈️ Vluchten naar ${d.city}<small><br>via Skyscanner</small></span><span>→</span></a>`}
+      <a href="${LINKS.activities(d.city, type === 'party' ? 'boat party' : type === 'tour' ? 'tour' : 'nightlife')}" target="_blank" rel="noopener sponsored"><span>🎟️ ${type === 'party' ? 'Boat parties & clubs' : 'Tours & nightlife'}<small><br>via Viator</small></span><span>→</span></a>
+      <a href="${LINKS.gyg(d.city)}" target="_blank" rel="noopener sponsored"><span>🎫 Tickets & excursies<small><br>via GetYourGuide</small></span><span>→</span></a>
+      <a href="${LINKS.food(d.city)}" target="_blank" rel="noopener sponsored"><span>🍽️ Restaurants<small><br>via TripAdvisor</small></span><span>→</span></a>
+    </div></div>`;
+}
+
+// ===== Init =====
+try { const p = new URLSearchParams(location.search).get('p'); if (p) { Object.assign(profile, JSON.parse(decodeURIComponent(escape(atob(p))))); if (profile.reason) { qi = Q.length - 1; showResult(); } } } catch {}
+renderQ();
+window.addEventListener('scroll', () => $('navbar').classList.toggle('scrolled', scrollY > 50));
+$('navToggle').onclick = () => { $('navMenu').classList.toggle('active'); $('navToggle').classList.toggle('active'); };
+</script>
+</body>
+</html>
