@@ -1,17 +1,9 @@
-<!-- ParsePDF — embed 8 van 9: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
+<!-- ParsePDF — embed 8 van 10: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
 <script>
 window.PLP_V=(function(){
 var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,CFG=window.PARSELAB;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
 var BRON={kolomkop:"srcKolomkop",rechts:"srcRechts",inline:"srcInline",onder:"srcOnder",patroon:"srcPatroon",ai:"srcAi"};
-// Een gevonden waarde krijgt meteen de juiste opschoning mee.
-function filterVoor(v){
-  var p=v.vindregel&&v.vindregel.patroon;
-  if(p==="bedrag"||/^\s*-?€/.test(v.waarde)||/\d,\d{2}$/.test(v.waarde))return "bedrag";
-  if(p==="datum"||(ST.vind(v.waarde)||{}).patroon&&(ST.vind(v.waarde)||{}).patroon.naam==="datum")return "datum";
-  return "geen";
-}
-
 function open(file){
   var t=S.t,laag=el("div","plp-doorkijk"),blad=el("div","plp-blad");
   laag.appendChild(blad);document.body.appendChild(laag);
@@ -30,10 +22,9 @@ function open(file){
 
   P.lees(file).then(function(doc){
     laden.remove();
-    var analyse=ST.analyse(doc);
-    var velden=analyse.velden.map(function(v){
+    var analyse=ST.analyse(doc),velden=analyse.velden.map(function(v){
       return {aan:true,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,labelvak:v.labelvak,
-              vindregel:v.vindregel,filter:filterVoor(v)};
+              vindregel:v.vindregel,filter:ST.filterVoor(v)};
     });
     if(!velden.length){blad.appendChild(el("p","pld-msg pld-msg--warn",t.noFields));return;}
     bouw(blad,file,doc,analyse,velden,sluit);
@@ -47,7 +38,6 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   var t=S.t,pagina=0,tabelAan=false;
   var twee=el("div","plp-twee"),linkerkant=el("div"),rechterkant=el("div");
   twee.appendChild(linkerkant);twee.appendChild(rechterkant);blad.appendChild(twee);
-
   var vlak=el("div","plp-pagina"),canvas=document.createElement("canvas");
   vlak.appendChild(canvas);linkerkant.appendChild(vlak);
   var bladeren=el("div","pld-row");linkerkant.appendChild(bladeren);
@@ -76,16 +66,22 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   var ai=el("button","pld-btn pld-btn--ghost",t.withAi);ai.type="button";
   var melding=el("p","pld-text");
   knoppen.appendChild(over);knoppen.appendChild(ai);knoppen.appendChild(melding);
+  if(window.PLP_SJ&&window.PLP_SJ.opslaanKnop)
+    blad.appendChild(window.PLP_SJ.opslaanKnop(gekozenRegels,doc,analyse,melding));
 
-  over.addEventListener("click",function(){
-    var gekozen=velden.filter(function(v){return v.aan&&v.naam;});
-    if(!gekozen.length)return;
-    S.regels=gekozen.map(function(v){
+  function gekozenRegels(){
+    var lijst=velden.filter(function(v){return v.aan&&v.naam;}).map(function(v){
       return {naam:v.naam,type:"cel",waarde:v.vindregel.label||v.vindregel.patroon||"",filter:v.filter,vindregel:v.vindregel};
     });
     if(tabelAan&&analyse.tabel)analyse.tabel.kop.forEach(function(k,i){
-      S.regels.push({naam:k,type:"tabelkolom",waarde:"",kolom:i,filter:"geen"});
+      lijst.push({naam:k,type:"tabelkolom",waarde:"",kolom:i,filter:"geen"});
     });
+    return lijst;
+  }
+  over.addEventListener("click",function(){
+    var regels=gekozenRegels();
+    if(!regels.length)return;
+    S.regels=regels;
     try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
     sluit();window.PLP_UI.teken();window.PLP_UI.meld(t.taken);
   });
@@ -139,8 +135,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   }
   function tip(box,tekst){
     var q=el("div","plp-tip",tekst);
-    q.style.left=(box.offsetLeft+box.offsetWidth/2)+"px";
-    q.style.top=(box.offsetTop-6)+"px";
+    q.style.left=(box.offsetLeft+box.offsetWidth/2)+"px";q.style.top=(box.offsetTop-6)+"px";
     vlak.appendChild(q);
   }
 
@@ -162,7 +157,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   teken();
 }
 
-// De AI mag pas meekijken nadat de gebruiker daar ja op zegt.
+// De AI kijkt pas mee nadat de gebruiker ja zegt.
 function vraagAi(doc,velden,klaar,melding,knop){
   var t=S.t,laag=document.createElement("div");laag.className="plp-modal";
   var blad=el("div","plp-modal-blad");

@@ -20,7 +20,7 @@
 <div id="pl-parsepdf-root"></div>
 <!-- 1-config-stijl.html -->
 <!--
-  ParsePDF — embed 1 van 9: configuratie en stijl
+  ParsePDF — embed 1 van 10: configuratie en stijl
   Plaats bovenaan de pagina, boven de lege container <div id="pl-parsepdf-root">.
 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -84,6 +84,8 @@ window.PARSELAB.client=window.supabase.createClient(window.PARSELAB.supabaseUrl,
 .plp-vlak--label{background:rgba(201,169,97,.16);border-color:rgba(201,169,97,.5);cursor:default}
 .plp-vlak:hover,.plp-vlak--warm{background:rgba(44,111,168,.34);border-color:#215A88}
 .plp-tip{position:absolute;z-index:3;background:#1F3A5F;color:#F2F0E7;font-size:13px;line-height:1.3;padding:6px 10px;border-radius:9px;pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%)}
+.plp-mapkies{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.plp-mapkies>.pld-sel,.plp-mapkies>.pld-in{flex:1 1 220px;min-width:0;width:auto}
 .plp-lijst{display:flex;flex-direction:column;gap:10px;max-height:70vh;overflow:auto}
 .plp-veldrij{display:grid;grid-template-columns:auto minmax(0,1.1fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #E6E3D8}
 .plp-veldrij:first-child{border-top:0}
@@ -93,13 +95,15 @@ window.PARSELAB.client=window.supabase.createClient(window.PARSELAB.supabaseUrl,
 .plp-modal{position:fixed;inset:0;z-index:10000;background:rgba(6,18,35,.55);display:flex;align-items:center;justify-content:center;padding:24px}
 .plp-modal-blad{background:#FFF;border-radius:20px;max-width:560px;width:100%;padding:28px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 60px rgba(6,18,35,.28)}
 .plp-uit{background:transparent;border:0;font:inherit;color:#4A5A6C;cursor:pointer;padding:8px;min-height:44px}
-@media (max-width:991px){.plp-twee{grid-template-columns:1fr}.plp-lijst{max-height:none}}
+@media (max-width:991px){.plp-twee{grid-template-columns:1fr}.plp-mapkies{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.plp-mapkies>.pld-sel,.plp-mapkies>.pld-in{flex:1 1 220px;min-width:0;width:auto}
+.plp-lijst{max-height:none}}
 @media (max-width:767px){.plp-veldrij{grid-template-columns:auto 1fr;row-gap:6px}.plp-blad{padding:20px}}
 @media (max-width:767px){.plp-rule{grid-template-columns:1fr 1fr}.pld-card{padding:24px}}
 @media (max-width:479px){.pld-title{font-size:28px}.pld-num{font-size:26px}.plp-rule{grid-template-columns:1fr}.pld-card{padding:20px}.pld-btn{width:100%}}
 </style>
 <!-- 2-teksten.html -->
-<!-- ParsePDF — embed 2 van 9: teksten en startsjablonen -->
+<!-- ParsePDF — embed 2 van 10: teksten en startsjablonen -->
 <script>
 window.PLP_T={
 nl:{title:"ParsePDF",sub:"Haal velden uit je PDF's met regels die je één keer instelt. Alles gebeurt in je eigen browser; er wordt geen document verstuurd.",
@@ -192,7 +196,7 @@ bank:[{naam:"Rekening",type:"regex",waarde:"[A-Z]{2}\\d{2}[A-Z0-9]{10,}",filter:
 blank:[{naam:"Veld 1",type:"label",waarde:"",filter:"geen"}]};
 </script>
 <!-- 3-teksten-voorstel.html -->
-<!-- ParsePDF - embed 3 van 9: teksten voor doorkijken, voorstel en AI -->
+<!-- ParsePDF - embed 3 van 10: teksten voor doorkijken, voorstel en AI -->
 <script>
 (function(){var T=window.PLP_T;if(!T)return;
 var EXTRA={
@@ -208,7 +212,18 @@ aiBusy:"De AI kijkt mee...",aiOff:"AI-hulp is niet beschikbaar op deze server. H
 aiDone:"De AI heeft namen aangevuld en de waarden nagelopen.",
 tableFound:"Regeltabel gevonden",tableHint:"{n} regels met {k} kolommen. Zet aan om per regel een rij te maken in plaats van per document.",
 tableUse:"Een rij per tabelregel",cancel:"Annuleren",page:"Pagina",noFields:"De tool vond geen velden. Het document heeft mogelijk geen tekstlaag.",
-tCel:"Automatisch (uit voorstel)"},
+tCel:"Automatisch (uit voorstel)",
+folders:"Mappen met sjablonen",foldersHint:"Zet sjablonen bij elkaar per soort document. Bij het uitlezen kiest de tool zelf welk sjabloon bij welk document hoort.",
+folder:"Map",newFolder:"Nieuwe map",folderName:"Naam van de map",delFolder:"Map verwijderen",
+noFolders:"Nog geen mappen. Maak er een en bewaar je eerste sjabloon vanuit het voorstel.",
+noTemplates:"Nog geen sjablonen in deze map. Open een document met \"Kijk wat erin staat\" en bewaar het voorstel hier.",
+templates:"Sjablonen in deze map",fields:"velden",used:"keer gebruikt",delTemplate:"Verwijderen",
+saveTemplate:"Bewaar als sjabloon",templateName:"Naam van het sjabloon",saveIn:"Bewaren in",
+savedTemplate:"Sjabloon bewaard in {map}.",
+colTemplate:"Sjabloon",unknown:"onbekend",
+recognised:"Herkend: {lijst}",oneUnknown:"1 document paste bij geen enkel sjabloon; die kolommen blijven leeg.",
+manyUnknown:"{n} documenten pasten bij geen enkel sjabloon; die kolommen blijven leeg.",
+useFolder:"Gebruik de sjablonen uit deze map",useRules:"Gebruik de veldregels hieronder"},
 en:{look:"See what is in it",lookHint:"The tool opens the document, highlights what it can read and suggests names. Hover a box to see the name.",
 proposal:"Proposal",proposalHint:"This is what the tool found by itself. Tick what you want and adjust the names.",
 fName:"Name",fValue:"Value",source:"Found via",
@@ -221,7 +236,18 @@ aiBusy:"The AI is having a look...",aiOff:"AI help is not available on this serv
 aiDone:"The AI added names and checked the values.",
 tableFound:"Line table found",tableHint:"{n} lines with {k} columns. Turn on to make one row per line instead of one per document.",
 tableUse:"One row per table line",cancel:"Cancel",page:"Page",noFields:"The tool found no fields. The document may have no text layer.",
-tCel:"Automatic (from proposal)"},
+tCel:"Automatic (from proposal)",
+folders:"Folders with templates",foldersHint:"Group templates by kind of document. When extracting, the tool picks the matching template per document itself.",
+folder:"Folder",newFolder:"New folder",folderName:"Folder name",delFolder:"Delete folder",
+noFolders:"No folders yet. Create one and save your first template from the proposal.",
+noTemplates:"No templates in this folder yet. Open a document with \"See what is in it\" and save the proposal here.",
+templates:"Templates in this folder",fields:"fields",used:"times used",delTemplate:"Remove",
+saveTemplate:"Save as template",templateName:"Template name",saveIn:"Save in",
+savedTemplate:"Template saved in {map}.",
+colTemplate:"Template",unknown:"unknown",
+recognised:"Recognised: {lijst}",oneUnknown:"1 document matched no template; those columns stay empty.",
+manyUnknown:"{n} documents matched no template; those columns stay empty.",
+useFolder:"Use the templates in this folder",useRules:"Use the field rules below"},
 de:{look:"Sieh nach, was drinsteht",lookHint:"Das Werkzeug oeffnet das Dokument, hebt hervor was es lesen kann und schlaegt Namen vor. Fahre ueber ein Feld, um den Namen zu sehen.",
 proposal:"Vorschlag",proposalHint:"Das hat das Werkzeug selbst gefunden. Hake an, was du willst, und passe die Namen an.",
 fName:"Name",fValue:"Wert",source:"Gefunden ueber",
@@ -234,7 +260,18 @@ aiBusy:"Die KI schaut mit...",aiOff:"KI-Hilfe ist auf diesem Server nicht verfue
 aiDone:"Die KI hat Namen ergaenzt und die Werte geprueft.",
 tableFound:"Positionstabelle gefunden",tableHint:"{n} Zeilen mit {k} Spalten. Einschalten, um eine Zeile pro Position statt pro Dokument zu erzeugen.",
 tableUse:"Eine Zeile pro Tabellenzeile",cancel:"Abbrechen",page:"Seite",noFields:"Das Werkzeug hat keine Felder gefunden. Das Dokument hat vielleicht keine Textebene.",
-tCel:"Automatisch (aus dem Vorschlag)"}
+tCel:"Automatisch (aus dem Vorschlag)",
+folders:"Ordner mit Vorlagen",foldersHint:"Fasse Vorlagen je Dokumentart zusammen. Beim Auslesen waehlt das Werkzeug selbst die passende Vorlage pro Dokument.",
+folder:"Ordner",newFolder:"Neuer Ordner",folderName:"Name des Ordners",delFolder:"Ordner loeschen",
+noFolders:"Noch keine Ordner. Lege einen an und speichere deine erste Vorlage aus dem Vorschlag.",
+noTemplates:"Noch keine Vorlagen in diesem Ordner. Oeffne ein Dokument mit \"Sieh nach, was drinsteht\" und speichere den Vorschlag hier.",
+templates:"Vorlagen in diesem Ordner",fields:"Felder",used:"mal benutzt",delTemplate:"Entfernen",
+saveTemplate:"Als Vorlage speichern",templateName:"Name der Vorlage",saveIn:"Speichern in",
+savedTemplate:"Vorlage in {map} gespeichert.",
+colTemplate:"Vorlage",unknown:"unbekannt",
+recognised:"Erkannt: {lijst}",oneUnknown:"1 Dokument passte zu keiner Vorlage; diese Spalten bleiben leer.",
+manyUnknown:"{n} Dokumente passten zu keiner Vorlage; diese Spalten bleiben leer.",
+useFolder:"Die Vorlagen aus diesem Ordner verwenden",useRules:"Die Feldregeln unten verwenden"}
 };
 Object.keys(EXTRA).forEach(function(taal){
   if(!T[taal])return;
@@ -243,7 +280,7 @@ Object.keys(EXTRA).forEach(function(taal){
 })();
 </script>
 <!-- 4-motor.html -->
-<!-- ParsePDF — embed 4 van 9: uitleesmotor. Draait volledig lokaal in de browser. -->
+<!-- ParsePDF — embed 4 van 10: uitleesmotor. Draait volledig lokaal in de browser. -->
 <script>
 window.PLP=(function(){
 var LIB="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
@@ -441,9 +478,9 @@ return {tel:tel,lees:lees,rij:rij,csv:csv,bewaar:bewaar,open:open,motor:motor,MA
 })();
 </script>
 <!-- 5-scherm.html -->
-<!-- ParsePDF — embed 5 van 9: schermopbouw -->
+<!-- ParsePDF — embed 5 van 10: schermopbouw -->
 <script>
-window.PLP_S={regels:[],bestanden:[],rijen:[],verbruik:null,taal:"nl",t:null,root:null};
+window.PLP_S={regels:[],bestanden:[],rijen:[],kolommen:null,verbruik:null,taal:"nl",t:null,root:null};
 window.PLP_UI=(function(){
 var S=window.PLP_S,P=window.PLP,CFG=window.PARSELAB;
 var LOC={nl:"nl-NL",en:"en-GB",de:"de-DE"};
@@ -477,6 +514,9 @@ bar.setAttribute("aria-valuemax",String(lim));bar.setAttribute("aria-valuenow",S
 var vul=el("span");vul.style.width=pct+"%";bar.appendChild(vul);vk.appendChild(bar);
 vk.appendChild(el("p","pld-text",nr(over())+" "+t.pages+" "+t.left));
 root.appendChild(vk);}
+if(window.PLP_SJ&&window.PLP_SJ.kaart){
+root.appendChild(el("p","pld-caps pld-sect",t.folders));
+root.appendChild(window.PLP_SJ.kaart());}
 root.appendChild(el("p","pld-caps pld-sect",t.rules));
 root.appendChild(regelKaart());
 root.appendChild(el("p","pld-caps pld-sect",t.files));
@@ -569,10 +609,10 @@ teken();
 if(fouten.length)meld(fouten.join(" "),"warn");}
 
 function resultaatKaart(){
-var t=S.t,k=el("div","pld-card");
+var t=S.t,k=el("div","pld-card"),kol=(S.kolommen&&S.kolommen.length)?S.kolommen:S.regels;
 if(!S.rijen.length){k.appendChild(el("p","pld-text",t.empty));return k;}
 var wrap=el("div","plp-scroll"),tab=el("table","plp-table"),thead=el("thead"),tr=el("tr");
-[t.colFile,t.colPages].concat(S.regels.map(function(r){return r.naam||"—";}))
+[t.colFile,t.colPages].concat(kol.map(function(r){return r.naam||"—";}))
 .forEach(function(h){tr.appendChild(el("th","",h));});
 thead.appendChild(tr);tab.appendChild(thead);
 var tb=el("tbody");
@@ -580,12 +620,12 @@ S.rijen.forEach(function(r){
 var row=el("tr");
 row.appendChild(el("td","",r.naam));
 row.appendChild(el("td","plp-mono",String(r.paginas)));
-S.regels.forEach(function(x,i){
+kol.forEach(function(x,i){
 row.appendChild(el("td",(x.filter==="bedrag"||x.filter==="datum")?"plp-mono":"",r.velden["k"+i]||"—"));});
 tb.appendChild(row);});
 tab.appendChild(tb);wrap.appendChild(tab);k.appendChild(wrap);
 var dl=el("button","pld-btn",t.download);dl.type="button";
-dl.addEventListener("click",function(){P.bewaar(t.csvName,P.csv(S.regels,S.rijen,t.colFile,t.colPages));});
+dl.addEventListener("click",function(){P.bewaar(t.csvName,P.csv(kol,S.rijen,t.colFile,t.colPages));});
 k.appendChild(dl);return k;}
 
 function limietKaart(n,r){
@@ -599,7 +639,7 @@ return {el:el,nr:nr,teken:teken,meld:meld,over:over,laadRegels:laadRegels,limiet
 })();
 </script>
 <!-- 6-structuur.html -->
-<!-- ParsePDF — embed 6 van 9: cellen, kolommen en patronen. De basis van de herkenning. -->
+<!-- ParsePDF — embed 6 van 10: cellen, kolommen en patronen. De basis van de herkenning. -->
 <script>
 
 window.PLP_ST=(function(){
@@ -709,17 +749,17 @@ function pas(doc,vr){
   return w.length?w[0].t:"";
 }
 
-return {pas:pas,labelachtig:labelachtig,bruikbaar:bruikbaar,eigenPaar:eigenPaar,schoonLabel:schoonLabel,
+return {pas:pas,labelachtig:labelachtig,re:re,bruikbaar:bruikbaar,eigenPaar:eigenPaar,schoonLabel:schoonLabel,
 overlapt:overlapt,perRij:perRij,kolommen:kolommen,patronen:PAT,vind:vind,isWaarde:isWaarde,STOP:STOP};
 })();
 </script>
 <!-- 7-velden.html -->
-<!-- ParsePDF — embed 7 van 9: velden voorstellen. Gebruikt de cellen uit embed 6. -->
+<!-- ParsePDF — embed 7 van 10: velden voorstellen. Gebruikt de cellen uit embed 6. -->
 <script>
 (function(){
 var ST=window.PLP_ST;if(!ST)return;
 var PAT=ST.patronen,STOP=ST.STOP;
-var labelachtig=ST.labelachtig,bruikbaar=ST.bruikbaar,eigenPaar=ST.eigenPaar;
+var labelachtig=ST.labelachtig,bruikbaar=ST.bruikbaar,eigenPaar=ST.eigenPaar,vind=ST.vind,re=ST.re;
 var schoonLabel=ST.schoonLabel,overlapt=ST.overlapt,perRij=ST.perRij;
 function kandidaat(naam,waarde,score,vak,vindregel,label){
   return {naam:naam,waarde:String(waarde).trim(),score:score,vak:vak,vindregel:vindregel,labelvak:label||null};
@@ -844,24 +884,24 @@ function tabel(rijen){
   return beste;
 }
 
-ST.analyse=analyse;
+// Een gevonden waarde krijgt meteen de juiste opschoning mee.
+function filterVoor(v){
+  var p=v.vindregel&&v.vindregel.patroon;
+  if(p==="bedrag"||/^\s*-?€/.test(v.waarde)||/\d,\d{2}$/.test(v.waarde))return "bedrag";
+  var g=vind(v.waarde);
+  if(p==="datum"||(g&&g.patroon.naam==="datum"))return "datum";
+  return "geen";
+}
+ST.analyse=analyse;ST.filterVoor=filterVoor;
 })();
 </script>
 <!-- 8-voorstel.html -->
-<!-- ParsePDF — embed 8 van 9: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
+<!-- ParsePDF — embed 8 van 10: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
 <script>
 window.PLP_V=(function(){
 var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,CFG=window.PARSELAB;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
 var BRON={kolomkop:"srcKolomkop",rechts:"srcRechts",inline:"srcInline",onder:"srcOnder",patroon:"srcPatroon",ai:"srcAi"};
-// Een gevonden waarde krijgt meteen de juiste opschoning mee.
-function filterVoor(v){
-  var p=v.vindregel&&v.vindregel.patroon;
-  if(p==="bedrag"||/^\s*-?€/.test(v.waarde)||/\d,\d{2}$/.test(v.waarde))return "bedrag";
-  if(p==="datum"||(ST.vind(v.waarde)||{}).patroon&&(ST.vind(v.waarde)||{}).patroon.naam==="datum")return "datum";
-  return "geen";
-}
-
 function open(file){
   var t=S.t,laag=el("div","plp-doorkijk"),blad=el("div","plp-blad");
   laag.appendChild(blad);document.body.appendChild(laag);
@@ -880,10 +920,9 @@ function open(file){
 
   P.lees(file).then(function(doc){
     laden.remove();
-    var analyse=ST.analyse(doc);
-    var velden=analyse.velden.map(function(v){
+    var analyse=ST.analyse(doc),velden=analyse.velden.map(function(v){
       return {aan:true,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,labelvak:v.labelvak,
-              vindregel:v.vindregel,filter:filterVoor(v)};
+              vindregel:v.vindregel,filter:ST.filterVoor(v)};
     });
     if(!velden.length){blad.appendChild(el("p","pld-msg pld-msg--warn",t.noFields));return;}
     bouw(blad,file,doc,analyse,velden,sluit);
@@ -897,7 +936,6 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   var t=S.t,pagina=0,tabelAan=false;
   var twee=el("div","plp-twee"),linkerkant=el("div"),rechterkant=el("div");
   twee.appendChild(linkerkant);twee.appendChild(rechterkant);blad.appendChild(twee);
-
   var vlak=el("div","plp-pagina"),canvas=document.createElement("canvas");
   vlak.appendChild(canvas);linkerkant.appendChild(vlak);
   var bladeren=el("div","pld-row");linkerkant.appendChild(bladeren);
@@ -926,16 +964,22 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   var ai=el("button","pld-btn pld-btn--ghost",t.withAi);ai.type="button";
   var melding=el("p","pld-text");
   knoppen.appendChild(over);knoppen.appendChild(ai);knoppen.appendChild(melding);
+  if(window.PLP_SJ&&window.PLP_SJ.opslaanKnop)
+    blad.appendChild(window.PLP_SJ.opslaanKnop(gekozenRegels,doc,analyse,melding));
 
-  over.addEventListener("click",function(){
-    var gekozen=velden.filter(function(v){return v.aan&&v.naam;});
-    if(!gekozen.length)return;
-    S.regels=gekozen.map(function(v){
+  function gekozenRegels(){
+    var lijst=velden.filter(function(v){return v.aan&&v.naam;}).map(function(v){
       return {naam:v.naam,type:"cel",waarde:v.vindregel.label||v.vindregel.patroon||"",filter:v.filter,vindregel:v.vindregel};
     });
     if(tabelAan&&analyse.tabel)analyse.tabel.kop.forEach(function(k,i){
-      S.regels.push({naam:k,type:"tabelkolom",waarde:"",kolom:i,filter:"geen"});
+      lijst.push({naam:k,type:"tabelkolom",waarde:"",kolom:i,filter:"geen"});
     });
+    return lijst;
+  }
+  over.addEventListener("click",function(){
+    var regels=gekozenRegels();
+    if(!regels.length)return;
+    S.regels=regels;
     try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
     sluit();window.PLP_UI.teken();window.PLP_UI.meld(t.taken);
   });
@@ -989,8 +1033,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   }
   function tip(box,tekst){
     var q=el("div","plp-tip",tekst);
-    q.style.left=(box.offsetLeft+box.offsetWidth/2)+"px";
-    q.style.top=(box.offsetTop-6)+"px";
+    q.style.left=(box.offsetLeft+box.offsetWidth/2)+"px";q.style.top=(box.offsetTop-6)+"px";
     vlak.appendChild(q);
   }
 
@@ -1012,7 +1055,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   teken();
 }
 
-// De AI mag pas meekijken nadat de gebruiker daar ja op zegt.
+// De AI kijkt pas mee nadat de gebruiker ja zegt.
 function vraagAi(doc,velden,klaar,melding,knop){
   var t=S.t,laag=document.createElement("div");laag.className="plp-modal";
   var blad=el("div","plp-modal-blad");
@@ -1058,8 +1101,178 @@ function haalAi(doc,velden){
 return {open:open};
 })();
 </script>
-<!-- 9-verwerken.html -->
-<!-- ParsePDF — embed 9 van 9: verwerking en opstarten. Plaats als laatste. -->
+<!-- 9-sjablonen.html -->
+<!-- ParsePDF — embed 9 van 10: mappen met sjablonen en het herkennen van documenten. -->
+<script>
+window.PLP_SJ=(function(){
+var SLEUTEL="pl_parsepdf_mappen";
+var ST=window.PLP_ST;
+
+function lees(){
+  try{var d=JSON.parse(localStorage.getItem(SLEUTEL)||"null");if(d&&d.mappen)return d;}catch(e){}
+  return {mappen:[],actief:null};
+}
+function bewaar(d){try{localStorage.setItem(SLEUTEL,JSON.stringify(d));}catch(e){}return d;}
+function id(){return "m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function nieuweMap(naam){
+  var d=lees(),m={id:id(),naam:naam||"Nieuwe map",sjablonen:[]};
+  d.mappen.push(m);d.actief=m.id;bewaar(d);return m;
+}
+function verwijderMap(mid){
+  var d=lees();
+  d.mappen=d.mappen.filter(function(m){return m.id!==mid;});
+  if(d.actief===mid)d.actief=d.mappen.length?d.mappen[0].id:null;
+  bewaar(d);
+}
+function map(mid){return lees().mappen.filter(function(m){return m.id===mid;})[0]||null;}
+function kiesMap(mid){var d=lees();d.actief=mid;bewaar(d);}
+
+function bewaarSjabloon(mid,sj){
+  var d=lees(),m=d.mappen.filter(function(x){return x.id===mid;})[0];
+  if(!m)return null;
+  sj.id=sj.id||id();sj.gebruikt=sj.gebruikt||0;
+  m.sjablonen=m.sjablonen.filter(function(x){return x.id!==sj.id;});
+  m.sjablonen.push(sj);bewaar(d);return sj;
+}
+function verwijderSjabloon(mid,sid){
+  var d=lees(),m=d.mappen.filter(function(x){return x.id===mid;})[0];
+  if(!m)return;
+  m.sjablonen=m.sjablonen.filter(function(x){return x.id!==sid;});bewaar(d);
+}
+function telGebruik(mid,sid){
+  var d=lees(),m=d.mappen.filter(function(x){return x.id===mid;})[0];
+  if(!m)return;
+  m.sjablonen.forEach(function(s){if(s.id===sid)s.gebruikt=(s.gebruikt||0)+1;});
+  bewaar(d);
+}
+
+// De vingerafdruk van een document: welke vaste teksten erin staan, waar de
+// kolommen beginnen, en de nummers die de afzender verraden.
+function vingerafdruk(doc,analyse){
+  var cellen=doc.cellen||[],breed=(doc.maten&&doc.maten[0]&&doc.maten[0].breed)||595;
+  // De labels die de herkenning gebruikte plus de vaste teksten op de pagina:
+  // dat is wat bij dezelfde afzender gelijk blijft, ook als de bedragen wijzigen.
+  var teksten=(analyse.velden||[]).map(function(v){return (v.vindregel&&v.vindregel.label)||"";})
+    .concat(cellen.filter(function(c){return ST.labelachtig(c.t)&&!ST.vind(c.t);})
+                  .map(function(c){return c.t;}))
+    .map(function(t){return String(t).toLowerCase().trim();}).filter(Boolean);
+  var uniek=[];teksten.forEach(function(t){if(uniek.indexOf(t)<0&&uniek.length<40)uniek.push(t);});
+  var kenmerken=[];
+  ST.patronen.forEach(function(p){
+    if(["iban","btwnl","kvk","url"].indexOf(p.naam)<0)return;
+    var m=(doc.tekst||"").match(ST.re(p));
+    if(m)kenmerken.push(p.naam+":"+m[0].replace(/\s/g,"").toLowerCase());
+  });
+  return {teksten:uniek,
+          kolommen:(analyse.kolommen||[]).map(function(k){return Math.round(k.x/breed*1000)/1000;}),
+          kenmerken:kenmerken};
+}
+
+// Score: harde kenmerken wegen het zwaarst, dan de vaste teksten, dan de layout.
+function score(va,vb){
+  if(!va||!vb)return 0;
+  var punten=0;
+  (va.kenmerken||[]).forEach(function(k){if((vb.kenmerken||[]).indexOf(k)>=0)punten+=3;});
+  var raak=0;
+  (va.teksten||[]).forEach(function(t){if((vb.teksten||[]).indexOf(t)>=0)raak++;});
+  punten+=Math.min(6,raak);
+  var ka=va.kolommen||[],kb=vb.kolommen||[];
+  if(ka.length&&kb.length){
+    var gelijk=ka.filter(function(x){return kb.some(function(y){return Math.abs(x-y)<0.02;});}).length;
+    if(gelijk/Math.max(ka.length,kb.length)>0.6)punten+=2;
+  }
+  return punten;
+}
+
+// Welk sjabloon uit deze map hoort bij dit document?
+function kies(mid,doc,analyse){
+  var m=map(mid);
+  if(!m||!m.sjablonen.length)return null;
+  var va=vingerafdruk(doc,analyse),beste=null,best=0;
+  m.sjablonen.forEach(function(s){
+    var p=score(va,s.vingerafdruk);
+    if(p>best){best=p;beste=s;}
+  });
+  if(!beste||best<3)return null;
+  return {sjabloon:beste,score:best,zeker:best>=6};
+}
+
+
+// De kaart in het scherm: kies een map, zie welke sjablonen erin zitten.
+function kaart(){
+  var S=window.PLP_S,U=window.PLP_UI,t=S.t,el=U.el;
+  var d=lees(),k=el("div","pld-card");
+  k.appendChild(el("p","pld-text",t.foldersHint));
+  var rij=el("div","plp-mapkies");
+  var kies2=el("select","pld-sel");
+  var leeg=el("option","",t.useRules);leeg.value="";kies2.appendChild(leeg);
+  d.mappen.forEach(function(m){
+    var o=el("option","",m.naam+" ("+m.sjablonen.length+")");o.value=m.id;
+    if(m.id===d.actief)o.selected=true;kies2.appendChild(o);
+  });
+  kies2.addEventListener("change",function(){kiesMap(kies2.value||null);U.teken();});
+  var naam=el("input","pld-in");naam.placeholder=t.folderName;
+  var maak=el("button","pld-btn pld-btn--sm",t.newFolder);maak.type="button";
+  maak.addEventListener("click",function(){
+    if(!naam.value.trim())return;
+    nieuweMap(naam.value.trim());U.teken();
+  });
+  rij.appendChild(kies2);rij.appendChild(naam);rij.appendChild(maak);
+  k.appendChild(rij);
+
+  var m=d.actief?map(d.actief):null;
+  if(!d.mappen.length){k.appendChild(el("p","pld-text",t.noFolders));return k;}
+  if(!m)return k;
+  k.appendChild(el("p","pld-caps",t.templates));
+  if(!m.sjablonen.length)k.appendChild(el("p","pld-text",t.noTemplates));
+  m.sjablonen.forEach(function(sj){
+    var r=el("div","plp-file"),links=el("div");
+    links.appendChild(el("p","pld-text",sj.naam));
+    links.appendChild(el("p","plp-mono",sj.regels.length+" "+t.fields+" · "+(sj.gebruikt||0)+" "+t.used));
+    var weg=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.delTemplate);weg.type="button";
+    weg.addEventListener("click",function(){verwijderSjabloon(m.id,sj.id);U.teken();});
+    r.appendChild(links);r.appendChild(weg);k.appendChild(r);
+  });
+  if(m.sjablonen.length)k.appendChild(el("p","pld-text",t.useFolder));
+  var onder=el("div","pld-row");
+  var wegMap=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.delFolder);wegMap.type="button";
+  wegMap.addEventListener("click",function(){verwijderMap(m.id);U.teken();});
+  onder.appendChild(wegMap);k.appendChild(onder);
+  return k;
+}
+
+
+// Vanuit het voorstel: de gekozen velden als sjabloon in een map bewaren.
+function opslaanKnop(regelsVan,doc,analyse,melding){
+  var S=window.PLP_S,U=window.PLP_UI,t=S.t,el=U.el;
+  var doos=el("div","plp-mapkies");
+  var naam=el("input","pld-in");naam.placeholder=t.templateName;
+  var kies2=el("select","pld-sel"),d=lees();
+  d.mappen.forEach(function(m){var o=el("option","",m.naam);o.value=m.id;if(m.id===d.actief)o.selected=true;kies2.appendChild(o);});
+  var nieuw=el("option","","+ "+t.newFolder);nieuw.value="__nieuw";kies2.appendChild(nieuw);
+  var knop=el("button","pld-btn pld-btn--ghost",t.saveTemplate);knop.type="button";
+  knop.addEventListener("click",function(){
+    var regels=regelsVan();
+    if(!regels.length||!naam.value.trim())return;
+    var mid=kies2.value;
+    if(mid==="__nieuw"||!mid)mid=nieuweMap(naam.value.trim()).id;
+    bewaarSjabloon(mid,{naam:naam.value.trim(),regels:regels,vingerafdruk:vingerafdruk(doc,analyse),
+                        uitvoer:regels.some(function(r){return r.type==="tabelkolom";})?"regel":"document"});
+    kiesMap(mid);
+    melding.textContent=t.savedTemplate.replace("{map}",(map(mid)||{}).naam||"");
+  });
+  doos.appendChild(kies2);doos.appendChild(naam);doos.appendChild(knop);
+  return doos;
+}
+
+return {kaart:kaart,opslaanKnop:opslaanKnop,lees:lees,bewaar:bewaar,nieuweMap:nieuweMap,verwijderMap:verwijderMap,map:map,kiesMap:kiesMap,
+        bewaarSjabloon:bewaarSjabloon,verwijderSjabloon:verwijderSjabloon,telGebruik:telGebruik,
+        vingerafdruk:vingerafdruk,kies:kies,score:score};
+})();
+</script>
+<!-- 10-verwerken.html -->
+<!-- ParsePDF — embed 10 van 10: verwerking en opstarten. Plaats als laatste. -->
 <script>
 (function(){
 var CFG=window.PARSELAB,P=window.PLP,T=window.PLP_T,S=window.PLP_S,U=window.PLP_UI;
@@ -1069,8 +1282,11 @@ var sb=CFG.client;
 window.PLP_RUN=function(knop,rij){
 var t=S.t;
 if(!S.bestanden.length){U.meld(t.errNoFiles,"warn");return;}
-var actief=S.regels.filter(function(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="tabelkolom"||r.waarde);});
-if(!actief.length){U.meld(t.errNoRules,"warn");return;}
+var SJ=window.PLP_SJ,d=SJ?SJ.lees():{mappen:[]},mapId=d.actief;
+var mp=mapId&&SJ?SJ.map(mapId):null;
+var perMap=!!(mp&&mp.sjablonen.length);   // sjablonen uit de map, of de regels hieronder
+var actief=S.regels.filter(bruikbaar);
+if(!perMap&&!actief.length){U.meld(t.errNoRules,"warn");return;}
 knop.disabled=true;knop.textContent=t.counting;
 var stand=U.el("p","pld-text");stand.setAttribute("role","status");rij.appendChild(stand);
 var lijst=S.bestanden.slice(),totaal=0,fouten=[],keten=Promise.resolve();
@@ -1086,23 +1302,55 @@ window.scrollTo({top:0,behavior:"smooth"});return null;}
 return sb.rpc("record_usage",{p_tool:"parsepdf",p_pages:totaal}).then(function(r){
 if(r.error)throw new Error("usage");
 knop.textContent=t.reading;
-var uit=[],n=0,k2=Promise.resolve();
+var uit=[],kolommen=[],geteld={},onbekend=0,n=0,k2=Promise.resolve();
 lijst.forEach(function(f){
 k2=k2.then(function(){return P.lees(f);})
 .then(function(doc){
-var r2=P.rij(doc,actief);
+var regels=actief,naam=null;
+if(perMap){
+  var keus=SJ.kies(mapId,doc,window.PLP_ST.analyse(doc));
+  if(keus){regels=keus.sjabloon.regels.filter(bruikbaar);naam=keus.sjabloon.naam;
+           SJ.telGebruik(mapId,keus.sjabloon.id);geteld[naam]=(geteld[naam]||0)+1;}
+  else {regels=[];onbekend++;}
+}
+regels.forEach(function(x){if(kolommen.indexOf(x.naam)<0)kolommen.push(x.naam);});
+var r2=P.rij(doc,regels);
 if(r2.leeg)fouten.push(f.name+" "+t.scanned);
-uit=uit.concat(perRegel(doc,r2,actief));n++;stand.textContent=n+" / "+lijst.length;})
+perRegel(doc,r2,regels).forEach(function(rr){
+  var op={};regels.forEach(function(x,i){op[x.naam]=rr.velden["k"+i];});
+  uit.push({naam:rr.naam,paginas:rr.paginas,sjabloon:naam,opNaam:op,leeg:rr.leeg});
+});
+n++;stand.textContent=n+" / "+lijst.length;})
 .catch(function(){fouten.push(f.name+" "+t.errRead);});});
 return k2.then(function(){
-S.rijen=uit;S.regels=actief;
+if(perMap)kolommen.unshift(t.colTemplate);
+// De kolommen van de uitvoer staan los van de veldregels in het scherm: bij een map
+// verschillen ze per document, en je regels moeten na afloop blijven staan.
+S.kolommen=kolommen.map(function(naam){return {naam:naam,filter:"geen"};});
+S.rijen=uit.map(function(r){
+  var velden={};
+  kolommen.forEach(function(naam,i){
+    velden["k"+i]=naam===t.colTemplate&&perMap?(r.sjabloon||t.unknown):(r.opNaam[naam]||"");
+  });
+  return {naam:r.naam,paginas:r.paginas,velden:velden,leeg:r.leeg};
+});
 if(S.verbruik)S.verbruik.used=Number(S.verbruik.used||0)+totaal;
 S.bestanden=[];U.teken();
+var uitleg=[];
+if(perMap){
+  var namen=Object.keys(geteld).map(function(k){return geteld[k]+" \u00D7 "+k;});
+  if(namen.length)uitleg.push(t.recognised.replace("{lijst}",namen.join(" \u00B7 ")));
+  if(onbekend===1)uitleg.push(t.oneUnknown);
+  else if(onbekend>1)uitleg.push(t.manyUnknown.replace("{n}",onbekend));
+}
+if(uitleg.length)U.meld(uitleg.join(" "));
 if(fouten.length)U.meld(fouten.join(" "),"warn");});});
 }).catch(function(e){
 console.error(e);herstel(knop);
 U.meld(e&&e.message==="usage"?t.errUsage:t.errLib,"warn");});
 };
+
+function bruikbaar(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="tabelkolom"||r.waarde);}
 
 // Staan er tabelkolommen in het sjabloon, dan wordt elke regel uit de tabel een rij,
 // met de kopvelden van het document erbij herhaald.

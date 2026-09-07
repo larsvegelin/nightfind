@@ -17,7 +17,8 @@ Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 | `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
 | `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
 | `8-voorstel.html` | Doorkijkscherm met gearceerde velden, het voorstel en de AI-knop |
-| `9-verwerken.html` | Verwerking, limietbewaking en opstarten |
+| `9-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
+| `10-verwerken.html` | Verwerking, limietbewaking en opstarten |
 
 Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens. Splits je later iets bij, houd die grens aan.
 
@@ -50,12 +51,13 @@ Body
                 ├── Embed 6-structuur
                 ├── Embed 7-velden
                 ├── Embed 8-voorstel
-                └── Embed 9-verwerken
+                ├── Embed 9-sjablonen
+                └── Embed 10-verwerken
 ```
 
 De id `pl-parsepdf-root` moet exact zo geschreven zijn. Zonder die container doet de tool niets en verschijnt er een melding in de console.
 
-De volgorde van de embeds is niet vrij. Embed 9 gebruikt wat 1 tot en met 8 klaarzetten.
+De volgorde van de embeds is niet vrij. Embed 10 gebruikt wat 1 tot en met 9 klaarzetten.
 
 ## 4. Koppelen aan het dashboard
 

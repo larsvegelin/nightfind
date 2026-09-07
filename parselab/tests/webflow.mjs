@@ -237,6 +237,51 @@ ok('waarden kloppen na het overnemen',
   [cel(alles[1], 'Factuurnummer van de leverancier'), cel(alles[1], 'Datum'), cel(alles[1], 'Totaal incl. BTW')].join(' · '));
 ok('de tabelregels verschillen per rij', cel(alles[1], 'Beschrijving') !== cel(alles[2], 'Beschrijving'), cel(alles[1], 'Beschrijving') + ' / ' + cel(alles[2], 'Beschrijving'));
 
+// 11d. mappen met sjablonen: twee soorten documenten in één map, gemengd uitlezen.
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.clear());
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+ok('de mappenkaart staat op het scherm', await p.isVisible('button:has-text("Nieuwe map")'));
+await p.fill('input[placeholder="Naam van de map"]', 'Facturen');
+await p.click('button:has-text("Nieuwe map")');
+await p.waitForTimeout(300);
+async function maakSjabloon(bestand, naam) {
+  await p.setInputFiles('input[type=file]', path.join(pdfmap, bestand));
+  await p.click('button:has-text("Kijk wat erin staat")');
+  await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+  await p.waitForTimeout(700);
+  await p.fill('.plp-blad input[placeholder="Naam van het sjabloon"]', naam);
+  await p.click('.plp-blad button:has-text("Bewaar als sjabloon")');
+  await p.waitForTimeout(300);
+  await p.click('.plp-blad button:has-text("Annuleren")');
+  await p.evaluate(() => { window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+}
+await maakSjabloon('factuur-webshop.pdf', 'Wijnleverancier');
+await maakSjabloon('polis.pdf', 'Polissen');
+const inMappen = await p.evaluate(() => window.PLP_SJ.lees().mappen.map(m => m.naam + ':' + m.sjablonen.map(s => s.naam).join('+')).join('|'));
+ok('twee sjablonen bewaard in dezelfde map', inMappen === 'Facturen:Wijnleverancier+Polissen', inMappen);
+ok('de sjablonen staan in de kaart', /Wijnleverancier/.test(await p.textContent('#pl-parsepdf-root')));
+await p.setInputFiles('input[type=file]', ['factuur-webshop.pdf', 'polis.pdf', 'bankafschrift.pdf'].map(f => path.join(pdfmap, f)));
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const gemengd = await p.evaluate(() => [...document.querySelectorAll('.plp-table tr')].map(tr => [...tr.children].map(td => td.textContent)));
+const kop2 = gemengd[0];
+function cel2(rij, naam) { return rij[kop2.indexOf(naam)]; }
+ok('de tabel heeft een kolom Sjabloon', kop2[2] === 'Sjabloon', kop2.slice(0, 4).join('|'));
+ok('elk document kreeg zijn eigen sjabloon', cel2(gemengd[1], 'Sjabloon') === 'Wijnleverancier' && cel2(gemengd[2], 'Sjabloon') === 'Polissen',
+  gemengd.map(r => cel2(r, 'Sjabloon')).slice(1).join(' · '));
+ok('de kolommen van beide sjablonen staan in één tabel',
+  kop2.includes('Factuurnummer') && kop2.includes('Polisnummer'), kop2.length + ' kolommen');
+ok('de waarden staan in de goede rij',
+  cel2(gemengd[1], 'Factuurnummer') === 'INV10632' && cel2(gemengd[1], 'Polisnummer') === '—' &&
+  cel2(gemengd[2], 'Polisnummer') === 'P-2026-77120' && cel2(gemengd[2], 'Premie per jaar') === '1.148,76',
+  [cel2(gemengd[1], 'Factuurnummer'), cel2(gemengd[2], 'Polisnummer'), cel2(gemengd[2], 'Premie per jaar')].join(' · '));
+ok('een document dat nergens bij past heet onbekend', cel2(gemengd[3], 'Sjabloon') === 'onbekend', cel2(gemengd[3], 'Sjabloon'));
+const samenvatting = await p.textContent('.pld-msg');
+ok('de melding vertelt wat herkend werd', /1 . Wijnleverancier/.test(samenvatting) && /1 document/.test(samenvatting), samenvatting.replace(/\s+/g, ' ').slice(0, 90));
+await p.evaluate(() => localStorage.removeItem('pl_parsepdf_mappen'));
+
 // 12. de losse pagina uit bouw-pagina.mjs: zelfde embeds, echte cdn-adressen.
 // Die adressen zijn hier onbereikbaar, dus ze worden onderweg vervangen door de lokale kopie.
 const p2 = await ctx.newPage();

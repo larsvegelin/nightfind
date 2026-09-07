@@ -83,9 +83,22 @@ Het antwoord dat de tool verwacht:
   "waarschuwingen": [ "Totaal incl. BTW komt niet overeen met de optelling" ] }
 ```
 
+## 4b. Mappen met sjablonen
+
+Een sjabloon is niet meer één setje regels voor alles. Onder **Mappen met sjablonen** maak je een map (bijvoorbeeld *Facturen*) en bewaar je daar per soort document een sjabloon in: *Wijnleverancier*, *Softwarefacturen*, *Polissen*. Bewaren doe je vanuit het voorstel: naam invullen, map kiezen, **Bewaar als sjabloon**.
+
+Staat er een map actief met sjablonen erin, dan gebruikt **Uitlezen starten** die sjablonen in plaats van de veldregels in het scherm. Per document kiest de tool zelf het sjabloon dat erbij hoort:
+
+- Bij het bewaren legt hij een **vingerafdruk** vast: de labels waarmee de velden gevonden werden, de vaste teksten op de pagina, waar de kolommen beginnen (als deel van de paginabreedte), en harde kenmerken als KvK-nummer, btw-nummer, IBAN en domeinnaam.
+- Bij het uitlezen scoort hij elk sjabloon: 3 punten per hard kenmerk, 1 per gelijke vaste tekst (tot 6), 2 als het kolompatroon binnen 2 % past. Boven de 3 punten wint het beste sjabloon; daaronder heet het document *onbekend*.
+- De uitvoer is **één tabel** met de kolommen van alle gebruikte sjablonen samen, plus een kolom **Sjabloon** die zegt welk sjabloon per rij gebruikt is. Velden die het andere sjabloon niet kent blijven leeg.
+- Achteraf staat er een melding: *Herkend: 18 × Wijnleverancier · 4 × Softwarefacturen*, en hoeveel documenten nergens bij pasten.
+
+Sleep dus gerust dertig facturen van vijf leveranciers in één keer erin. Mappen en sjablonen staan in `localStorage` van deze browser; ze reizen nog niet mee naar een andere computer.
+
 ## 5. Wat er in de embeds veranderde
 
-De pagina bestaat nu uit negen embeds in plaats van vijf. Drie zijn nieuw en één is afgesplitst, omdat Webflow niet meer dan ongeveer 10.000 tekens per embed aankan.
+De pagina bestaat nu uit tien embeds in plaats van vijf. Vier zijn nieuw en één is afgesplitst, omdat Webflow niet meer dan ongeveer 10.000 tekens per embed aankan.
 
 | Embed | Wat | Nieuw? |
 |---|---|---|
@@ -97,15 +110,16 @@ De pagina bestaat nu uit negen embeds in plaats van vijf. Drie zijn nieuw en é�
 | `6-structuur.html` | Cellen, rijen, kolommen, patronen, en een bewaarde vindregel toepassen | **nieuw** |
 | `7-velden.html` | De vijf kandidaatvormen, ontdubbelen en de regeltabel | **nieuw** |
 | `8-voorstel.html` | Het doorkijkscherm, het voorstel en de AI-knop | **nieuw** |
-| `9-verwerken.html` | Verwerking, limietbewaking, opstarten, rijen per tabelregel | bijgewerkt |
+| `9-sjablonen.html` | Mappen, sjablonen, vingerafdruk en het herkennen van documenten | **nieuw** |
+| `10-verwerken.html` | Verwerking, limietbewaking, opstarten, rijen per tabelregel | bijgewerkt |
 
-De volgorde blijft leidend: 9 gebruikt wat 1 tot en met 8 klaarzetten. In Webflow plak je ze opnieuw, in deze volgorde, onder dezelfde lege `<div id="pl-parsepdf-root">`.
+De volgorde blijft leidend: 10 gebruikt wat 1 tot en met 9 klaarzetten. In Webflow plak je ze opnieuw, in deze volgorde, onder dezelfde lege `<div id="pl-parsepdf-root">`.
 
 Er is een nieuw soort veldregel bijgekomen: **`cel`**. Die bewaart niet een woord om op te zoeken, maar hoe de waarde gevonden werd (kolomkop, label links, label in de cel, label erboven of patroon). Daardoor werkt een sjabloon dat je vandaag maakt ook op de factuur van volgende maand, ook als de bedragen verschuiven. De oude soorten (label, patroon, bestandsnaam) blijven gewoon bestaan.
 
 ## 6. Testen
 
-`node parselab/tests/webflow.mjs` — 57 controles, waarvan nieuw:
+`node parselab/tests/webflow.mjs` — 66 controles, waarvan nieuw:
 
 - het voorstel vindt factuurnummer, klantnummer en datum uit de kolomkoppen, zonder instellen
 - het scheidt `Totaal excl.` van `Totaal incl.`
@@ -116,10 +130,11 @@ Er is een nieuw soort veldregel bijgekomen: **`cel`**. Die bewaart niet een woor
 - zonder AI-sleutel komt er een melding en geen fout; met een antwoord hernoemt de AI een veld en vult er één aan
 - overnemen levert een sjabloon met `cel`-regels en tabelkolommen
 - uitlezen geeft 25 kolommen en één rij per tabelregel, met de juiste waarden
+- twee sjablonen in één map: drie gemengde documenten geven één tabel, elk met zijn eigen sjabloon in de kolom Sjabloon, de juiste waarden per rij, en het derde document als *onbekend*
 
 ## 7. Wat hierna nog open staat
 
-- **Mappen met sjablonen** en het automatisch herkennen welk sjabloon bij een document hoort. Dat is fase 3 uit [`PARSEPDF-VOLGENDE-VERSIE.md`](PARSEPDF-VOLGENDE-VERSIE.md) en het datamodel ligt er al.
+- **Sjablonen aan het account koppelen.** Ze staan nu per browser; het datamodel voor Supabase ligt klaar in [`PARSEPDF-VOLGENDE-VERSIE.md`](PARSEPDF-VOLGENDE-VERSIE.md).
 - **Aanwijzen wat de tool miste**: klikken op een cel die niet gevonden werd en daar zelf een veld van maken.
 - **De AI-endpoint op Supabase** voor de Webflow-pagina.
 - **Gescande documenten** blijven buiten beeld tot er tekstherkenning is.

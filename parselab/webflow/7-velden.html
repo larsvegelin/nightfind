@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 7 van 9: velden voorstellen. Gebruikt de cellen uit embed 6. -->
+<!-- ParsePDF — embed 7 van 10: velden voorstellen. Gebruikt de cellen uit embed 6. -->
 <script>
 (function(){
 var ST=window.PLP_ST;if(!ST)return;
@@ -128,6 +128,14 @@ function tabel(rijen){
   return beste;
 }
 
-ST.analyse=analyse;
+// Een gevonden waarde krijgt meteen de juiste opschoning mee.
+function filterVoor(v){
+  var p=v.vindregel&&v.vindregel.patroon;
+  if(p==="bedrag"||/^\s*-?€/.test(v.waarde)||/\d,\d{2}$/.test(v.waarde))return "bedrag";
+  var g=vind(v.waarde);
+  if(p==="datum"||(g&&g.patroon.naam==="datum"))return "datum";
+  return "geen";
+}
+ST.analyse=analyse;ST.filterVoor=filterVoor;
 })();
 </script>

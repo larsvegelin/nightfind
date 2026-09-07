@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 9 van 9: verwerking en opstarten. Plaats als laatste. -->
+<!-- ParsePDF — embed 10 van 10: verwerking en opstarten. Plaats als laatste. -->
 <script>
 (function(){
 var CFG=window.PARSELAB,P=window.PLP,T=window.PLP_T,S=window.PLP_S,U=window.PLP_UI;
@@ -8,8 +8,11 @@ var sb=CFG.client;
 window.PLP_RUN=function(knop,rij){
 var t=S.t;
 if(!S.bestanden.length){U.meld(t.errNoFiles,"warn");return;}
-var actief=S.regels.filter(function(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="tabelkolom"||r.waarde);});
-if(!actief.length){U.meld(t.errNoRules,"warn");return;}
+var SJ=window.PLP_SJ,d=SJ?SJ.lees():{mappen:[]},mapId=d.actief;
+var mp=mapId&&SJ?SJ.map(mapId):null;
+var perMap=!!(mp&&mp.sjablonen.length);   // sjablonen uit de map, of de regels hieronder
+var actief=S.regels.filter(bruikbaar);
+if(!perMap&&!actief.length){U.meld(t.errNoRules,"warn");return;}
 knop.disabled=true;knop.textContent=t.counting;
 var stand=U.el("p","pld-text");stand.setAttribute("role","status");rij.appendChild(stand);
 var lijst=S.bestanden.slice(),totaal=0,fouten=[],keten=Promise.resolve();
@@ -25,23 +28,55 @@ window.scrollTo({top:0,behavior:"smooth"});return null;}
 return sb.rpc("record_usage",{p_tool:"parsepdf",p_pages:totaal}).then(function(r){
 if(r.error)throw new Error("usage");
 knop.textContent=t.reading;
-var uit=[],n=0,k2=Promise.resolve();
+var uit=[],kolommen=[],geteld={},onbekend=0,n=0,k2=Promise.resolve();
 lijst.forEach(function(f){
 k2=k2.then(function(){return P.lees(f);})
 .then(function(doc){
-var r2=P.rij(doc,actief);
+var regels=actief,naam=null;
+if(perMap){
+  var keus=SJ.kies(mapId,doc,window.PLP_ST.analyse(doc));
+  if(keus){regels=keus.sjabloon.regels.filter(bruikbaar);naam=keus.sjabloon.naam;
+           SJ.telGebruik(mapId,keus.sjabloon.id);geteld[naam]=(geteld[naam]||0)+1;}
+  else {regels=[];onbekend++;}
+}
+regels.forEach(function(x){if(kolommen.indexOf(x.naam)<0)kolommen.push(x.naam);});
+var r2=P.rij(doc,regels);
 if(r2.leeg)fouten.push(f.name+" "+t.scanned);
-uit=uit.concat(perRegel(doc,r2,actief));n++;stand.textContent=n+" / "+lijst.length;})
+perRegel(doc,r2,regels).forEach(function(rr){
+  var op={};regels.forEach(function(x,i){op[x.naam]=rr.velden["k"+i];});
+  uit.push({naam:rr.naam,paginas:rr.paginas,sjabloon:naam,opNaam:op,leeg:rr.leeg});
+});
+n++;stand.textContent=n+" / "+lijst.length;})
 .catch(function(){fouten.push(f.name+" "+t.errRead);});});
 return k2.then(function(){
-S.rijen=uit;S.regels=actief;
+if(perMap)kolommen.unshift(t.colTemplate);
+// De kolommen van de uitvoer staan los van de veldregels in het scherm: bij een map
+// verschillen ze per document, en je regels moeten na afloop blijven staan.
+S.kolommen=kolommen.map(function(naam){return {naam:naam,filter:"geen"};});
+S.rijen=uit.map(function(r){
+  var velden={};
+  kolommen.forEach(function(naam,i){
+    velden["k"+i]=naam===t.colTemplate&&perMap?(r.sjabloon||t.unknown):(r.opNaam[naam]||"");
+  });
+  return {naam:r.naam,paginas:r.paginas,velden:velden,leeg:r.leeg};
+});
 if(S.verbruik)S.verbruik.used=Number(S.verbruik.used||0)+totaal;
 S.bestanden=[];U.teken();
+var uitleg=[];
+if(perMap){
+  var namen=Object.keys(geteld).map(function(k){return geteld[k]+" \u00D7 "+k;});
+  if(namen.length)uitleg.push(t.recognised.replace("{lijst}",namen.join(" \u00B7 ")));
+  if(onbekend===1)uitleg.push(t.oneUnknown);
+  else if(onbekend>1)uitleg.push(t.manyUnknown.replace("{n}",onbekend));
+}
+if(uitleg.length)U.meld(uitleg.join(" "));
 if(fouten.length)U.meld(fouten.join(" "),"warn");});});
 }).catch(function(e){
 console.error(e);herstel(knop);
 U.meld(e&&e.message==="usage"?t.errUsage:t.errLib,"warn");});
 };
+
+function bruikbaar(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="tabelkolom"||r.waarde);}
 
 // Staan er tabelkolommen in het sjabloon, dan wordt elke regel uit de tabel een rij,
 // met de kopvelden van het document erbij herhaald.

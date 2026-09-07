@@ -1,4 +1,4 @@
-<!-- ParsePDF - embed 3 van 9: teksten voor doorkijken, voorstel en AI -->
+<!-- ParsePDF - embed 3 van 10: teksten voor doorkijken, voorstel en AI -->
 <script>
 (function(){var T=window.PLP_T;if(!T)return;
 var EXTRA={
@@ -14,7 +14,18 @@ aiBusy:"De AI kijkt mee...",aiOff:"AI-hulp is niet beschikbaar op deze server. H
 aiDone:"De AI heeft namen aangevuld en de waarden nagelopen.",
 tableFound:"Regeltabel gevonden",tableHint:"{n} regels met {k} kolommen. Zet aan om per regel een rij te maken in plaats van per document.",
 tableUse:"Een rij per tabelregel",cancel:"Annuleren",page:"Pagina",noFields:"De tool vond geen velden. Het document heeft mogelijk geen tekstlaag.",
-tCel:"Automatisch (uit voorstel)"},
+tCel:"Automatisch (uit voorstel)",
+folders:"Mappen met sjablonen",foldersHint:"Zet sjablonen bij elkaar per soort document. Bij het uitlezen kiest de tool zelf welk sjabloon bij welk document hoort.",
+folder:"Map",newFolder:"Nieuwe map",folderName:"Naam van de map",delFolder:"Map verwijderen",
+noFolders:"Nog geen mappen. Maak er een en bewaar je eerste sjabloon vanuit het voorstel.",
+noTemplates:"Nog geen sjablonen in deze map. Open een document met \"Kijk wat erin staat\" en bewaar het voorstel hier.",
+templates:"Sjablonen in deze map",fields:"velden",used:"keer gebruikt",delTemplate:"Verwijderen",
+saveTemplate:"Bewaar als sjabloon",templateName:"Naam van het sjabloon",saveIn:"Bewaren in",
+savedTemplate:"Sjabloon bewaard in {map}.",
+colTemplate:"Sjabloon",unknown:"onbekend",
+recognised:"Herkend: {lijst}",oneUnknown:"1 document paste bij geen enkel sjabloon; die kolommen blijven leeg.",
+manyUnknown:"{n} documenten pasten bij geen enkel sjabloon; die kolommen blijven leeg.",
+useFolder:"Gebruik de sjablonen uit deze map",useRules:"Gebruik de veldregels hieronder"},
 en:{look:"See what is in it",lookHint:"The tool opens the document, highlights what it can read and suggests names. Hover a box to see the name.",
 proposal:"Proposal",proposalHint:"This is what the tool found by itself. Tick what you want and adjust the names.",
 fName:"Name",fValue:"Value",source:"Found via",
@@ -27,7 +38,18 @@ aiBusy:"The AI is having a look...",aiOff:"AI help is not available on this serv
 aiDone:"The AI added names and checked the values.",
 tableFound:"Line table found",tableHint:"{n} lines with {k} columns. Turn on to make one row per line instead of one per document.",
 tableUse:"One row per table line",cancel:"Cancel",page:"Page",noFields:"The tool found no fields. The document may have no text layer.",
-tCel:"Automatic (from proposal)"},
+tCel:"Automatic (from proposal)",
+folders:"Folders with templates",foldersHint:"Group templates by kind of document. When extracting, the tool picks the matching template per document itself.",
+folder:"Folder",newFolder:"New folder",folderName:"Folder name",delFolder:"Delete folder",
+noFolders:"No folders yet. Create one and save your first template from the proposal.",
+noTemplates:"No templates in this folder yet. Open a document with \"See what is in it\" and save the proposal here.",
+templates:"Templates in this folder",fields:"fields",used:"times used",delTemplate:"Remove",
+saveTemplate:"Save as template",templateName:"Template name",saveIn:"Save in",
+savedTemplate:"Template saved in {map}.",
+colTemplate:"Template",unknown:"unknown",
+recognised:"Recognised: {lijst}",oneUnknown:"1 document matched no template; those columns stay empty.",
+manyUnknown:"{n} documents matched no template; those columns stay empty.",
+useFolder:"Use the templates in this folder",useRules:"Use the field rules below"},
 de:{look:"Sieh nach, was drinsteht",lookHint:"Das Werkzeug oeffnet das Dokument, hebt hervor was es lesen kann und schlaegt Namen vor. Fahre ueber ein Feld, um den Namen zu sehen.",
 proposal:"Vorschlag",proposalHint:"Das hat das Werkzeug selbst gefunden. Hake an, was du willst, und passe die Namen an.",
 fName:"Name",fValue:"Wert",source:"Gefunden ueber",
@@ -40,7 +62,18 @@ aiBusy:"Die KI schaut mit...",aiOff:"KI-Hilfe ist auf diesem Server nicht verfue
 aiDone:"Die KI hat Namen ergaenzt und die Werte geprueft.",
 tableFound:"Positionstabelle gefunden",tableHint:"{n} Zeilen mit {k} Spalten. Einschalten, um eine Zeile pro Position statt pro Dokument zu erzeugen.",
 tableUse:"Eine Zeile pro Tabellenzeile",cancel:"Abbrechen",page:"Seite",noFields:"Das Werkzeug hat keine Felder gefunden. Das Dokument hat vielleicht keine Textebene.",
-tCel:"Automatisch (aus dem Vorschlag)"}
+tCel:"Automatisch (aus dem Vorschlag)",
+folders:"Ordner mit Vorlagen",foldersHint:"Fasse Vorlagen je Dokumentart zusammen. Beim Auslesen waehlt das Werkzeug selbst die passende Vorlage pro Dokument.",
+folder:"Ordner",newFolder:"Neuer Ordner",folderName:"Name des Ordners",delFolder:"Ordner loeschen",
+noFolders:"Noch keine Ordner. Lege einen an und speichere deine erste Vorlage aus dem Vorschlag.",
+noTemplates:"Noch keine Vorlagen in diesem Ordner. Oeffne ein Dokument mit \"Sieh nach, was drinsteht\" und speichere den Vorschlag hier.",
+templates:"Vorlagen in diesem Ordner",fields:"Felder",used:"mal benutzt",delTemplate:"Entfernen",
+saveTemplate:"Als Vorlage speichern",templateName:"Name der Vorlage",saveIn:"Speichern in",
+savedTemplate:"Vorlage in {map} gespeichert.",
+colTemplate:"Vorlage",unknown:"unbekannt",
+recognised:"Erkannt: {lijst}",oneUnknown:"1 Dokument passte zu keiner Vorlage; diese Spalten bleiben leer.",
+manyUnknown:"{n} Dokumente passten zu keiner Vorlage; diese Spalten bleiben leer.",
+useFolder:"Die Vorlagen aus diesem Ordner verwenden",useRules:"Die Feldregeln unten verwenden"}
 };
 Object.keys(EXTRA).forEach(function(taal){
   if(!T[taal])return;

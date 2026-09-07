@@ -329,14 +329,16 @@ Alles met de `pld-` en `plp-` componenten uit `DASHBOARD-styleguide.md`; er is n
 
 ## 12. Bouwvolgorde
 
+> Fase 1, 2 en 4 zijn gebouwd; wat er staat beschrijft [`PARSEPDF-DOORKIJKEN.md`](PARSEPDF-DOORKIJKEN.md).
+
 **Fase 1 — cellen en kolommen** (het fundament, zonder zichtbare nieuwe knoppen)
 Vervang de regelgroepering door cellen met x en y, en laat de bestaande vindregels erop draaien. Uitkomst: de huidige sjablonen blijven werken, `Factuurnummer` op de proeffactuur geeft `INV10632` in plaats van de kolomkoprij.
 
 **Fase 2 — voorstel doen**
 De structuurcheck met de vier kandidaatvormen, het voorstelscherm en "bewaar als sjabloon". Nog geen mappen, nog geen AI. Uitkomst: je uploadt een factuur en krijgt elf velden aangeboden.
 
-**Fase 3 — mappen en herkennen**
-De vier tabellen, mappen in de interface, vingerafdruk en automatische sjabloonkeuze. Uitkomst: dertig facturen van vijf leveranciers in één keer, in één tabel.
+**Fase 3 — mappen en herkennen** *(gedaan, zie [`PARSEPDF-DOORKIJKEN.md`](PARSEPDF-DOORKIJKEN.md) §4b)*
+Mappen in de interface, vingerafdruk en automatische sjabloonkeuze. Uitkomst: dertig facturen van vijf leveranciers in één keer, in één tabel. Alleen de opslag staat nog in `localStorage` in plaats van in de vier tabellen hieronder.
 
 **Fase 4 — AI-controle en regeltabellen**
 Het eindpunt `/api/parsepdf/velden`, het benoemen en toetsen, en de keuze "één rij per regel". Uitkomst: de regeltabel van de proeffactuur komt als drie rijen naar buiten, en de tool waarschuwt als een totaal niet klopt.

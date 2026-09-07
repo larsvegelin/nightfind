@@ -1,6 +1,6 @@
-<!-- ParsePDF — embed 5 van 9: schermopbouw -->
+<!-- ParsePDF — embed 5 van 10: schermopbouw -->
 <script>
-window.PLP_S={regels:[],bestanden:[],rijen:[],verbruik:null,taal:"nl",t:null,root:null};
+window.PLP_S={regels:[],bestanden:[],rijen:[],kolommen:null,verbruik:null,taal:"nl",t:null,root:null};
 window.PLP_UI=(function(){
 var S=window.PLP_S,P=window.PLP,CFG=window.PARSELAB;
 var LOC={nl:"nl-NL",en:"en-GB",de:"de-DE"};
@@ -34,6 +34,9 @@ bar.setAttribute("aria-valuemax",String(lim));bar.setAttribute("aria-valuenow",S
 var vul=el("span");vul.style.width=pct+"%";bar.appendChild(vul);vk.appendChild(bar);
 vk.appendChild(el("p","pld-text",nr(over())+" "+t.pages+" "+t.left));
 root.appendChild(vk);}
+if(window.PLP_SJ&&window.PLP_SJ.kaart){
+root.appendChild(el("p","pld-caps pld-sect",t.folders));
+root.appendChild(window.PLP_SJ.kaart());}
 root.appendChild(el("p","pld-caps pld-sect",t.rules));
 root.appendChild(regelKaart());
 root.appendChild(el("p","pld-caps pld-sect",t.files));
@@ -126,10 +129,10 @@ teken();
 if(fouten.length)meld(fouten.join(" "),"warn");}
 
 function resultaatKaart(){
-var t=S.t,k=el("div","pld-card");
+var t=S.t,k=el("div","pld-card"),kol=(S.kolommen&&S.kolommen.length)?S.kolommen:S.regels;
 if(!S.rijen.length){k.appendChild(el("p","pld-text",t.empty));return k;}
 var wrap=el("div","plp-scroll"),tab=el("table","plp-table"),thead=el("thead"),tr=el("tr");
-[t.colFile,t.colPages].concat(S.regels.map(function(r){return r.naam||"—";}))
+[t.colFile,t.colPages].concat(kol.map(function(r){return r.naam||"—";}))
 .forEach(function(h){tr.appendChild(el("th","",h));});
 thead.appendChild(tr);tab.appendChild(thead);
 var tb=el("tbody");
@@ -137,12 +140,12 @@ S.rijen.forEach(function(r){
 var row=el("tr");
 row.appendChild(el("td","",r.naam));
 row.appendChild(el("td","plp-mono",String(r.paginas)));
-S.regels.forEach(function(x,i){
+kol.forEach(function(x,i){
 row.appendChild(el("td",(x.filter==="bedrag"||x.filter==="datum")?"plp-mono":"",r.velden["k"+i]||"—"));});
 tb.appendChild(row);});
 tab.appendChild(tb);wrap.appendChild(tab);k.appendChild(wrap);
 var dl=el("button","pld-btn",t.download);dl.type="button";
-dl.addEventListener("click",function(){P.bewaar(t.csvName,P.csv(S.regels,S.rijen,t.colFile,t.colPages));});
+dl.addEventListener("click",function(){P.bewaar(t.csvName,P.csv(kol,S.rijen,t.colFile,t.colPages));});
 k.appendChild(dl);return k;}
 
 function limietKaart(n,r){
