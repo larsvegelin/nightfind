@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 5 van 11: schermopbouw -->
+<!-- ParsePDF — embed 5 van 12: schermopbouw -->
 <script>
 window.PLP_S={regels:[],bestanden:[],rijen:[],kolommen:null,verbruik:null,taal:"nl",t:null,root:null};
 window.PLP_UI=(function(){
@@ -20,8 +20,15 @@ var kop=el("div","pld-head"),links=el("div");
 links.appendChild(el("h1","pld-title",t.title));
 links.appendChild(el("p","pld-sub",t.sub));
 kop.appendChild(links);
+var knoppen=el("div","pld-row");
+if(window.PLP_TOUR){
+  var uitleg=el("button","pld-btn pld-btn--ghost",window.PLP_TOUR.titel());uitleg.type="button";
+  uitleg.addEventListener("click",window.PLP_TOUR.toon);
+  knoppen.appendChild(uitleg);
+}
 var terug=el("a","pld-btn pld-btn--ghost",t.back);terug.href=CFG.dashboardPath;
-kop.appendChild(terug);root.appendChild(kop);
+knoppen.appendChild(terug);
+kop.appendChild(knoppen);root.appendChild(kop);
 if(S.verbruik){
 var vk=el("div","pld-card");
 vk.appendChild(el("p","pld-caps",t.usage));
@@ -119,7 +126,7 @@ rij.appendChild(start);rij.appendChild(leeg);k.appendChild(rij);}
 return k;}
 
 function voegToe(lijst){
-var t=S.t,fouten=[];
+var t=S.t,fouten=[],begin=S.bestanden.length;
 Array.prototype.slice.call(lijst).forEach(function(f){
 if(S.bestanden.length>=P.MAXFILES)return;
 if(!(/\.pdf$/i.test(f.name)||f.type==="application/pdf")){fouten.push(f.name+" "+t.errType);return;}
@@ -128,7 +135,8 @@ S.bestanden.push(f);});
 teken();
 if(fouten.length)meld(fouten.join(" "),"warn");
 // Meteen laten zien wat er in het eerste document staat; wachten op een knop hoeft niet.
-if(S.bestanden.length&&window.PLP_V&&!document.querySelector(".plp-doorkijk"))window.PLP_V.open(S.bestanden,0);}
+if(S.bestanden.length>begin&&window.PLP_V&&!document.querySelector(".plp-doorkijk"))
+  window.PLP_V.open(S.bestanden,begin);}
 
 function resultaatKaart(){
 var t=S.t,k=el("div","pld-card"),kol=(S.kolommen&&S.kolommen.length)?S.kolommen:S.regels;

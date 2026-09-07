@@ -309,6 +309,70 @@ const doc2 = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('i
 ok('per veld zie je of het in dit document gevonden wordt', doc2.includes('Geboortedatum=niet gevonden'), doc2.slice(0, 3).join(' · '));
 await sluitDoorkijk();
 
+// 11c4. labels per vlak, alles selecteren, en tekstherkenning voor een scan.
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.clear());
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-webshop.pdf'));
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(1200);
+const eersteVak = await p.$('.plp-vlak:not(.plp-vlak--label)');
+await eersteVak.click();
+await p.waitForSelector('.plp-label', { timeout: 5000 });
+ok('klikken op een vlak opent een labelvenster', await p.isVisible('.plp-label .pld-in'));
+ok('het venster zegt hoe de naam gevonden is', /kolomkop|label|patroon|plek/.test(await p.textContent('.plp-label .plp-bron')), await p.textContent('.plp-label .plp-bron'));
+await p.fill('.plp-label .pld-in', 'Mijn eigen naam');
+await p.click('.plp-label button:has-text("Overnemen")');
+await p.waitForTimeout(300);
+const eigen = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value));
+ok('je geeft de waarde zelf een labelnaam', eigen.includes('Mijn eigen naam'), eigen.slice(0, 3).join(' · '));
+const standVoor = await p.textContent('.plp-mapkies, .plp-bron');
+await p.click('button:has-text("Niets selecteren")');
+await p.waitForTimeout(200);
+ok('niets selecteren zet alles uit', await p.evaluate(() => window.PLP_S && document.querySelectorAll('.plp-veldrij input[type=checkbox]:checked').length === 0));
+await p.click('button:has-text("Alles selecteren")');
+await p.waitForTimeout(200);
+const naAlles = await p.$$eval('.plp-veldrij input[type=checkbox]', n => n.filter(x => x.checked).length);
+ok('alles selecteren zet alles aan', naAlles > 0 && naAlles === (await p.$$('.plp-veldrij')).length, naAlles + ' aan');
+ok('de stand staat erbij', /\d+ van \d+ aan/.test(await p.textContent('.plp-blad')), '');
+await sluitDoorkijk();
+
+// tekstherkenning: de motor wordt nagebootst, want cdnjs is hier niet bereikbaar.
+await p.evaluate(() => {
+  window.Tesseract = { recognize: function () {
+    return Promise.resolve({ data: { words: [
+      { text: 'Factuurnummer', confidence: 92, bbox: { x0: 100, y0: 100, x1: 260, y1: 130 } },
+      { text: '2026-777', confidence: 90, bbox: { x0: 400, y0: 100, x1: 520, y1: 130 } },
+      { text: 'Totaal', confidence: 91, bbox: { x0: 100, y0: 200, x1: 200, y1: 230 } },
+      { text: '1.234,56', confidence: 88, bbox: { x0: 400, y0: 200, x1: 540, y1: 230 } },
+    ] } });
+  } };
+});
+await p.evaluate(() => { window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'gescand.pdf'));
+await p.waitForSelector('.plp-blad', { timeout: 20000 });
+await p.waitForTimeout(800);
+ok('een scan biedt tekstherkenning aan', /geen tekstlaag/.test(await p.textContent('.plp-blad')), (await p.textContent('.plp-blad')).replace(/\s+/g, ' ').slice(0, 70));
+await p.click('button:has-text("Tekst herkennen")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+const naOcr = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
+ok('na tekstherkenning staan er velden uit de scan', naOcr.some(v => /2026-777/.test(v)), naOcr.slice(0, 3).join(' · '));
+await sluitDoorkijk();
+
+// 11c5. de uitleg "Hoe werkt ParsePDF?" in vijf stappen
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+ok('de uitlegknop staat in de kop', await p.isVisible('button:has-text("Hoe werkt ParsePDF?")'));
+await p.click('button:has-text("Hoe werkt ParsePDF?")');
+await p.waitForSelector('.plp-modal', { timeout: 5000 });
+ok('de uitleg begint bij stap 1 van 5', /Stap 1 van 5/.test(await p.textContent('.plp-modal')), (await p.textContent('.plp-modal')).slice(0, 40));
+for (let i = 0; i < 4; i++) { await p.click('.plp-modal button:has-text("Volgende")'); await p.waitForTimeout(120); }
+ok('je kunt doorklikken tot de laatste stap', /Stap 5 van 5/.test(await p.textContent('.plp-modal')));
+await p.click('.plp-modal button:has-text("Klaar")');
+await p.waitForTimeout(200);
+ok('klaar sluit de uitleg', (await p.$$('.plp-modal')).length === 0);
+
 // 11d. mappen met sjablonen: twee soorten documenten in één map, gemengd uitlezen.
 await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
 await p.evaluate(() => localStorage.clear());

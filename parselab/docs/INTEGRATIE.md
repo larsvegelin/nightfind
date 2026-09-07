@@ -13,13 +13,16 @@ Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 | `2-teksten.html` | Teksten in nl, en, de plus drie startsjablonen |
 | `3-teksten-voorstel.html` | Teksten voor doorkijken, voorstel en AI |
 | `4-motor.html` | Uitleesmotor: pdf.js, cellen met x en y, regels toepassen, CSV maken |
+| `4b-ocr.html` | Tekstherkenning voor documenten zonder tekstlaag |
 | `5-scherm.html` | Schermopbouw: verbruiksmeter, regelkaart, dropzone, resultaattabel |
 | `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
 | `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
-| `8-voorstel.html` | Doorkijkscherm met gearceerde velden, het voorstel en de AI-knop |
-| `9-ai.html` | Uitlezen met AI: pakketcontrole, toestemming en tegoeden |
-| `10-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
-| `11-verwerken.html` | Verwerking, limietbewaking en opstarten |
+| `8-voorstel.html` | Doorkijkscherm met gearceerde velden en het voorstel |
+| `9-labels.html` | Labels per vlak, alles selecteren, goedkeuren en het OCR-aanbod |
+| `9b-uitleg.html` | "Hoe werkt ParsePDF?" in vijf stappen |
+| `10-ai.html` | Uitlezen met AI: pakketcontrole, toestemming en tegoeden |
+| `11-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
+| `12-verwerken.html` | Verwerking, limietbewaking en opstarten |
 
 Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens. Splits je later iets bij, houd die grens aan.
 
@@ -59,7 +62,7 @@ Body
 
 De id `pl-parsepdf-root` moet exact zo geschreven zijn. Zonder die container doet de tool niets en verschijnt er een melding in de console.
 
-De volgorde van de embeds is niet vrij. Embed 11 gebruikt wat 1 tot en met 10 klaarzetten.
+De volgorde van de embeds is niet vrij. Embed 12 gebruikt wat 1 tot en met 11 klaarzetten.
 
 ## 4. Koppelen aan het dashboard
 

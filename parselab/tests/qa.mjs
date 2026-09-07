@@ -203,6 +203,21 @@ await step('parsepdf', async () => {
 });
 
 // ---------- 8. ParseBoard ----------
+await step('uitleg per tool', async () => {
+  // Elke tool heeft een rondleiding van vijf stappen in de schil zelf.
+  for (const [hash, naam] of [['#scrape/url', 'Website uitlezen'], ['#pdf/upload', 'ParsePDF'], ['#board/1', 'ParseBoard'], ['#form/install', 'ParseForm']]) {
+    await p.goto(U + hash); await p.waitForTimeout(1200);
+    const knop = p.locator('[data-tour]').first();
+    if (!(await knop.count())) { ok('uitleg: knop bij ' + naam, false, 'geen knop'); continue; }
+    await knop.click(); await p.waitForTimeout(400);
+    const tekst = await p.locator('#modal').innerText();
+    ok('uitleg: ' + naam + ' begint bij stap 1 van 5', /stap 1 van 5/i.test(tekst), tekst.split('\n').slice(0, 3).join(' · '));
+    await p.locator('#modal [data-tour-stap]').last().click(); await p.waitForTimeout(300);
+    ok('uitleg: ' + naam + ' gaat door naar stap 2', /stap 2 van 5/i.test(await p.locator('#modal').innerText()));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  }
+});
+
 await step('parseboard', async () => {
   await p.goto(U + '#board/1'); await p.waitForTimeout(2500);
   const t = tool();

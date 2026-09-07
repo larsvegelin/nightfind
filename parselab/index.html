@@ -648,7 +648,7 @@ function renderBench(t) {
   let b = t.bench;
   const extPanel = b.kind === "extension" || (b.extensionSection && state.section === b.extensionSection);
   const hint = (t.key === "scrape" && serverOk === false) ? `<div class="server-hint" role="status" aria-live="polite">${LOCK_ICO}<span class="pld-text note" style="flex:1"><span class="strong">De ParseLab-server draait niet.</span> ${!/^https?:$/.test(location.protocol) ? "Je hebt ParseLab als los bestand geopend; documenten en overzichten werken gewoon. Voor websites uitlezen heb je de map ParseLab nodig." : "Website uitlezen werkt via de server."} Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.</span><button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" id="recheck-server">Opnieuw proberen</button></div>` : "";
-  if (!extPanel) return hint + `<div class="pld-card card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
+  if (!extPanel) return hint + `<div class="bench-actions" style="margin-bottom:16px"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-tour="${esc(t.key)}">Hoe werkt ${esc(t.name)}?</button></div><div class="pld-card card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
   const store = CONFIG.webstoreUrl, ext = stats.extension, title = b.extPanelTitle || b.panelTitle;
   return `
     <div class="pld-card card bench">
@@ -660,6 +660,7 @@ function renderBench(t) {
           <div class="bench-actions">
             ${store ? `<a class="pld-btn btn btn-navy" href="${esc(store)}" target="_blank" rel="noopener">Toevoegen aan Chrome <span class="arrow">→</span></a>` : `<button type="button" class="pld-btn btn btn-navy" id="toggle-it">Installeren <span class="arrow">→</span></button>`}
             <a class="pld-btn pld-btn--ghost btn btn-outline" href="#help">Handleiding</a>
+            <button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-tour="${esc(t.key)}">Hoe werkt ${esc(t.name)}?</button>
           </div>
           <div class="pld-text note">Daarna staat het ParseLab-icoon rechtsboven in je browser. Zet het vast met de punaise.</div>
           ${store ? "" : `<div class="pld-text note">De Chrome Web Store-vermelding is er nog niet; tot die tijd voegt IT-beheer de toevoeging toe via de route hieronder.</div>`}`}
@@ -755,6 +756,34 @@ function renderSearch(defs, q) {
 }
 
 /* ---------- dialogen ---------- */
+/* "Hoe werkt …": een korte rondleiding per tool, stap voor stap. */
+const TOUR = {
+  scrape: ["Website uitlezen", [
+    ["Plak het webadres", "Zet het adres van de pagina met de lijst erin en klik op Pagina ophalen. ParseLab haalt hem op met een echte browser, dus pagina's die hun inhoud met JavaScript laden werken ook."],
+    ["Wijs één item aan", "Klik in de opgehaalde pagina op één product, één rij of één kaart. De tool vraagt of je dit ene item wilt of de hele lijst, en zoekt bij de lijst zelf de rest erbij."],
+    ["Controleer de kolommen", "Per kolom zie je drie voorbeeldwaarden. Vink uit wat je niet nodig hebt, hernoem wat onduidelijk heet, of wijs een ander element aan. Laat de AI de kolommen benoemen als je wilt."],
+    ["Meer pagina's", "Wijs de volgende-knop aan of zet doorscrollen aan als de lijst verder laadt. Kies hoeveel pagina's je wilt; er zit standaard een grens van 25 op."],
+    ["Uitlezen of plannen", "Download meteen als Excel of CSV, of bewaar het als taak die elk uur, elke dag of elke week draait terwijl je computer uit staat."]]],
+  pdf: ["Documenten uitlezen", [
+    ["Sleep je PDF's erin", "Het eerste document gaat meteen open, zodat je ziet wat erin staat. Alleen PDF, tot 25 MB per bestand."],
+    ["Kijk wat erin staat", "Alles wat de tool kan uitlezen is gearceerd: blauw een waarde, goud het label. Klik op een vlak om het veld zelf een naam te geven of het weg te laten."],
+    ["Vink aan wat je wilt", "Alles selecteren of niets selecteren gaat snel. Met Toon alle tekst komt elk stukje tekst in de lijst, plus de gegevens van het bestand zelf."],
+    ["Bewaar als sjabloon", "Zet je keuze in een map, bijvoorbeeld Facturen. Bij een volgende stapel kiest de tool zelf per document het juiste sjabloon."],
+    ["Uitlezen en downloaden", "Eén tabel met alle kolommen, te downloaden als CSV die Nederlandse Excel meteen goed zet. Een scan? Laat eerst de tekst herkennen."]]],
+  board: ["Overzicht maken", [
+    ["Kies je bestand", "Sleep een CSV of Excel erin, of begin met voorbeeldgegevens om te kijken hoe het werkt."],
+    ["Controleer de kolommen", "Per kolom kies je wat het is: datum, categorie, bedrag, aantal. Klopt de gok van de tool, dan hoef je niets te doen."],
+    ["Kies je metrieken", "Welke cijfers wil je volgen? Maximaal vier. Weet je het niet: laat ParseLab een overzicht voorstellen met AI."],
+    ["Stel je panelen in", "KPI-tegels, lijn- en staafgrafieken, verdeling en tabel. Zet aan wat je wilt zien en kies per grafiek het cijfer."],
+    ["Bewaar en deel", "Je overzicht wordt een project in de zijbalk. Open het later opnieuw of ververs het met een nieuw bestand."]]],
+  form: ["Formulieren invullen", [
+    ["Installeer de extensie", "Formulieren invullen gebeurt in je eigen browser, met jouw account. Daarvoor is de ParseLab-extensie nodig."],
+    ["Open het formulier", "Ga naar de pagina met het formulier en klik op het ParseLab-icoon rechtsboven."],
+    ["Koppel je gegevens", "Kies je Excel- of CSV-bestand en koppel de kolommen aan de velden van het formulier."],
+    ["Vul in en controleer", "ParseLab vult de velden; jij controleert en verstuurt. Er wordt niets verstuurd zonder jouw klik."],
+    ["Bewaar het als taak", "De koppeling blijft bewaard, zodat de volgende regel uit je bestand met één klik ingevuld staat."]]],
+};
+
 function renderModal(m, defs) {
   let body = "";
   if (m.kind === "choose") {
@@ -773,6 +802,20 @@ function renderModal(m, defs) {
     body = `<div class="card-head">${tile(t, 36)}<div class="pld-caps caps">${esc(t.name)} · ${esc(t.projectWord)}</div></div>
       <form id="ep-form" class="field"><label for="ep-name">Naam</label><input id="ep-name" type="text" value="${esc(pr.name)}" required></form>
       <div class="foot"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" id="ep-delete">Uit lijst halen</button><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" id="ep-save">Naam bewaren</button><button type="button" class="pld-btn btn btn-navy" data-open-project="${esc(pr.id)}" data-open-tool="${t.key}">Openen <span class="arrow">→</span></button></div>`;
+  } else if (m.kind === "tour") {
+    const t = defs.find(x => x.key === m.tool), tour = TOUR[m.tool];
+    const i = Math.max(0, Math.min(m.stap || 0, tour[1].length - 1)), stap = tour[1][i];
+    body = `<div class="card-head">${tile(t, 36)}<div class="pld-caps caps">${esc(t.name)} · ${esc(tour[0])}</div></div>
+      <div class="pld-caps caps">Stap ${i + 1} van ${tour[1].length}</div>
+      <div class="title-24">${esc(stap[0])}</div>
+      <div class="pld-text note" style="font-size:16px">${esc(stap[1])}</div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${tour[1].length}" aria-valuenow="${i + 1}"><span style="width:${Math.round((i + 1) / tour[1].length * 100)}%"></span></div>
+      <div class="foot">
+        ${i > 0 ? `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-tour-stap="${i - 1}" data-tour-tool="${esc(m.tool)}">Vorige</button>` : `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-close>Sluiten</button>`}
+        ${i < tour[1].length - 1
+          ? `<button type="button" class="pld-btn btn btn-navy" data-tour-stap="${i + 1}" data-tour-tool="${esc(m.tool)}">Volgende</button>`
+          : `<button type="button" class="pld-btn btn btn-navy" data-close>Klaar</button>`}
+      </div>`;
   } else if (m.kind === "account") {
     const st = readSettings();
     body = `<div class="title-24">Account</div><div class="kv"><span class="pld-caps caps">Naam</span><span>${esc(state.user.name)}</span><span class="pld-caps caps">E-mail</span><span>${esc(state.user.email)}</span></div>
@@ -832,6 +875,8 @@ function bindActions() {
   document.querySelectorAll("[data-bench]").forEach(el => { el.onclick = () => go(el.getAttribute("data-bench")); });
   document.querySelectorAll("[data-open-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === el.getAttribute("data-open-tool")); go(t.key, t.projectSection, el.getAttribute("data-open-project")); }; });
   document.querySelectorAll("[data-edit-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"project", id:el.getAttribute("data-edit-project") }; render(); }; });
+  document.querySelectorAll("[data-tour]").forEach(el => { el.onclick = () => { state.modal = { kind:"tour", tool:el.getAttribute("data-tour"), stap:0 }; state.menu = null; render(); }; });
+  document.querySelectorAll("[data-tour-stap]").forEach(el => { el.onclick = () => { state.modal = { kind:"tour", tool:el.getAttribute("data-tour-tool"), stap:Number(el.getAttribute("data-tour-stap")) }; render(); }; });
   document.querySelectorAll("[data-modal]").forEach(el => { el.onclick = () => { state.modal = { kind:el.getAttribute("data-modal") }; state.menu = null; render(); }; });
   document.querySelectorAll("[data-close]").forEach(el => { el.onclick = () => { state.modal = null; render(); }; });
   document.querySelectorAll("[data-close-bg]").forEach(el => { el.onclick = e => { if (e.target === el) { state.modal = null; render(); } }; });

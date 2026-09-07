@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 9 van 11: uitlezen met AI. Vraagt toestemming en kijkt of het pakket het toelaat. -->
+<!-- ParsePDF — embed 10 van 12: uitlezen met AI. Vraagt toestemming en kijkt of het pakket het toelaat. -->
 <script>
 window.PLP_AI=(function(){
 var S=window.PLP_S,CFG=window.PARSELAB;
@@ -48,13 +48,14 @@ function vraag(doc,velden,klaar,melding,knop){
       if(!nieuw){melding.textContent=t.aiOff;return;}
       // Eén AI-controle is één tegoed; dat telt apart van de pagina's.
       try{if(CFG&&CFG.client)CFG.client.rpc("record_usage",{p_tool:"parsepdf-ai",p_pages:1});}catch(e){}
-      nieuw.forEach(function(v){
+      // Het voorstel gaat pas door nadat de gebruiker het goedkeurt.
+      if(window.PLP_L)window.PLP_L.goedkeuring(velden,nieuw,klaar,melding);
+      else {nieuw.forEach(function(v){
         var bestaand=velden.filter(function(x){return x.waarde===v.waarde;})[0];
         if(bestaand){if(v.naam)bestaand.naam=v.naam;bestaand.bron="ai";}
-        else velden.push({aan:true,naam:v.naam,waarde:v.waarde,bron:"ai",vak:{pagina:-1},labelvak:null,
-                          vindregel:{type:"regexwaarde",waarde:v.waarde},filter:"geen"});
-      });
-      melding.textContent=t.aiDone;klaar();
+        else velden.push({aan:true,slim:true,naam:v.naam,waarde:v.waarde,bron:"ai",vak:{pagina:-1,x:0,y:0,b:0,h:0},
+                          labelvak:null,vindregel:{type:"patroonwaarde",waarde:v.waarde},filter:"geen"});
+      });melding.textContent=t.aiDone;klaar();}
     }).catch(function(){knop.disabled=false;melding.textContent=t.aiOff;});
   });
 }
@@ -68,7 +69,7 @@ function haalAi(doc,velden){
   return fetch(eind,{method:"POST",headers:kop,
     body:JSON.stringify({tekst:(doc.tekst||"").slice(0,20000),
       cellen:(doc.cellen||[]).slice(0,400).map(function(c){return {t:c.t,x:Math.round(c.x),y:Math.round(c.y),p:c.pagina};}),
-      gevonden:velden.map(function(v){return {naam:v.naam,waarde:v.waarde};})})
+      gevonden:velden.map(function(v){return {naam:v.naam,waarde:v.waarde,aan:!!v.aan};})})
   }).then(function(r){
     if(!r.ok)return null;
     return r.json().then(function(j){return (j&&j.velden)||null;});

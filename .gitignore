@@ -49,3 +49,6 @@ parselab/tests/proef/
 
 # Playwright voor de tests, lokaal geïnstalleerd
 node_modules/
+
+# Losse dashboardbundel: 2,8 MB en met één commando te herbouwen
+parselab/ParseLab.html

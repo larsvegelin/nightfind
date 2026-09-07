@@ -1,0 +1,67 @@
+<!-- ParsePDF — embed 4b van 12: tekstherkenning voor documenten zonder tekstlaag. -->
+<script>
+(function(){
+var P=window.PLP;if(!P)return;
+var open=P.open;
+// Tekstherkenning voor documenten zonder tekstlaag. Draait ook in de browser: de
+// pagina wordt getekend en tesseract.js leest er woorden uit, met hun plek.
+var OCRLIB="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js";
+var ocrLaden=null;
+function ocrMotor(){
+  if(window.Tesseract)return Promise.resolve(window.Tesseract);
+  if(ocrLaden)return ocrLaden;
+  ocrLaden=new Promise(function(ok,fout){
+    var s=document.createElement("script");s.src=OCRLIB;s.async=true;
+    s.onload=function(){window.Tesseract?ok(window.Tesseract):fout(new Error("ocr"));};
+    s.onerror=function(){ocrLaden=null;fout(new Error("ocr"));};
+    document.head.appendChild(s);
+  });
+  return ocrLaden;
+}
+function ocr(file,melden){
+  return Promise.all([open(file),ocrMotor()]).then(function(paar){
+    var pdf=paar[0],T=paar[1],uit=[],keten=Promise.resolve(),maten=[];
+    for(var i=1;i<=Math.min(pdf.numPages,10);i++)(function(nr){
+      keten=keten.then(function(){return pdf.getPage(nr);}).then(function(pg){
+        var vp=pg.getViewport({scale:2});                 // groter tekenen leest beter
+        var doek=document.createElement("canvas");
+        doek.width=vp.width;doek.height=vp.height;
+        maten[nr-1]={breed:vp.width/2,hoog:vp.height/2};
+        if(melden)melden(nr,Math.min(pdf.numPages,10));
+        return pg.render({canvasContext:doek.getContext("2d"),viewport:vp}).promise.then(function(){
+          return T.recognize(doek,"nld+eng");
+        }).then(function(res){
+          ((res&&res.data&&res.data.words)||[]).forEach(function(w){
+            if(!w.text||!w.text.trim()||(w.confidence||0)<40)return;
+            var b=w.bbox||{};
+            uit.push({t:w.text.trim(),x:b.x0/2,y:maten[nr-1].hoog-b.y1/2,
+                      b:(b.x1-b.x0)/2,h:(b.y1-b.y0)/2,rij:Math.round((maten[nr-1].hoog-b.y1/2)/-6),pagina:nr-1});
+          });
+        });
+      });
+    })(i);
+    return keten.then(function(){
+      pdf.destroy();
+      // Woorden op dezelfde hoogte worden weer cellen, net als bij een tekstlaag.
+      uit.sort(function(a,b){return a.pagina-b.pagina||b.y-a.y||a.x-b.x;});
+      var cellen=[],open2=null,rij=0,vorigeY=null,vorigePagina=-1;
+      uit.forEach(function(w){
+        if(vorigeY===null||w.pagina!==vorigePagina||Math.abs(w.y-vorigeY)>w.h*0.6){
+          if(open2)cellen.push(open2);
+          open2=null;rij++;vorigeY=w.y;vorigePagina=w.pagina;
+        }
+        if(open2&&w.x-(open2.x+open2.b)<Math.max(3,open2.h*0.6)){
+          open2.t+=" "+w.t;open2.b=w.x+w.b-open2.x;
+        }else{
+          if(open2)cellen.push(open2);
+          open2={t:w.t,x:w.x,y:w.y,b:w.b,h:w.h,rij:rij,pagina:w.pagina};
+        }
+      });
+      if(open2)cellen.push(open2);
+      return {cellen:cellen,maten:maten,paginas:maten.length};
+    });
+  });
+}
+P.ocr=ocr;
+})();
+</script>

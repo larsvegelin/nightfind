@@ -1,5 +1,5 @@
 <!--
-  ParsePDF — embed 1 van 11: configuratie en stijl
+  ParsePDF — embed 1 van 12: configuratie en stijl
   Plaats bovenaan de pagina, boven de lege container <div id="pl-parsepdf-root">.
 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -63,6 +63,8 @@ window.PARSELAB.client=window.supabase.createClient(window.PARSELAB.supabaseUrl,
 .plp-vlak--uit{background:rgba(138,144,165,.12);border-color:rgba(138,144,165,.45)}
 .plp-vlak--label{background:rgba(201,169,97,.16);border-color:rgba(201,169,97,.5);cursor:default}
 .plp-vlak:hover,.plp-vlak--warm{background:rgba(44,111,168,.34);border-color:#215A88}
+.plp-label{position:absolute;z-index:4;background:#FFF;border-radius:14px;padding:14px;width:250px;display:flex;flex-direction:column;gap:8px;box-shadow:0 24px 60px rgba(6,18,35,.28);line-height:1.4}
+.plp-label .pld-in{width:100%}
 .plp-tip{position:absolute;z-index:3;background:#1F3A5F;color:#F2F0E7;font-size:13px;line-height:1.3;padding:6px 10px;border-radius:9px;pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%)}
 .plp-mapkies{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .plp-mapkies>.pld-sel,.plp-mapkies>.pld-in{flex:1 1 220px;min-width:0;width:auto}

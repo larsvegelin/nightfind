@@ -1,113 +1,9 @@
-<!doctype html>
-<html lang="nl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>ParsePDF — ParseLab</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>
-  html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: #FBFAF6; font-family: Poppins, -apple-system, "Segoe UI", system-ui, sans-serif; }
-  .pl-container { max-width: 1120px; margin: 0 auto; padding: 56px 24px 96px; }
-  @media (max-width: 767px) { .pl-container { padding: 32px 20px 64px; } }
-</style>
-</head>
-<body>
-<div class="pl-page"><div class="pl-light"><div class="pl-container"><div class="pl-section">
-<div id="pl-parsepdf-root"></div>
-<!-- 1-config-stijl.html -->
-<!--
-  ParsePDF — embed 1 van 12: configuratie en stijl
-  Plaats bovenaan de pagina, boven de lege container <div id="pl-parsepdf-root">.
--->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script>
-window.PARSELAB={supabaseUrl:"https://wgmwpwviqhcsyvfrwual.supabase.co",supabaseKey:"sb_publishable_3NaKuKqUgGfvF2q772MwIw_hfHdklwo",dashboardPath:"/dashboard",loginPath:"/inloggen",prices:{pro:"",business:""}};
-window.PARSELAB.client=window.supabase.createClient(window.PARSELAB.supabaseUrl,window.PARSELAB.supabaseKey,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
-</script>
-<style>
-#pl-parsepdf-root{font-family:Poppins,-apple-system,"Segoe UI",system-ui,sans-serif;color:#16293F}
-.pld-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:32px}
-.pld-title{margin:0;font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.01em}
-.pld-sub{margin:6px 0 0;color:#4A5A6C;font-size:16px;line-height:1.55}
-.pld-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
-.pld-card{background:#FFF;color:#16293F;border-radius:20px;padding:28px;box-shadow:0 18px 44px rgba(6,18,35,.10);display:flex;flex-direction:column;gap:12px;min-width:0}
-.pld-card--navy{background:#1F3A5F;color:#F2F0E7;box-shadow:0 24px 60px rgba(6,18,35,.28)}
-.pld-caps{margin:0;font-size:13px;font-weight:500;letter-spacing:.02em;text-transform:uppercase;color:#4A5A6C}
-.pld-card--navy .pld-caps{color:rgba(242,240,231,.82)}
-.pld-num{margin:0;font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.01em}
-.pld-text{margin:0;color:#4A5A6C;font-size:16px;line-height:1.55}
-.pld-card--navy .pld-text{color:rgba(242,240,231,.82)}
-.pld-pill{display:inline-flex;align-items:center;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:600;background:#F2F0E7;color:#16293F;align-self:flex-start}
-.pld-pill--on{background:#DCE8F2;color:#215A88}
-.pld-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:15px 24px;border:0;border-radius:14px;font:600 16px/1 inherit;cursor:pointer;text-decoration:none;background:#1F3A5F;color:#F2F0E7}
-.pld-btn:hover{filter:brightness(1.08)}
-.pld-btn:focus-visible{outline:2px solid #C9A961;outline-offset:3px}
-.pld-btn:disabled{opacity:.6;cursor:default;filter:none}
-.pld-btn--cream{background:#F2F0E7;color:#16293F}
-.pld-btn--ghost{background:transparent;color:#1F3A5F;border:1px solid #1F3A5F}
-.pld-btn--sm{min-height:36px;padding:10px 16px;font-size:14px}
-.pld-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.pld-msg{margin:0 0 24px;padding:14px 18px;border-radius:14px;font-size:15px;line-height:1.5;background:#DCE8F2;color:#16293F}
-.pld-msg--warn{background:#EDE7D5;color:#16293F;border-left:3px solid #C9A961}
-.pld-bar{height:10px;border-radius:999px;background:#E6E3D8;overflow:hidden}
-.pld-bar>span{display:block;height:100%;background:#2C6FA8;border-radius:999px;transition:width .4s ease-out}
-.pld-bar--hot>span{background:#C9A961}
-.pld-in,.pld-sel{width:100%;min-height:44px;padding:12px 14px;border:1px solid #8A90A5;border-radius:12px;font:15px/1.4 inherit;color:#16293F;background:#FFF}
-.pld-in:focus,.pld-sel:focus{border-color:#2C6FA8;outline:2px solid #C9A961;outline-offset:2px}
-.pld-lbl{display:block;margin:0 0 6px;font-size:13px;font-weight:500;color:#4A5A6C}
-.pld-sect{margin:40px 0 16px}
-.plp-drop{border:2px dashed #8A90A5;border-radius:20px;background:#FFF;color:#16293F;padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
-.plp-drop--over{border-color:#2C6FA8;background:#DCE8F2}
-.plp-rule{display:grid;grid-template-columns:1.2fr 1fr 1.6fr 1fr auto;gap:12px;align-items:end}
-.plp-scroll{overflow-x:auto;min-width:0}
-.plp-table{width:100%;border-collapse:collapse;font-size:15px;color:#16293F}
-.plp-table th{text-align:left;padding:0 12px 12px 0;font-size:13px;font-weight:500;letter-spacing:.02em;text-transform:uppercase;color:#4A5A6C;white-space:nowrap}
-.plp-table td{padding:12px 12px 12px 0;border-top:1px solid #E6E3D8;vertical-align:top}
-.plp-table tbody tr:hover{background:#FBFAF6}
-.plp-mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:.02em;color:#4A5A6C}
-.plp-file{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #E6E3D8}
-.plp-file:first-of-type{border-top:0}
-.plp-skel{height:14px;border-radius:999px;background:#E6E3D8;animation:plp-pulse 1.2s ease-in-out infinite}
-@keyframes plp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
-@media (prefers-reduced-motion:reduce){.plp-skel{animation:none}.pld-bar>span{transition:none}}
-.plp-doorkijk{position:fixed;inset:0;z-index:9999;background:rgba(6,18,35,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px}
-.plp-blad{background:#FBFAF6;border-radius:20px;max-width:1600px;width:100%;padding:28px;display:flex;flex-direction:column;gap:20px;box-shadow:0 24px 60px rgba(6,18,35,.28)}
-.plp-twee{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:start}
-.plp-twee>div:first-child{position:sticky;top:24px}
-.plp-pagina{position:relative;background:#FFF;border-radius:14px;border:1px solid #E6E3D8;overflow:hidden;line-height:0}
-.plp-pagina canvas{width:100%;height:auto;display:block}
-.plp-vlak{position:absolute;border-radius:3px;background:rgba(44,111,168,.18);border:1px solid rgba(44,111,168,.55);cursor:pointer}
-.plp-vlak--uit{background:rgba(138,144,165,.12);border-color:rgba(138,144,165,.45)}
-.plp-vlak--label{background:rgba(201,169,97,.16);border-color:rgba(201,169,97,.5);cursor:default}
-.plp-vlak:hover,.plp-vlak--warm{background:rgba(44,111,168,.34);border-color:#215A88}
-.plp-label{position:absolute;z-index:4;background:#FFF;border-radius:14px;padding:14px;width:250px;display:flex;flex-direction:column;gap:8px;box-shadow:0 24px 60px rgba(6,18,35,.28);line-height:1.4}
-.plp-label .pld-in{width:100%}
-.plp-tip{position:absolute;z-index:3;background:#1F3A5F;color:#F2F0E7;font-size:13px;line-height:1.3;padding:6px 10px;border-radius:9px;pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%)}
-.plp-mapkies{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.plp-mapkies>.pld-sel,.plp-mapkies>.pld-in{flex:1 1 220px;min-width:0;width:auto}
-.plp-lijst{display:flex;flex-direction:column;gap:10px;max-height:78vh;overflow:auto}
-.plp-veldrij{display:grid;grid-template-columns:auto minmax(0,1.1fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #E6E3D8}
-.plp-veldrij:first-child{border-top:0}
-.plp-veldrij input[type=checkbox]{width:20px;height:20px;accent-color:#2C6FA8}
-.plp-bron{font-size:13px;color:#4A5A6C;white-space:nowrap}
-.plp-bron--ai{color:#215A88;font-weight:600}
-.plp-modal{position:fixed;inset:0;z-index:10000;background:rgba(6,18,35,.55);display:flex;align-items:center;justify-content:center;padding:24px}
-.plp-modal-blad{background:#FFF;border-radius:20px;max-width:560px;width:100%;padding:28px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 60px rgba(6,18,35,.28)}
-.plp-uit{background:transparent;border:0;font:inherit;color:#4A5A6C;cursor:pointer;padding:8px;min-height:44px}
-@media (max-width:991px){.plp-twee{grid-template-columns:1fr}.plp-mapkies{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.plp-mapkies>.pld-sel,.plp-mapkies>.pld-in{flex:1 1 220px;min-width:0;width:auto}
-.plp-lijst{max-height:none}}
-@media (max-width:767px){.plp-veldrij{grid-template-columns:auto 1fr;row-gap:6px}.plp-blad{padding:20px}}
-@media (max-width:767px){.plp-rule{grid-template-columns:1fr 1fr}.pld-card{padding:24px}}
-@media (max-width:479px){.pld-title{font-size:28px}.pld-num{font-size:26px}.plp-rule{grid-template-columns:1fr}.pld-card{padding:20px}.pld-btn{width:100%}}
-</style>
-<!-- 2-teksten.html -->
-<!-- ParsePDF — embed 2 van 12: teksten en startsjablonen -->
-<script>
+(function(){var s=document.createElement('style');s.textContent="\n#pl-parsepdf-root{font-family:Poppins,-apple-system,\"Segoe UI\",system-ui,sans-serif;color:#16293F}\n.pld-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:32px}\n.pld-title{margin:0;font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.01em}\n.pld-sub{margin:6px 0 0;color:#4A5A6C;font-size:16px;line-height:1.55}\n.pld-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}\n.pld-card{background:#FFF;color:#16293F;border-radius:20px;padding:28px;box-shadow:0 18px 44px rgba(6,18,35,.10);display:flex;flex-direction:column;gap:12px;min-width:0}\n.pld-card--navy{background:#1F3A5F;color:#F2F0E7;box-shadow:0 24px 60px rgba(6,18,35,.28)}\n.pld-caps{margin:0;font-size:13px;font-weight:500;letter-spacing:.02em;text-transform:uppercase;color:#4A5A6C}\n.pld-card--navy .pld-caps{color:rgba(242,240,231,.82)}\n.pld-num{margin:0;font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.01em}\n.pld-text{margin:0;color:#4A5A6C;font-size:16px;line-height:1.55}\n.pld-card--navy .pld-text{color:rgba(242,240,231,.82)}\n.pld-pill{display:inline-flex;align-items:center;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:600;background:#F2F0E7;color:#16293F;align-self:flex-start}\n.pld-pill--on{background:#DCE8F2;color:#215A88}\n.pld-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:15px 24px;border:0;border-radius:14px;font:600 16px/1 inherit;cursor:pointer;text-decoration:none;background:#1F3A5F;color:#F2F0E7}\n.pld-btn:hover{filter:brightness(1.08)}\n.pld-btn:focus-visible{outline:2px solid #C9A961;outline-offset:3px}\n.pld-btn:disabled{opacity:.6;cursor:default;filter:none}\n.pld-btn--cream{background:#F2F0E7;color:#16293F}\n.pld-btn--ghost{background:transparent;color:#1F3A5F;border:1px solid #1F3A5F}\n.pld-btn--sm{min-height:36px;padding:10px 16px;font-size:14px}\n.pld-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}\n.pld-msg{margin:0 0 24px;padding:14px 18px;border-radius:14px;font-size:15px;line-height:1.5;background:#DCE8F2;color:#16293F}\n.pld-msg--warn{background:#EDE7D5;color:#16293F;border-left:3px solid #C9A961}\n.pld-bar{height:10px;border-radius:999px;background:#E6E3D8;overflow:hidden}\n.pld-bar>span{display:block;height:100%;background:#2C6FA8;border-radius:999px;transition:width .4s ease-out}\n.pld-bar--hot>span{background:#C9A961}\n.pld-in,.pld-sel{width:100%;min-height:44px;padding:12px 14px;border:1px solid #8A90A5;border-radius:12px;font:15px/1.4 inherit;color:#16293F;background:#FFF}\n.pld-in:focus,.pld-sel:focus{border-color:#2C6FA8;outline:2px solid #C9A961;outline-offset:2px}\n.pld-lbl{display:block;margin:0 0 6px;font-size:13px;font-weight:500;color:#4A5A6C}\n.pld-sect{margin:40px 0 16px}\n.plp-drop{border:2px dashed #8A90A5;border-radius:20px;background:#FFF;color:#16293F;padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}\n.plp-drop--over{border-color:#2C6FA8;background:#DCE8F2}\n.plp-rule{display:grid;grid-template-columns:1.2fr 1fr 1.6fr 1fr auto;gap:12px;align-items:end}\n.plp-scroll{overflow-x:auto;min-width:0}\n.plp-table{width:100%;border-collapse:collapse;font-size:15px;color:#16293F}\n.plp-table th{text-align:left;padding:0 12px 12px 0;font-size:13px;font-weight:500;letter-spacing:.02em;text-transform:uppercase;color:#4A5A6C;white-space:nowrap}\n.plp-table td{padding:12px 12px 12px 0;border-top:1px solid #E6E3D8;vertical-align:top}\n.plp-table tbody tr:hover{background:#FBFAF6}\n.plp-mono{font-family:\"JetBrains Mono\",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:.02em;color:#4A5A6C}\n.plp-file{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #E6E3D8}\n.plp-file:first-of-type{border-top:0}\n.plp-skel{height:14px;border-radius:999px;background:#E6E3D8;animation:plp-pulse 1.2s ease-in-out infinite}\n@keyframes plp-pulse{0%,100%{opacity:1}50%{opacity:.5}}\n@media (prefers-reduced-motion:reduce){.plp-skel{animation:none}.pld-bar>span{transition:none}}\n.plp-doorkijk{position:fixed;inset:0;z-index:9999;background:rgba(6,18,35,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px}\n.plp-blad{background:#FBFAF6;border-radius:20px;max-width:1600px;width:100%;padding:28px;display:flex;flex-direction:column;gap:20px;box-shadow:0 24px 60px rgba(6,18,35,.28)}\n.plp-twee{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:start}\n.plp-twee>div:first-child{position:sticky;top:24px}\n.plp-pagina{position:relative;background:#FFF;border-radius:14px;border:1px solid #E6E3D8;overflow:hidden;line-height:0}\n.plp-pagina canvas{width:100%;height:auto;display:block}\n.plp-vlak{position:absolute;border-radius:3px;background:rgba(44,111,168,.18);border:1px solid rgba(44,111,168,.55);cursor:pointer}\n.plp-vlak--uit{background:rgba(138,144,165,.12);border-color:rgba(138,144,165,.45)}\n.plp-vlak--label{background:rgba(201,169,97,.16);border-color:rgba(201,169,97,.5);cursor:default}\n.plp-vlak:hover,.plp-vlak--warm{background:rgba(44,111,168,.34);border-color:#215A88}\n.plp-label{position:absolute;z-index:4;background:#FFF;border-radius:14px;padding:14px;width:250px;display:flex;flex-direction:column;gap:8px;box-shadow:0 24px 60px rgba(6,18,35,.28);line-height:1.4}\n.plp-label .pld-in{width:100%}\n.plp-tip{position:absolute;z-index:3;background:#1F3A5F;color:#F2F0E7;font-size:13px;line-height:1.3;padding:6px 10px;border-radius:9px;pointer-events:none;white-space:nowrap;transform:translate(-50%,-100%)}\n.plp-mapkies{display:flex;gap:12px;flex-wrap:wrap;align-items:center}\n.plp-mapkies>.pld-sel,.plp-mapkies>.pld-in{flex:1 1 220px;min-width:0;width:auto}\n.plp-lijst{display:flex;flex-direction:column;gap:10px;max-height:78vh;overflow:auto}\n.plp-veldrij{display:grid;grid-template-columns:auto minmax(0,1.1fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #E6E3D8}\n.plp-veldrij:first-child{border-top:0}\n.plp-veldrij input[type=checkbox]{width:20px;height:20px;accent-color:#2C6FA8}\n.plp-bron{font-size:13px;color:#4A5A6C;white-space:nowrap}\n.plp-bron--ai{color:#215A88;font-weight:600}\n.plp-modal{position:fixed;inset:0;z-index:10000;background:rgba(6,18,35,.55);display:flex;align-items:center;justify-content:center;padding:24px}\n.plp-modal-blad{background:#FFF;border-radius:20px;max-width:560px;width:100%;padding:28px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 60px rgba(6,18,35,.28)}\n.plp-uit{background:transparent;border:0;font:inherit;color:#4A5A6C;cursor:pointer;padding:8px;min-height:44px}\n@media (max-width:991px){.plp-twee{grid-template-columns:1fr}.plp-mapkies{display:flex;gap:12px;flex-wrap:wrap;align-items:center}\n.plp-mapkies>.pld-sel,.plp-mapkies>.pld-in{flex:1 1 220px;min-width:0;width:auto}\n.plp-lijst{max-height:none}}\n@media (max-width:767px){.plp-veldrij{grid-template-columns:auto 1fr;row-gap:6px}.plp-blad{padding:20px}}\n@media (max-width:767px){.plp-rule{grid-template-columns:1fr 1fr}.pld-card{padding:24px}}\n@media (max-width:479px){.pld-title{font-size:28px}.pld-num{font-size:26px}.plp-rule{grid-template-columns:1fr}.pld-card{padding:20px}.pld-btn{width:100%}}\n\n";document.head.appendChild(s);})();
+/* ParseLab — ParsePDF, gebouwd uit parselab/webflow/. Niet met de hand wijzigen. */
+(function(){
+
+/* ---- 2-teksten.html ---- */
+
 window.PLP_T={
 nl:{title:"ParsePDF",sub:"Haal velden uit je PDF's met regels die je één keer instelt. Alles gebeurt in je eigen browser; er wordt geen document verstuurd.",
 back:"Terug naar dashboard",loading:"Bezig met laden…",
@@ -197,10 +93,10 @@ bank:[{naam:"Rekening",type:"regex",waarde:"[A-Z]{2}\\d{2}[A-Z0-9]{10,}",filter:
 {naam:"Periode",type:"label",waarde:"Periode",filter:"geen"},
 {naam:"Eindsaldo",type:"label",waarde:"Eindsaldo",filter:"bedrag"}],
 blank:[{naam:"Veld 1",type:"label",waarde:"",filter:"geen"}]};
-</script>
-<!-- 3-teksten-voorstel.html -->
-<!-- ParsePDF - embed 3 van 11: teksten voor doorkijken, voorstel en AI -->
-<script>
+
+
+/* ---- 3-teksten-voorstel.html ---- */
+
 (function(){var T=window.PLP_T;if(!T)return;
 var EXTRA={
 nl:{look:"Kijk wat erin staat",lookHint:"De tool opent het document, arceert wat hij kan uitlezen en stelt namen voor. Zweef over een vlak om de naam te zien.",
@@ -290,10 +186,10 @@ Object.keys(EXTRA).forEach(function(taal){
   Object.keys(EXTRA[taal]).forEach(function(k){T[taal][k]=EXTRA[taal][k];});
 });
 })();
-</script>
-<!-- 4-motor.html -->
-<!-- ParsePDF — embed 4 van 12: uitleesmotor. Draait volledig lokaal in de browser. -->
-<script>
+
+
+/* ---- 4-motor.html ---- */
+
 window.PLP=(function(){
 var LIB="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
 var WORKER="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -499,10 +395,10 @@ function bewaar(naam,tekst){
 
 return {tel:tel,lees:lees,rij:rij,csv:csv,bewaar:bewaar,open:open,motor:motor,MAXBYTES:MAXBYTES,MAXFILES:MAXFILES};
 })();
-</script>
-<!-- 4b-ocr.html -->
-<!-- ParsePDF — embed 4b van 12: tekstherkenning voor documenten zonder tekstlaag. -->
-<script>
+
+
+/* ---- 4b-ocr.html ---- */
+
 (function(){
 var P=window.PLP;if(!P)return;
 var open=P.open;
@@ -567,10 +463,10 @@ function ocr(file,melden){
 }
 P.ocr=ocr;
 })();
-</script>
-<!-- 5-scherm.html -->
-<!-- ParsePDF — embed 5 van 12: schermopbouw -->
-<script>
+
+
+/* ---- 5-scherm.html ---- */
+
 window.PLP_S={regels:[],bestanden:[],rijen:[],kolommen:null,verbruik:null,taal:"nl",t:null,root:null};
 window.PLP_UI=(function(){
 var S=window.PLP_S,P=window.PLP,CFG=window.PARSELAB;
@@ -738,10 +634,10 @@ k.appendChild(a);k.style.marginBottom="24px";return k;}
 
 return {el:el,nr:nr,teken:teken,meld:meld,over:over,laadRegels:laadRegels,limietKaart:limietKaart};
 })();
-</script>
-<!-- 6-structuur.html -->
-<!-- ParsePDF — embed 6 van 12: cellen, kolommen en patronen. De basis van de herkenning. -->
-<script>
+
+
+/* ---- 6-structuur.html ---- */
+
 
 window.PLP_ST=(function(){
 // Patronen die zichzelf verraden. "sterk": mag ook zonder label een veld worden.
@@ -865,10 +761,10 @@ function pas(doc,vr){
 return {pas:pas,labelachtig:labelachtig,re:re,bruikbaar:bruikbaar,eigenPaar:eigenPaar,schoonLabel:schoonLabel,
 overlapt:overlapt,perRij:perRij,kolommen:kolommen,patronen:PAT,vind:vind,isWaarde:isWaarde,STOP:STOP};
 })();
-</script>
-<!-- 7-velden.html -->
-<!-- ParsePDF — embed 7 van 12: velden voorstellen. Gebruikt de cellen uit embed 6. -->
-<script>
+
+
+/* ---- 7-velden.html ---- */
+
 (function(){
 var ST=window.PLP_ST;if(!ST)return;
 var PAT=ST.patronen,STOP=ST.STOP;
@@ -1086,10 +982,10 @@ function naamVoor(c,rij,i,n){
 }
 ST.analyse=analyse;ST.filterVoor=filterVoor;ST.alles=alles;
 })();
-</script>
-<!-- 8-voorstel.html -->
-<!-- ParsePDF — embed 8 van 12: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
-<script>
+
+
+/* ---- 8-voorstel.html ---- */
+
 window.PLP_V=(function(){
 var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,CFG=window.PARSELAB;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
@@ -1263,10 +1159,10 @@ function bouw(blad,file,doc,analyse,velden,sluit){
 
 return {open:open};
 })();
-</script>
-<!-- 9-labels.html -->
-<!-- ParsePDF — embed 9 van 12: labels op de pagina, selectieknoppen en goedkeuren. -->
-<script>
+
+
+/* ---- 9-labels.html ---- */
+
 (function(){var T=window.PLP_T;if(!T)return;
 var EXTRA={
 nl:{keep:"Overnemen",drop:"Weglaten",autoNamed:"naam automatisch",selectAll:"Alles selecteren",selectNone:"Niets selecteren",chosen:"{n} van {t} aan",aiChanged:"De AI wijzigde {n} velden.",approve:"Goedkeuren",undo:"Ongedaan maken",approved:"Goedgekeurd.",undone:"Teruggezet.",ocr:"Tekst herkennen (OCR)",ocrBusy:"Tekst herkennen…",ocrDone:"{n} stukken tekst herkend. Controleer ze goed; herkenning is niet altijd juist.",ocrOff:"Tekstherkenning kon niet worden geladen. Controleer je verbinding.",ocrHint:"Dit document heeft geen tekstlaag. Laat de tekst herkennen om er toch velden uit te halen."},
@@ -1278,8 +1174,10 @@ Object.keys(EXTRA).forEach(function(taal){
   Object.keys(EXTRA[taal]).forEach(function(k){T[taal][k]=EXTRA[taal][k];});
 });
 })();
-</script>
-<script>
+
+
+/* ---- 9-labels.html ---- */
+
 window.PLP_L=(function(){
 var S=window.PLP_S;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
@@ -1440,10 +1338,10 @@ function tip(vlak,box,tekst){
 
 return {vlakken:vlakken,ocrAanbod:ocrAanbod,labelVenster:labelVenster,selectieBalk:selectieBalk,goedkeuring:goedkeuring,sluitVensters:sluitVensters};
 })();
-</script>
-<!-- 9b-uitleg.html -->
-<!-- ParsePDF — embed 9b van 12: de uitleg "Hoe werkt ParsePDF?" in vijf stappen. -->
-<script>
+
+
+/* ---- 9b-uitleg.html ---- */
+
 window.PLP_TOUR=(function(){
 var S=window.PLP_S;
 var STAPPEN={
@@ -1498,10 +1396,10 @@ function toon(){
 }
 return {toon:toon,titel:function(){return TITEL[taal()];}};
 })();
-</script>
-<!-- 10-ai.html -->
-<!-- ParsePDF — embed 10 van 12: uitlezen met AI. Vraagt toestemming en kijkt of het pakket het toelaat. -->
-<script>
+
+
+/* ---- 10-ai.html ---- */
+
 window.PLP_AI=(function(){
 var S=window.PLP_S,CFG=window.PARSELAB;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
@@ -1589,10 +1487,10 @@ function sessie(){
 
 return {vraag:vraag,haal:haalAi,mag:magAi};
 })();
-</script>
-<!-- 11-sjablonen.html -->
-<!-- ParsePDF — embed 11 van 12: mappen met sjablonen en het herkennen van documenten. -->
-<script>
+
+
+/* ---- 11-sjablonen.html ---- */
+
 window.PLP_SJ=(function(){
 var SLEUTEL="pl_parsepdf_mappen";
 var ST=window.PLP_ST;
@@ -1759,10 +1657,10 @@ return {kaart:kaart,opslaanKnop:opslaanKnop,lees:lees,bewaar:bewaar,nieuweMap:ni
         bewaarSjabloon:bewaarSjabloon,verwijderSjabloon:verwijderSjabloon,telGebruik:telGebruik,
         vingerafdruk:vingerafdruk,kies:kies,score:score};
 })();
-</script>
-<!-- 12-verwerken.html -->
-<!-- ParsePDF — embed 12 van 12: verwerking en opstarten. Plaats als laatste. -->
-<script>
+
+
+/* ---- 12-verwerken.html ---- */
+
 (function(){
 var CFG=window.PARSELAB,P=window.PLP,T=window.PLP_T,S=window.PLP_S,U=window.PLP_UI;
 if(!CFG||!CFG.client||!P||!T||!S||!U){console.error("ParsePDF: onderdelen ontbreken");return;}
@@ -1883,7 +1781,6 @@ p.textContent=S.t.err||S.t.errRead;root.appendChild(p);});
 }
 document.readyState!=="loading"?start():document.addEventListener("DOMContentLoaded",start);
 })();
-</script>
-</div></div></div></div>
-</body>
-</html>
+
+
+})();

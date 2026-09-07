@@ -1,4 +1,4 @@
-<!-- ParsePDF — embed 8 van 11: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
+<!-- ParsePDF — embed 8 van 12: doorkijken en voorstel. Toont wat de tool zelf vindt. -->
 <script>
 window.PLP_V=(function(){
 var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,CFG=window.PARSELAB;
@@ -40,6 +40,10 @@ function open(bestanden,index){
       return {aan:true,slim:true,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,labelvak:v.labelvak,
               vindregel:v.vindregel,filter:ST.filterVoor(v)};
     });
+    if(!doc.cellen.length&&window.PLP_L&&window.PLP_L.ocrAanbod){
+      window.PLP_L.ocrAanbod(blad,file,doc,function(doc2,a2,v2){bouw(blad,file,doc2,a2,v2,sluit);});
+      return;
+    }
     if(!velden.length){blad.appendChild(el("p","pld-msg pld-msg--warn",t.noFields));return;}
     // Alles wat de slimme herkenning liet liggen staat er ook in, uitgevinkt.
     // Bij een volgend document blijven de gekozen velden staan; je ziet per veld of het
@@ -87,6 +91,8 @@ function bouw(blad,file,doc,analyse,velden,sluit){
     alles=!alles;meer.textContent=alles?t.hideAll:t.showAll.replace("{n}",aantalExtra);tekenLijst();
   });
   if(aantalExtra)rechterkant.appendChild(meer);
+  var balk=window.PLP_L?window.PLP_L.selectieBalk(velden,function(){tekenLijst();tekenVlakken();}):null;
+  if(balk)rechterkant.appendChild(balk);
   rechterkant.appendChild(lijst);
 
   if(analyse.tabel){
@@ -126,6 +132,7 @@ function bouw(blad,file,doc,analyse,velden,sluit){
   ai.addEventListener("click",function(){window.PLP_AI.vraag(doc,velden,function(){teken();},melding,ai);});
 
   function tekenLijst(){
+    if(balk&&balk.bijwerken)balk.bijwerken();
     lijst.innerHTML="";
     velden.forEach(function(v,i){
       if(!alles&&!v.slim&&!v.aan)return;
@@ -143,41 +150,9 @@ function bouw(blad,file,doc,analyse,velden,sluit){
       lijst.appendChild(rij);
     });
   }
-  function markeer(i,aan){
-    var b=vlak.querySelector('[data-veld="'+i+'"]');
-    if(b)b.classList.toggle("plp-vlak--warm",aan);
-  }
-
   var schaal=1;
-  function tekenVlakken(){
-    [].slice.call(vlak.querySelectorAll(".plp-vlak,.plp-tip")).forEach(function(n){n.remove();});
-    var maat=doc.maten[pagina]||{hoog:842};
-    velden.forEach(function(v,i){
-      [[v.labelvak,"plp-vlak plp-vlak--label"],[v.vak,"plp-vlak"+(v.aan?"":" plp-vlak--uit")]].forEach(function(paar){
-        var vk=paar[0];
-        if(!vk||vk.pagina!==pagina)return;
-        var box=el("div",paar[1]);
-        box.style.left=(vk.x*schaal-2)+"px";
-        box.style.top=((maat.hoog-vk.y-vk.h)*schaal-2)+"px";
-        box.style.width=(vk.b*schaal+4)+"px";
-        box.style.height=(vk.h*schaal*1.35+2)+"px";
-        if(paar[1].indexOf("label")<0){
-          box.setAttribute("data-veld",i);
-          box.title=v.naam;
-          box.addEventListener("mouseenter",function(){tip(box,v.naam+" = "+v.waarde);});
-          box.addEventListener("mouseleave",function(){var q=vlak.querySelector(".plp-tip");if(q)q.remove();});
-          box.addEventListener("click",function(){v.aan=!v.aan;tekenLijst();tekenVlakken();});
-        }
-        vlak.appendChild(box);
-      });
-    });
-  }
-  function tip(box,tekst){
-    var q=el("div","plp-tip",tekst);
-    q.style.left=(box.offsetLeft+box.offsetWidth/2)+"px";q.style.top=(box.offsetTop-6)+"px";
-    vlak.appendChild(q);
-  }
-
+  function tekenVlakken(){window.PLP_L.vlakken(vlak,doc,velden,pagina,schaal,function(){tekenLijst();tekenVlakken();});}
+  function markeer(i,aan){var b=vlak.querySelector('[data-veld="'+i+'"]');if(b)b.classList.toggle("plp-vlak--warm",aan);}
   function teken(){
     tekenLijst();
     P.open(file).then(function(pdf){return pdf.getPage(pagina+1);}).then(function(pg){
