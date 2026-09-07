@@ -136,6 +136,21 @@ const bestanden = {
     { x: 50, y: 310, t: "Btw-nummer NL002051640B39" }, { x: 250, y: 310, t: "Bank Rabobank" },
     { x: 250, y: 296, t: "IBAN NL71 RABO 0169 2708 58" }, { x: 250, y: 282, t: "BIC RABONL2U" }
   ])],
+  // Label en waarde als twee losse cellen naast elkaar, en onder elkaar:
+  // "Geboortedatum" en "01-01-1990" horen één veld te worden, niet twee.
+  "formulier.pdf": [vrij([
+    { x: 50, y: 780, t: "Aanvraagformulier", groot: 14 },
+    { x: 50, y: 740, t: "Achternaam" }, { x: 200, y: 740, t: "Van Dijk" },
+    { x: 50, y: 722, t: "Voorletters" }, { x: 200, y: 722, t: "J.M." },
+    { x: 50, y: 704, t: "Geboortedatum" }, { x: 200, y: 704, t: "01-01-1990" },
+    { x: 50, y: 686, t: "Burgerservicenummer" }, { x: 200, y: 686, t: "123456782" },
+    { x: 50, y: 640, t: "Adres" }, { x: 50, y: 622, t: "Kerkstraat 14" },
+    { x: 50, y: 604, t: "1234 AB Alkmaar" },
+    { x: 330, y: 640, t: "Telefoon" }, { x: 330, y: 622, t: "06-12345678" },
+    { x: 330, y: 604, t: "E-mail" }, { x: 330, y: 586, t: "j.vandijk@voorbeeld.nl" },
+    { x: 50, y: 540, t: "Ingangsdatum verzekering" }, { x: 250, y: 540, t: "01-02-2026" },
+    { x: 50, y: 522, t: "Premie per maand" }, { x: 250, y: 522, t: "€ 42,50" }
+  ])],
   // Geen tekstlaag, alleen een vlak: zo ziet een scan eruit voor de tool.
   "gescand.pdf": [{ teken: "0.85 0.85 0.85 rg 64 500 468 260 re f\n0.6 0.6 0.6 rg 64 460 300 20 re f\n", regels: [] }]
 };

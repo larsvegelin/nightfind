@@ -15,6 +15,8 @@
  *   GET  /api/scrape/runs/:id.xlsx | .csv                        → bestand van een uitvoering
  *   GET  /api/scrape/status                                      → proxies, wachtrij, planning
  *   POST /api/parsepdf/detect   { text, fileName }               → velden herkennen met Claude (alleen met PARSELAB_ANTHROPIC_KEY)
+ *   POST /api/scrape/kolommen   { kolommen, titel }               → gevonden kolommen laten benoemen en filteren door Claude
+ *   POST /api/board/panelen     { kolommen, rijen }               → een overzicht laten voorstellen door Claude
  *   POST /api/parsepdf/velden   { tekst, cellen, gevonden }       → de structuurcheck laten benoemen en natellen door Claude
  *                               (met PARSELAB_SUPABASE_URL/KEY: alleen voor een ingelogde gebruiker
  *                                wiens pakket het toelaat, getoetst met de databasefunctie ai_allowed)
@@ -436,6 +438,50 @@ async function noemVelden(body, req) {
   };
 }
 
+// ParseScraper: de gevonden kolommen een bruikbare naam geven en de ruis eruit halen.
+async function noemKolommen(body, req) {
+  await magAi(req);
+  if (!AI_KEY) throw httpError(501, "AI-hulp staat uit op deze server. Zet PARSELAB_ANTHROPIC_KEY en start opnieuw.");
+  const kolommen = Array.isArray(body.kolommen) ? body.kolommen.slice(0, 30) : [];
+  if (!kolommen.length) throw httpError(400, "Geen kolommen meegestuurd.");
+  const resp = await anthropic().messages.create({
+    model: AI_MODEL, max_tokens: 2000,
+    system: "Je krijgt de kolommen die een scraper op een webpagina vond, met per kolom een paar voorbeeldwaarden. Geef elke kolom een korte Nederlandse naam die zegt wat erin staat, en zeg of de kolom de moeite waard is (navigatie, lege kolommen en losse iconen niet). Antwoord uitsluitend met JSON: {\"kolommen\":[{\"nummer\":0,\"naam\":\"Prijs\",\"houden\":true}]}. Gebruik het nummer dat je krijgt, verzin geen kolommen bij.",
+    messages: [{ role: "user", content: "Pagina: " + String(body.titel || "").slice(0, 200) + "\n" +
+      kolommen.map((k, i) => i + ". " + String(k.naam || "").slice(0, 60) + " → " + (k.voorbeelden || []).slice(0, 3).map(v => String(v).slice(0, 80)).join(" | ")).join("\n") }],
+  });
+  if (resp.stop_reason === "refusal") throw httpError(422, "ParseLab kon deze pagina niet verwerken.");
+  return { kolommen: jsonUit(resp).kolommen || [] };
+}
+
+// ParseBoard: een overzicht voorstellen op basis van de kolommen en een paar rijen.
+async function noemPanelen(body, req) {
+  await magAi(req);
+  if (!AI_KEY) throw httpError(501, "AI-hulp staat uit op deze server. Zet PARSELAB_ANTHROPIC_KEY en start opnieuw.");
+  const kolommen = Array.isArray(body.kolommen) ? body.kolommen.slice(0, 40) : [];
+  if (!kolommen.length) throw httpError(400, "Geen kolommen meegestuurd.");
+  const rijen = Array.isArray(body.rijen) ? body.rijen.slice(0, 8) : [];
+  const resp = await anthropic().messages.create({
+    model: AI_MODEL, max_tokens: 2000,
+    system: "Je krijgt de kolommen van een tabel en een paar voorbeeldrijen. Stel een overzicht voor: welke kolom is de datum, waarop groeperen, welke twee tot vier kolommen zijn de cijfers om te volgen, en welke grafiek per cijfer past (lijn of staaf). Antwoord uitsluitend met JSON: {\"datum\":\"Datum\",\"groep\":\"Categorie\",\"metrieken\":[\"Omzet\"],\"grafiek\":{\"lijn\":\"Omzet\",\"staaf\":\"Aantal\"},\"samenvatting\":\"één zin over wat je ziet\"}. Gebruik alleen kolomnamen die je krijgt; laat een veld weg als het niet past.",
+    messages: [{ role: "user", content: "Kolommen: " + kolommen.map(k => String(k).slice(0, 60)).join(", ") +
+      "\n\nVoorbeeldrijen:\n" + rijen.map(r => (Array.isArray(r) ? r : []).map(v => String(v).slice(0, 40)).join(" | ")).join("\n") }],
+  });
+  if (resp.stop_reason === "refusal") throw httpError(422, "ParseLab kon deze gegevens niet verwerken.");
+  const j = jsonUit(resp);
+  return { datum: j.datum || null, groep: j.groep || null, metrieken: Array.isArray(j.metrieken) ? j.metrieken.slice(0, 4) : [],
+           grafiek: j.grafiek || {}, samenvatting: String(j.samenvatting || "").slice(0, 300) };
+}
+
+// Claude antwoordt in JSON; soms met een zin eromheen.
+function jsonUit(resp) {
+  const txt = resp.content.filter(b => b.type === "text").map(b => b.text).join("");
+  try { return JSON.parse(txt); } catch (e) {}
+  const m = txt.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch (e2) {} }
+  return {};
+}
+
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
@@ -445,6 +491,8 @@ const server = http.createServer(async (req, res) => {
     // wie de server bereikt en een ander adres opgeeft, ziet die taken. Zet PARSELAB_API_TOKEN voor een echte drempel.
     const owner = String(req.headers["x-parselab-user"] || "").trim().toLowerCase().slice(0, 200) || null;
     const mine = tid => { const t = readTasks().find(x => x.id === tid); if (!t) throw httpError(404, "Taak niet gevonden"); if (t.owner && owner && t.owner !== owner) throw httpError(403, "Deze taak is van iemand anders."); return t; };
+    if (u.pathname === "/api/scrape/kolommen") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemKolommen(await readBody(req), req)); }
+    if (u.pathname === "/api/board/panelen") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemPanelen(await readBody(req), req)); }
     if (u.pathname === "/api/parsepdf/velden") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemVelden(await readBody(req), req)); }
     if (u.pathname === "/api/parsepdf/detect") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await detectFields(await readBody(req))); }
     const sm = u.pathname.match(/^\/api\/store\/([a-z0-9_-]{1,40})$/i);

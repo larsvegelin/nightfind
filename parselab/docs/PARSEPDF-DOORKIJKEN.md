@@ -9,7 +9,7 @@ Wat er verandert ten opzichte van de vorige versie staat in [`PARSEPDF-VOLGENDE-
 ## 1. De vier schermen
 
 ```
-1. Sleep je PDF's erin
+1. Sleep je PDF's erin  → het eerste document gaat meteen open
 2. Per bestand: [ Kijk wat erin staat ]  [ Verwijderen ]
 3. Doorkijkscherm
    ├── links   de pagina zoals hij is, met gearceerde vlakken
@@ -24,6 +24,10 @@ Wat er verandert ten opzichte van de vorige versie staat in [`PARSEPDF-VOLGENDE-
 
 Naast de herkende velden staat een knop **Toon alle tekst (n)**. Die zet élk stukje tekst uit het document in de lijst, uitgevinkt, plus wat er buiten de pagina om bekend is: titel, auteur, programma en aanmaakdatum uit de eigenschappen van het pdf-bestand, en de bestandsnaam. Zo mist de tool niets en haal jij weg wat je niet wilt. Voor zo'n los stuk tekst bewaart het sjabloon de plek op de pagina; op het volgende document pakt hij de cel die daar het dichtst bij staat.
 
+**Door je stapel bladeren.** Heb je meer documenten gekozen, dan staat bovenin *Document 1 van 5* met **Vorige** en **Volgende**. Neem je de velden over en blader je door, dan zie je per document of elk veld daar ook gevonden wordt; wat er niet in staat krijgt *niet gevonden*. Zo controleer je een stapel voordat je hem uitleest.
+
+**Label en waarde blijven bij elkaar.** Staat er `Geboortedatum   01-01-1990` op een regel, dan is dat één veld met de naam *Geboortedatum* en de waarde *01-01-1990* — niet twee losse dingen. De tool zoekt daarvoor de labelkolom van het document: de x-positie waar drie of meer regels een label hebben met steeds op dezelfde plek de waarde ernaast. Alleen die regels worden zo gekoppeld, zodat kolomkoppen (waar de waarde eronder staat) niet per ongeluk aan hun buur worden geplakt.
+
 Vindt de tool een regeltabel, dan verschijnt er een kaart: *Regeltabel gevonden — 3 regels met 6 kolommen*, met een schakelaar **Eén rij per tabelregel**. Aan betekent: elke artikelregel wordt een rij, met de kopvelden van het document erbij herhaald.
 
 ## 2. Hoe de tool velden vindt
@@ -32,6 +36,7 @@ De pagina wordt niet meer als losse tekstregels gelezen maar als cellen met een 
 
 | Vorm | Wat hij herkent | Voorbeeld | Score |
 |---|---|---|---|
+| Formulierregel | Label en waarde naast elkaar in de labelkolom van het document | `Geboortedatum` → `01-01-1990` | 0,95 |
 | Kolomkop | Labelrij met de waarden op de rij eronder, op dezelfde x-positie | `Factuurnummer` → `INV10632` | 0,90 |
 | Label links | Label en waarde naast elkaar op één rij | `Totaal incl. BTW` → `€38,90` | 0,85 |
 | Label in de cel | Label en waarde in dezelfde cel, waarde herkenbaar aan zijn vorm | `IBAN NL71 RABO 0169 2708 58` | 0,80 |
@@ -125,7 +130,7 @@ Er is een nieuw soort veldregel bijgekomen: **`cel`**. Die bewaart niet een woor
 
 ## 6. Testen
 
-`node parselab/tests/webflow.mjs` — 71 controles, waarvan nieuw:
+`node parselab/tests/webflow.mjs` — 77 controles, waarvan nieuw:
 
 - het voorstel vindt factuurnummer, klantnummer en datum uit de kolomkoppen, zonder instellen
 - het scheidt `Totaal excl.` van `Totaal incl.`
@@ -136,6 +141,9 @@ Er is een nieuw soort veldregel bijgekomen: **`cel`**. Die bewaart niet een woor
 - zonder AI-sleutel komt er een melding en geen fout; met een antwoord hernoemt de AI een veld en vult er één aan
 - overnemen levert een sjabloon met `cel`-regels en tabelkolommen
 - uitlezen geeft 25 kolommen en één rij per tabelregel, met de juiste waarden
+- het document gaat vanzelf open na het kiezen, met *Document 1 van 2* erboven
+- `Geboortedatum 01-01-1990` blijft één veld, net als de andere formulierregels
+- bladeren naar het tweede document toont per veld of het daar gevonden wordt
 - **Toon alle tekst** zet er meer in de lijst dan de herkende velden, met de bestandsnaam en de pdf-eigenschappen erbij
 - een gratis pakket krijgt bij de AI-knop een uitleg met een verwijzing naar de pakketten in plaats van het toestemmingsvenster
 - twee sjablonen in één map: drie gemengde documenten geven één tabel, elk met zijn eigen sjabloon in de kolom Sjabloon, de juiste waarden per rij, en het derde document als *onbekend*

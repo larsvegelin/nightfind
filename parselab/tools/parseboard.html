@@ -1182,6 +1182,11 @@ function renderStep3(){
   <h1 class="display">Stap 3 · Kies je metrieken</h1>
   <p class="sub">Welke cijfers wil je volgen? Kies er maximaal ${MAX_METRICS} — ze worden de basis van je KPI-tegels en grafieken. In de volgende stap kun je per KPI en grafiek nog alles aanpassen.</p>
   <div class="card">
+    <div class="optrow" style="justify-content:space-between">
+      <span class="agg">Weet je het even niet? Laat ParseLab een overzicht voorstellen op basis van je kolommen.</span>
+      <button type="button" class="ghost" id="aiVoorstel">Overzicht voorstellen met AI</button>
+    </div>
+    <p class="agg" id="aiMsg" hidden></p>
     ${candidates.map((c, i) => `<div class="optrow">
       <input type="checkbox" data-metric="${esc(c.name)}" id="m-${i}" ${state.metricCols.includes(c.name)?"checked":""}>
       <label for="m-${i}">${esc(c.name)} <span class="agg">· ${AGG_WORD[ROLES[c.role].agg]}</span></label>
@@ -1189,8 +1194,45 @@ function renderStep3(){
     ${navRow("Verder naar onderdelen")}
   </div>`;
 }
+/* Claude kijkt naar je kolommen en een paar rijen en stelt een indeling voor.
+   Pas na een duidelijke ja gaat er iets naar de server; de rest van je bestand blijft hier. */
+async function voorstelMetAi(knop){
+  const doos = $("#aiMsg"); doos.hidden = false;
+  doos.innerHTML = "De AI mag je kolomnamen en drie voorbeeldrijen bekijken? " +
+    '<button type="button" class="ghost" id="aiJa">Ja</button> <button type="button" class="ghost" id="aiNee">Nee</button>';
+  $("#aiNee").onclick = () => { doos.hidden = true; };
+  $("#aiJa").onclick = async () => {
+    doos.textContent = "De AI kijkt mee…"; knop.disabled = true;
+    try {
+      const basis = (window.PARSELAB_API_BASE || "") + "/api/board/panelen";
+      const rijen = (state.rawRows || []).slice(0, 3).map(r => state.columns.map(c => r[c.name]));
+      const res = await fetch(basis, { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kolommen: state.columns.map(c => c.name), rijen }) });
+      const j = res.headers.get("content-type") || "";
+      const body = j.includes("json") ? await res.json() : null;
+      if (!res.ok) throw new Error((body && body.error) || "De AI-hulp is hier niet beschikbaar.");
+      const namen = new Set(state.columns.map(c => c.name));
+      if (body.datum && namen.has(body.datum)) state.dateCol = body.datum;
+      if (body.groep && namen.has(body.groep)) state.groupCol = body.groep;
+      const kies = (body.metrieken || []).filter(m => metricCandidates().some(c => c.name === m)).slice(0, MAX_METRICS);
+      if (kies.length) state.metricCols = kies;
+      if (body.grafiek && body.grafiek.lijn && namen.has(body.grafiek.lijn)) state.chartMetrics.line = body.grafiek.lijn;
+      if (body.grafiek && body.grafiek.staaf && namen.has(body.grafiek.staaf)) state.chartMetrics.bar = body.grafiek.staaf;
+      state.rows = null;
+      render();
+      const na = $("#aiMsg");
+      if (na) { na.hidden = false; na.textContent = body.samenvatting || "Voorstel overgenomen. Pas het gerust aan."; }
+    } catch (e) {
+      doos.textContent = e.message;
+      knop.disabled = false;
+    }
+  };
+}
+
 function bindStep3(){
   $("#backBtn").addEventListener("click", () => goto(2));
+  const aiKnop = $("#aiVoorstel");
+  if (aiKnop) aiKnop.addEventListener("click", () => voorstelMetAi(aiKnop));
   document.querySelectorAll("[data-metric]").forEach(cb => cb.addEventListener("change", () => {
     const name = cb.dataset.metric;
     if (cb.checked) { if (state.metricCols.length >= MAX_METRICS) { cb.checked = false; $("#stepHint").textContent = `Maximaal ${MAX_METRICS} metrieken.`; return; } state.metricCols.push(name); }

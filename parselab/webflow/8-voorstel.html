@@ -5,7 +5,8 @@ var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,CFG=window.PARSELAB;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
 var BRON={kolomkop:"srcKolomkop",rechts:"srcRechts",inline:"srcInline",onder:"srcOnder",patroon:"srcPatroon",
   ai:"srcAi",plek:"srcPlek",meta:"srcMeta",bestand:"srcBestand"};
-function open(file){
+function open(bestanden,index){
+  var lijst=Array.isArray(bestanden)?bestanden:[bestanden],nu=index||0,file=lijst[nu];
   var t=S.t,laag=el("div","plp-doorkijk"),blad=el("div","plp-blad");
   laag.appendChild(blad);document.body.appendChild(laag);
   laag.addEventListener("click",function(e){if(e.target===laag)sluit();});
@@ -15,7 +16,19 @@ function open(file){
 
   var kop=el("div","pld-head"),links=el("div");
   links.appendChild(el("h2","pld-title",t.look));
-  links.appendChild(el("p","pld-sub",t.lookHint));
+  links.appendChild(el("p","pld-sub",lijst.length>1?t.checkHint:t.lookHint));
+  if(lijst.length>1){
+    var nav=el("div","pld-row");
+    var vorige=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.prevDoc);vorige.type="button";
+    var volgende=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.nextDoc);volgende.type="button";
+    vorige.disabled=nu===0;volgende.disabled=nu>=lijst.length-1;
+    vorige.addEventListener("click",function(){sluit();open(lijst,nu-1);});
+    volgende.addEventListener("click",function(){sluit();open(lijst,nu+1);});
+    nav.appendChild(vorige);
+    nav.appendChild(el("span","plp-mono",t.docOf.replace("{i}",nu+1).replace("{n}",lijst.length)+" · "+file.name));
+    nav.appendChild(volgende);
+    links.appendChild(nav);
+  }
   var dicht=el("button","pld-btn pld-btn--ghost",t.cancel);dicht.type="button";
   dicht.addEventListener("click",sluit);
   kop.appendChild(links);kop.appendChild(dicht);blad.appendChild(kop);
@@ -29,6 +42,17 @@ function open(file){
     });
     if(!velden.length){blad.appendChild(el("p","pld-msg pld-msg--warn",t.noFields));return;}
     // Alles wat de slimme herkenning liet liggen staat er ook in, uitgevinkt.
+    // Bij een volgend document blijven de gekozen velden staan; je ziet per veld of het
+    // ook daar gevonden wordt. Wat de tool hier extra vindt komt er uitgevinkt bij.
+    if(S.regels&&S.regels.length&&nu>0){
+      var namen={};velden.forEach(function(v){namen[v.naam.toLowerCase()]=1;});
+      S.regels.filter(function(r){return r.type==="cel"&&r.vindregel;}).reverse().forEach(function(r){
+        if(namen[String(r.naam).toLowerCase()])return;
+        var w=ST.pas(doc,r.vindregel);
+        velden.unshift({aan:true,slim:true,naam:r.naam,waarde:w||t.notFound,bron:r.vindregel.type,
+                        vak:{pagina:-1,x:0,y:0,b:0,h:0},labelvak:null,vindregel:r.vindregel,filter:r.filter||"geen"});
+      });
+    }
     ST.alles(doc,analyse.velden).forEach(function(v){
       velden.push({aan:false,slim:false,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,
                    labelvak:null,vindregel:v.vindregel,filter:ST.filterVoor(v)});

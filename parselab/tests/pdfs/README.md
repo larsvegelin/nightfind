@@ -17,6 +17,7 @@ Het zijn geen echte facturen; er staan geen gegevens van klanten in. Wat ze wel 
 | `bankafschrift.pdf` | 1 | Voor het sjabloon Bankafschrift: IBAN, periode, eindsaldo |
 | `polis.pdf` | 1 | Andere woorden, zelfde soort velden: polisnummer, ingangsdatum, premie |
 | `factuur-webshop.pdf` | 1 | Nagebouwd naar een echte webshopfactuur: kolomkoppen met de waarden op de rij eronder, een regeltabel van drie regels, en "Totaal excl." vlak boven "Totaal incl." |
+| `formulier.pdf` | 1 | Label en waarde naast elkaar (`Geboortedatum   01-01-1990`) en een blok met de waarde onder het label |
 | `gescand.pdf` | 1 | Geen tekstlaag, alleen een grijs vlak. Hoort de melding over gescande documenten te geven |
 
 ## Wat eruit hoort te komen

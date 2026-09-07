@@ -1,6 +1,6 @@
 # Tests
 
-`qa.mjs` doorloopt het hele dashboard met Playwright: inloggen, overzicht, zoeken, account-instellingen, ParseScraper (adres → aanwijzen → element wisselen → volgende pagina → uitlezen → Excel/CSV → taak bewaren → hernoemen → verwijderen), Bestanden, ParsePDF (uploaden, sjabloon, Excel bewaren), ParseBoard (CSV → dashboard → opslaan), ParseForm-installatiepaneel, mobiel, uitloggen en het dashboard zonder server.
+`qa.mjs` doorloopt het hele dashboard met Playwright (86 controles): inloggen, overzicht, zoeken, account-instellingen, ParseScraper (adres → aanwijzen → element wisselen → volgende pagina → uitlezen → Excel/CSV → taak bewaren → hernoemen → verwijderen), Bestanden, ParsePDF (uploaden, sjabloon, Excel bewaren), ParseBoard (CSV → dashboard → opslaan), ParseForm-installatiepaneel, de AI-knoppen van ParseScraper en ParseBoard (toestemming vragen en de melding zonder sleutel), mobiel, uitloggen en het dashboard zonder server.
 
 Vooraf, in drie terminals:
 

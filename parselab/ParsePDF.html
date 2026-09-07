@@ -226,6 +226,7 @@ recognised:"Herkend: {lijst}",oneUnknown:"1 document paste bij geen enkel sjablo
 manyUnknown:"{n} documenten pasten bij geen enkel sjabloon; die kolommen blijven leeg.",
 useFolder:"Gebruik de sjablonen uit deze map",useRules:"Gebruik de veldregels hieronder",
 showAll:"Toon alle tekst ({n})",hideAll:"Alleen de herkende velden",allHint:"Alles wat in het document staat, plus de gegevens van het bestand zelf. Vink aan wat je wilt en laat de rest staan.",fromFile:"uit het bestand",srcPlek:"plek op de pagina",srcMeta:"bestandsgegeven",srcBestand:"bestandsnaam",
+docOf:"Document {i} van {n}",prevDoc:"Vorige",nextDoc:"Volgende",notFound:"niet gevonden",checkHint:"Blader door je documenten en zie per veld of het gevonden wordt.",
 aiPlan:"AI-hulp hoort bij Pro en Business",aiPlanText:"Uitlezen met AI draait op onze Claude-tegoeden en zit daarom bij een betaald pakket. Je gratis pakket leest gewoon door op de structuurcheck; die kost niets en werkt op de meeste documenten.",aiUpgrade:"Pakketten bekijken",aiCredits:"Deze controle kostte 1 AI-tegoed."},
 en:{look:"See what is in it",lookHint:"The tool opens the document, highlights what it can read and suggests names. Hover a box to see the name.",
 proposal:"Proposal",proposalHint:"This is what the tool found by itself. Tick what you want and adjust the names.",
@@ -252,6 +253,7 @@ recognised:"Recognised: {lijst}",oneUnknown:"1 document matched no template; tho
 manyUnknown:"{n} documents matched no template; those columns stay empty.",
 useFolder:"Use the templates in this folder",useRules:"Use the field rules below",
 showAll:"Show all text ({n})",hideAll:"Only the recognised fields",allHint:"Everything in the document, plus the details of the file itself. Tick what you want and leave the rest.",fromFile:"from the file",srcPlek:"place on the page",srcMeta:"file detail",srcBestand:"file name",
+docOf:"Document {i} of {n}",prevDoc:"Previous",nextDoc:"Next",notFound:"not found",checkHint:"Page through your documents and see per field whether it is found.",
 aiPlan:"AI help is part of Pro and Business",aiPlanText:"Extracting with AI runs on our Claude credits and is therefore part of a paid plan. Your free plan keeps working on the structure check; that costs nothing and handles most documents.",aiUpgrade:"View plans",aiCredits:"This check used 1 AI credit."},
 de:{look:"Sieh nach, was drinsteht",lookHint:"Das Werkzeug oeffnet das Dokument, hebt hervor was es lesen kann und schlaegt Namen vor. Fahre ueber ein Feld, um den Namen zu sehen.",
 proposal:"Vorschlag",proposalHint:"Das hat das Werkzeug selbst gefunden. Hake an, was du willst, und passe die Namen an.",
@@ -278,6 +280,7 @@ recognised:"Erkannt: {lijst}",oneUnknown:"1 Dokument passte zu keiner Vorlage; d
 manyUnknown:"{n} Dokumente passten zu keiner Vorlage; diese Spalten bleiben leer.",
 useFolder:"Die Vorlagen aus diesem Ordner verwenden",useRules:"Die Feldregeln unten verwenden",
 showAll:"Allen Text zeigen ({n})",hideAll:"Nur die erkannten Felder",allHint:"Alles im Dokument, dazu die Angaben der Datei selbst. Hake an, was du willst, und lass den Rest stehen.",fromFile:"aus der Datei",srcPlek:"Stelle auf der Seite",srcMeta:"Dateiangabe",srcBestand:"Dateiname",
+docOf:"Dokument {i} von {n}",prevDoc:"Zurueck",nextDoc:"Weiter",notFound:"nicht gefunden",checkHint:"Blaettere durch deine Dokumente und sieh pro Feld, ob es gefunden wird.",
 aiPlan:"KI-Hilfe gehoert zu Pro und Business",aiPlanText:"Auslesen mit KI laeuft ueber unsere Claude-Guthaben und gehoert deshalb zu einem bezahlten Paket. Dein kostenloses Paket arbeitet weiter mit der Strukturpruefung; die kostet nichts und reicht fuer die meisten Dokumente.",aiUpgrade:"Pakete ansehen",aiCredits:"Diese Pruefung hat 1 KI-Guthaben gekostet."}
 };
 Object.keys(EXTRA).forEach(function(taal){
@@ -603,7 +606,7 @@ l.appendChild(el("p","pld-text",f.name));
 l.appendChild(el("p","plp-mono",(f.size/1048576).toFixed(1)+" MB"));
 var knoppen=el("div","pld-row");
 var kijk=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.look);kijk.type="button";
-kijk.addEventListener("click",function(){if(window.PLP_V)window.PLP_V.open(f);});
+kijk.addEventListener("click",function(){if(window.PLP_V)window.PLP_V.open(S.bestanden,i);});
 var w=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.del);w.type="button";
 w.addEventListener("click",function(){S.bestanden.splice(i,1);teken();});
 knoppen.appendChild(kijk);knoppen.appendChild(w);
@@ -624,7 +627,9 @@ if(!(/\.pdf$/i.test(f.name)||f.type==="application/pdf")){fouten.push(f.name+" "
 if(f.size>P.MAXBYTES){fouten.push(f.name+" "+t.errBig);return;}
 S.bestanden.push(f);});
 teken();
-if(fouten.length)meld(fouten.join(" "),"warn");}
+if(fouten.length)meld(fouten.join(" "),"warn");
+// Meteen laten zien wat er in het eerste document staat; wachten op een knop hoeft niet.
+if(S.bestanden.length&&window.PLP_V&&!document.querySelector(".plp-doorkijk"))window.PLP_V.open(S.bestanden,0);}
 
 function resultaatKaart(){
 var t=S.t,k=el("div","pld-card"),kol=(S.kolommen&&S.kolommen.length)?S.kolommen:S.regels;
@@ -791,16 +796,45 @@ var ST=window.PLP_ST;if(!ST)return;
 var PAT=ST.patronen,STOP=ST.STOP;
 var labelachtig=ST.labelachtig,bruikbaar=ST.bruikbaar,eigenPaar=ST.eigenPaar,vind=ST.vind,re=ST.re;
 var schoonLabel=ST.schoonLabel,overlapt=ST.overlapt,perRij=ST.perRij;
+// Een formulier heeft een kolom met labels en er rechts van de waarden. Vinden we zo'n
+// kolom, dan hoort elke regel daar bij elkaar, ook als de waarde op een label lijkt.
+function labelKolom(rijen){
+  var tel={};
+  rijen.forEach(function(rij){
+    if(rij.length!==2||!labelachtig(rij[0].t))return;
+    var k=Math.round(rij[0].x/4)*4+":"+(Math.round(rij[1].x/4)*4);
+    tel[k]=(tel[k]||0)+1;
+  });
+  var beste=null;
+  Object.keys(tel).forEach(function(k){if(tel[k]>=3&&(beste===null||tel[k]>tel[beste]))beste=k;});
+  if(beste===null)return null;
+  var d=beste.split(":");
+  return {x:Number(d[0]),waardeX:Number(d[1])};
+}
+
+// Staat er onder deze cel, in dezelfde kolom, een waarde? Dan is het een kolomkop
+// en hoort hij niet bij het label links van hem.
+function waardeOnder(c,rijen){
+  for(var i=0;i<rijen.length-1;i++){
+    if(rijen[i][0].pagina!==c.pagina||rijen[i][0].rij!==c.rij)continue;
+    var onder=rijen[i+1];
+    if(!onder||onder[0].pagina!==c.pagina||onder[0].rij!==c.rij+1)return false;
+    return onder.some(function(x){return overlapt(c,x)&&(!labelachtig(x.t)||!!ST.vind(x.t));});
+  }
+  return false;
+}
 function kandidaat(naam,waarde,score,vak,vindregel,label){
   return {naam:naam,waarde:String(waarde).trim(),score:score,vak:vak,vindregel:vindregel,labelvak:label||null};
 }
 function analyse(doc){
-  var cellen=doc.cellen||[],rijen=perRij(cellen),uit=[];
+  var cellen=doc.cellen||[],rijen=perRij(cellen),uit=[],labKol=labelKolom(rijen);
 
   // 1. Kolomkop boven de waarde: dezelfde x-posities op twee rijen.
   for(var r=0;r<rijen.length-1;r++){
     var kop=rijen[r],waardeRij=rijen[r+1];
     if(kop.length<2||kop[0].pagina!==waardeRij[0].pagina)continue;
+    // Een regel uit de labelkolom is geen kolomkop; die hoort met de cel ernaast bij elkaar.
+    if(labKol&&kop.length===2&&Math.abs(kop[0].x-labKol.x)<=4&&Math.abs(kop[1].x-labKol.waardeX)<=4)continue;
     if(waardeRij[0].rij!==kop[0].rij+1)continue;
     var labels=kop.filter(function(c){return labelachtig(c.t);});
     if(labels.length<2)continue;
@@ -811,13 +845,17 @@ function analyse(doc){
     });
   }
 
-  // 2. Label links, waarde rechts op dezelfde rij.
+  // 2. Label links, waarde rechts op dezelfde rij. Staat er op een regel niets anders
+  // dan een label en één waarde ("Geboortedatum   01-01-1990"), dan hoort dat bij elkaar,
+  // ook als die waarde op een label lijkt ("Voorletters   J.M.").
   rijen.forEach(function(rij){
     for(var i=0;i<rij.length-1;i++){
       var lab=rij[i],w=rij[i+1];
-      if(!labelachtig(lab.t)||labelachtig(w.t)||eigenPaar(w.t))continue;
+      if(!labelachtig(lab.t)||eigenPaar(w.t))continue;
       if(w.x-(lab.x+lab.b)>260)continue;
-      uit.push(kandidaat(schoonLabel(lab.t),w.t,0.85,w,{type:"rechts",label:schoonLabel(lab.t)},lab));
+      var alleen=rij.length===2&&labKol&&Math.abs(lab.x-labKol.x)<=4&&Math.abs(w.x-labKol.waardeX)<=4;
+      if(!alleen&&labelachtig(w.t))continue;
+      uit.push(kandidaat(schoonLabel(lab.t),w.t,alleen?0.95:0.85,w,{type:"rechts",label:schoonLabel(lab.t)},lab));
     }
   });
 
@@ -979,7 +1017,8 @@ var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,CFG=window.PARSELAB;
 function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
 var BRON={kolomkop:"srcKolomkop",rechts:"srcRechts",inline:"srcInline",onder:"srcOnder",patroon:"srcPatroon",
   ai:"srcAi",plek:"srcPlek",meta:"srcMeta",bestand:"srcBestand"};
-function open(file){
+function open(bestanden,index){
+  var lijst=Array.isArray(bestanden)?bestanden:[bestanden],nu=index||0,file=lijst[nu];
   var t=S.t,laag=el("div","plp-doorkijk"),blad=el("div","plp-blad");
   laag.appendChild(blad);document.body.appendChild(laag);
   laag.addEventListener("click",function(e){if(e.target===laag)sluit();});
@@ -989,7 +1028,19 @@ function open(file){
 
   var kop=el("div","pld-head"),links=el("div");
   links.appendChild(el("h2","pld-title",t.look));
-  links.appendChild(el("p","pld-sub",t.lookHint));
+  links.appendChild(el("p","pld-sub",lijst.length>1?t.checkHint:t.lookHint));
+  if(lijst.length>1){
+    var nav=el("div","pld-row");
+    var vorige=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.prevDoc);vorige.type="button";
+    var volgende=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.nextDoc);volgende.type="button";
+    vorige.disabled=nu===0;volgende.disabled=nu>=lijst.length-1;
+    vorige.addEventListener("click",function(){sluit();open(lijst,nu-1);});
+    volgende.addEventListener("click",function(){sluit();open(lijst,nu+1);});
+    nav.appendChild(vorige);
+    nav.appendChild(el("span","plp-mono",t.docOf.replace("{i}",nu+1).replace("{n}",lijst.length)+" · "+file.name));
+    nav.appendChild(volgende);
+    links.appendChild(nav);
+  }
   var dicht=el("button","pld-btn pld-btn--ghost",t.cancel);dicht.type="button";
   dicht.addEventListener("click",sluit);
   kop.appendChild(links);kop.appendChild(dicht);blad.appendChild(kop);
@@ -1003,6 +1054,17 @@ function open(file){
     });
     if(!velden.length){blad.appendChild(el("p","pld-msg pld-msg--warn",t.noFields));return;}
     // Alles wat de slimme herkenning liet liggen staat er ook in, uitgevinkt.
+    // Bij een volgend document blijven de gekozen velden staan; je ziet per veld of het
+    // ook daar gevonden wordt. Wat de tool hier extra vindt komt er uitgevinkt bij.
+    if(S.regels&&S.regels.length&&nu>0){
+      var namen={};velden.forEach(function(v){namen[v.naam.toLowerCase()]=1;});
+      S.regels.filter(function(r){return r.type==="cel"&&r.vindregel;}).reverse().forEach(function(r){
+        if(namen[String(r.naam).toLowerCase()])return;
+        var w=ST.pas(doc,r.vindregel);
+        velden.unshift({aan:true,slim:true,naam:r.naam,waarde:w||t.notFound,bron:r.vindregel.type,
+                        vak:{pagina:-1,x:0,y:0,b:0,h:0},labelvak:null,vindregel:r.vindregel,filter:r.filter||"geen"});
+      });
+    }
     ST.alles(doc,analyse.velden).forEach(function(v){
       velden.push({aan:false,slim:false,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,
                    labelvak:null,vindregel:v.vindregel,filter:ST.filterVoor(v)});

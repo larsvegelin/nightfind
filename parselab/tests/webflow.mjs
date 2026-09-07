@@ -39,6 +39,15 @@ const b = await chromium.launch({ ...exe, args: ['--no-sandbox'] });
 const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('[pageerror] ' + e.message));
+// Sinds het doorkijkscherm vanzelf opent na het kiezen van bestanden, sluiten de
+// stappen die daarna op de gewone pagina werken hem eerst.
+async function sluitDoorkijk(pagina) {
+  const q = pagina || p;
+  if (await q.isVisible('.plp-doorkijk').catch(() => false)) {
+    await q.click('.plp-doorkijk button:has-text("Annuleren")');
+    await q.waitForTimeout(200);
+  }
+}
 p.on('console', m => {
   const bron = (m.location() && m.location().url) || '';
   if (m.type() === 'error' && !/favicon|ERR_/.test(m.text()) && !/parsepdf\/velden/.test(bron)) errs.push('[console] ' + m.text().slice(0, 140));
@@ -67,6 +76,7 @@ ok('terugknop wijst naar het dashboard', (await p.getAttribute('.pld-head a', 'h
 
 // 3. uitlezen van twee facturen
 await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf'), path.join(map, 'factuur-b.pdf')]);
+await sluitDoorkijk();
 await p.waitForSelector('.plp-file', { timeout: 5000 });
 ok('gekozen bestanden staan in de lijst', (await p.$$('.plp-file')).length === 2);
 await p.click('button:has-text("Uitlezen starten")');
@@ -112,6 +122,7 @@ ok('bewaarde regels komen terug na herladen', bewaard === 'Kenmerk', bewaard);
 
 // 7. patroon met haakjesgroep leest de IBAN van pagina twee
 await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf')]);
+await sluitDoorkijk();
 await p.waitForSelector('.plp-file', { timeout: 5000 });
 await p.click('button:has-text("Uitlezen starten")');
 await p.waitForSelector('.plp-table', { timeout: 30000 });
@@ -120,6 +131,7 @@ ok('regex vindt de IBAN op de tweede pagina', iban === 'NL91ABNA0417164300', iba
 
 // 8. document zonder tekstlaag geeft een nette melding
 await p.setInputFiles('input[type=file]', [path.join(map, 'gescand.pdf')]);
+await sluitDoorkijk();
 await p.waitForSelector('.plp-file', { timeout: 5000 });
 await p.click('button:has-text("Uitlezen starten")');
 await p.waitForSelector('.pld-msg--warn', { timeout: 30000 });
@@ -130,6 +142,7 @@ ok('melding over ontbrekende tekstlaag', /tekstlaag/.test(melding), melding);
 await p.goto(BASIS + '?gebruikt=49&limiet=50', { waitUntil: 'load' });
 await p.waitForSelector('.plp-drop', { timeout: 8000 });
 await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf'), path.join(map, 'factuur-b.pdf')]);
+await sluitDoorkijk();
 await p.click('button:has-text("Uitlezen starten")');
 await p.waitForSelector('.pld-card--navy', { timeout: 30000 });
 const kaart = await p.textContent('.pld-card--navy');
@@ -170,6 +183,7 @@ await p.reload({ waitUntil: 'load' });
 await p.waitForSelector('.plp-drop', { timeout: 8000 });
 const pdfmap = path.join(here, 'pdfs');
 await p.setInputFiles('input[type=file]', ['factuur-alpha.pdf', 'factuur-beta.pdf', 'factuur-gamma.pdf'].map(f => path.join(pdfmap, f)));
+await sluitDoorkijk();
 await p.click('button:has-text("Uitlezen starten")');
 await p.waitForSelector('.plp-table', { timeout: 60000 });
 const proef = await p.evaluate(() => [...document.querySelectorAll('.plp-table tbody tr')].map(tr => [...tr.children].map(td => td.textContent)));
@@ -185,6 +199,7 @@ await p.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
 await p.reload({ waitUntil: 'load' });
 await p.waitForSelector('.plp-drop', { timeout: 8000 });
 await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-webshop.pdf'));
+await sluitDoorkijk();
 await p.click('button:has-text("Kijk wat erin staat")');
 await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
 await p.waitForTimeout(1200);
@@ -254,6 +269,7 @@ await p.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
 await p.reload({ waitUntil: 'load' });
 await p.waitForSelector('.plp-drop', { timeout: 8000 });
 await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-alpha.pdf'));
+await sluitDoorkijk();
 await p.click('button:has-text("Kijk wat erin staat")');
 await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
 await p.click('button:has-text("Uitlezen met AI")');
@@ -264,6 +280,34 @@ ok('de uitleg wijst naar de pakketten', await p.isVisible('.plp-modal a:has-text
 await p.click('.plp-modal button:has-text("Annuleren")');
 await p.click('button:has-text("Annuleren")');
 await p.waitForTimeout(200);
+
+// 11c3. na het kiezen gaat het document meteen open, je bladert door de stapel,
+// en een label met zijn waarde ("Geboortedatum 01-01-1990") blijft één veld.
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.clear());
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', ['formulier.pdf', 'factuur-alpha.pdf'].map(f => path.join(pdfmap, f)));
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+ok('het document gaat vanzelf open na het kiezen', await p.isVisible('.plp-doorkijk'));
+const kopregel = await p.textContent('.plp-blad .plp-mono');
+ok('je ziet welk document van hoeveel je bekijkt', /Document 1 van 2 · formulier\.pdf/.test(kopregel), kopregel);
+const form = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
+ok('label en waarde blijven één veld', form.includes('Geboortedatum=01-01-1990'), form.slice(0, 4).join(' · '));
+ok('ook de andere formulierregels blijven heel',
+  form.includes('Achternaam=Van Dijk') && form.includes('Voorletters=J.M.') && form.includes('Burgerservicenummer=123456782'),
+  form.slice(0, 6).join(' · '));
+await p.click('button:has-text("Neem over als veldregels")');
+await p.waitForTimeout(400);
+await p.click('button:has-text("Kijk wat erin staat")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.click('button:has-text("Volgende")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(700);
+ok('bladeren gaat naar het tweede document', /Document 2 van 2/.test(await p.textContent('.plp-blad .plp-mono')), await p.textContent('.plp-blad .plp-mono'));
+const doc2 = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
+ok('per veld zie je of het in dit document gevonden wordt', doc2.includes('Geboortedatum=niet gevonden'), doc2.slice(0, 3).join(' · '));
+await sluitDoorkijk();
 
 // 11d. mappen met sjablonen: twee soorten documenten in één map, gemengd uitlezen.
 await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
@@ -276,6 +320,7 @@ await p.click('button:has-text("Nieuwe map")');
 await p.waitForTimeout(300);
 async function maakSjabloon(bestand, naam) {
   await p.setInputFiles('input[type=file]', path.join(pdfmap, bestand));
+  await sluitDoorkijk();
   await p.click('button:has-text("Kijk wat erin staat")');
   await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
   await p.waitForTimeout(700);
@@ -291,6 +336,7 @@ const inMappen = await p.evaluate(() => window.PLP_SJ.lees().mappen.map(m => m.n
 ok('twee sjablonen bewaard in dezelfde map', inMappen === 'Facturen:Wijnleverancier+Polissen', inMappen);
 ok('de sjablonen staan in de kaart', /Wijnleverancier/.test(await p.textContent('#pl-parsepdf-root')));
 await p.setInputFiles('input[type=file]', ['factuur-webshop.pdf', 'polis.pdf', 'bankafschrift.pdf'].map(f => path.join(pdfmap, f)));
+await sluitDoorkijk();
 await p.click('button:has-text("Uitlezen starten")');
 await p.waitForSelector('.plp-table', { timeout: 60000 });
 const gemengd = await p.evaluate(() => [...document.querySelectorAll('.plp-table tr')].map(tr => [...tr.children].map(td => td.textContent)));
@@ -329,6 +375,7 @@ await p2.waitForSelector('.plp-drop', { timeout: 8000 });
 ok('losse pagina toont ParsePDF met verbruiksmeter', await p2.textContent('.pld-title') === 'ParsePDF' && (await p2.textContent('.pld-num')).includes('10 van 100'));
 ok('losse pagina staat niet in Google', await p2.getAttribute('meta[name=robots]', 'content') === 'noindex, nofollow');
 await p2.setInputFiles('input[type=file]', [path.join(map, 'factuur-b.pdf')]);
+await sluitDoorkijk(p2);
 await p2.click('button:has-text("Uitlezen starten")');
 await p2.waitForSelector('.plp-table', { timeout: 30000 });
 const los = await p2.evaluate(() => [...document.querySelectorAll('.plp-table tbody td')].map(td => td.textContent).join('|'));

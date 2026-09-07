@@ -140,7 +140,8 @@
           <div class="hairline"></div>
           <div id="pick-empty" class="note">Nog niets aangewezen. Klik in de pagina op één item uit de lijst.</div>
           <div id="pick-info" hidden style="display:flex; flex-direction:column; gap:16px;">
-            <div class="row"><span class="pill pill-live" id="count-pill"></span><span class="note">Vink uit wat je niet nodig hebt.</span></div>
+            <div class="row"><span class="pill pill-live" id="count-pill"></span><span class="note">Vink uit wat je niet nodig hebt.</span><button type="button" class="btn btn-outline btn-small" id="ai-cols">Kolommen benoemen met AI</button></div>
+            <div id="ai-msg" hidden></div>
             <div class="cols" id="cols"></div>
             <details class="more">
               <summary>Meer instellingen</summary>
@@ -376,6 +377,36 @@ function buildRule(target, list) {
   }
   state.rule = rule; renderRule();
 }
+/* Claude kijkt naar de gevonden kolommen en geeft ze een naam; de ruis mag eruit.
+   Er gaat pas iets naar de server nadat de gebruiker daar ja op zegt. */
+async function benoemMetAi() {
+  const r = state.rule; if (!r || !r.columns.length) return;
+  const box = $("#ai-msg");
+  msg(box, "");
+  box.hidden = false; box.className = "msg";
+  box.innerHTML = `<span class="strong">De AI mag deze kolommen bekijken?</span><span class="note">ParseLab stuurt alleen de kolomnamen en een paar voorbeeldwaarden van deze pagina naar de eigen server, die het aan het AI-model voorlegt. De pagina zelf blijft hier.</span>
+    <div class="row"><button type="button" class="btn btn-navy btn-small" id="ai-ja">Ja, benoemen</button><button type="button" class="btn btn-outline btn-small" id="ai-nee">Nee</button></div>`;
+  $("#ai-nee").onclick = () => { box.hidden = true; };
+  $("#ai-ja").onclick = async () => {
+    box.innerHTML = "De AI kijkt mee…";
+    try {
+      const uit = await api("/kolommen", { method: "POST", body: JSON.stringify({
+        titel: (state.snapshot && state.snapshot.title) || "",
+        kolommen: r.columns.map(c => ({ naam: c.name, voorbeelden: (c.samples || []).slice(0, 3) })),
+      }) });
+      let aangepast = 0;
+      (uit.kolommen || []).forEach(k => {
+        const c = r.columns[Number(k.nummer)];
+        if (!c) return;
+        if (k.naam && k.naam !== c.name) { c.name = String(k.naam).slice(0, 60); c.renamed = true; aangepast++; }
+        if (k.houden === false) c.off = true;
+      });
+      renderRule();
+      msg(box, aangepast ? aangepast + " kolommen kregen een nieuwe naam. Pas ze gerust aan." : "De AI had geen betere namen.");
+    } catch (e) { msg(box, e.message, true); }
+  };
+}
+
 function renderRule() {
   const r = state.rule; $("#pick-empty").hidden = true; $("#pick-info").hidden = false;
   $("#count-pill").textContent = r.item ? r.count + " items gevonden" : "Alleen dit item";
@@ -390,6 +421,7 @@ function renderRule() {
     </div>`).join("");
   $("#cols").querySelectorAll("[data-i]").forEach(el => el.onchange = () => { const c = r.columns[+el.dataset.i], f = el.dataset.f; if (f === "off") c.off = !el.checked; else if (f === "number") c.number = el.checked; else { c[f] = el.value; if (f === "name") c.renamed = true; } renderFlow(); });
   $("#cols").querySelectorAll("[data-switch]").forEach(b => b.onclick = () => setMode("col:" + b.dataset.switch));
+  $("#ai-cols").onclick = benoemMetAi;
   renderFlow();
 }
 /* De flow rechts: elke stap is te volgen en te wijzigen (ander item, ander element per kolom, andere volgende-knop). */

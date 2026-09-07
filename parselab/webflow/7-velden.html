@@ -5,16 +5,45 @@ var ST=window.PLP_ST;if(!ST)return;
 var PAT=ST.patronen,STOP=ST.STOP;
 var labelachtig=ST.labelachtig,bruikbaar=ST.bruikbaar,eigenPaar=ST.eigenPaar,vind=ST.vind,re=ST.re;
 var schoonLabel=ST.schoonLabel,overlapt=ST.overlapt,perRij=ST.perRij;
+// Een formulier heeft een kolom met labels en er rechts van de waarden. Vinden we zo'n
+// kolom, dan hoort elke regel daar bij elkaar, ook als de waarde op een label lijkt.
+function labelKolom(rijen){
+  var tel={};
+  rijen.forEach(function(rij){
+    if(rij.length!==2||!labelachtig(rij[0].t))return;
+    var k=Math.round(rij[0].x/4)*4+":"+(Math.round(rij[1].x/4)*4);
+    tel[k]=(tel[k]||0)+1;
+  });
+  var beste=null;
+  Object.keys(tel).forEach(function(k){if(tel[k]>=3&&(beste===null||tel[k]>tel[beste]))beste=k;});
+  if(beste===null)return null;
+  var d=beste.split(":");
+  return {x:Number(d[0]),waardeX:Number(d[1])};
+}
+
+// Staat er onder deze cel, in dezelfde kolom, een waarde? Dan is het een kolomkop
+// en hoort hij niet bij het label links van hem.
+function waardeOnder(c,rijen){
+  for(var i=0;i<rijen.length-1;i++){
+    if(rijen[i][0].pagina!==c.pagina||rijen[i][0].rij!==c.rij)continue;
+    var onder=rijen[i+1];
+    if(!onder||onder[0].pagina!==c.pagina||onder[0].rij!==c.rij+1)return false;
+    return onder.some(function(x){return overlapt(c,x)&&(!labelachtig(x.t)||!!ST.vind(x.t));});
+  }
+  return false;
+}
 function kandidaat(naam,waarde,score,vak,vindregel,label){
   return {naam:naam,waarde:String(waarde).trim(),score:score,vak:vak,vindregel:vindregel,labelvak:label||null};
 }
 function analyse(doc){
-  var cellen=doc.cellen||[],rijen=perRij(cellen),uit=[];
+  var cellen=doc.cellen||[],rijen=perRij(cellen),uit=[],labKol=labelKolom(rijen);
 
   // 1. Kolomkop boven de waarde: dezelfde x-posities op twee rijen.
   for(var r=0;r<rijen.length-1;r++){
     var kop=rijen[r],waardeRij=rijen[r+1];
     if(kop.length<2||kop[0].pagina!==waardeRij[0].pagina)continue;
+    // Een regel uit de labelkolom is geen kolomkop; die hoort met de cel ernaast bij elkaar.
+    if(labKol&&kop.length===2&&Math.abs(kop[0].x-labKol.x)<=4&&Math.abs(kop[1].x-labKol.waardeX)<=4)continue;
     if(waardeRij[0].rij!==kop[0].rij+1)continue;
     var labels=kop.filter(function(c){return labelachtig(c.t);});
     if(labels.length<2)continue;
@@ -25,13 +54,17 @@ function analyse(doc){
     });
   }
 
-  // 2. Label links, waarde rechts op dezelfde rij.
+  // 2. Label links, waarde rechts op dezelfde rij. Staat er op een regel niets anders
+  // dan een label en één waarde ("Geboortedatum   01-01-1990"), dan hoort dat bij elkaar,
+  // ook als die waarde op een label lijkt ("Voorletters   J.M.").
   rijen.forEach(function(rij){
     for(var i=0;i<rij.length-1;i++){
       var lab=rij[i],w=rij[i+1];
-      if(!labelachtig(lab.t)||labelachtig(w.t)||eigenPaar(w.t))continue;
+      if(!labelachtig(lab.t)||eigenPaar(w.t))continue;
       if(w.x-(lab.x+lab.b)>260)continue;
-      uit.push(kandidaat(schoonLabel(lab.t),w.t,0.85,w,{type:"rechts",label:schoonLabel(lab.t)},lab));
+      var alleen=rij.length===2&&labKol&&Math.abs(lab.x-labKol.x)<=4&&Math.abs(w.x-labKol.waardeX)<=4;
+      if(!alleen&&labelachtig(w.t))continue;
+      uit.push(kandidaat(schoonLabel(lab.t),w.t,alleen?0.95:0.85,w,{type:"rechts",label:schoonLabel(lab.t)},lab));
     }
   });
 

@@ -43,7 +43,7 @@ Met de adresregel stel je de namaak-Supabase in: `?ingelogd=0` (geen sessie), `?
 
 ## Testen
 
-`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 71 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm, het doorkijkscherm met voorstel en AI-toestemming, mappen met sjablonen die per document herkend worden, en de losse pagina uit `bouw-pagina.mjs`.
+`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 77 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm, het doorkijkscherm met voorstel en AI-toestemming, mappen met sjablonen die per document herkend worden, en de losse pagina uit `bouw-pagina.mjs`.
 
 ## Nog met de hand te doen in Webflow
 

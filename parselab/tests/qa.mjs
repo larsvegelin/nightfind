@@ -10,7 +10,12 @@ const b = await chromium.launch({ executablePath: exe, args:['--no-sandbox'] });
 const ctx = await b.newContext({ viewport:{ width:1440, height:1000 }, acceptDownloads:true, locale:'nl-NL' });
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('[pageerror] ' + e.message));
-p.on('console', m => { if (m.type()==='error' && !/fonts|ERR_CONNECTION|favicon|api\/parsepdf|status of (400|403|404)/.test(m.text())) errs.push('[console] ' + m.text().slice(0,160)); });
+// De AI-eindpunten geven zonder sleutel netjes 501; dat is hier geen fout maar de bedoeling.
+p.on('console', m => {
+  const bron = (m.location() && m.location().url) || '';
+  const aiPad = /api\/(parsepdf\/velden|scrape\/kolommen|board\/panelen)/.test(bron);
+  if (m.type()==='error' && !aiPad && !/fonts|ERR_CONNECTION|favicon|api\/parsepdf|status of (400|403|404|501)/.test(m.text())) errs.push('[console] ' + m.text().slice(0,160));
+});
 p.on('dialog', d => d.accept());
 const nf = []; p.on('response', r => { if (r.status() === 404 && !/8765\/api/.test(r.url())) nf.push(r.url()); });
 const U = 'http://127.0.0.1:8080/index.html';
@@ -92,6 +97,11 @@ await step('scraper', async () => {
   const names = await t.locator('#cols .col').evaluateAll(els => els.map(e => e.querySelector('[data-f=name]').value));
   ok('kolomnamen leesbaar', names.every(x => x && !/^div|span|\./i.test(x)), names.join(', '));
   ok('voorbeeldwaarden per kolom', await t.locator('#cols .col .ex').first().innerText().then(x => x.length > 0));
+  // De AI mag pas kijken na een duidelijke ja; zonder sleutel op de server komt er een nette melding.
+  await t.locator('#ai-cols').click(); await p.waitForTimeout(300);
+  ok('scraper: AI vraagt eerst toestemming', /kolommen bekijken/.test(await t.locator('#ai-msg').innerText()), (await t.locator('#ai-msg').innerText()).slice(0, 60));
+  await t.locator('#ai-ja').click(); await p.waitForTimeout(2000);
+  ok('scraper: zonder AI-sleutel een nette melding', /AI-hulp staat uit|Log in|niet beschikbaar/.test(await t.locator('#ai-msg').innerText()), (await t.locator('#ai-msg').innerText()).slice(0, 80));
   // element wisselen
   await t.locator('[data-switch="0"]').click(); await p.waitForTimeout(200);
   ok('modus "ander element aanwijzen"', /aanwijs|Klik|element/i.test(await t.locator('#mode-pill').innerText()), await t.locator('#mode-pill').innerText());
@@ -200,7 +210,18 @@ await step('parseboard', async () => {
   await t.locator('#fileinput').setInputFiles(S+'/qa-board.csv'); await p.waitForTimeout(800);
   const pb = t.locator('#parseBtn'); if (await pb.count() && await pb.isVisible()) { await pb.click(); await p.waitForTimeout(800); }
   ok('board: eigen CSV ingelezen', !(await t.locator('#parseError').isVisible().catch(()=>false)) && (await hash()).match(/board\/[2-6]/), await hash());
-  for (let i = 0; i < 5; i++) { const nb = t.locator('#nextBtn'); if (await nb.count() && await nb.isVisible()) { await nb.click(); await p.waitForTimeout(500); } }
+  // Stap 3: de AI-knop moet er staan, toestemming vragen en het antwoord van de server tonen.
+  for (let i = 0; i < 5; i++) {
+    const ai = t.locator('#aiVoorstel');
+    if (await ai.count() && await ai.isVisible()) {
+      ok('board: AI-knop op de metriekenstap', true);
+      await ai.click(); await p.waitForTimeout(300);
+      ok('board: AI vraagt eerst toestemming', /voorbeeldrijen bekijken/.test(await t.locator('#aiMsg').innerText()), (await t.locator('#aiMsg').innerText()).slice(0, 60));
+      await t.locator('#aiJa').click(); await p.waitForTimeout(2000);
+      ok('board: zonder AI-sleutel een nette melding', /AI-hulp staat uit|niet beschikbaar|Log in/.test(await t.locator('#aiMsg').innerText()), (await t.locator('#aiMsg').innerText()).slice(0, 80));
+    }
+    const nb = t.locator('#nextBtn'); if (await nb.count() && await nb.isVisible()) { await nb.click(); await p.waitForTimeout(500); }
+  }
   const bb = t.locator('#buildBtn'); if (await bb.count()) { await bb.click(); await p.waitForTimeout(1200); }
   ok('board: dashboard gebouwd (stap 6)', /board\/6/.test(await hash()) && await t.locator('#saveBtn').count() === 1, await hash());
   await t.locator('#saveBtn').click(); await p.waitForTimeout(1000);
