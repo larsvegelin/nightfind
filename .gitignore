@@ -35,3 +35,20 @@ Temporary Items
 # Old files
 *_old.html
 clubs_old.html
+
+# ParseLab server: lokale proxies en uitvoeringen horen niet in git
+parselab/server/proxies.txt
+parselab/server/data/
+parselab/server/node_modules/
+parselab/tests/shots/
+parselab/tests/qa-result.txt
+parselab/tests/qa-board.csv
+
+# Proefpagina van de Webflow-embeds; wordt gebouwd door tests/webflow-proef.mjs
+parselab/tests/proef/
+
+# Playwright voor de tests, lokaal geïnstalleerd
+node_modules/
+
+# Losse dashboardbundel: 2,8 MB en met één commando te herbouwen
+parselab/ParseLab.html

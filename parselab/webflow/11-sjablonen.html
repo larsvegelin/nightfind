@@ -1,0 +1,192 @@
+<!-- ParsePDF — embed 11 van 12: mappen met sjablonen en het herkennen van documenten. -->
+<script>
+window.PLP_SJ=(function(){
+var SLEUTEL="pl_parsepdf_mappen";
+var ST=window.PLP_ST;
+
+function lees(){
+  try{var d=JSON.parse(localStorage.getItem(SLEUTEL)||"null");if(d&&d.mappen)return d;}catch(e){}
+  return {mappen:[],actief:null};
+}
+function bewaar(d){try{localStorage.setItem(SLEUTEL,JSON.stringify(d));}catch(e){}return d;}
+function id(){return "m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function nieuweMap(naam){
+  var d=lees(),m={id:id(),naam:naam||"Nieuwe map",sjablonen:[]};
+  d.mappen.push(m);d.actief=m.id;bewaar(d);return m;
+}
+function verwijderMap(mid){
+  var d=lees();
+  d.mappen=d.mappen.filter(function(m){return m.id!==mid;});
+  if(d.actief===mid)d.actief=d.mappen.length?d.mappen[0].id:null;
+  bewaar(d);
+}
+function map(mid){return lees().mappen.filter(function(m){return m.id===mid;})[0]||null;}
+function kiesMap(mid){var d=lees();d.actief=mid;bewaar(d);}
+
+function bewaarSjabloon(mid,sj){
+  var d=lees(),m=d.mappen.filter(function(x){return x.id===mid;})[0];
+  if(!m)return null;
+  sj.id=sj.id||id();sj.gebruikt=sj.gebruikt||0;
+  m.sjablonen=m.sjablonen.filter(function(x){return x.id!==sj.id;});
+  m.sjablonen.push(sj);bewaar(d);return sj;
+}
+function verwijderSjabloon(mid,sid){
+  var d=lees(),m=d.mappen.filter(function(x){return x.id===mid;})[0];
+  if(!m)return;
+  m.sjablonen=m.sjablonen.filter(function(x){return x.id!==sid;});bewaar(d);
+}
+function telGebruik(mid,sid){
+  var d=lees(),m=d.mappen.filter(function(x){return x.id===mid;})[0];
+  if(!m)return;
+  m.sjablonen.forEach(function(s){if(s.id===sid)s.gebruikt=(s.gebruikt||0)+1;});
+  bewaar(d);
+}
+
+// De vingerafdruk van een document: welke vaste teksten erin staan, waar de
+// kolommen beginnen, en de nummers die de afzender verraden.
+function vingerafdruk(doc,analyse){
+  var cellen=doc.cellen||[],breed=(doc.maten&&doc.maten[0]&&doc.maten[0].breed)||595;
+  // De labels die de herkenning gebruikte plus de vaste teksten op de pagina:
+  // dat is wat bij dezelfde afzender gelijk blijft, ook als de bedragen wijzigen.
+  var teksten=(analyse.velden||[]).map(function(v){return (v.vindregel&&v.vindregel.label)||"";})
+    .concat(cellen.filter(function(c){return ST.labelachtig(c.t)&&!ST.vind(c.t);})
+                  .map(function(c){return c.t;}))
+    .map(function(t){return String(t).toLowerCase().trim();}).filter(Boolean);
+  var uniek=[];teksten.forEach(function(t){if(uniek.indexOf(t)<0&&uniek.length<40)uniek.push(t);});
+  var kenmerken=[];
+  ST.patronen.forEach(function(p){
+    if(["iban","btwnl","kvk","url"].indexOf(p.naam)<0)return;
+    var m=(doc.tekst||"").match(ST.re(p));
+    if(m)kenmerken.push(p.naam+":"+m[0].replace(/\s/g,"").toLowerCase());
+  });
+  return {teksten:uniek,
+          kolommen:(analyse.kolommen||[]).map(function(k){return Math.round(k.x/breed*1000)/1000;}),
+          kenmerken:kenmerken};
+}
+
+// Score: harde kenmerken wegen het zwaarst, dan de vaste teksten, dan de layout.
+function score(va,vb){
+  if(!va||!vb)return 0;
+  var punten=0;
+  (va.kenmerken||[]).forEach(function(k){if((vb.kenmerken||[]).indexOf(k)>=0)punten+=3;});
+  var raak=0;
+  (va.teksten||[]).forEach(function(t){if((vb.teksten||[]).indexOf(t)>=0)raak++;});
+  punten+=Math.min(6,raak);
+  var ka=va.kolommen||[],kb=vb.kolommen||[];
+  if(ka.length&&kb.length){
+    var gelijk=ka.filter(function(x){return kb.some(function(y){return Math.abs(x-y)<0.02;});}).length;
+    if(gelijk/Math.max(ka.length,kb.length)>0.6)punten+=2;
+  }
+  return punten;
+}
+
+// Welk sjabloon uit deze map hoort bij dit document?
+function kies(mid,doc,analyse){
+  var m=map(mid);
+  if(!m||!m.sjablonen.length)return null;
+  var va=vingerafdruk(doc,analyse),beste=null,best=0;
+  m.sjablonen.forEach(function(s){
+    var p=score(va,s.vingerafdruk);
+    if(p>best){best=p;beste=s;}
+  });
+  if(!beste||best<3)return null;
+  return {sjabloon:beste,score:best,zeker:best>=6};
+}
+
+
+// De kaart in het scherm: kies een map, zie welke sjablonen erin zitten.
+function kaart(){
+  var S=window.PLP_S,U=window.PLP_UI,t=S.t,el=U.el;
+  var d=lees(),k=el("div","pld-card");
+  k.appendChild(el("p","pld-text",t.foldersHint));
+  var rij=el("div","plp-mapkies");
+  var kies2=el("select","pld-sel");
+  var leeg=el("option","",t.useRules);leeg.value="";kies2.appendChild(leeg);
+  d.mappen.forEach(function(m){
+    var o=el("option","",m.naam+" ("+m.sjablonen.length+")");o.value=m.id;
+    if(m.id===d.actief)o.selected=true;kies2.appendChild(o);
+  });
+  kies2.addEventListener("change",function(){kiesMap(kies2.value||null);U.teken();});
+  var naam=el("input","pld-in");naam.placeholder=t.folderName;
+  var maak=el("button","pld-btn pld-btn--sm",t.newFolder);maak.type="button";
+  maak.addEventListener("click",function(){
+    if(!naam.value.trim())return;
+    nieuweMap(naam.value.trim());U.teken();
+  });
+  rij.appendChild(kies2);rij.appendChild(naam);rij.appendChild(maak);
+  k.appendChild(rij);
+
+  var m=d.actief?map(d.actief):null;
+  if(!d.mappen.length){k.appendChild(el("p","pld-text",t.noFolders));return k;}
+  if(!m)return k;
+  k.appendChild(el("p","pld-caps",t.templates));
+  if(!m.sjablonen.length)k.appendChild(el("p","pld-text",t.noTemplates));
+  m.sjablonen.forEach(function(sj){
+    var r=el("div","plp-file"),links=el("div");
+    links.appendChild(el("p","pld-text"+(S.sjabloonId===sj.id?" plp-mono":""),sj.naam));
+    links.appendChild(el("p","plp-mono",sj.regels.length+" "+t.fields+" · "+(sj.gebruikt||0)+" "+t.used));
+    var knoppen=el("div","pld-row");
+    // Openen zet de regels van dit sjabloon in het scherm, zodat je ze ziet en aanpast.
+    var openen=el("button","pld-btn pld-btn--sm",t.openTemplate);openen.type="button";
+    openen.addEventListener("click",function(){
+      S.regels=JSON.parse(JSON.stringify(sj.regels||[]));S.sjabloonId=sj.id;
+      try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
+      U.teken();U.meld(t.openedTemplate.replace("{naam}",sj.naam));
+    });
+    var weg=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.delTemplate);weg.type="button";
+    weg.addEventListener("click",function(){verwijderSjabloon(m.id,sj.id);U.teken();});
+    knoppen.appendChild(openen);knoppen.appendChild(weg);
+    r.appendChild(links);r.appendChild(knoppen);k.appendChild(r);
+  });
+  if(m.sjablonen.length)k.appendChild(el("p","pld-text",t.useFolder));
+  var onder=el("div","pld-row");
+  var wegMap=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.delFolder);wegMap.type="button";
+  wegMap.addEventListener("click",function(){verwijderMap(m.id);U.teken();});
+  onder.appendChild(wegMap);k.appendChild(onder);
+  return k;
+}
+
+
+// Vanuit het voorstel: de gekozen velden als sjabloon in een map bewaren.
+function opslaanKnop(regelsVan,doc,analyse,melding){
+  var S=window.PLP_S,U=window.PLP_UI,t=S.t,el=U.el;
+  var doos=el("div","plp-mapkies");
+  var naam=el("input","pld-in");naam.placeholder=t.templateName;
+  var kies2=el("select","pld-sel"),d=lees();
+  d.mappen.forEach(function(m){var o=el("option","",m.naam);o.value=m.id;if(m.id===d.actief)o.selected=true;kies2.appendChild(o);});
+  var nieuw=el("option","","+ "+t.newFolder);nieuw.value="__nieuw";kies2.appendChild(nieuw);
+  var knop=el("button","pld-btn pld-btn--ghost",t.saveTemplate);knop.type="button";
+  knop.addEventListener("click",function(){
+    var regels=regelsVan();
+    if(!regels.length||!naam.value.trim())return;
+    var mid=kies2.value;
+    if(mid==="__nieuw"||!mid)mid=nieuweMap(naam.value.trim()).id;
+    bewaarSjabloon(mid,{naam:naam.value.trim(),regels:regels,vingerafdruk:vingerafdruk(doc,analyse),
+                        uitvoer:regels.some(function(r){return r.type==="tabelkolom";})?"regel":"document"});
+    kiesMap(mid);
+    melding.textContent=t.savedTemplate.replace("{map}",(map(mid)||{}).naam||"");
+  });
+  doos.appendChild(kies2);doos.appendChild(naam);doos.appendChild(knop);
+  return doos;
+}
+
+// Past dit document bij een sjabloon, en zijn de velden er ook echt in te vinden?
+// Twee documenten van dezelfde afzender kunnen een andere indeling hebben; dan
+// herkent hij het sjabloon wel, maar blijven de velden leeg. Dat zeggen we erbij.
+function controle(mid,doc,analyse){
+  var keus=kies(mid,doc,analyse);
+  if(!keus)return {sjabloon:null,score:0,zeker:false,gevonden:0,totaal:0};
+  var regels=(keus.sjabloon.regels||[]).filter(function(r){return r.type==="cel"&&r.vindregel;});
+  var gevonden=0;
+  regels.forEach(function(r){if(String(ST.pas(doc,r.vindregel)||"").trim())gevonden++;});
+  return {sjabloon:keus.sjabloon,score:keus.score,zeker:keus.zeker,
+          gevonden:gevonden,totaal:regels.length,
+          anders:regels.length>0&&gevonden<Math.ceil(regels.length/2)};
+}
+
+return {controle:controle,kaart:kaart,opslaanKnop:opslaanKnop,lees:lees,bewaar:bewaar,nieuweMap:nieuweMap,verwijderMap:verwijderMap,map:map,kiesMap:kiesMap,
+        bewaarSjabloon:bewaarSjabloon,verwijderSjabloon:verwijderSjabloon,telGebruik:telGebruik,
+        vingerafdruk:vingerafdruk,kies:kies,score:score};
+})();
+</script>

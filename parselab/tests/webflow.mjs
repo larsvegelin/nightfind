@@ -1,0 +1,606 @@
+import { chromium } from 'playwright';
+import { execFileSync } from 'node:child_process';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const map = path.join(here, 'proef');
+execFileSync(process.execPath, [path.join(here, 'webflow-proef.mjs'), map], { stdio: 'inherit' });
+execFileSync(process.execPath, [path.join(here, '..', 'webflow', 'bouw-pagina.mjs'), path.join(map, 'ParsePDF.html')], { stdio: 'inherit' });
+
+const TYPE = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.pdf':'application/pdf' };
+// De eerste AI-aanroep doet alsof de server geen sleutel heeft, de tweede antwoordt wel.
+// Zo zijn beide wegen te testen zonder een echte AI-server.
+let aiAanroepen = 0;
+const srv = http.createServer((req, res) => {
+  if (req.url.startsWith('/favicon.ico')) { res.writeHead(204); return res.end(); }
+  if (req.url === '/api/parsepdf/regel') {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    return res.end(JSON.stringify({ naam: 'Totaal', eis: { woord: 'Totaal', soort: 'bedrag', pagina: 1, kolom: null } }));
+  }
+  if (req.url === '/api/parsepdf/velden') {
+    aiAanroepen++;
+    if (aiAanroepen === 1) { res.writeHead(501, { 'content-type': 'application/json' }); return res.end('{"error":"geen sleutel"}'); }
+    res.writeHead(200, { 'content-type': 'application/json' });
+    return res.end(JSON.stringify({ velden: [{ naam: 'Factuurnummer van de leverancier', waarde: 'INV10632', zekerheid: 0.95 },
+                                             { naam: 'Betaalmethode', waarde: 'iDEAL', zekerheid: 0.8 }], waarschuwingen: [] }));
+  }
+  const p = path.join(map, decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html');
+  if (!p.startsWith(map) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); return res.end('nee'); }
+  res.writeHead(200, { 'content-type': TYPE[path.extname(p)] || 'application/octet-stream' });
+  fs.createReadStream(p).pipe(res);
+});
+await new Promise(r => srv.listen(8123, '127.0.0.1', r));
+const BASIS = 'http://127.0.0.1:8123/index.html';
+
+const res = []; const errs = [];
+function ok(n, c, x) { res.push((c ? 'PASS ' : 'FAIL ') + n + (x !== undefined ? '  -> ' + String(x).slice(0, 160) : '')); console.log(res.at(-1)); }
+
+const exe = fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {};
+const b = await chromium.launch({ ...exe, args: ['--no-sandbox'] });
+const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
+const p = await ctx.newPage();
+p.on('pageerror', e => errs.push('[pageerror] ' + e.message));
+// Sinds het doorkijkscherm vanzelf opent na het kiezen van bestanden, sluiten de
+// stappen die daarna op de gewone pagina werken hem eerst.
+async function sluitDoorkijk(pagina) {
+  const q = pagina || p;
+  if (await q.isVisible('.plp-doorkijk').catch(() => false)) {
+    await q.click('.plp-doorkijk button:has-text("Annuleren")');
+    await q.waitForTimeout(200);
+  }
+}
+p.on('console', m => {
+  const bron = (m.location() && m.location().url) || '';
+  if (m.type() === 'error' && !/favicon|ERR_/.test(m.text()) && !/parsepdf\/velden/.test(bron)) errs.push('[console] ' + m.text().slice(0, 140));
+});
+
+// 1. zonder sessie hoort de bezoeker naar de inlogpagina
+await p.goto(BASIS + '?ingelogd=0', { waitUntil: 'load' });
+await p.waitForURL(/inloggen\.html/, { timeout: 5000 }).catch(() => {});
+ok('zonder sessie stuurt de pagina door naar inloggen', /inloggen\.html/.test(p.url()), p.url());
+
+// 2. ingelogd: kop, verbruiksmeter en de standaardregels
+await p.goto(BASIS + '?gebruikt=120&limiet=2500', { waitUntil: 'load' });
+await p.waitForSelector('.pld-title', { timeout: 8000 });
+await p.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+ok('titel en ondertitel staan er', await p.textContent('.pld-title') === 'ParsePDF');
+const meter = await p.evaluate(() => {
+  const b = document.querySelector('.pld-bar');
+  const num = b ? b.parentElement.querySelector('.pld-num') : null;
+  return { num: num ? num.textContent : '', now: b && b.getAttribute('aria-valuenow'), max: b && b.getAttribute('aria-valuemax'), rol: b && b.getAttribute('role') };
+});
+ok('verbruiksmeter toont gebruik van limiet', meter.num.includes('120') && meter.num.includes('2.500') && meter.now === '120' && meter.max === '2500' && meter.rol === 'progressbar', JSON.stringify(meter));
+const regels0 = await p.evaluate(() => window.PLP_S.regels.map(r => r.naam).join(','));
+ok('sjabloon Facturen staat klaar als eerste regelset', regels0 === 'Factuurnummer,Datum,Totaal,BTW,Bestand', regels0);
+ok('terugknop wijst naar het dashboard', (await p.getAttribute('.pld-head a', 'href')).includes('dashboard'));
+
+// 3. uitlezen van twee facturen
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf'), path.join(map, 'factuur-b.pdf')]);
+await sluitDoorkijk();
+await p.waitForSelector('.plp-file', { timeout: 5000 });
+ok('gekozen bestanden staan in de lijst', (await p.$$('.plp-file')).length === 2);
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 30000 });
+const tabel = await p.evaluate(() => [...document.querySelectorAll('.plp-table tr')].map(tr => [...tr.children].map(td => td.textContent)));
+ok('kopregel: bestand, pagina\'s en elke veldregel', tabel[0].join('|') === "Bestand|Pagina's|Factuurnummer|Datum|Totaal|BTW|Bestand", tabel[0].join('|'));
+ok('twee rijen, één per document', tabel.length === 3, tabel.length);
+const a = tabel[1];
+ok('factuurnummer uit het label gehaald', a[2] === '2026-118', a[2]);
+ok('datum opgeschoond tot alleen de datum', a[3] === '12-03-2026', a[3]);
+ok('Totaal pakt het eindbedrag, niet het subtotaal', a[4] === '1.506,45', a[4]);
+ok('BTW-bedrag los van het percentage', a[5] === '262,28', a[5]);
+ok('bestandsnaam als eigen kolom', a[6] === 'factuur-a.pdf', a[6]);
+ok('paginateller klopt (twee pagina\'s)', a[1] === '2', a[1]);
+ok('tweede document ook gelezen', tabel[2][4] === '968,00' && tabel[2][1] === '1', tabel[2].join('|'));
+
+// 4. verbruik is geboekt vóór het lezen, met het juiste aantal pagina's
+const aanroep = await p.evaluate(() => JSON.stringify(window.PL_STUB_CALLS));
+ok('record_usage is aangeroepen met drie pagina\'s', /record_usage/.test(aanroep) && /"p_pages":3/.test(aanroep), aanroep);
+const meterNa = await p.evaluate(() => document.querySelector('.pld-bar').parentElement.querySelector('.pld-num').textContent);
+ok('de meter loopt meteen mee (120 + 3)', meterNa.includes('123'), meterNa);
+
+// 5. CSV: puntkomma's, BOM en dezelfde kolommen
+const [dl] = await Promise.all([
+  p.waitForEvent('download'),
+  p.click('button:has-text("Download CSV")')
+]);
+const csvPad = path.join(map, 'uit.csv');
+await dl.saveAs(csvPad);
+const csv = fs.readFileSync(csvPad);
+const tekst = csv.toString('utf8').replace(/^\uFEFF/, '');
+ok('CSV heet parselab-export.csv', dl.suggestedFilename() === 'parselab-export.csv', dl.suggestedFilename());
+ok('CSV begint met een UTF-8 BOM', csv[0] === 0xEF && csv[1] === 0xBB && csv[2] === 0xBF);
+// 5b. Excel: een echte .xlsx (zip zonder compressie) met dezelfde kolommen en waarden.
+const [dlx] = await Promise.all([p.waitForEvent('download'), p.click('button:has-text("Download Excel")')]);
+const xlsxPad = path.join(map, 'uit.xlsx');
+await dlx.saveAs(xlsxPad);
+const xlsx = fs.readFileSync(xlsxPad);
+const xlsxTekst = xlsx.toString('latin1');
+ok('Excel heet parselab-export.xlsx en is een zip', dlx.suggestedFilename() === 'parselab-export.xlsx' && xlsx[0] === 0x50 && xlsx[1] === 0x4B, dlx.suggestedFilename());
+ok('het werkblad staat erin met de factuurnummers', /xl\/worksheets\/sheet1\.xml/.test(xlsxTekst) && /2026-118/.test(xlsxTekst) && /2026-119/.test(xlsxTekst));
+ok('Excel opent de zip zonder klachten (centrale map klopt)', (() => { try { execFileSync('python3', ['-c', 'import zipfile,sys;z=zipfile.ZipFile(sys.argv[1]);assert z.testzip() is None;print(len(z.namelist()))', xlsxPad]); return true; } catch (e) { return false; } })());
+ok('CSV scheidt met puntkomma\'s', tekst.split('\r\n')[0] === "Bestand;Pagina's;Factuurnummer;Datum;Totaal;BTW;Bestand", tekst.split('\r\n')[0]);
+ok('CSV bevat het eindbedrag', tekst.includes(';1.506,45;'), tekst.split('\r\n')[1]);
+
+// 6. regels bewaren en terughalen uit deze browser
+await p.evaluate(() => { window.PLP_S.regels = [{ naam: 'Kenmerk', type: 'regex', waarde: 'NL\\d{2}[A-Z]{4}\\d+', filter: 'geen' }]; window.PLP_UI.teken(); });
+await p.click('button:has-text("Regels bewaren")');
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+const bewaard = await p.evaluate(() => window.PLP_S.regels.map(r => r.naam).join(','));
+ok('bewaarde regels komen terug na herladen', bewaard === 'Kenmerk', bewaard);
+
+// 7. patroon met haakjesgroep leest de IBAN van pagina twee
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf')]);
+await sluitDoorkijk();
+await p.waitForSelector('.plp-file', { timeout: 5000 });
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 30000 });
+const iban = await p.evaluate(() => document.querySelectorAll('.plp-table tbody td')[2].textContent);
+ok('regex vindt de IBAN op de tweede pagina', iban === 'NL91ABNA0417164300', iban);
+
+// 7b. Opties: de laatste pagina uitsluiten, dan is de IBAN van pagina twee weg.
+await p.fill('input[placeholder="alle · 1-2,5 · -laatste · even"]', '-laatste');
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf')]);
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForFunction(() => document.querySelectorAll('.plp-table tbody tr').length === 1 && !/NL91/.test(document.querySelector('.plp-table tbody').textContent), null, { timeout: 30000 }).catch(() => {});
+const zonderLaatste = await p.evaluate(() => document.querySelectorAll('.plp-table tbody td')[2].textContent);
+ok('met -laatste telt de tweede pagina niet mee', zonderLaatste === '—', zonderLaatste);
+await p.fill('input[placeholder="alle · 1-2,5 · -laatste · even"]', '');
+ok('de paginakeuze wordt onthouden in de opties', await p.evaluate(() => JSON.parse(localStorage.getItem('pl_parsepdf_opties')).paginas === ''));
+
+// 7c. Waarden omzetten: datum naar jjjj-mm-dd, bedrag naar getal met punt, afkorting naar heel woord.
+await p.evaluate(() => {
+  window.PLP_S.regels = [{ naam: 'Datum', type: 'label', waarde: 'Factuurdatum', filter: 'datum' }, { naam: 'Totaal', type: 'label', waarde: 'Totaal te voldoen', filter: 'bedrag' }, { naam: 'Munt', type: 'regex', waarde: '(EUR)', filter: 'geen' }];
+  window.PLP_S.opties.omzet = { Datum: { soort: 'datum:jjjj-mm-dd' }, Totaal: { soort: 'getal' }, Munt: { vervang: 'EUR=euro', soort: 'hoofd' } };
+  window.PLP_OPT.bewaar(); window.PLP_UI.teken();
+});
+ok('de omzetkaart toont de kolommen', (await p.$$eval('select.pld-sel', s => s.map(x => x.value))).includes('datum:jjjj-mm-dd'));
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf')]);
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForFunction(() => /2026-03-12/.test(document.body.textContent), null, { timeout: 30000 }).catch(() => {});
+const omgezet = await p.evaluate(() => Array.from(document.querySelectorAll('.plp-table tbody td')).slice(2).map(x => x.textContent).join('|'));
+ok('datum, getal en afkorting zijn omgezet', omgezet === '2026-03-12|1506.45|EURO', omgezet);
+await p.evaluate(() => { window.PLP_S.opties.omzet = {}; window.PLP_OPT.bewaar(); });
+
+// 8. document zonder tekstlaag geeft een nette melding
+await p.setInputFiles('input[type=file]', [path.join(map, 'gescand.pdf')]);
+await sluitDoorkijk();
+await p.waitForSelector('.plp-file', { timeout: 5000 });
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.pld-msg--warn', { timeout: 30000 });
+const melding = await p.textContent('.pld-msg--warn');
+ok('melding over ontbrekende tekstlaag', /tekstlaag/.test(melding), melding);
+
+// 9. limietbewaking: te grote batch wordt vooraf tegengehouden
+await p.goto(BASIS + '?gebruikt=49&limiet=50', { waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf'), path.join(map, 'factuur-b.pdf')]);
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.pld-card--navy', { timeout: 30000 });
+const kaart = await p.textContent('.pld-card--navy');
+ok('limietkaart noemt batch en rest', /3 pagina/.test(kaart) && /1 over/.test(kaart.replace(/\s+/g, ' ')), kaart.replace(/\s+/g, ' ').slice(0, 120));
+const naLimiet = await p.evaluate(() => window.PL_STUB_CALLS.filter(c => c.naam === 'record_usage').length);
+ok('bij overschrijding wordt niets geboekt', naLimiet === 0, naLimiet);
+ok('startknop is weer bruikbaar na de weigering', await p.evaluate(() => !([...document.querySelectorAll('button')].find(b => /Uitlezen starten/.test(b.textContent)) || {}).disabled));
+
+// 10. andere taal uit het profiel
+await p.goto(BASIS + '?taal=en', { waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+ok('profieltaal en stuurt de teksten en het lang-attribuut', (await p.textContent('.pld-sub')).startsWith('Pull fields') && await p.evaluate(() => document.documentElement.lang) === 'en');
+
+// 11. smal scherm: geen horizontale schuif, velden onder elkaar, tabel scrolt zelf
+await p.goto(BASIS, { waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setViewportSize({ width: 375, height: 900 });
+await p.waitForTimeout(300);
+const smal = await p.evaluate(() => ({
+  schuif: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  kolommen: getComputedStyle(document.querySelector('.plp-rule')).gridTemplateColumns.split(' ').length,
+  knop: Math.round(document.querySelector('.pld-btn').getBoundingClientRect().height)
+}));
+ok('geen horizontale schuif op 375px', smal.schuif <= 0, smal.schuif);
+ok('regelvelden staan onder elkaar op 375px', smal.kolommen === 1, smal.kolommen);
+ok('knoppen blijven minstens 44px hoog', smal.knop >= 44, smal.knop);
+
+// 11b. de proef-PDF's uit tests/pdfs: label met tekst erachter, waarde op de regel eronder,
+// en een Subtotaal dat het Totaal niet mag kapen.
+await p.setViewportSize({ width: 1440, height: 1000 });
+await p.goto(BASIS + '?limiet=100000', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.setItem('pl_parsepdf_regels', JSON.stringify([
+  { naam: 'Totaal', type: 'label', waarde: 'Totaal', filter: 'bedrag' },
+  { naam: 'BTW', type: 'label', waarde: 'BTW', filter: 'bedrag' },
+  { naam: 'Datum', type: 'label', waarde: 'Factuurdatum', filter: 'datum' }
+])));
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+const pdfmap = path.join(here, 'pdfs');
+await p.setInputFiles('input[type=file]', ['factuur-alpha.pdf', 'factuur-beta.pdf', 'factuur-gamma.pdf'].map(f => path.join(pdfmap, f)));
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const proef = await p.evaluate(() => [...document.querySelectorAll('.plp-table tbody tr')].map(tr => [...tr.children].map(td => td.textContent)));
+ok('alpha: bedragen op dezelfde regel', proef[0][2] === '1.505,45' && proef[0][3] === '261,28', proef[0].join('|'));
+ok('beta: waarde op de regel eronder wordt gepakt', proef[1][2] === '1.076,90' && proef[1][3] === '186,90', proef[1].join('|'));
+ok('beta: geschreven datum ("2 april 2026")', proef[1][4] === '2 april 2026', proef[1][4]);
+ok('gamma: Subtotaal kaapt het Totaal niet', proef[2][2] === '14.703,92', proef[2].join('|'));
+
+// 11c. doorkijken: het document openen, gearceerde vlakken, namen bij hover,
+// het voorstel overnemen en alle kolommen uitlezen.
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-webshop.pdf'));
+await sluitDoorkijk();
+await p.click('button:has-text("Kijk wat erin staat")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(1200);
+const voorstel = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
+ok('voorstel vindt de kolomkop-velden zonder instellen',
+  voorstel.includes('Factuurnummer=INV10632') && voorstel.includes('Datum=Zondag 21 Juni 2026') && voorstel.includes('Klantnummer=227521416'),
+  voorstel.slice(0, 4).join(' · '));
+ok('voorstel scheidt Totaal excl. van Totaal incl.',
+  voorstel.includes('Totaal excl. BTW=€32,15') && voorstel.includes('Totaal incl. BTW=€38,90'));
+ok('voorstel herkent patronen zonder label', voorstel.some(v => v.startsWith('IBAN=NL71')) && voorstel.some(v => v.startsWith('Btw-nummer=NL0020')), voorstel.filter(v => /IBAN|Btw/.test(v)).join(' · '));
+const vlakken = await p.$$eval('.plp-vlak', n => n.length);
+ok('gevonden velden staan gearceerd op de pagina', vlakken >= 20, vlakken);
+ok('de pagina is echt getekend', await p.$eval('.plp-pagina canvas', c => c.width > 300 && c.height > 400));
+await (await p.$('.plp-vlak:not(.plp-vlak--label)')).hover();
+await p.waitForTimeout(250);
+ok('zweven toont de naam bij het vlak', /=/.test(await p.$eval('.plp-tip', n => n.textContent)), await p.$eval('.plp-tip', n => n.textContent));
+const tabelkaart = await p.textContent('.plp-blad .pld-card');
+const alleKnop = await p.textContent('button:has-text("Toon alle tekst")');
+ok('alle overige tekst is op te vragen', /Toon alle tekst \(\d+\)/.test(alleKnop), alleKnop);
+await p.click('button:has-text("Toon alle tekst")');
+await p.waitForTimeout(300);
+const allesLijst = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '|' + r.querySelector('.plp-bron').textContent));
+ok('met alles aan staat er meer in de lijst dan alleen de herkende velden', allesLijst.length > voorstel.length, allesLijst.length + ' vs ' + voorstel.length);
+ok('de bestandsnaam en de pdf-gegevens staan erbij',
+  allesLijst.some(v => /^Bestandsnaam\|bestandsnaam/.test(v)) && allesLijst.some(v => /\|bestandsgegeven/.test(v)),
+  allesLijst.filter(v => /bestandsnaam|bestandsgegeven/.test(v)).slice(0, 3).join(' · '));
+await p.click('button:has-text("Alleen de herkende velden")');
+await p.waitForTimeout(200);
+ok('regeltabel gevonden en aan te zetten', /3 regels met 6 kolommen/.test(tabelkaart), tabelkaart.replace(/\s+/g, ' ').slice(0, 70));
+await p.check('.plp-blad .pld-card input[type=checkbox]');
+// AI vraagt eerst toestemming en doet zonder ja niets
+await p.click('button:has-text("Uitlezen met AI")');
+await p.waitForSelector('.plp-modal', { timeout: 5000 });
+ok('AI vraagt eerst toestemming', /tekst van dit ene document/.test(await p.textContent('.plp-modal')));
+await p.click('button:has-text("Nee, laat maar")');
+ok('zonder toestemming gebeurt er niets', (await p.$$('.plp-modal')).length === 0);
+await p.click('button:has-text("Uitlezen met AI")');
+await p.click('button:has-text("Ja, een keer lezen")');
+await p.waitForTimeout(1500);
+ok('zonder AI-sleutel komt er een nette melding, geen fout', /niet beschikbaar/.test(await p.textContent('.plp-blad')));
+await p.click('button:has-text("Uitlezen met AI")');
+await p.click('button:has-text("Ja, een keer lezen")');
+await p.waitForTimeout(1200);
+const naAi = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '|' + r.querySelector('.plp-bron').textContent));
+ok('AI hernoemt een gevonden veld en meldt zich als bron', naAi.some(v => v.startsWith('Factuurnummer van de leverancier|AI')), naAi.filter(v => /AI/.test(v)).join(' · '));
+ok('AI voegt een gemist veld toe', naAi.some(v => v.startsWith('Betaalmethode|AI')), '');
+await p.click('button:has-text("Neem over als veldregels")');
+await p.waitForTimeout(400);
+const soorten = await p.evaluate(() => window.PLP_S.regels.map(r => r.type));
+ok('voorstel wordt een sjabloon van veldregels', soorten.filter(x => x === 'cel').length >= 10 && soorten.includes('tabelkolom'), soorten.join(','));
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const alles = await p.evaluate(() => [...document.querySelectorAll('.plp-table tr')].map(tr => [...tr.children].map(td => td.textContent)));
+ok('uitlezen toont alle kolommen uit het voorstel', alles[0].length >= 18, alles[0].length + ' kolommen');
+ok('elke tabelregel wordt een eigen rij', alles.length === 4, (alles.length - 1) + ' rijen');
+const kop = alles[0];
+function cel(rij, naam) { return rij[kop.indexOf(naam)]; }
+// De AI hernoemde het factuurnummer hierboven; die naam is nu de kolomnaam.
+ok('waarden kloppen na het overnemen',
+  cel(alles[1], 'Factuurnummer van de leverancier') === 'INV10632' && cel(alles[1], 'Datum') === '21 Juni 2026' && cel(alles[1], 'Totaal incl. BTW') === '38,90',
+  [cel(alles[1], 'Factuurnummer van de leverancier'), cel(alles[1], 'Datum'), cel(alles[1], 'Totaal incl. BTW')].join(' · '));
+ok('de tabelregels verschillen per rij', cel(alles[1], 'Beschrijving') !== cel(alles[2], 'Beschrijving'), cel(alles[1], 'Beschrijving') + ' / ' + cel(alles[2], 'Beschrijving'));
+
+// 11c2. het pakket beslist of de AI-knop iets doet.
+await p.goto(BASIS + '?plan=gratis&limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-alpha.pdf'));
+await sluitDoorkijk();
+await p.click('button:has-text("Kijk wat erin staat")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.click('button:has-text("Uitlezen met AI")');
+await p.waitForSelector('.plp-modal', { timeout: 5000 });
+const slot = await p.textContent('.plp-modal');
+ok('gratis pakket krijgt geen AI maar een uitleg', /Pro en Business/.test(slot) && !/tekst van dit ene document/.test(slot), slot.replace(/\s+/g, ' ').slice(0, 80));
+ok('de uitleg wijst naar de pakketten', await p.isVisible('.plp-modal a:has-text("Pakketten bekijken")'));
+await p.click('.plp-modal button:has-text("Annuleren")');
+await p.click('button:has-text("Annuleren")');
+await p.waitForTimeout(200);
+
+// 11c3. na het kiezen gaat het document meteen open, je bladert door de stapel,
+// en een label met zijn waarde ("Geboortedatum 01-01-1990") blijft één veld.
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.clear());
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', ['formulier.pdf', 'factuur-alpha.pdf'].map(f => path.join(pdfmap, f)));
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+ok('het document gaat vanzelf open na het kiezen', await p.isVisible('.plp-doorkijk'));
+const kopregel = await p.textContent('.plp-blad .plp-mono');
+ok('je ziet welk document van hoeveel je bekijkt', /Document 1 van 2 · formulier\.pdf/.test(kopregel), kopregel);
+const form = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
+ok('label en waarde blijven één veld', form.includes('Geboortedatum=01-01-1990'), form.slice(0, 4).join(' · '));
+ok('ook de andere formulierregels blijven heel',
+  form.includes('Achternaam=Van Dijk') && form.includes('Voorletters=J.M.') && form.includes('Burgerservicenummer=123456782'),
+  form.slice(0, 6).join(' · '));
+await p.click('button:has-text("Neem over als veldregels")');
+await p.waitForTimeout(400);
+await p.click('button:has-text("Kijk wat erin staat")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.click('button:has-text("Volgende")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(700);
+ok('bladeren gaat naar het tweede document', /Document 2 van 2/.test(await p.textContent('.plp-blad .plp-mono')), await p.textContent('.plp-blad .plp-mono'));
+const doc2 = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
+ok('per veld zie je of het in dit document gevonden wordt', doc2.includes('Geboortedatum=niet gevonden'), doc2.slice(0, 3).join(' · '));
+await sluitDoorkijk();
+
+// 11c4. labels per vlak, alles selecteren, en tekstherkenning voor een scan.
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.clear());
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-webshop.pdf'));
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(1200);
+const eersteVak = await p.$('.plp-vlak:not(.plp-vlak--label)');
+await eersteVak.click();
+await p.waitForSelector('.plp-label', { timeout: 5000 });
+ok('klikken op een vlak opent een labelvenster', await p.isVisible('.plp-label .pld-in'));
+ok('het venster zegt hoe de naam gevonden is', /kolomkop|label|patroon|plek/.test(await p.textContent('.plp-label .plp-bron')), await p.textContent('.plp-label .plp-bron'));
+await p.fill('.plp-label .pld-in', 'Mijn eigen naam');
+await p.click('.plp-label button:has-text("Overnemen")');
+await p.waitForTimeout(300);
+const eigen = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value));
+ok('je geeft de waarde zelf een labelnaam', eigen.includes('Mijn eigen naam'), eigen.slice(0, 3).join(' · '));
+const standVoor = await p.textContent('.plp-mapkies, .plp-bron');
+await p.click('button:has-text("Niets selecteren")');
+await p.waitForTimeout(200);
+ok('niets selecteren zet alles uit', await p.evaluate(() => window.PLP_S && document.querySelectorAll('.plp-veldrij input[type=checkbox]:checked').length === 0));
+await p.click('button:has-text("Alles selecteren")');
+await p.waitForTimeout(200);
+const naAlles = await p.$$eval('.plp-veldrij input[type=checkbox]', n => n.filter(x => x.checked).length);
+ok('alles selecteren zet alles aan', naAlles > 0 && naAlles === (await p.$$('.plp-veldrij')).length, naAlles + ' aan');
+ok('de stand staat erbij', /\d+ van \d+ aan/.test(await p.textContent('.plp-blad')), '');
+// één vinkje uitzetten: de teller loopt mee en het vlak in het document dooft.
+await p.uncheck('.plp-veldrij input[type=checkbox] >> nth=0');
+await p.waitForTimeout(200);
+const naEen = await p.evaluate(() => ({ stand: (document.querySelector('.plp-blad').textContent.match(/(\d+) van (\d+) aan/) || []).slice(1).join('/'), uit: document.querySelectorAll('.plp-vlak--uit').length, totaal: document.querySelectorAll('.plp-veldrij').length }));
+ok('een los vinkje uitzetten telt mee en dooft het vlak', naEen.stand === (naAlles - 1) + '/' + naAlles && naEen.uit >= 1, JSON.stringify(naEen));
+await sluitDoorkijk();
+
+// tekstherkenning: de motor wordt nagebootst, want cdnjs is hier niet bereikbaar.
+await p.evaluate(() => {
+  window.Tesseract = { recognize: function () {
+    return Promise.resolve({ data: { words: [
+      { text: 'Factuurnummer', confidence: 92, bbox: { x0: 100, y0: 100, x1: 260, y1: 130 } },
+      { text: '2026-777', confidence: 90, bbox: { x0: 400, y0: 100, x1: 520, y1: 130 } },
+      { text: 'Totaal', confidence: 91, bbox: { x0: 100, y0: 200, x1: 200, y1: 230 } },
+      { text: '1.234,56', confidence: 88, bbox: { x0: 400, y0: 200, x1: 540, y1: 230 } },
+    ] } });
+  } };
+});
+await p.evaluate(() => { window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'gescand.pdf'));
+await p.waitForSelector('.plp-blad', { timeout: 20000 });
+await p.waitForTimeout(800);
+ok('een scan biedt tekstherkenning aan', /geen tekstlaag/.test(await p.textContent('.plp-blad')), (await p.textContent('.plp-blad')).replace(/\s+/g, ' ').slice(0, 70));
+await p.click('button:has-text("Tekst herkennen")');
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+const naOcr = await p.$$eval('.plp-veldrij', rs => rs.map(r => r.querySelector('input.pld-in').value + '=' + r.querySelector('.plp-mono').textContent));
+ok('na tekstherkenning staan er velden uit de scan', naOcr.some(v => /2026-777/.test(v)), naOcr.slice(0, 3).join(' · '));
+// 11c4b. na OCR kan de scan als doorzoekbare PDF bewaard worden: afbeelding plus onzichtbare tekst.
+{
+  const [dlp] = await Promise.all([p.waitForEvent('download'), p.click('.plp-doorkijk button:has-text("Doorzoekbare PDF opslaan")')]);
+  const pdfPad = path.join(map, 'doorzoekbaar.pdf');
+  await dlp.saveAs(pdfPad);
+  const pdfTekst = fs.readFileSync(pdfPad).toString('latin1');
+  ok('de doorzoekbare PDF heet naar het origineel', /gescand-doorzoekbaar\.pdf$/.test(dlp.suggestedFilename()), dlp.suggestedFilename());
+  ok('het is een PDF met een afbeelding en onzichtbare tekst', /^%PDF-1\.4/.test(pdfTekst) && /DCTDecode/.test(pdfTekst) && /3 Tr/.test(pdfTekst) && /\(Factuurnummer\) Tj/.test(pdfTekst));
+}
+await sluitDoorkijk();
+
+// 11c5. de uitleg "Hoe werkt ParsePDF?" in vijf stappen
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+ok('de uitlegknop staat in de kop', await p.isVisible('button:has-text("Hoe werkt ParsePDF?")'));
+await p.click('button:has-text("Hoe werkt ParsePDF?")');
+await p.waitForSelector('.plp-modal', { timeout: 5000 });
+ok('de uitleg begint bij stap 1 van 5', /Stap 1 van 5/.test(await p.textContent('.plp-modal')), (await p.textContent('.plp-modal')).slice(0, 40));
+for (let i = 0; i < 4; i++) { await p.click('.plp-modal button:has-text("Volgende")'); await p.waitForTimeout(120); }
+ok('je kunt doorklikken tot de laatste stap', /Stap 5 van 5/.test(await p.textContent('.plp-modal')));
+await p.click('.plp-modal button:has-text("Klaar")');
+await p.waitForTimeout(200);
+ok('klaar sluit de uitleg', (await p.$$('.plp-modal')).length === 0);
+
+// 11c6. de uitleg heeft een voorbeeld: één klik en het document staat open, met velden erin.
+await p.click('button:has-text("Hoe werkt ParsePDF?")');
+await p.waitForSelector('.plp-modal', { timeout: 5000 });
+await p.click('.plp-modal button:has-text("Probeer het met een voorbeeld")');
+await p.waitForSelector('.plp-doorkijk .plp-veldrij', { timeout: 15000 });
+const voorbeeldTekst = await p.textContent('.plp-doorkijk');
+ok('het voorbeeld opent meteen in het doorkijkscherm', (await p.$$('.plp-modal')).length === 0 && await p.isVisible('.plp-doorkijk'));
+ok('het voorbeeld levert echte velden op', /2026-0042/.test(voorbeeldTekst) && /info@voorbeeld\.nl/.test(voorbeeldTekst), voorbeeldTekst.slice(0, 120));
+await sluitDoorkijk();
+
+// 11c7. parsen op eisen: "een bedrag bij het woord Totaal" mag het Subtotaal niet pakken,
+// en de AI vult zo'n eis in uit een zin.
+await p.evaluate(() => { window.PLP_S.regels = []; window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.fill('input[placeholder="bijv. het totaalbedrag onderaan pagina 1"]', 'het totaalbedrag van de factuur');
+await p.click('button:has-text("Eis maken met AI")');
+await p.waitForFunction(() => document.querySelector('input[placeholder="bijv. Geboortedatum"]').value !== '', null, { timeout: 5000 });
+const eisWoord = await p.inputValue('input[placeholder="bijv. Geboortedatum"]');
+ok('de AI vult de eis in uit een zin', eisWoord === 'Totaal', eisWoord);
+await p.click('button:has-text("Eis toevoegen")');
+const eisRegel = await p.evaluate(() => JSON.stringify(window.PLP_S.regels[0]));
+ok('de eis staat bovenaan als regel', /"type":"eis"/.test(eisRegel) && /"soort":"bedrag"/.test(eisRegel), eisRegel);
+const eisOmschrijving = await p.evaluate(() => Array.from(document.querySelectorAll('.plp-rule input')).map(i => i.value).find(v => /Bedrag/.test(v)) || '');
+ok('de regel beschrijft zichzelf in het regelvenster', /Totaal.*Bedrag.*pagina 1/.test(eisOmschrijving), eisOmschrijving);
+await p.setInputFiles('input[type=file]', [path.join(map, 'factuur-a.pdf'), path.join(map, 'factuur-b.pdf')]);
+await sluitDoorkijk();
+await p.waitForSelector('.plp-file', { timeout: 5000 });
+
+// 11c8. controle over alle documenten: elke regel toont in hoeveel documenten hij iets vond.
+await p.click('button:has-text("Controleer alle documenten")');
+await p.waitForSelector('.plp-check', { timeout: 15000 });
+const checkTekst = await p.textContent('.plp-check');
+ok('de controle telt per regel over alle documenten', /gevonden in 2 van 2/.test(checkTekst), checkTekst.slice(0, 120));
+await p.evaluate(() => { window.PLP_S.regels.push({ naam: 'Nooit', type: 'label', waarde: 'Bestaatniet', filter: 'geen' }); window.PLP_UI.teken(); });
+await p.click('button:has-text("Controleer alle documenten")');
+await p.waitForFunction(() => /gevonden in 0 van 2/.test((document.querySelector('.plp-check') || {}).textContent || ''), null, { timeout: 15000 });
+const mist = await p.textContent('.plp-check');
+ok('een regel die niets vindt noemt de documenten waarin hij mist', /Niet in: factuur-a\.pdf, factuur-b\.pdf/.test(mist), mist.slice(0, 160));
+await p.evaluate(() => { window.PLP_S.regels.pop(); window.PLP_UI.teken(); });
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 30000 });
+const eisWaarden = await p.evaluate(() => Array.from(document.querySelectorAll('.plp-table tbody tr')).map(r => r.children[2].textContent).join('|'));
+ok('de eis leest het Totaal en niet het Subtotaal', eisWaarden === '1.506,45|968,00', eisWaarden);
+
+// 11c9. documenten vergelijken: twee facturen van dezelfde afzender en een polis worden twee groepen,
+// per groep staat welk veld in hoeveel documenten zit en hoe het gevonden wordt.
+await p.evaluate(() => { localStorage.removeItem('pl_parsepdf_mappen'); window.PLP_S.regels = []; window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.setInputFiles('input[type=file]', [path.join(pdfmap, 'factuur-webshop.pdf'), path.join(pdfmap, 'factuur-webshop.pdf'), path.join(pdfmap, 'polis.pdf')]);
+await sluitDoorkijk();
+await p.click('button:has-text("Vergelijk documenten")');
+await p.waitForSelector('.plp-groep', { timeout: 60000 });
+const groepen = await p.$$eval('.plp-groep', g => g.map(x => x.querySelector('.pld-caps').textContent));
+ok('gelijke documenten komen bij elkaar, de polis apart', groepen.length === 2 && /Groep 1 · 2 documenten/.test(groepen[0]) && /Groep 2 · 1 document/.test(groepen[1]), groepen.join(' | '));
+const groep1 = await p.textContent('.plp-groep');
+ok('per veld staat in hoeveel documenten het zit en hoe', /gevonden in 2 van 2/.test(groep1) && /op (structuur|woord|patroon|plek)/.test(groep1), groep1.slice(0, 160));
+await p.click('.plp-groep button:has-text("Sjabloon maken van deze groep")');
+await p.waitForFunction(() => /Sjabloon Groep 1/.test(document.body.textContent), null, { timeout: 5000 });
+const automap = await p.evaluate(() => JSON.parse(localStorage.getItem('pl_parsepdf_mappen')).mappen.map(m => m.naam + ':' + m.sjablonen.length).join(','));
+ok('het sjabloon van de groep staat in de map Automatisch', automap === 'Automatisch:1', automap);
+
+// 11c10. Lees uit: één knop die vergelijkt, sjablonen maakt, uitleest en het resultaat toont.
+await p.evaluate(() => { window.PLP_S.opties.uitvoer = 'xlsx'; window.PLP_S.opties.direct = true; window.PLP_OPT.bewaar(); });
+const [dla] = await Promise.all([p.waitForEvent('download', { timeout: 90000 }), p.click('button.plp-leesuit')]);
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const leesUit = await p.evaluate(() => ({
+  koppen: Array.from(document.querySelectorAll('.plp-table thead th')).map(x => x.textContent),
+  rijen: document.querySelectorAll('.plp-table tbody tr').length,
+  sjablonen: Array.from(document.querySelectorAll('.plp-table tbody tr')).map(r => r.children[2].textContent),
+  melding: (document.querySelector('.pld-msg') || {}).textContent || '' }));
+ok('Lees uit leest alle drie de documenten in één tabel', leesUit.rijen === 3 && leesUit.koppen.includes('Sjabloon'), JSON.stringify(leesUit).slice(0, 200));
+ok('elk document kreeg het sjabloon van zijn groep', leesUit.sjablonen.filter(s => /Groep 1/.test(s)).length === 2 && leesUit.sjablonen.filter(s => /Groep 2/.test(s)).length === 1, leesUit.sjablonen.join(' | '));
+ok('de melding zegt hoe er gelezen is', /Gelezen als Groep 1 · 2 documenten/.test(leesUit.melding), leesUit.melding);
+ok('met Direct downloaden komt het Excel-bestand vanzelf', dla.suggestedFilename() === 'parselab-export.xlsx', dla.suggestedFilename());
+await p.evaluate(() => { window.PLP_S.opties.direct = false; window.PLP_S.opties.uitvoer = 'csv'; window.PLP_OPT.bewaar(); localStorage.removeItem('pl_parsepdf_mappen'); });
+
+// 11d. mappen met sjablonen: twee soorten documenten in één map, gemengd uitlezen.
+await p.goto(BASIS + '?limiet=99999', { waitUntil: 'load' });
+await p.evaluate(() => localStorage.clear());
+await p.reload({ waitUntil: 'load' });
+await p.waitForSelector('.plp-drop', { timeout: 8000 });
+ok('de mappenkaart staat op het scherm', await p.isVisible('button:has-text("Nieuwe map")'));
+await p.fill('input[placeholder="Naam van de map"]', 'Facturen');
+await p.click('button:has-text("Nieuwe map")');
+await p.waitForTimeout(300);
+async function maakSjabloon(bestand, naam) {
+  await p.setInputFiles('input[type=file]', path.join(pdfmap, bestand));
+  await sluitDoorkijk();
+  await p.click('button:has-text("Kijk wat erin staat")');
+  await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+  await p.waitForTimeout(700);
+  await p.fill('.plp-blad input[placeholder="Naam van het sjabloon"]', naam);
+  await p.click('.plp-blad button:has-text("Bewaar als sjabloon")');
+  await p.waitForTimeout(300);
+  await p.click('.plp-blad button:has-text("Annuleren")');
+  await p.evaluate(() => { window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+}
+await maakSjabloon('factuur-webshop.pdf', 'Wijnleverancier');
+await maakSjabloon('polis.pdf', 'Polissen');
+const inMappen = await p.evaluate(() => window.PLP_SJ.lees().mappen.map(m => m.naam + ':' + m.sjablonen.map(s => s.naam).join('+')).join('|'));
+ok('twee sjablonen bewaard in dezelfde map', inMappen === 'Facturen:Wijnleverancier+Polissen', inMappen);
+ok('de sjablonen staan in de kaart', /Wijnleverancier/.test(await p.textContent('#pl-parsepdf-root')));
+await p.setInputFiles('input[type=file]', ['factuur-webshop.pdf', 'polis.pdf', 'bankafschrift.pdf'].map(f => path.join(pdfmap, f)));
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const gemengd = await p.evaluate(() => [...document.querySelectorAll('.plp-table tr')].map(tr => [...tr.children].map(td => td.textContent)));
+const kop2 = gemengd[0];
+function cel2(rij, naam) { return rij[kop2.indexOf(naam)]; }
+ok('de tabel heeft een kolom Sjabloon', kop2[2] === 'Sjabloon', kop2.slice(0, 4).join('|'));
+ok('elk document kreeg zijn eigen sjabloon', cel2(gemengd[1], 'Sjabloon') === 'Wijnleverancier' && cel2(gemengd[2], 'Sjabloon') === 'Polissen',
+  gemengd.map(r => cel2(r, 'Sjabloon')).slice(1).join(' · '));
+ok('de kolommen van beide sjablonen staan in één tabel',
+  kop2.includes('Factuurnummer') && kop2.includes('Polisnummer'), kop2.length + ' kolommen');
+ok('de waarden staan in de goede rij',
+  cel2(gemengd[1], 'Factuurnummer') === 'INV10632' && cel2(gemengd[1], 'Polisnummer') === '—' &&
+  cel2(gemengd[2], 'Polisnummer') === 'P-2026-77120' && cel2(gemengd[2], 'Premie per jaar') === '1.148,76',
+  [cel2(gemengd[1], 'Factuurnummer'), cel2(gemengd[2], 'Polisnummer'), cel2(gemengd[2], 'Premie per jaar')].join(' · '));
+// De structuurcontrole zegt of dit document bij een sjabloon past en of de velden
+// er ook echt in te vinden zijn.
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-webshop.pdf'));
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(600);
+const zelfde = await p.textContent('.plp-blad .pld-msg');
+ok('bekend document: sjabloon herkend met het aantal gevonden velden', /Lijkt op sjabloon Wijnleverancier · \d+ van \d+ velden gevonden/.test(zelfde), zelfde.slice(0, 80));
+await sluitDoorkijk();
+await p.evaluate(() => { window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.setInputFiles('input[type=file]', path.join(pdfmap, 'factuur-alpha.pdf'));
+await p.waitForSelector('.plp-veldrij', { timeout: 30000 });
+await p.waitForTimeout(600);
+const ander = await p.textContent('.plp-blad .pld-msg');
+ok('ander document: gezegd dat het bij geen sjabloon past of dat de indeling afwijkt',
+  /Past bij geen enkel sjabloon|indeling wijkt af/.test(ander), ander.slice(0, 80));
+await sluitDoorkijk();
+await p.evaluate(() => { window.PLP_S.bestanden = []; window.PLP_UI.teken(); });
+await p.setInputFiles('input[type=file]', ['factuur-webshop.pdf', 'polis.pdf', 'bankafschrift.pdf'].map(f => path.join(pdfmap, f)));
+await sluitDoorkijk();
+await p.click('button:has-text("Uitlezen starten")');
+await p.waitForSelector('.plp-table', { timeout: 60000 });
+const gemengd2 = await p.evaluate(() => [...document.querySelectorAll('.plp-table tr')].map(tr => [...tr.children].map(td => td.textContent)));
+ok('de gemengde stapel levert nog steeds één tabel', gemengd2.length === 4, (gemengd2.length - 1) + ' rijen');
+ok('een document dat nergens bij past heet onbekend', cel2(gemengd[3], 'Sjabloon') === 'onbekend', cel2(gemengd[3], 'Sjabloon'));
+const samenvatting = await p.textContent('.pld-msg');
+ok('de melding vertelt wat herkend werd', /1 . Wijnleverancier/.test(samenvatting) && /1 document/.test(samenvatting), samenvatting.replace(/\s+/g, ' ').slice(0, 90));
+await p.evaluate(() => localStorage.removeItem('pl_parsepdf_mappen'));
+
+// 12. de losse pagina uit bouw-pagina.mjs: zelfde embeds, echte cdn-adressen.
+// Die adressen zijn hier onbereikbaar, dus ze worden onderweg vervangen door de lokale kopie.
+const p2 = await ctx.newPage();
+const fouten2 = [];
+p2.on('pageerror', e => fouten2.push(e.message));
+async function stuurOm(patroon, bestand, type) {
+  await p2.route(patroon, r => r.fulfill({ status: 200, contentType: type, body: fs.readFileSync(path.join(map, bestand)) }));
+}
+await stuurOm('**/@supabase/**', 'supabase-stub.js', 'text/javascript');
+await stuurOm('**/pdf.min.js', 'pdf.min.js', 'text/javascript');
+await stuurOm('**/pdf.worker.min.js', 'pdf.worker.min.js', 'text/javascript');
+await p2.route('**/fonts.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+await p2.goto('http://127.0.0.1:8123/ParsePDF.html?gebruikt=10&limiet=100', { waitUntil: 'load' });
+await p2.evaluate(() => localStorage.removeItem('pl_parsepdf_regels'));
+await p2.reload({ waitUntil: 'load' });
+await p2.waitForSelector('.plp-drop', { timeout: 8000 });
+ok('losse pagina toont ParsePDF met verbruiksmeter', await p2.textContent('.pld-title') === 'ParsePDF' && (await p2.evaluate(() => document.querySelector('.pld-bar').parentElement.querySelector('.pld-num').textContent)).includes('10 van 100'));
+ok('losse pagina staat niet in Google', await p2.getAttribute('meta[name=robots]', 'content') === 'noindex, nofollow');
+await p2.setInputFiles('input[type=file]', [path.join(map, 'factuur-b.pdf')]);
+await sluitDoorkijk(p2);
+await p2.click('button:has-text("Uitlezen starten")');
+await p2.waitForSelector('.plp-table', { timeout: 30000 });
+const los = await p2.evaluate(() => [...document.querySelectorAll('.plp-table tbody td')].map(td => td.textContent).join('|'));
+ok('losse pagina leest een factuur uit', los.includes('2026-119') && los.includes('968,00'), los);
+ok('geen JS-fouten op de losse pagina', fouten2.length === 0, fouten2.slice(0, 2).join(' || '));
+
+ok('geen JS-fouten', errs.length === 0, errs.slice(0, 3).join(' || '));
+await b.close();
+srv.close();
+const fout = res.filter(r => r.startsWith('FAIL'));
+console.log('\n' + (res.length - fout.length) + '/' + res.length + ' goed');
+process.exit(fout.length ? 1 : 0);

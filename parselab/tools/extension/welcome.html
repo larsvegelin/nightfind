@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Welkom bij ParseLab</title>
+<style>
+  :root { --navy:#1F3A5F; --cream:#FBFAF6; --ink:#1b1b1b; --muted:#5f6b7a; --accent:#2a78d6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--cream); color:var(--ink); font-family:Poppins, system-ui, -apple-system, "Segoe UI", sans-serif; line-height:1.55; }
+  .arrow { position:fixed; top:14px; right:28px; display:flex; align-items:center; gap:10px; color:var(--navy); font-weight:600; font-size:15px; animation:nudge 1.4s ease-in-out infinite; }
+  .arrow svg { width:44px; height:44px; }
+  @keyframes nudge { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-6px);} }
+  main { max-width:640px; margin:96px auto 60px; padding:0 24px; }
+  h1 { color:var(--navy); font-size:34px; margin:0 0 6px; letter-spacing:-.01em; }
+  .sub { color:var(--muted); font-size:17px; margin:0 0 28px; }
+  .card { background:#fff; border:1px solid rgba(31,58,95,.12); border-radius:16px; padding:20px 22px; margin-bottom:16px; box-shadow:0 8px 24px -18px rgba(31,58,95,.35); }
+  .card h2 { margin:0 0 8px; font-size:18px; color:var(--navy); }
+  .card p { margin:0; color:#333; }
+  ol { padding-left:0; list-style:none; margin:0; counter-reset:s; }
+  ol li { display:flex; gap:14px; align-items:flex-start; margin:14px 0; }
+  ol li::before { counter-increment:s; content:counter(s); flex:none; width:32px; height:32px; border-radius:50%; background:var(--navy); color:#fff; font-weight:600; display:flex; align-items:center; justify-content:center; }
+  .pin { display:flex; gap:12px; align-items:center; }
+  .pin .icon { width:36px; height:36px; border-radius:10px; background:var(--navy); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; }
+  .foot { color:var(--muted); font-size:13px; margin-top:28px; }
+  kbd { font:inherit; background:#eef1f5; border-radius:6px; padding:1px 6px; }
+</style>
+</head>
+<body>
+  <div class="arrow">Hier zit ParseLab
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 40 L38 10"/><path d="M22 10 H38 V26"/></svg>
+  </div>
+  <main>
+    <h1>ParseLab staat klaar</h1>
+    <p class="sub">Formulieren laten invullen vanuit een lijst, en websites uitlezen naar Excel. Alles gebeurt in je eigen browser; er gaat niets naar buiten.</p>
+
+    <div class="card">
+      <h2>Zet het icoon vast</h2>
+      <div class="pin"><span class="icon">P</span>
+        <p>Klik rechtsboven op het puzzelstukje <b>🧩</b>, zoek <b>ParseLab</b> en klik op de punaise <b>📌</b>. Dan staat het ParseLab-icoon altijd rechtsboven in je browser.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Zo werkt het</h2>
+      <ol>
+        <li><div><b>Open de pagina</b> waar je wilt werken (bijvoorbeeld het formulier van je portaal) en klik op het ParseLab-icoon. Het paneel verschijnt op de pagina.</div></li>
+        <li><div><b>Wijs aan wat er moet gebeuren.</b> Kies <i>Invullen</i>, <i>Klikken</i>, <i>Uitlezen</i> of <i>Wachten</i> en klik op het veld, de knop of de tekst op de pagina.</div></li>
+        <li><div><b>Klik op Start.</b> Bij het invullen upload je eerst je lijst (Excel); ParseLab maakt die lijst ook voor je met de knop <i>Maak mijn invullijst</i>.</div></li>
+      </ol>
+    </div>
+
+    <p class="foot">Tip: ParseLab vraagt pas om toegang tot een website op het moment dat jij het paneel daar opent. Je kunt dit tabblad sluiten.</p>
+  </main>
+</body>
+</html>
