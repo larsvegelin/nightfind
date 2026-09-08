@@ -1204,6 +1204,7 @@ async function voorstelMetAi(knop){
   $("#aiJa").onclick = async () => {
     doos.textContent = "De AI kijkt mee…"; knop.disabled = true;
     try {
+      try { const q = new URLSearchParams(location.search).get("api"); if (q && !window.PARSELAB_API_BASE) window.PARSELAB_API_BASE = q.replace(/\/+$/, ""); } catch (e) {}
       const basis = (window.PARSELAB_API_BASE || "") + "/api/board/panelen";
       const rijen = (state.rawRows || []).slice(0, 3).map(r => state.columns.map(c => r[c.name]));
       const res = await fetch(basis, { method: "POST", headers: { "content-type": "application/json" },
@@ -2069,6 +2070,9 @@ render();
     });
     window.addEventListener("message", function (ev) {
       var d = ev.data || {};
+      // Een ander serveradres uit het dashboard (Account → Serveradres).
+      if (d.type === "parselab:api") { window.PARSELAB_API_BASE = String(d.apiBase || "").replace(/\/+$/, ""); return; }
+      if (d.type === "parselab:settings" && d.settings && typeof d.settings.apiBase === "string") window.PARSELAB_API_BASE = d.settings.apiBase.replace(/\/+$/, "");
       // Rijen die uit een andere tool komen: meteen inladen en naar stap 2.
       if (d.type === "parselab:data" && Array.isArray(d.rijen) && d.rijen.length) {
         const namen = (d.kolommen && d.kolommen.length) ? d.kolommen : Object.keys(d.rijen[0] || {});

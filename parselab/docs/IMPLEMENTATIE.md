@@ -60,6 +60,7 @@ Online: `Dockerfile`, `railway.json` en `render.yaml` staan klaar. Kies de map `
 |---|---|
 | `PARSELAB_PORT` | poort, standaard 8080 |
 | `PARSELAB_API_TOKEN` | zet dit zodra de server op internet staat |
+| `PARSELAB_ALLOW_ORIGIN` | het adres van je dashboard (CORS), bijvoorbeeld `https://larsvegelin.github.io`; standaard `*` |
 | `PARSELAB_PROXIES` | proxylijst voor Website uitlezen |
 | `PARSELAB_ANTHROPIC_KEY` | de sleutel waarmee de server Claude aanroept |
 | `PARSELAB_AI_MODEL` | standaard `claude-opus-5` |
@@ -106,11 +107,11 @@ Drie manieren, met elk hun reden:
 
 | Manier | Wanneer | Wat je nodig hebt |
 |---|---|---|
-| **In het dashboard** | dagelijks werk, taken plannen | de server; open `http://localhost:8080` of je eigen adres |
+| **In het dashboard** | dagelijks werk, taken plannen | de server; open `http://localhost:8080`, of zet het dashboard op GitHub Pages en vul onder *Account → Serveradres* het adres van je server in (of `?api=…`) |
 | **Los bestand** (`tools/parsescraper.html`) | snel iets uitlezen zonder de schil | de server ernaast; zonder server zegt de tool wat je moet starten |
 | **Extensie** | pagina's waar je moet inloggen, en formulieren invullen | `parselab-extension.zip` in Chrome, Edge of Brave |
 
-De extensie werkt in je eigen browser met jouw sessie; die gegevens verlaten je computer niet. Het dashboard ziet dat de extensie er is (`parselab:extension`) en toont dat in de werkbank. De grenzen van de server liggen vast en zijn niet in te stellen: alleen http(s) naar openbare adressen, robots.txt wordt gerespecteerd, minimaal 2 seconden per website, hoogstens 2 pagina's tegelijk en 25 per ronde. Wat er nog bij moet, staat in [`PARSESCRAPER-VOLGENDE-VERSIE.md`](PARSESCRAPER-VOLGENDE-VERSIE.md).
+De extensie werkt in je eigen browser met jouw sessie; die gegevens verlaten je computer niet. Het dashboard ziet dat de extensie er is (`parselab:extension`) en toont dat in de werkbank. De grenzen van de server liggen vast en zijn niet in te stellen: alleen http(s) naar openbare adressen, robots.txt wordt gerespecteerd, minimaal 2 seconden per website, hoogstens 2 pagina's tegelijk en 25 per ronde. Staat het dashboard op een statische host (GitHub Pages) en de server ergens anders (Railway, Render, Fly.io, Docker), dan staat de hele route, inclusief CORS (`PARSELAB_ALLOW_ORIGIN`), het serveradres en een foutentabel, in [`SCRAPEN-VANUIT-DASHBOARD.md`](SCRAPEN-VANUIT-DASHBOARD.md). Wat er nog bij moet, staat in [`PARSESCRAPER-VOLGENDE-VERSIE.md`](PARSESCRAPER-VOLGENDE-VERSIE.md).
 
 ---
 

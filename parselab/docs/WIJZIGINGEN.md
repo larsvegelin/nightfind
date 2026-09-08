@@ -6,7 +6,42 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 15)
+## Wat er het laatst veranderde (ronde 16)
+
+**Vraag:** *Er ging iets mis (405)*: zorg dat je vanuit het dashboard websites kunt uitlezen, en schrijf een zo uitgebreid mogelijke handleiding hoe dat wél kan.
+
+**Oorzaak.** Het dashboard op GitHub Pages is een statische website; Website uitlezen draait op de ParseLab-server. ParseScraper stuurde zijn verzoeken altijd naar hetzelfde adres als het dashboard, dus naar `github.io/…/api/scrape/snapshot`, en een statische host antwoordt daarop met 405. Er was geen manier om de server ergens anders te zetten, en de server stond verzoeken vanaf een andere website (CORS) niet toe.
+
+### Serveradres in het dashboard (`index.html`)
+
+- `CONFIG.apiBase` komt uit `?api=` in de adresbalk of uit `localStorage` (`parselab-api-base`); `?api=` overschrijft en bewaart, een lege `?api=` wist.
+- *Account → Serveradres*: veld met *Bewaren*; zonder schema wordt `https://` aangevuld; het dashboard test de server meteen (*Verbonden: de server antwoordt*, *Geen antwoord van …*, of *Leeg: de aanroepen gaan naar hetzelfde adres als dit dashboard*). Een 401 (toegangscode) telt als *leeft*.
+- Het adres gaat mee in de instellingen (`parselab:settings.apiBase`, dus ook naar `/api/store/settings`), en na bewaren krijgt elke open tool `parselab:api {apiBase}`; ParseScraper controleert dan meteen de nieuwe server.
+- De tool-iframes krijgen `&api=…` in hun `src`. `staticHost()` herkent `github.io`, `pages.dev`, `netlify.app`, `vercel.app` en `file:`; daar probeert `checkServer()` niets zonder adres.
+- De werkbank-hint heeft drie varianten: los bestand, statische host (*Deze website heeft geen ParseLab-server*, met knop *Serveradres instellen* die het Account-venster opent, en een link naar de handleiding) en lokale server.
+
+### De tools (`tools/parsescraper.html`, `tools/parsepdf.html`, `tools/parseboard.html`)
+
+- ParseScraper: `apiBase()` in plaats van een vaste `API`; leest `?api=`, luistert naar `parselab:api` en `parselab:settings.apiBase`. Een 404 of 405 zonder JSON geeft *Op … draait geen ParseLab-server (antwoord 405). Staat het dashboard op GitHub Pages…* in plaats van *Er ging iets mis (405)*. De hint kent een statische-hostvariant en noemt het ingestelde adres. Downloadlinks voor Excel/CSV wijzen naar het ingestelde adres.
+- ParsePDF en ParseBoard lezen `?api=` en `parselab:api` voor hun AI-eindpunten.
+
+### De server (`server/server.js`)
+
+- `PARSELAB_ALLOW_ORIGIN` (komma-gescheiden, standaard `*`); `corsHeaders(req)`; `OPTIONS /api/*` antwoordt 204; elke API-respons met een `Origin`-kop krijgt de CORS-koppen, ook 401 en fouten, zodat de browser de melding kan lezen. Toegestane koppen: `content-type`, `authorization`, `x-parselab-token`, `x-parselab-user`.
+
+### Handleiding en documentatie
+
+- **`docs/SCRAPEN-VANUIT-DASHBOARD.md`** (nieuw, uitgebreid): waarom de 405, hoe dashboard en server samenwerken, route A (server op je eigen computer, ook met het dashboard op GitHub Pages), route B (Railway, Render, Fly.io, Docker met Caddy, zonder Docker), het serveradres instellen (Account, `?api=`, los), de beveiligingsvariabelen, controles met `curl`, een foutentabel (404/405, CORS, mixed content, 401, robots.txt, slapende gratis plannen), wanneer de extensie, en wat er in de code veranderde.
+- `README.md` (starten, omgevingsvariabelen, online zetten), `docs/IMPLEMENTATIE.md` (§4 variabelen, §6 drie manieren), `.github/workflows/pages.yml` (toelichting), `server/server.js` (kopcommentaar).
+
+### Tests
+
+- `tests/qa.mjs` 98 → 107: stap 13 *serveradres*: dashboard op poort 8765, server op 8080; fout adres → *Geen antwoord*; `https://` aangevuld; goed adres → *Verbonden*; geen hint meer in de werkbank; de tool krijgt `?api=` en bereikt de server op het andere adres (echte CORS-aanroep); `?api=` in de adresbalk overschrijft; leeg adres herstelt. De scraper-download stond even op een verwijderde constante (`API`); gevonden door de suite, hersteld.
+- `webflow.mjs` 117, `styleguide.mjs` 16, alle groen.
+
+---
+
+## Ronde 15
 
 **Vraag:** documenten aan elkaar koppelen en vergelijken of ze hetzelfde zijn, en daar sjablonen van maken (structuur, parsbaarheid, dezelfde kolommen en waarden); kolomkoppen tegen elkaar checken en melden als iets niet in elk document voorkomt; één knop *Lees uit* die alles doet; uitvoer naar Excel of CSV; waarden omzetten (datumvorm, afkorting naar heel woord, standaardwaarde); pagina's kiezen en uitsluiten (laatste, eerste n, even, oneven, nummers); OCR-opties; automatisch melden als er geen tekst te herkennen is en dan van de afbeelding een doorzoekbare PDF maken; een automatische functie die per veld kiest of er op plek, structuur, woord of patroon geparsed wordt. Alles zonder handwerk. Plus: witte tekst op wit valt niet weg (staat in de uitleg).
 

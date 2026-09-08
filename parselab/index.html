@@ -288,6 +288,15 @@
    ========================================================================= */
 
 const CONFIG = { webstoreUrl: "", lang: "nl", apiBase: "" };
+// Waar draait de ParseLab-server? Staat het dashboard op dezelfde plek (localhost:8080, Railway, Render), dan is dit leeg
+// en gaan de aanroepen naar hetzelfde adres. Staat het dashboard op een statische host zoals GitHub Pages, dan is daar
+// geen server en geeft elke aanroep 404 of 405; vul dan het adres van je server in (Account → Serveradres, of ?api=…).
+const API_BASE_KEY = "parselab-api-base";
+function readApiBase() { try { const q = new URLSearchParams(location.search).get("api"); if (q !== null) { localStorage.setItem(API_BASE_KEY, q.trim()); } return (localStorage.getItem(API_BASE_KEY) || "").trim().replace(/\/+$/, ""); } catch (e) { return ""; } }
+CONFIG.apiBase = readApiBase();
+function writeApiBase(v) { CONFIG.apiBase = String(v || "").trim().replace(/\/+$/, ""); try { localStorage.setItem(API_BASE_KEY, CONFIG.apiBase); } catch (e) {} }
+// Op een statische host (github.io of een bestand) bestaat er geen server op hetzelfde adres.
+function staticHost() { return !/^https?:$/.test(location.protocol) || /\.github\.io$/.test(location.hostname) || /\.pages\.dev$|\.netlify\.app$|\.vercel\.app$/.test(location.hostname); }
 /* Getallen volgen de taal van het profiel: 2.500 en niet 2500 (styleguide 3.2). */
 const LOCALE = { nl:"nl-NL", en:"en-GB", de:"de-DE" };
 /* Knop tijdens een actie: uitgeschakeld met "Bezig…"; bij een fout komt het oude label terug. */
@@ -369,7 +378,7 @@ async function pullStore() {
   storeLoaded = true; pushStore();
 }
 const SETTINGS_KEY = "parselab-settings";
-function readSettings() { const d = { ai:false, storeDocs:true, keepFiles:true }; try { Object.assign(d, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); } catch (e) {} return d; }
+function readSettings() { const d = { ai:false, storeDocs:true, keepFiles:true }; try { Object.assign(d, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); } catch (e) {} d.apiBase = CONFIG.apiBase; return d; }
 function writeSettings(st) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(st)); } catch (e) {} pushStore("settings"); document.querySelectorAll("iframe.bench-frame").forEach(f => { try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:settings", settings:st }, "*"); } catch (e) {} }); }
 
 /* ---------- bestanden bewaren in ParseLab (IndexedDB in deze browser), instelbaar onder Account ---------- */
@@ -388,7 +397,8 @@ let serverOk = null;
 async function checkServer() {
   // Als los bestand geopend (file://) is er geen server; niet proberen, dat geeft alleen een foutmelding in de console.
   if (!/^https?:$/.test(location.protocol)) { serverOk = false; return serverOk; }
-  try { const r = await fetch(CONFIG.apiBase + "/api/scrape/status", { cache:"no-store" }); serverOk = r.ok; } catch (e) { serverOk = false; } return serverOk;
+  if (!CONFIG.apiBase && staticHost()) { serverOk = false; return serverOk; }   // GitHub Pages heeft geen server: niet eens proberen
+  try { const r = await fetch(CONFIG.apiBase + "/api/scrape/status", { cache:"no-store" }); serverOk = r.ok || r.status === 401; } catch (e) { serverOk = false; } return serverOk;
 }
 
 /* ---------- live tellers uit de tools (alleen via postMessage) ---------- */
@@ -647,8 +657,14 @@ function miniVisual(key, pr) {
 function renderBench(t) {
   let b = t.bench;
   const extPanel = b.kind === "extension" || (b.extensionSection && state.section === b.extensionSection);
-  const hint = (t.key === "scrape" && serverOk === false) ? `<div class="server-hint" role="status" aria-live="polite">${LOCK_ICO}<span class="pld-text note" style="flex:1"><span class="strong">De ParseLab-server draait niet.</span> ${!/^https?:$/.test(location.protocol) ? "Je hebt ParseLab als los bestand geopend; documenten en overzichten werken gewoon. Voor websites uitlezen heb je de map ParseLab nodig." : "Website uitlezen werkt via de server."} Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.</span><button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" id="recheck-server">Opnieuw proberen</button></div>` : "";
-  if (!extPanel) return hint + `<div class="bench-actions" style="margin-bottom:16px"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-tour="${esc(t.key)}">Hoe werkt ${esc(t.name)}?</button></div><div class="pld-card card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
+  const online = /^https?:$/.test(location.protocol) && staticHost();
+  const hintTekst = !/^https?:$/.test(location.protocol)
+    ? `<span class="strong">De ParseLab-server draait niet.</span> Je hebt ParseLab als los bestand geopend; documenten en overzichten werken gewoon. Voor websites uitlezen open je een terminal in de map <code>parselab</code> en start je <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.`
+    : online
+      ? `<span class="strong">${CONFIG.apiBase ? "De ParseLab-server op <code>" + esc(CONFIG.apiBase) + "</code> antwoordt niet." : "Deze website heeft geen ParseLab-server."}</span> Documenten en overzichten werken hier gewoon; websites uitlezen gebeurt op een server die je zelf draait (Railway, Render, Docker of je eigen computer). Vul het adres van die server in onder <em>Account → Serveradres</em>, bijvoorbeeld <code>https://parselab-server.up.railway.app</code>. Hoe je die server in tien minuten neerzet staat in <a href="docs/SCRAPEN-VANUIT-DASHBOARD.md" target="_blank" rel="noopener">de handleiding</a>.`
+      : `<span class="strong">De ParseLab-server draait niet.</span> Website uitlezen werkt via de server. Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.`;
+  const hint = (t.key === "scrape" && serverOk === false) ? `<div class="server-hint" role="status" aria-live="polite">${LOCK_ICO}<span class="pld-text note" style="flex:1">${hintTekst}</span>${online ? `<button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" id="set-server">Serveradres instellen</button>` : ""}<button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" id="recheck-server">Opnieuw proberen</button></div>` : "";
+  if (!extPanel) return hint + `<div class="bench-actions" style="margin-bottom:16px"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline" data-tour="${esc(t.key)}">Hoe werkt ${esc(t.name)}?</button></div><div class="pld-card card bench"><iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}${CONFIG.apiBase ? "&api=" + encodeURIComponent(CONFIG.apiBase) : ""}" title="${esc(t.name)}" sandbox="allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals"></iframe></div>`;
   const store = CONFIG.webstoreUrl, ext = stats.extension, title = b.extPanelTitle || b.panelTitle;
   return `
     <div class="pld-card card bench">
@@ -823,6 +839,11 @@ function renderModal(m, defs) {
       <div class="pld-caps caps">Veiligheid</div>
       <label class="toggle"><input type="checkbox" id="set-ai" ${st.ai ? "checked" : ""}><span class="stack"><span class="strong">AI-herkenning gebruiken</span><span class="pld-text note">Alleen als dit aan staat toont ParsePDF de knop "Laat ParseLab de velden herkennen". Daarbij gaat de tekst van dat ene document naar ParseLab, na jouw akkoord per document.</span></span></label>
       <label class="toggle"><input type="checkbox" id="set-store" ${st.storeDocs ? "checked" : ""}><span class="stack"><span class="strong">Documenten bewaren op deze computer</span><span class="pld-text note">Uit: ParsePDF bewaart geüploade documenten niet in de browser; na sluiten zijn ze weg. Wat al bewaard was, wordt gewist.</span></span></label>
+      <div class="hairline"></div>
+      <div class="pld-caps caps">Serveradres</div>
+      <div class="pld-text note">Website uitlezen draait op de ParseLab-server. Staat dit dashboard op dezelfde plek als de server (localhost, Railway, Render), laat dit dan leeg. Staat het dashboard op GitHub Pages of een andere statische site, vul dan het adres van je server in, zonder pad erachter.</div>
+      <div class="pld-row" style="display:flex;gap:8px;align-items:center;margin:8px 0 12px"><input type="url" class="pld-in" id="set-api" placeholder="https://parselab-server.up.railway.app" value="${esc(CONFIG.apiBase)}" style="flex:1;min-width:0"><button type="button" class="pld-btn pld-btn--ghost btn btn-outline btn-small" id="set-api-save">Bewaren</button></div>
+      <div class="pld-text note" id="set-api-msg" aria-live="polite"></div>
       <label class="toggle"><input type="checkbox" id="set-keep" ${st.keepFiles ? "checked" : ""}><span class="stack"><span class="strong">Bestanden bewaren in ParseLab</span><span class="pld-text note">Aan: wat je downloadt uit ParsePDF en ParseBoard staat ook onder Bestanden, in deze browser. Uit: de bestanden gaan alleen naar je map Downloads en wat al bewaard was, wordt gewist.</span></span></label>
       <div class="foot"><button type="button" class="pld-btn btn btn-navy" data-close>Sluiten</button></div>`;
   } else if (m.kind === "extension") {
@@ -899,6 +920,15 @@ function bindActions() {
   const sa = document.getElementById("set-ai"), ss = document.getElementById("set-store");
   if (sa) sa.onchange = () => { const st = readSettings(); st.ai = sa.checked; writeSettings(st); };
   if (ss) ss.onchange = () => { const st = readSettings(); st.storeDocs = ss.checked; writeSettings(st); };
+  const sav = document.getElementById("set-api-save"); if (sav) sav.onclick = async () => {
+    const inp = document.getElementById("set-api"), m = document.getElementById("set-api-msg"); let v = (inp.value || "").trim().replace(/\/+$/, "");
+    if (v && !/^https?:\/\//i.test(v)) v = "https://" + v;
+    writeApiBase(v); inp.value = v; m.textContent = "Controleren…"; busy(sav, true);
+    await checkServer(); busy(sav, false);
+    m.textContent = serverOk ? "Verbonden: de server antwoordt." : (v ? "Geen antwoord van " + v + ". Controleer het adres, of dat de server draait en PARSELAB_ALLOW_ORIGIN dit dashboard toelaat." : "Leeg: de aanroepen gaan naar hetzelfde adres als dit dashboard.");
+    writeSettings(readSettings()); document.querySelectorAll("iframe.bench-frame").forEach(f => { try { f.contentWindow.postMessage({ source:"parselab-dashboard", type:"parselab:api", apiBase:CONFIG.apiBase }, "*"); } catch (e) {} });
+  };
+  const ssv = document.getElementById("set-server"); if (ssv) ssv.onclick = () => { state.modal = { kind:"account" }; render(); setTimeout(() => { const i = document.getElementById("set-api"); if (i) i.focus(); }, 50); };
   const sk = document.getElementById("set-keep"); if (sk) sk.onchange = () => { const st = readSettings(); st.keepFiles = sk.checked; writeSettings(st); if (!sk.checked) filesClear(); };
   document.querySelectorAll("[data-del-file]").forEach(el => { el.onclick = async () => { await filesDel(el.getAttribute("data-del-file")); loadFiles(); }; });
   const rs = document.getElementById("recheck-server"); if (rs) rs.onclick = async () => { busy(rs, true); await checkServer(); busy(rs, false); render(); };

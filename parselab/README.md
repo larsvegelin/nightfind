@@ -14,7 +14,7 @@ npm install        # eerste keer: haalt Playwright met Chromium op
 node server/server.js
 ```
 
-Zie je in het dashboard "De ParseLab-server draait niet"? Dan is het dashboard geopend zonder deze server (bijvoorbeeld als los bestand of via een andere webserver). Website uitlezen werkt alleen via de ParseLab-server; ParsePDF en ParseBoard werken ook zonder. Node.js staat op https://nodejs.org.
+Zie je in het dashboard "De ParseLab-server draait niet" of "Deze website heeft geen ParseLab-server"? Dan is het dashboard geopend zonder deze server (als los bestand, via een andere webserver, of op GitHub Pages). Website uitlezen werkt alleen via de ParseLab-server; ParsePDF en ParseBoard werken ook zonder. Draait de server ergens anders, vul dan onder *Account → Serveradres* dat adres in; zie `docs/SCRAPEN-VANUIT-DASHBOARD.md`. Node.js staat op https://nodejs.org.
 
 Instellingen via omgevingsvariabelen:
 
@@ -23,6 +23,7 @@ Instellingen via omgevingsvariabelen:
 | `PARSELAB_PORT` | Poort, standaard 8080 |
 | `PARSELAB_PROXIES` | Komma-gescheiden proxylijst (`http://user:pass@host:port`), of zet ze in `server/proxies.txt` (één per regel, zie `proxies.example.txt`). ParseLab wisselt per verzoek en slaat een proxy 10 minuten over na drie fouten. |
 | `PARSELAB_API_TOKEN` | Zet je dit, dan vraagt de API een toegangscode (`x-parselab-token`); de tool vraagt er één keer om. |
+| `PARSELAB_ALLOW_ORIGIN` | Van welke websites de browser de API mag aanspreken (CORS), komma-gescheiden; standaard `*`. Zet hem op het adres van je dashboard, bijvoorbeeld `https://larsvegelin.github.io`, als de server ergens anders staat dan het dashboard. |
 | `PARSELAB_ANTHROPIC_KEY` | Anthropic API-sleutel op de server. Alleen dan werken de AI-knoppen: velden herkennen in ParsePDF (`/api/parsepdf/detect`, `/api/parsepdf/velden`), kolommen benoemen in ParseScraper (`/api/scrape/kolommen`) en een overzicht voorstellen in ParseBoard (`/api/board/panelen`) ( model `PARSELAB_AI_MODEL`, standaard `claude-opus-5`). Vraagt `npm install @anthropic-ai/sdk` in `server/`. De sleutel staat nooit in de browser. |
 | `PARSELAB_SUPABASE_URL` en `PARSELAB_SUPABASE_KEY` | Zet je die, dan eisen de AI-eindpunten een ingelogde gebruiker wiens pakket het toelaat; de databasefunctie `ai_allowed` beslist. Zonder deze twee blijft het open, bedoeld voor een server die alleen jij bereikt. |
 
@@ -30,9 +31,9 @@ Per gebruiker: het dashboard stuurt het e-mailadres van wie is ingelogd mee (`x-
 
 ## Online zetten
 
-**Gratis, statisch (GitHub Pages).** `.github/workflows/pages.yml` zet bij elke push het dashboard, ParsePDF, ParseBoard, de extensie-download en de docs op `https://larsvegelin.github.io/nightfind/`. Zet in de repo-instellingen bij Pages de bron op "GitHub Actions". Website uitlezen vanuit het dashboard werkt daar niet (geen server); het dashboard zegt dat erbij. De extensie kent dit adres (`bridge.js`).
+**Gratis, statisch (GitHub Pages).** `.github/workflows/pages.yml` zet bij elke push het dashboard, ParsePDF, ParseBoard, de extensie-download en de docs op `https://larsvegelin.github.io/nightfind/`. Zet in de repo-instellingen bij Pages de bron op "GitHub Actions". Website uitlezen heeft daar een server bij nodig die je ergens anders neerzet; vul dat adres in onder *Account → Serveradres* (of open het dashboard met `?api=https://jouw-server`). Zonder adres zegt het dashboard dat erbij, met een knop naar de instelling. De hele route staat in [`docs/SCRAPEN-VANUIT-DASHBOARD.md`](docs/SCRAPEN-VANUIT-DASHBOARD.md). De extensie kent dit adres (`bridge.js`).
 
-**Met server (Railway, Render, Fly.io of eigen server).** `Dockerfile` bouwt de server met Chromium; `railway.json` en `render.yaml` staan klaar. Koppel de repo, kies de map `parselab`, zet een volume op `/app/server/data` en de omgevingsvariabelen hieronder. Daarna rolt elke push automatisch uit. Zet `PARSELAB_API_TOKEN` zodra de server op internet staat.
+**Met server (Railway, Render, Fly.io of eigen server).** `Dockerfile` bouwt de server met Chromium; `railway.json` en `render.yaml` staan klaar. Koppel de repo, kies de map `parselab`, zet een volume op `/app/server/data` en de omgevingsvariabelen hieronder. Daarna rolt elke push automatisch uit. Zet `PARSELAB_API_TOKEN` zodra de server op internet staat, en `PARSELAB_ALLOW_ORIGIN` op het adres van je dashboard. Stap voor stap per host: [`docs/SCRAPEN-VANUIT-DASHBOARD.md`](docs/SCRAPEN-VANUIT-DASHBOARD.md).
 
 ## Mappen
 
@@ -47,7 +48,7 @@ Per gebruiker: het dashboard stuurt het e-mailadres van wie is ingelogd mee (`x-
 | `ParsePDF.html` | ParsePDF als één losse pagina, gebouwd uit `webflow/` met `webflow/bouw-pagina.mjs`. Op elke webhost te zetten; werkt met de Supabase-login. |
 | `dist/` | ParsePDF als één script (`parsepdf.js`) plus het laadblok voor Webflow, gebouwd met `webflow/bouw-bundel.mjs`. |
 | `webflow/` | De drieëntwintig embeds van ParsePDF voor de Webflow-pagina met Supabase erachter (`webflow/README.md`, `docs/INTEGRATIE.md`). |
-| `docs/` | Analyse per tool, status van toepassing en `verbeterpunten.md` (laatste testronde), plus `LANCERING.md` en `INTEGRATIE.md` voor het live zetten `PARSEPDF-VOLGENDE-VERSIE.md` voor de volgende versie van ParsePDF `IMPLEMENTATIE.md` als startpunt, `PARSEPDF-DOORKIJKEN.md`, `PARSESCRAPER-VOLGENDE-VERSIE.md` en `DASHBOARD-VOLGENDE-VERSIE.md` voor de opbouw, vormgeving, AI-hulp en de volgende stappen per onderdeel, `SITE-UITLEG-PARSEPDF.md` als hulppagina voor bezoekers, en `WIJZIGINGEN.md` met alle wijzigingen per ronde. |
+| `docs/` | Analyse per tool, status van toepassing en `verbeterpunten.md` (laatste testronde), plus `LANCERING.md` en `INTEGRATIE.md` voor het live zetten `PARSEPDF-VOLGENDE-VERSIE.md` voor de volgende versie van ParsePDF `IMPLEMENTATIE.md` als startpunt, `PARSEPDF-DOORKIJKEN.md`, `PARSESCRAPER-VOLGENDE-VERSIE.md` en `DASHBOARD-VOLGENDE-VERSIE.md` voor de opbouw, vormgeving, AI-hulp en de volgende stappen per onderdeel, `SITE-UITLEG-PARSEPDF.md` als hulppagina voor bezoekers, `SCRAPEN-VANUIT-DASHBOARD.md` voor Website uitlezen vanaf een dashboard op GitHub Pages (server neerzetten, serveradres, CORS, fouten), en `WIJZIGINGEN.md` met alle wijzigingen per ronde. |
 | `tests/` | Playwright-testrun over het hele dashboard (`tests/README.md`). |
 
 ## Twee manieren van uitlezen

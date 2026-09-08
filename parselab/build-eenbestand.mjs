@@ -20,7 +20,7 @@ const TOKEN = "<\\/script";
 let dash = fs.readFileSync(path.join(here, "index.html"), "utf8");
 
 // De werkbank laadt de tool niet meer van schijf, maar uit een tekstblok in dit bestand.
-const iframeOld = '<iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}"';
+const iframeOld = '<iframe class="bench-frame" data-tool="${t.key}" src="${esc(b.src)}?embed=1&section=${esc(state.section || "")}${CONFIG.apiBase ? "&api=" + encodeURIComponent(CONFIG.apiBase) : ""}"';
 if (!dash.includes(iframeOld)) { console.error("index.html is veranderd: de iframe-regel is niet gevonden."); process.exit(1); }
 const iframeNew = '<iframe class="bench-frame" data-tool="${t.key}" data-src="${esc(b.src)}" srcdoc="${esc(PL_INLINE[b.src.replace("tools/", "")] || "")}"';
 dash = dash.replace(iframeOld, () => iframeNew);

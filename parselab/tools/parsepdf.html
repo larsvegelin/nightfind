@@ -1982,6 +1982,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         window.addEventListener('message', function (ev) {
             var d = ev.data || {};
             if (d.type === 'parselab:settings' && d.settings) { try { localStorage.setItem('parselab-settings', JSON.stringify(d.settings)); } catch (e) {} applyPlSettings(); }
+            if (d.type === 'parselab:api') window.PARSELAB_API_BASE = String(d.apiBase || '').replace(/\/+$/, '');
+            if (d.type === 'parselab:settings' && d.settings && typeof d.settings.apiBase === 'string') window.PARSELAB_API_BASE = d.settings.apiBase.replace(/\/+$/, '');
         });
         document.addEventListener('DOMContentLoaded', applyPlSettings);
         function idbOpen() {
@@ -3185,7 +3187,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         // ---------- Herkenning via ParseLab (opt-in per document, geen sleutel) ----------
         var AI_UNAVAILABLE = 'Herkenning via ParseLab is nog niet beschikbaar in deze versie. Wijs de velden zelf aan met Gebied selecteren.';
         function aiEndpoint() {
-            return (typeof window.PARSELAB_API === 'string' && window.PARSELAB_API) ? window.PARSELAB_API : '/api/parsepdf/detect';
+            if (typeof window.PARSELAB_API === 'string' && window.PARSELAB_API) return window.PARSELAB_API;
+            var basis = window.PARSELAB_API_BASE || '';
+            if (!basis) { try { var q = new URLSearchParams(location.search).get('api'); if (q) basis = q.replace(/\/+$/, ''); } catch (e) {} }
+            return basis + '/api/parsepdf/detect';
         }
         function aiStatus(msg, isErr) {
             var el = $('aiStatus');

@@ -6,6 +6,7 @@
  *   PARSELAB_PROXIES="http://user:pass@host:port,http://…"   roterende proxies (of server/proxies.txt, één per regel)
  *   PARSELAB_API_TOKEN=geheim              optioneel: API alleen met header x-parselab-token
  *   PARSELAB_PORT=8080
+ *   PARSELAB_ALLOW_ORIGIN=https://larsvegelin.github.io   optioneel: welke websites de API vanuit de browser mogen aanspreken (CORS); standaard *
  *
  * Wat de server doet:
  *   POST /api/scrape/snapshot   { url, proxy? }                 → opgeschoonde HTML van de gerenderde pagina + schermafbeelding
@@ -42,6 +43,11 @@ const DATA = path.join(__dirname, "data");
 const PORT = Number(process.env.PARSELAB_PORT || 8080);
 const TOKEN = process.env.PARSELAB_API_TOKEN || "";
 const ALLOW_PRIVATE = process.env.PARSELAB_ALLOW_PRIVATE === "1"; // alleen voor lokaal testen
+// Vanaf welke websites mag de browser deze API aanspreken? Het dashboard op GitHub Pages staat op een ander
+// adres dan de server; zonder deze toestemming blokkeert de browser elk verzoek. Standaard: overal vandaan
+// (de toegangscode PARSELAB_API_TOKEN blijft de echte drempel). Beperk het met een komma-gescheiden lijst,
+// bijvoorbeeld PARSELAB_ALLOW_ORIGIN=https://larsvegelin.github.io,https://parselab.nl
+const ALLOW_ORIGIN = (process.env.PARSELAB_ALLOW_ORIGIN || "*").split(",").map(s => s.trim()).filter(Boolean);
 const UA = "ParseLab/1.0 (+https://parselab.nl/uitlezen; respecteert robots.txt)";
 const LIMITS = { pagesPerRun: 25, rowsPerRun: 5000, concurrent: 2, perHostMs: 2000, navTimeoutMs: 30000, snapshotBytes: 6 * 1024 * 1024 };
 fs.mkdirSync(path.join(DATA, "runs"), { recursive: true });
@@ -346,8 +352,16 @@ function csv(columns, rows) {
 
 /* ---------------- HTTP ---------------- */
 function httpError(status, message) { const e = new Error(message); e.status = status; return e; }
+function corsHeaders(req) {
+  const origin = String(req.headers.origin || "");
+  const allow = ALLOW_ORIGIN.includes("*") ? "*" : (ALLOW_ORIGIN.includes(origin) ? origin : "");
+  const h = { "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS", "access-control-allow-headers": "content-type, authorization, x-parselab-token, x-parselab-user", "access-control-max-age": "600" };
+  if (allow) { h["access-control-allow-origin"] = allow; if (allow !== "*") h["vary"] = "Origin"; }
+  return h;
+}
 function send(res, status, body, type) {
   const isBuf = Buffer.isBuffer(body);
+  if (res.req && res.req.headers && res.req.headers.origin) Object.entries(corsHeaders(res.req)).forEach(([k, v]) => res.setHeader(k, v));
   res.writeHead(status, { "content-type": type || (isBuf ? "application/octet-stream" : "application/json; charset=utf-8"), "cache-control": "no-store" });
   res.end(isBuf || typeof body === "string" ? body : JSON.stringify(body));
 }
@@ -511,6 +525,8 @@ function jsonUit(resp) {
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
+    // Voorvraag van de browser bij een aanroep vanaf een ander adres (het dashboard op GitHub Pages bijvoorbeeld).
+    if (req.method === "OPTIONS" && u.pathname.startsWith("/api/")) { res.writeHead(204, corsHeaders(req)); return res.end(); }
     if (!u.pathname.startsWith("/api/")) return serveStatic(req, res, u.pathname);
     if (TOKEN && req.headers["x-parselab-token"] !== TOKEN) throw httpError(401, "Geen toegang: de ParseLab-server vraagt een toegangscode.");
     // Wie is dit? Het dashboard stuurt het e-mailadres van de ingelogde gebruiker mee. Zonder accounts is dit scheiding, geen beveiliging;

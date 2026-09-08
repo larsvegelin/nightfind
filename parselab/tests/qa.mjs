@@ -14,7 +14,7 @@ p.on('pageerror', e => errs.push('[pageerror] ' + e.message));
 p.on('console', m => {
   const bron = (m.location() && m.location().url) || '';
   const aiPad = /api\/(parsepdf\/velden|scrape\/kolommen|board\/panelen)/.test(bron);
-  if (m.type()==='error' && !aiPad && !/fonts|ERR_CONNECTION|favicon|api\/parsepdf|status of (400|403|404|501)/.test(m.text())) errs.push('[console] ' + m.text().slice(0,160));
+  if (m.type()==='error' && !aiPad && !/fonts|ERR_CONNECTION|ERR_TUNNEL|ERR_NAME|favicon|api\/parsepdf|status of (400|403|404|501)/.test(m.text())) errs.push('[console] ' + m.text().slice(0,160));
 });
 p.on('dialog', d => d.accept());
 const nf = []; p.on('response', r => { if (r.status() === 404 && !/8765\/api/.test(r.url())) nf.push(r.url()); });
@@ -120,7 +120,7 @@ await step('scraper', async () => {
   await p.screenshot({ path:S+'/shots/qa-pick.png', fullPage:true });
   await t.locator('#to-done').click();
   await t.locator('#dl-row').waitFor({ state:'visible', timeout:120000 });
-  const pill = await t.locator('#done-pill').innerText(); ok('uitlezen klaar over 2 pagina\'s', /\d+/.test(pill), pill);
+  const pill = await t.locator('#done-pill').innerText(); ok('uitlezen klaar over 2 pagina\'s', /\d+/.test(pill), pill + ' ' + await t.locator('#done-msg').innerText().catch(() => ''));
   ok('resultaat-tabel gevuld', await t.locator('#done-table tbody tr, #done-table tr').count() > 2);
   const [dl] = await Promise.all([p.waitForEvent('download', { timeout:15000 }), t.locator('#dl-xlsx').click()]);
   const path = await dl.path(); const size = fs.statSync(path).size;
@@ -317,6 +317,36 @@ await step('zonder server', async () => {
   ok('zonder server: hint met startinstructie', await p.locator('.server-hint').count() === 1 && /start\.bat|node server/.test(await p.locator('.server-hint').innerText()));
   await p.goto('http://127.0.0.1:8765/parselab/index.html#pdf/upload'); await p.waitForTimeout(3000);
   ok('zonder server: ParsePDF werkt', await tool().locator('#page-upload.active').count() === 1);
+});
+
+// ---------- 13. Serveradres: dashboard op een statische host, server ergens anders ----------
+await step('serveradres', async () => {
+  const B = 'http://127.0.0.1:8765/parselab/index.html';
+  await p.goto(B + '#overview'); await p.waitForTimeout(500);
+  await p.click('#user-btn'); await p.click('[data-modal="account"]'); await p.waitForTimeout(200);
+  ok('account: veld Serveradres', await p.locator('#set-api').count() === 1 && await p.locator('#set-api-save').count() === 1);
+  await p.fill('#set-api', 'http://127.0.0.1:8079'); await p.click('#set-api-save'); await p.waitForTimeout(1500);
+  ok('fout adres: geen antwoord', /Geen antwoord/.test(await p.locator('#set-api-msg').innerText()), await p.locator('#set-api-msg').innerText());
+  await p.fill('#set-api', 'parselab.example'); await p.click('#set-api-save'); await p.waitForTimeout(300);
+  ok('zonder schema wordt https:// aangevuld', await p.locator('#set-api').inputValue() === 'https://parselab.example', await p.locator('#set-api').inputValue());
+  await p.waitForTimeout(1500);
+  await p.fill('#set-api', 'http://127.0.0.1:8080'); await p.click('#set-api-save'); await p.waitForTimeout(1500);
+  ok('goed adres: verbonden', /Verbonden/.test(await p.locator('#set-api-msg').innerText()), await p.locator('#set-api-msg').innerText());
+  await p.keyboard.press('Escape');
+  await p.goto(B + '#scrape/url'); await p.reload({ waitUntil:'load' }); await p.waitForTimeout(2500);
+  ok('scrapen vanaf statische host: geen serverhint meer', await p.locator('.server-hint').count() === 0);
+  const src = await p.locator('iframe.bench-frame').getAttribute('src');
+  ok('tool krijgt ?api= mee', /api=http/.test(src || ''), src);
+  // De tool zelf praat nu met 8080 (andere oorsprong): de status-aanroep moet lukken dankzij CORS.
+  const st = await tool().locator('body').evaluate(async () => { const r = await fetch((window.PARSELAB_API_BASE || '') + '/api/scrape/status'); return r.status + ' ' + (window.PARSELAB_API_BASE || ''); });
+  ok('tool bereikt de server op het andere adres', /^200 http/.test(st), st);
+  await p.goto(B + '?api=http://127.0.0.1:8081#overview', { waitUntil:'load' }); await p.waitForTimeout(900);
+  ok('?api= in de adresbalk overschrijft de instelling', await p.evaluate(() => localStorage.getItem('parselab-api-base')) === 'http://127.0.0.1:8081');
+  await p.goto(B + '#overview'); await p.waitForTimeout(400);
+  await p.click('#user-btn'); await p.click('[data-modal="account"]'); await p.waitForTimeout(200);
+  await p.fill('#set-api', ''); await p.click('#set-api-save'); await p.waitForTimeout(800);
+  ok('leeg adres: terug naar zelfde oorsprong', /Leeg/.test(await p.locator('#set-api-msg').innerText()) && await p.evaluate(() => localStorage.getItem('parselab-api-base')) === '', await p.locator('#set-api-msg').innerText());
+  await p.keyboard.press('Escape');
 });
 
 ok('geen JS-fouten', errs.length === 0, errs.slice(0,5).join(' || '));

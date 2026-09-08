@@ -189,7 +189,9 @@
 "use strict";
 /* ParseScraper — Website uitlezen vanaf de ParseLab-server (server/server.js). Drie stappen: Adres → Aanwijzen → Klaar. */
 const $ = s => document.querySelector(s);
-const API = (window.PARSELAB_API_BASE || "") + "/api/scrape";
+// Waar draait de server? Meegegeven door het dashboard (?api=… of parselab:api), anders hetzelfde adres als deze pagina.
+(function(){ try { var q = new URLSearchParams(location.search).get("api"); if (q) window.PARSELAB_API_BASE = q.replace(/\/+$/, ""); } catch (e) {} })();
+function apiBase() { return (window.PARSELAB_API_BASE || "") + "/api/scrape"; }
 const state = window.plState = { page: "url", snapshot: null, rule: null, run: null, mode: "item", proxies: 0, tasks: [], currentTask: null, token: sessionStorage.getItem("parselab-token") || "" };
 const EMBED = (() => { try { return window.self !== window.top || /[?&]embed=1/.test(location.search); } catch (e) { return true; } })();
 if (EMBED) document.documentElement.classList.add("parselab-embed");
@@ -208,6 +210,8 @@ function post(msg) { if (!EMBED) return; try { window.parent.postMessage(Object.
 window.addEventListener("message", ev => {
   const d = ev.data || {};
   if (d.type === "parselab:user" && d.email !== undefined) { const u = String(d.email || "").toLowerCase(); if (u !== state.user) { state.user = u; loadTasks(); } return; }
+  if (d.type === "parselab:api") { window.PARSELAB_API_BASE = String(d.apiBase || "").replace(/\/+$/, ""); init(); return; }
+  if (d.type === "parselab:settings" && d.settings && typeof d.settings.apiBase === "string") { const nb = d.settings.apiBase.replace(/\/+$/, ""); if (nb !== (window.PARSELAB_API_BASE || "")) { window.PARSELAB_API_BASE = nb; init(); } }
   if (d.type === "parselab:nav" && d.section) showPage(d.section);
     if (d.type === "parselab:rename-project" && d.id) { const tid = String(d.id).replace(/^scrape:/, ""); api("/tasks/" + tid, { method: "PATCH", body: JSON.stringify({ name: d.name }) }).then(loadTasks).catch(() => {}); return; }
     if (d.type === "parselab:delete-project" && d.id) { const tid = String(d.id).replace(/^scrape:/, ""); api("/tasks/" + tid, { method: "DELETE" }).then(loadTasks).catch(() => {}); return; }
@@ -221,9 +225,10 @@ async function api(path, opts) {
   const headers = { "content-type": "application/json" }; if (state.token) headers["x-parselab-token"] = state.token; if (state.user) headers["x-parselab-user"] = state.user;
   // Als los bestand geopend is er geen server; niet proberen te verbinden.
   if (!/^https?:$/.test(location.protocol)) throw new Error("Website uitlezen werkt via de ParseLab-server. Open de map ParseLab en start hem met start.bat (Windows) of start.sh (Mac).");
-  let res; try { res = await fetch(API + path, Object.assign({ headers }, opts || {})); } catch (e) { throw new Error("De ParseLab-server is niet bereikbaar. Start hem met: node server/server.js"); }
+  let res; try { res = await fetch(apiBase() + path, Object.assign({ headers }, opts || {})); } catch (e) { throw new Error("De ParseLab-server is niet bereikbaar. Start hem met: node server/server.js"); }
   const body = (res.headers.get("content-type") || "").includes("json") ? await res.json() : null;
   if (res.status === 401) { const t = prompt("De ParseLab-server vraagt een toegangscode:"); if (t) { state.token = t; sessionStorage.setItem("parselab-token", t); return api(path, opts); } }
+  if ((res.status === 404 || res.status === 405) && !body) throw new Error("Op " + (window.PARSELAB_API_BASE || location.origin) + " draait geen ParseLab-server (antwoord " + res.status + "). Staat het dashboard op GitHub Pages of een andere statische site, vul dan onder Account het adres van je eigen server in. Zie docs/SCRAPEN-VANUIT-DASHBOARD.md.");
   if (!res.ok) throw new Error(body && body.error || "Er ging iets mis (" + res.status + ")");
   return body;
 }
@@ -233,7 +238,10 @@ function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({
 /* ---------- 1 Adres ---------- */
 function serverHint() {
   msg($("#fetch-msg"), ""); const el = $("#fetch-msg"); el.hidden = false; el.className = "server-hint";
-  el.innerHTML = `<span class="strong">De ParseLab-server draait niet.</span><span class="note">Website uitlezen werkt via de server. Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>.</span><div><button type="button" class="btn btn-outline btn-small" id="recheck">Opnieuw proberen</button></div>`;
+  const statisch = /\.github\.io$|\.pages\.dev$|\.netlify\.app$|\.vercel\.app$/.test(location.hostname) && !window.PARSELAB_API_BASE;
+  el.innerHTML = statisch
+    ? `<span class="strong">Deze website heeft geen ParseLab-server.</span><span class="note">Website uitlezen draait op een server die je zelf neerzet (Railway, Render, Docker of je eigen computer). Vul in het dashboard onder <em>Account → Serveradres</em> het adres van die server in, of open deze tool met <code>?api=https://jouw-server</code>. Hoe je die server neerzet staat in <code>docs/SCRAPEN-VANUIT-DASHBOARD.md</code>.</span><div><button type="button" class="btn btn-outline btn-small" id="recheck">Opnieuw proberen</button></div>`
+    : `<span class="strong">De ParseLab-server ${window.PARSELAB_API_BASE ? "op <code>" + esc(window.PARSELAB_API_BASE) + "</code> antwoordt niet" : "draait niet"}.</span><span class="note">Website uitlezen werkt via de server. Open een terminal in de map <code>parselab</code> en start hem met <code>node server/server.js</code>, of dubbelklik op <code>start.bat</code> (Windows) of <code>start.sh</code> (Mac/Linux). Open daarna <code>http://localhost:8080</code>. Draait de server ergens anders, vul dan in het dashboard onder <em>Account → Serveradres</em> dat adres in.</span><div><button type="button" class="btn btn-outline btn-small" id="recheck">Opnieuw proberen</button></div>`;
   $("#recheck").onclick = init;
 }
 function init() { api("/status").then(s => { state.proxies = (s.proxies || []).length; $("#proxy-row").hidden = !state.proxies; $("#use-proxy").checked = !!state.proxies; msg($("#fetch-msg"), ""); loadTasks(); }).catch(serverHint); }
@@ -460,7 +468,7 @@ function renderRun() {
   const run = state.run, cols = run.columns, empty = run.rows.filter(r => cols.some(c => r[c] === "" || r[c] == null)).length;
   $("#done-pill").textContent = run.rows.length + " regels · " + run.pages + " pagina" + (run.pages === 1 ? "" : "'s");
   $("#done-note").textContent = empty ? empty + " regels met een lege cel" : "";
-  $("#dl-row").hidden = false; $("#dl-xlsx").href = API + "/runs/" + run.id + ".xlsx"; $("#dl-csv").href = API + "/runs/" + run.id + ".csv";
+  $("#dl-row").hidden = false; $("#dl-xlsx").href = apiBase() + "/runs/" + run.id + ".xlsx"; $("#dl-csv").href = apiBase() + "/runs/" + run.id + ".csv";
   // Deze rijen kunnen door naar ParseBoard; het dashboard geeft ze daar af.
   const naarBoard = $("#naar-board");
   if (naarBoard) naarBoard.onclick = () => post({ type:"parselab:handover", naar:"board", section:"1",
@@ -485,7 +493,7 @@ async function loadTasks() {
     <div class="tr">
       <div><div class="name">${esc(t.name)}</div><div class="meta">${esc(t.url)}</div></div>
       <div class="meta">${{ nu: "op verzoek", uur: "elk uur", dag: "elke dag", week: "elke week" }[t.schedule] || ""}${t.lastRun ? " · " + new Date(t.lastRun).toLocaleString("nl-NL", { dateStyle: "short", timeStyle: "short" }) + " · " + (t.lastStatus === "fout" ? "niet gelukt" : (t.lastRows || 0) + " regels") : ""}</div>
-      <div class="row">${t.lastRunId && t.lastStatus !== "fout" ? `<a class="link" href="${API}/runs/${t.lastRunId}.xlsx">Excel</a>` : ""}<button class="btn btn-outline btn-small" data-run-task="${t.id}">Nu draaien</button></div>
+      <div class="row">${t.lastRunId && t.lastStatus !== "fout" ? `<a class="link" href="${apiBase()}/runs/${t.lastRunId}.xlsx">Excel</a>` : ""}<button class="btn btn-outline btn-small" data-run-task="${t.id}">Nu draaien</button></div>
       <button class="link" data-del-task="${t.id}" title="Verwijderen">✕</button>
     </div>`).join("");
   el.querySelectorAll("[data-run-task]").forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = "Bezig…"; try { await api("/tasks/" + b.dataset.runTask + "/run", { method: "POST" }); } catch (e) { alert(e.message); } loadTasks(); });

@@ -1,7 +1,8 @@
 name: ParseLab op GitHub Pages
 
 # Zet het statische deel online: dashboard, ParsePDF, ParseBoard, de extensie-download en de docs.
-# "Website uitlezen" vanuit het dashboard vraagt de ParseLab-server (zie parselab/Dockerfile); zonder server toont het dashboard dat netjes.
+# "Website uitlezen" vanuit het dashboard vraagt de ParseLab-server (zie parselab/Dockerfile) op een eigen adres; dat vul je in onder
+# Account → Serveradres (docs/SCRAPEN-VANUIT-DASHBOARD.md). Zonder adres toont het dashboard dat netjes.
 on:
   push:
     branches: [main]   # de omgeving github-pages laat standaard alleen main uitrollen
