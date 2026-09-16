@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 13</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 14</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -319,11 +319,16 @@
     vergelijk("Contractvervaldatum","contractvd","date",{info:true});
     vergelijk("Termijn","termijn","num");
     vergelijk("Hoedanigheid","hoedanigheid","",{soft:true});
-    // 8. incassobedrag binnen marge
+    // 8. incassobedrag binnen marge — de marge hangt af van de betaaltermijn:
+    //    jaartermijn (1x per jaar) mag tot € 1,00 afwijken, maand (12x) en overige
+    //    termijnen tot € 0,10. Een handmatig ingevulde marge geldt als ondergrens.
     var iOud=num(txt(oud.row,oud.map,"incasso")), iNieuw=num(txt(nieuw.row,nieuw.map,"incasso"));
+    var termNw=num(txt(nieuw.row,nieuw.map,"termijn")); if(termNw==null) termNw=num(txt(oud.row,oud.map,"termijn"));
+    var margeInc=Math.max(cfg.tol||0,(termNw===1)?1.00:0.10);
+    var margeLbl=(termNw===1)?"jaar € 1,00":"maand/overig € 0,10";
     var diff=(iOud==null||iNieuw==null)?null:Math.abs(iOud-iNieuw);
-    add("Incassobedrag (marge "+cfg.tol.toFixed(2).replace(".",",")+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
-        diff==null?"fail":(diff<=cfg.tol+1e-9?"ok":"fail"), diff==null?"Bedrag ontbreekt of onleesbaar":"Verschil "+diff.toFixed(2).replace(".",","));
+    add("Incassobedrag (marge "+margeLbl+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
+        diff==null?"fail":(diff<=margeInc+1e-9?"ok":"fail"), diff==null?"Bedrag ontbreekt of onleesbaar":"Verschil "+diff.toFixed(2).replace(".",","));
     // 9. bedragen / aantallen
     // Geschatte jaaromzet: alleen ter info, geen waarschuwing (niet in een pakket).
     var oOud=num(txt(oud.row,oud.map,"omzet")), oNieuw=num(txt(nieuw.row,nieuw.map,"omzet"));
@@ -336,11 +341,19 @@
         (perOud!=null&&perNw!=null&&perOud===perNw)?"ok":"info",
         (perOud!=null&&perNw!=null&&perOud!==perNw)?"Ter info; telt niet als afwijking":"");
     vergelijk("Jaarloon (polis)","jaarloon","num",{soft:true});
-    // Eigen risico: gelijk is goed, en een wijziging naar 250 is ook goedgekeurd.
+    // Eigen risico: op de nieuwe polis kan alleen 250 of 500 gekozen worden, dus
+    // die zijn altijd goed. Gelijk is goed. Had de oude polis geen eigen risico
+    // (0 of leeg), dan is elke nieuwe waarde goedgekeurd. Anders een afwijking.
     var erOud=num(txt(oud.row,oud.map,"eigenrisico")), erNw=num(txt(nieuw.row,nieuw.map,"eigenrisico"));
-    add("Eigen risico bedrag",txt(oud.row,oud.map,"eigenrisico"),txt(nieuw.row,nieuw.map,"eigenrisico"),
-        (erNw===250||(erOud!=null&&erNw!=null&&erOud===erNw))?"ok":((erOud==null||erNw==null)?"info":"fail"),
-        (erNw===250&&erOud!==250)?"Naar 250 — goedgekeurd":((erOud!=null&&erNw!=null&&erOud!==erNw)?"Eigen risico verschilt":""));
+    var erOudLeeg=(erOud==null||erOud===0);
+    var erStandaard=(erNw===250||erNw===500);
+    var erSt, erNote="";
+    if(erNw==null){ erSt=(erOud==null)?"info":"info"; erNote="Nieuw eigen risico ontbreekt"; }
+    else if(erOud!=null&&erOud===erNw){ erSt="ok"; }
+    else if(erStandaard){ erSt="ok"; erNote="Standaard eigen risico ("+erNw+") — goedgekeurd"; }
+    else if(erOudLeeg){ erSt="ok"; erNote="Oude polis had geen eigen risico; nieuw = "+erNw+" — goedgekeurd"; }
+    else { erSt="fail"; erNote="Eigen risico verschilt (nieuw kan alleen 250 of 500 zijn)"; }
+    add("Eigen risico bedrag",txt(oud.row,oud.map,"eigenrisico"),txt(nieuw.row,nieuw.map,"eigenrisico"),erSt,erNote);
     // Verzekerd bedrag: nieuw moet gevuld zijn (in kolom of kolom A). Als de
     // oude polis geen verzekerd bedrag heeft, is dat neutraal (oud systeem).
     function effVerz(rec){
@@ -506,6 +519,7 @@
 
   function renderAll(){
     var s=st();
+    renderProductTabs(); // markering 'actief' moet meelopen met het gekozen tabblad
     if(!s.results){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner info">Upload een export voor <strong>'+esc(prod().naam)+'</strong> (of klik op &laquo;Voorbeeld laden&raquo;) om te beginnen.</div>'; renderFooter(); return; }
     if(s.results.error){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner fail">'+esc(s.results.error)+'</div>'; renderFooter(); return; }
     renderSamenvatting(); renderNavigatie(); renderKlant(); renderFooter();
@@ -537,7 +551,7 @@
     var vl=txt(n.row,n.map,"voorletters");
     var rel=txt(n.row,n.map,"relatienr");
     var basis=(vl?vl+" — ":"")+"Relatie "+dash(rel);
-    if(r.avbTot>1) basis+=" (AVB "+r.avbIdx+" van "+r.avbTot+")";
+    if(r.avbTot>1) basis+=" ("+prod().naam+" "+r.avbIdx+" van "+r.avbTot+")";
     return basis;
   }
 
@@ -560,7 +574,7 @@
       var r=res[i], rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr");
       var pol=txt(r.pair.nieuw.row,r.pair.nieuw.map,"polisnr");
       var mark=r.status==="ok"?"✓":(r.status==="warn"?"!":"✗");
-      var avb=r.avbTot>1?" [AVB "+r.avbIdx+"/"+r.avbTot+"]":"";
+      var avb=r.avbTot>1?" ["+prod().naam+" "+r.avbIdx+"/"+r.avbTot+"]":"";
       return '<option value="'+i+'"'+(i===s.idx?" selected":"")+'>'+mark+"  Klant "+esc(dash(rel))+avb+" · polis "+esc(dash(pol))+" — "+esc(statusWoord(r))+'</option>';
     }).join("");
     $("navigatie").innerHTML=
