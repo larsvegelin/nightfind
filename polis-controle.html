@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 12</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 13</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -189,6 +189,16 @@
       naam: "Eigen vervoer",
       titel: "Eigen vervoer",
       mijOud: "P300", mijNieuw: "N200",
+      cols: COLS_STD,
+      checks: buildAvbChecks
+    },
+    {
+      id: "bg",
+      naam: "Bedrijfsgebouw",
+      titel: "Bedrijfsgebouw",
+      mijOud: "P300", mijNieuw: "N200",
+      // Andere exportindeling (extra Kantoorcode-kolom vooraan + extra velden
+      // achteraan); kolommen worden op de koptekst herkend.
       cols: COLS_STD,
       checks: buildAvbChecks
     }
@@ -483,7 +493,7 @@
     // Ruimte voor toekomstige producten (uitgeschakeld tot ze zijn toegevoegd).
     var toekomst=document.createElement("button");
     toekomst.textContent="Meer producten volgen";
-    toekomst.disabled=true; toekomst.title="Er is nu alleen AVB. Andere producten worden later toegevoegd.";
+    toekomst.disabled=true; toekomst.title="AVB, Eigen vervoer en Bedrijfsgebouw zijn beschikbaar. Andere producten worden later toegevoegd.";
     bar.appendChild(toekomst);
   }
 
