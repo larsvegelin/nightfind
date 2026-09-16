@@ -94,7 +94,7 @@
   tr.r-fail td{background:var(--fail-soft)}
   tr.r-warn td{background:var(--warn-soft)}
   .mark{font-size:1.25rem;font-weight:800;line-height:1}
-  .mark.ok{color:var(--ok)} .mark.fail{color:var(--fail)} .mark.warn{color:var(--warn)}
+  .mark.ok{color:var(--ok)} .mark.fail{color:var(--fail)} .mark.warn{color:var(--warn)} .mark.info{color:var(--ink-3)}
   .col-oud{border-left:3px solid var(--dwa-goud)}
   .col-nieuw{border-left:3px solid var(--dwa-accent)}
   .banner{border-radius:var(--radius);padding:12px 16px;font-size:.9rem;margin-bottom:14px;border:1px solid var(--rand)}
@@ -108,7 +108,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 1</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 3</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -171,9 +171,11 @@
         ["expiratie",14,"expiratiedatum"],["termijn",15,"termijn"],["hoedanigheid",16,"hoedanigheid"],
         ["incasso",17,"incassobedrag"],["oudpolisnr",18,"polisnr. oude mij."],["wacht",19,"wacht j/n"],
         ["personeel",20,"aantal personeelsleden"],["omzet",21,"geschatte jaaromzet"],["jaarloon",22,"jaarloon"],
+        ["productbew",23,"product bewerking"],["mvzvoorrisico",24,"mvz. voorrisico"],["mvzwegam",25,"uitbreiding wegam"],
+        ["explosieve",26,"explosieve"],["bijsluiter",27,"bijsluiter"],["meeverzgel",28,"meeverzekerd gelieerde"],
         ["eigenrisico",29,"eigen risico bedrag"],["verzbedrag",30,"verzekerd bedrag"],["nhg",31,"nhg van toepassing"],
         ["opgavejaar",32,"volgend jaar van opgav"],["provisie",33,"incassoprovisie"],["collect",34,"collectiviteit"],
-        ["mij2",35,"2e maatschappij"],["oudpolisnr2",36,null],["agentprov",45,"agent 1 provisie"]
+        ["mij2",35,"2e maatschappij"],["oudpolisnr2",36,null],["verzbedraga",44,"verzekerd bedrag a"],["agentprov",45,"agent 1 provisie"]
       ],
       checks: buildAvbChecks
     }
@@ -240,46 +242,93 @@
     return s;
   }
   function jn(v){ var s=String(v==null?"":v).trim().toUpperCase(); if(s==="JA") return "J"; if(s==="NEE"||s==="NEEN") return "N"; return s; }
+  function stripZeros(v){ return String(v==null?"":v).trim().replace(/^0+(?=\d)/,""); }
 
   /* ================= AVB-controles ================= */
   function buildAvbChecks(oud, nieuw, cfg){
     var c=[];
     function add(label,ov,nv,status,note){ c.push({label:label,oud:ov,nieuw:nv,status:status,note:note||""}); }
-    function eq(label,key,fmt,note){
-      var ov=txt(oud.row,oud.map,key), nv=txt(nieuw.row,nieuw.map,key);
-      var a=fmt?fmt(ov):ov, b=fmt?fmt(nv):nv;
-      var st=(a===b)?(a===""?"warn":"ok"):"fail";
-      add(label,ov,nv,st, st==="fail"?"Waarden verschillen":(a===""?"Beide leeg":note||""));
+
+    // Generieke vergelijking van velden die op beide polissen gelijk horen te zijn.
+    // mode: "" tekst | "date" | "num" | "jn" | "code" (voorloopnullen negeren)
+    // soft:true => één leeg of afwijkend geeft "let op" i.p.v. een kruis.
+    function waarde(rec,key,mode){
+      var v=txt(rec.row,rec.map,key);
+      if(mode==="date") return dateKey(v);
+      if(mode==="jn")   return jn(v);
+      if(mode==="num"){ var n=num(v); return n==null?"":String(n); }
+      if(mode==="code") return stripZeros(v);
+      return v;
     }
+    function vergelijk(label,key,mode,opts){
+      opts=opts||{};
+      var ovRaw=txt(oud.row,oud.map,key), nvRaw=txt(nieuw.row,nieuw.map,key);
+      var a=waarde(oud,key,mode), b=waarde(nieuw,key,mode), st, note="";
+      if(a===""&&b===""){ st="info"; note="Beide leeg"; }
+      else if(a===""||b===""){ st=opts.soft?"info":"fail"; note="Alleen op één polis ingevuld"; }
+      else if(a===b){ st="ok"; }
+      else { st=opts.soft?"warn":"fail"; note=opts.diffNote?opts.diffNote(ovRaw,nvRaw):"Waarden verschillen"; }
+      add(label, ovRaw, nvRaw, st, note);
+    }
+
+    // 1. maatschappijcodes
     var mOud=txt(oud.row,oud.map,"mij"), mNieuw=txt(nieuw.row,nieuw.map,"mij");
     add("Maatschappij (oud "+cfg.mijOud+" / nieuw "+cfg.mijNieuw+")",mOud,mNieuw,
         (mOud.toUpperCase()===cfg.mijOud && mNieuw.toUpperCase()===cfg.mijNieuw)?"ok":"fail","Oud "+cfg.mijOud+", nieuw "+cfg.mijNieuw);
-    var rOud=txt(oud.row,oud.map,"wijzreden"), rNieuw=txt(nieuw.row,nieuw.map,"wijzreden");
-    add("Wijzigingsreden (47 oud / 2 nieuw)",rOud,rNieuw,(rOud==="47"&&rNieuw==="2")?"ok":"fail","Oud 47, nieuw 2");
-    var pOud=txt(oud.row,oud.map,"polisnr");
+    // 2. wijzigingsreden (voorloopnullen negeren: 00047 = 47, 00002 = 2)
+    var rOud=stripZeros(txt(oud.row,oud.map,"wijzreden")), rNieuw=stripZeros(txt(nieuw.row,nieuw.map,"wijzreden"));
+    add("Wijzigingsreden (47 oud / 2 nieuw)",txt(oud.row,oud.map,"wijzreden"),txt(nieuw.row,nieuw.map,"wijzreden"),
+        (rOud==="47"&&rNieuw==="2")?"ok":"fail","Oud 47, nieuw 2");
+    // 3. relatienummer gelijk
+    vergelijk("Relatienummer (oud = nieuw)","relatienr","code");
+    // 4. koppeling polisnummer
+    var pOud=stripZeros(txt(oud.row,oud.map,"polisnr"));
     var ref1=txt(nieuw.row,nieuw.map,"oudpolisnr"), ref2=txt(nieuw.row,nieuw.map,"oudpolisnr2");
-    add("Polisnr. oude mij. (kolom S) = polisnummer oud",pOud,ref1, ref1===""?"fail":(ref1===pOud?"ok":"fail"),"Nieuwe polis verwijst naar het oude polisnummer");
-    add("Polisnr. oude mij. 2e veld (kolom AK) = polisnummer oud",pOud,ref2, ref2===""?"fail":(ref2===pOud?"ok":"fail"),"Tweede verwijzingsveld naast 2e maatschappij");
+    add("Polisnr. oude mij. (kolom S) = polisnummer oud",txt(oud.row,oud.map,"polisnr"),ref1, ref1===""?"fail":(stripZeros(ref1)===pOud?"ok":"fail"),"Nieuwe polis verwijst naar het oude polisnummer");
+    add("Polisnr. oude mij. 2e veld (kolom AK) = polisnummer oud",txt(oud.row,oud.map,"polisnr"),ref2, ref2===""?"fail":(stripZeros(ref2)===pOud?"ok":"fail"),"Tweede verwijzingsveld naast 2e maatschappij");
+    // 5. ingangsdatum nieuw = hoofdvervaldatum oud
     var hvdOud=txt(oud.row,oud.map,"hvd"), ingNieuw=txt(nieuw.row,nieuw.map,"ingang");
     add("Ingangsdatum nieuw = hoofdvervaldatum oud",hvdOud,ingNieuw,(dateKey(hvdOud)&&dateKey(hvdOud)===dateKey(ingNieuw))?"ok":"fail","Nieuwe polis start op de hoofdvervaldatum van de oude polis");
-    eq("Hoofdvervaldatum polis","hvd",dateKey);
-    eq("Termijn","termijn");
+    // 6-7. datums en termijn
+    vergelijk("Hoofdvervaldatum polis","hvd","date");
+    vergelijk("Contractvervaldatum","contractvd","date",{soft:true});
+    vergelijk("Termijn","termijn","num");
+    vergelijk("Hoedanigheid","hoedanigheid","",{soft:true});
+    // 8. incassobedrag binnen marge
     var iOud=num(txt(oud.row,oud.map,"incasso")), iNieuw=num(txt(nieuw.row,nieuw.map,"incasso"));
     var diff=(iOud==null||iNieuw==null)?null:Math.abs(iOud-iNieuw);
     add("Incassobedrag (marge "+cfg.tol.toFixed(2).replace(".",",")+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
         diff==null?"fail":(diff<=cfg.tol+1e-9?"ok":"fail"), diff==null?"Bedrag ontbreekt of onleesbaar":"Verschil "+diff.toFixed(2).replace(".",","));
+    // 9. bedragen / aantallen
     var oOud=num(txt(oud.row,oud.map,"omzet")), oNieuw=num(txt(nieuw.row,nieuw.map,"omzet"));
     add("Geschatte jaaromzet",txt(oud.row,oud.map,"omzet"),txt(nieuw.row,nieuw.map,"omzet"),
         (oOud!=null&&oNieuw!=null&&oOud===oNieuw)?"ok":"fail",(oOud==null||oNieuw==null)?"Waarde ontbreekt":(oOud===oNieuw?"":"Verschil "+(oNieuw-oOud)));
-    eq("NHG van toepassing","nhg",jn);
+    vergelijk("Aantal personeelsleden","personeel","num",{soft:true,diffNote:function(a,b){return "Verschil "+(num(b)-num(a));}});
+    vergelijk("Jaarloon (polis)","jaarloon","num",{soft:true});
+    vergelijk("Eigen risico bedrag","eigenrisico","num");
+    vergelijk("Verzekerd bedrag","verzbedrag","num",{soft:true});
+    vergelijk("Verzekerd bedrag A","verzbedraga","num",{soft:true});
+    // 10. J/N-kenmerken (staan vaak alleen op de nieuwe polis -> let op i.p.v. kruis)
+    vergelijk("Product bewerking J/N","productbew","jn",{soft:true});
+    vergelijk("Mvz. voorrisico J/N","mvzvoorrisico","jn",{soft:true});
+    vergelijk("Mvz. uitbreiding Wegam","mvzwegam","jn",{soft:true});
+    vergelijk("Explosieve / gevaarlijke stoffen","explosieve","jn",{soft:true});
+    vergelijk("Bijsluiter / gebruiksaanwijzing","bijsluiter","jn",{soft:true});
+    vergelijk("Meeverzekerd gelieerde","meeverzgel","jn",{soft:true});
+    vergelijk("NHG van toepassing","nhg","jn");
+    // 11. volgend jaar van opgave (nieuw moet op cfg.jaar staan)
     var jOud=txt(oud.row,oud.map,"opgavejaar"), jNieuw=txt(nieuw.row,nieuw.map,"opgavejaar");
     add("Volgend jaar van opgave = "+cfg.jaar,jOud,jNieuw,(jOud===cfg.jaar&&jNieuw===cfg.jaar)?"ok":"fail",
         "Verwacht "+cfg.jaar+((jOud!==cfg.jaar&&jNieuw!==cfg.jaar)?" (beide afwijkend)":(jOud!==cfg.jaar?" (oud wijkt af)":(jNieuw!==cfg.jaar?" (nieuw wijkt af)":""))));
-    function provOk(v){ var n2=num(v); return n2!=null&&cfg.prov.indexOf(n2)!==-1; }
+    // 12. provisie — bij een #0376-product (verzekeringsvorm nieuw) is ook 20% goed.
+    var vormNieuw = txt(nieuw.row,nieuw.map,"vorm").replace(/\s/g,"");
+    var provToegestaan = cfg.prov.slice();
+    if(vormNieuw==="#0376" && provToegestaan.indexOf(20)===-1) provToegestaan.push(20);
+    function provOk(v){ var n2=num(v); return n2!=null&&provToegestaan.indexOf(n2)!==-1; }
     var provOud=txt(oud.row,oud.map,"provisie"), provNieuw=txt(nieuw.row,nieuw.map,"provisie");
-    add("Incassoprovisie % ("+cfg.prov.join(" of ")+")",provOud,provNieuw,(provOk(provOud)&&provOk(provNieuw))?"ok":"fail","Toegestaan: "+cfg.prov.join("% of ")+"%");
+    add("Incassoprovisie % ("+provToegestaan.join(" of ")+")",provOud,provNieuw,(provOk(provOud)&&provOk(provNieuw))?"ok":"fail","Toegestaan: "+provToegestaan.join("% of ")+"%"+(vormNieuw==="#0376"?" (20% toegestaan bij #0376)":""));
     var apOud=txt(oud.row,oud.map,"agentprov"), apNieuw=txt(nieuw.row,nieuw.map,"agentprov");
-    add("Agent 1 provisie %",apOud,apNieuw,(provOk(apOud)&&provOk(apNieuw))?"ok":"fail","Gelijk aan incassoprovisie, binnen "+cfg.prov.join("/")+"%");
+    add("Agent 1 provisie %",apOud,apNieuw,(provOk(apOud)&&provOk(apNieuw))?"ok":"fail","Gelijk aan incassoprovisie, binnen "+provToegestaan.join("/")+"%");
     if(num(provNieuw)!=null&&num(apNieuw)!=null&&num(provNieuw)!==num(apNieuw)) add("Incassoprovisie = agentprovisie (nieuw)",provNieuw,apNieuw,"fail","Percentages op de nieuwe polis lopen uiteen");
     var col=txt(nieuw.row,nieuw.map,"collect").toUpperCase();
     if(col.indexOf("PRO")===0){ var cn=num(col.replace("PRO","")); add("Collectiviteit "+col+" komt overeen met provisie",txt(oud.row,oud.map,"collect"),col,(cn!=null&&cn===num(provNieuw))?"ok":"fail","PRO-code moet het provisiepercentage van de nieuwe polis volgen"); }
@@ -442,7 +491,7 @@
       $("klant").innerHTML=html; return;
     }
     var rowsHtml=r.checks.map(function(c){
-      var mk=c.status==="ok"?'<span class="mark ok">&#10003;</span>':(c.status==="warn"?'<span class="mark warn">!</span>':'<span class="mark fail">&#10007;</span>');
+      var mk=c.status==="ok"?'<span class="mark ok">&#10003;</span>':(c.status==="warn"?'<span class="mark warn">!</span>':(c.status==="info"?'<span class="mark info">&ndash;</span>':'<span class="mark fail">&#10007;</span>'));
       return '<tr class="'+(c.status==="ok"?"":"r-"+c.status)+'">'+
         '<td>'+esc(c.label)+'</td>'+
         '<td class="val col-oud">'+esc(dash(c.oud))+'</td>'+
