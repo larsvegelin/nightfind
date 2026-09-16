@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Polisparen Controle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+  :root{
+    --paper:#eceff3;
+    --surface:#ffffff;
+    --surface-2:#f5f7f9;
+    --line:#d3dae2;
+    --line-soft:#e4e9ee;
+    --ink:#101822;
+    --ink-2:#4a5866;
+    --ink-3:#74838f;
+    --accent:#0f6e68;
+    --accent-soft:#dcece9;
+    --ok:#1c6b45;
+    --ok-soft:#dcefe3;
+    --warn:#8d5f0d;
+    --warn-soft:#f6ecd7;
+    --fail:#a62f28;
+    --fail-soft:#f7e2e0;
+    --radius:10px;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif;
+    --serif:"IBM Plex Serif",Georgia,serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0e141b;
+      --surface:#161e27;
+      --surface-2:#1b242f;
+      --line:#2c3944;
+      --line-soft:#232e39;
+      --ink:#e7edf3;
+      --ink-2:#a9b7c3;
+      --ink-3:#7d8b97;
+      --accent:#57bdb2;
+      --accent-soft:#12312f;
+      --ok:#6cc79a;
+      --ok-soft:#142b20;
+      --warn:#d9ae5e;
+      --warn-soft:#2e2515;
+      --fail:#e98a82;
+      --fail-soft:#331b19;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e141b;
+    --surface:#161e27;
+    --surface-2:#1b242f;
+    --line:#2c3944;
+    --line-soft:#232e39;
+    --ink:#e7edf3;
+    --ink-2:#a9b7c3;
+    --ink-3:#7d8b97;
+    --accent:#57bdb2;
+    --accent-soft:#12312f;
+    --ok:#6cc79a;
+    --ok-soft:#142b20;
+    --warn:#d9ae5e;
+    --warn-soft:#2e2515;
+    --fail:#e98a82;
+    --fail-soft:#331b19;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+  header.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:18px}
+  h1{font-family:var(--serif);font-size:28px;line-height:1.15;margin:0 0 4px;text-wrap:balance}
+  .sub{margin:0;color:var(--ink-2);max-width:62ch;font-size:14px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+  section{margin-top:26px}
+  h2{font-size:15px;margin:0 0 12px;letter-spacing:.01em}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .drop{
+    border:1.5px dashed var(--line);border-radius:var(--radius);background:var(--surface-2);
+    padding:28px 18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  .drop:hover,.drop:focus-visible{border-color:var(--accent);background:var(--accent-soft)}
+  .drop.is-over{border-color:var(--accent);background:var(--accent-soft)}
+  .drop strong{display:block;font-size:16px;margin-bottom:4px}
+  .drop span{color:var(--ink-2);font-size:13px}
+  .filerow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;font-size:13px;color:var(--ink-2)}
+  .filename{font-family:var(--mono);color:var(--ink)}
+  .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  button{font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);padding:10px 16px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button:disabled{opacity:.45;cursor:not-allowed;border-color:var(--line)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{filter:brightness(1.07)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line-soft)}
+  .field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+  .field input{width:100%;font:inherit;font-family:var(--mono);padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);color:var(--ink)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+  .tile .n{font-family:var(--mono);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+  .tile .l{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .tile.ok .n{color:var(--ok)} .tile.fail .n{color:var(--fail)} .tile.warn .n{color:var(--warn)}
+  .pair{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+  .pair.fail{border-left:4px solid var(--fail)}
+  .pair.ok{border-left:4px solid var(--ok)}
+  .pair.warn{border-left:4px solid var(--warn)}
+  .pair > summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:13px 16px}
+  .pair > summary::-webkit-details-marker{display:none}
+  .pair > summary:hover{background:var(--surface-2)}
+  .pair h3{margin:0;font-size:15px;font-family:var(--mono);font-weight:600}
+  .meta{color:var(--ink-2);font-size:12.5px;flex:1 1 220px}
+  .pill{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .pill.fail{background:var(--fail-soft);color:var(--fail)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}
+  .tablebox{overflow-x:auto;border-top:1px solid var(--line-soft)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{text-align:left;padding:8px 16px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);background:var(--surface-2)}
+  td.val{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr.r-fail td{background:var(--fail-soft)}
+  tr.r-warn td{background:var(--warn-soft)}
+  td.note{color:var(--ink-2);font-size:12.5px;white-space:normal;min-width:180px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px;color:var(--ink-2);margin-top:10px}
+  .empty{color:var(--ink-2);font-size:14px}
+  .banner{border-radius:var(--radius);padding:12px 14px;font-size:13.5px;margin-bottom:14px;border:1px solid var(--line)}
+  .banner.info{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+  .banner.fail{background:var(--fail-soft);border-color:var(--fail)}
+  code{font-family:var(--mono);font-size:.92em}
+  footer{margin-top:34px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-3);font-size:12.5px}
+  @media (max-width:520px){ h1{font-size:23px} .pair > summary{padding:12px} th,td{padding:7px 12px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Oversluitcontrole P300 &rarr; N200</p>
+      <h1>Polisparen Controle</h1>
+      <p class="sub">Upload de export met dubbele polissen. De tool koppelt elke oude polis (P300, wijzigingsreden&nbsp;47) aan de nieuwe polis (N200, wijzigingsreden&nbsp;2) en controleert of de velden die gelijk moeten zijn, ook gelijk zijn.</p>
+    </div>
+  </header>
+
+  <section>
+    <div class="panel">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Kies een CSV-bestand of sleep het hierheen">
+        <strong>Sleep je CSV hierheen</strong>
+        <span>of klik om te bladeren &middot; CSV, TSV of TXT &middot; scheidingsteken <code>;</code> <code>,</code> of tab wordt herkend</span>
+      </div>
+      <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv" hidden>
+      <div class="filerow">
+        <span>Bestand:</span><span class="filename" id="fname">voorbeeld (3 regels, ingebouwd)</span>
+        <span id="rowinfo"></span>
+      </div>
+      <div class="actions">
+        <button class="primary" id="check" type="button">Controleer CSV</button>
+        <button id="sample" type="button">Voorbeeld laden</button>
+        <button id="export" type="button" disabled>Kopieer rapport</button>
+      </div>
+      <div class="settings">
+        <div class="field">
+          <label for="tol">Marge incassobedrag (&euro;)</label>
+          <input id="tol" type="number" step="0.01" min="0" value="0.06">
+        </div>
+        <div class="field">
+          <label for="jaar">Volgend jaar van opgave</label>
+          <input id="jaar" type="number" min="2000" max="2100" value="2027">
+        </div>
+        <div class="field">
+          <label for="prov">Toegestane provisie %</label>
+          <input id="prov" type="text" value="23, 25">
+        </div>
+        <div class="field">
+          <label for="mijoud">Maatschappij oud / nieuw</label>
+          <input id="mijoud" type="text" value="P300 / N200">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="out" aria-live="polite"></section>
+
+  <footer>
+    Kolommen worden herkend op koptekst; ontbreekt een kop, dan valt de tool terug op de vaste kolomvolgorde van de standaardexport.
+    De koppeling oud&rarr;nieuw loopt via <code>Polisnr. oude mij.</code> van de nieuwe polis (kolom&nbsp;S en de tweede, kolom&nbsp;AK) tegenover het polisnummer (kolom&nbsp;I) van de oude polis.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var SAMPLE = [
+    "Relatie->Agent op relatienivo\tRelatie->Relatienummer\tRelatie->Voorletters/voorvoegsels/a\tPolis+Wacht->Maatschappij\tPolis+WachtOms->Maatschappij\tPolis+Wacht->Branche\tPolis+WachtOms->Branche\tPolis+Wacht->Verzekeringsvorm\tPolis+Wacht->Polisnummer\tPolis+Wacht->Wijzigingsreden\tPolis+Wacht->Wijzigingsdatum\tPolis+Wacht->Ingangsdatum\tPolis+Wacht->Hoofdvervaldatum polis\tPolis+Wacht->Contractvervaldatum\tPolis+Wacht->Expiratiedatum\tPolis+Wacht->Termijn\tPolis+WachtOms->Hoedanigheid\tPolis+Wacht->Incassobedrag\tPolis+Wacht->Polisnr. oude mij.\tPolis+Wacht->Wacht j/n\tPolis+Wacht->Aantal personeelsleden\tPolis+Wacht->Geschatte jaaromzet di\tPolis+Wacht->Jaarloon (polis)\tPolis+Wacht->Product bewerking J/N\tPolis+Wacht->Mvz. voorrisico J/N\tPolis+Wacht->Mvz. uitbreiding Wegam\tPolis+Wacht->Explosieve / gevaarlij\tPolis+Wacht->Bijsluiter/gebruiksaan\tPolis+Wacht->Meeverzekerd gelieerde\tPolis+Wacht->Eigen risico bedrag\tPolis+Wacht->Verzekerd bedrag\tPolis+Wacht->NHG van toepassing\tPolis+Wacht->Volgend jaar van opgav\tDekking+Wacht->Incassoprovisie % ni\tPolis+Wacht->Collectiviteit\tPolis+Wacht->2e maatschappij\tPolis+Wacht->Polisnr. oude mij.\tPolis+Wacht->Tekst 1\tPolis+Wacht->Tekst 2\tPolis+Wacht->Tekst 3\tPolis+Wacht->Tekst 4\tPolis+Wacht->Tekst 5\tPolis+Wacht->Voorrisico meeverzeker\tPolis+Wacht->Clausule 10\tPolis+Wacht->Verzekerd bedrag A\tDekking+Wacht->Agent 1 provisie%",
+    "3\t982\t\tN200\tNationale-Nederlanden Schadeverz My\t6503\tAansprakelijkheid Bedrijven\t#0376\t801058436\t2\t1-1-2027\t1-1-2027\t1-1-2027\t1-1-2027\t\t1\t\t86,25\t800765782\tJ\t1\t250000\t0\t\tJ\tN\tN\tN\tN\t250\t2500000\tN\t2028\t23\tPRO23\tW740\t800765782\t\t\t\t\t\t\tO2602\t0\t23",
+    "8\t3602\t\tP300\tDe Waerdse Assuradeuren B.V.\t6500\tAansprakelijkheid bedrijf\t\t800743121\t47\t1-1-2027\t15-8-2011\t1-1-2027\t1-1-2027\t\t1\t\t35,86\t\tJ\t0\t48994\t0\t\t\t\t\t\t\t500\t0\tJ\t2027\t25\t\t\t\tIn tegenstelling tot hetgeen is bepaald in clausule N850\tmet betrekking tot uitbesteed werk is dit meeverzekerd op de\tpolis.\t\t\t\t\t2500000\t25",
+    "8\t3602\t\tN200\tNationale-Nederlanden Schadeverz My\t6503\tAansprakelijkheid Bedrijven\t#0376\t801058468\t2\t1-1-2027\t1-1-2027\t1-1-2027\t1-1-2027\t\t1\t\t35,86\t800743121\tJ\t1\t48994\t0\tN\tN\tN\tN\tN\tN\t500\t2500000\tJ\t2028\t23\tPRO23\tW740\t800743121\t\t\t\t\t\t\tO2602\t0\t23"
+  ].join("\n");
+
+  /* ---------- kolomdefinitie: vaste exportvolgorde + herkenning op koptekst ---------- */
+  var COLS = [
+    ["agent",        0,  "agent op relatieniv"],
+    ["relatienr",    1,  "relatienummer"],
+    ["voorletters",  2,  "voorletters"],
+    ["mij",          3,  "polis+wacht->maatschappij"],
+    ["mijoms",       4,  "polis+wachtoms->maatschappij"],
+    ["branche",      5,  "polis+wacht->branche"],
+    ["brancheoms",   6,  "polis+wachtoms->branche"],
+    ["vorm",         7,  "verzekeringsvorm"],
+    ["polisnr",      8,  "polisnummer"],
+    ["wijzreden",    9,  "wijzigingsreden"],
+    ["wijzdatum",   10,  "wijzigingsdatum"],
+    ["ingang",      11,  "ingangsdatum"],
+    ["hvd",         12,  "hoofdvervaldatum"],
+    ["contractvd",  13,  "contractvervaldatum"],
+    ["expiratie",   14,  "expiratiedatum"],
+    ["termijn",     15,  "termijn"],
+    ["hoedanigheid",16,  "hoedanigheid"],
+    ["incasso",     17,  "incassobedrag"],
+    ["oudpolisnr",  18,  "polisnr. oude mij."],
+    ["wacht",       19,  "wacht j/n"],
+    ["personeel",   20,  "aantal personeelsleden"],
+    ["omzet",       21,  "geschatte jaaromzet"],
+    ["jaarloon",    22,  "jaarloon"],
+    ["eigenrisico", 29,  "eigen risico bedrag"],
+    ["verzbedrag",  30,  "verzekerd bedrag"],
+    ["nhg",         31,  "nhg van toepassing"],
+    ["opgavejaar",  32,  "volgend jaar van opgav"],
+    ["provisie",    33,  "incassoprovisie"],
+    ["collect",     34,  "collectiviteit"],
+    ["mij2",        35,  "2e maatschappij"],
+    ["oudpolisnr2", 36,  null],
+    ["agentprov",   45,  "agent 1 provisie"]
+  ];
+
+  function norm(s){ return String(s == null ? "" : s).toLowerCase().replace(/\s+/g," ").trim(); }
+
+  function mapColumns(header){
+    var map = {}, used = {};
+    var heads = header.map(norm);
+    COLS.forEach(function(c){
+      var key = c[0], fallback = c[1], needle = c[2];
+      var idx = -1;
+      if (needle){
+        for (var i = 0; i < heads.length; i++){
+          if (heads[i].indexOf(needle) !== -1 && !used[i]){ idx = i; break; }
+        }
+      }
+      if (idx === -1 && key === "oudpolisnr2"){
+        for (var j = heads.length - 1; j >= 0; j--){
+          if (heads[j].indexOf("polisnr. oude mij") !== -1 && !used[j]){ idx = j; break; }
+        }
+      }
+      if (idx === -1) idx = fallback;
+      used[idx] = true;
+      map[key] = idx;
+    });
+    return map;
+  }
+
+  /* ---------- parsing ---------- */
+  function detectDelimiter(text){
+    var line = text.split(/\r?\n/)[0] || "";
+    var counts = { "\t": (line.match(/\t/g)||[]).length, ";": (line.match(/;/g)||[]).length, ",": (line.match(/,/g)||[]).length };
+    var best = "\t";
+    Object.keys(counts).forEach(function(d){ if (counts[d] > counts[best]) best = d; });
+    return counts[best] === 0 ? "\t" : best;
+  }
+
+  function parseDelimited(text, delim){
+    var rows = [], row = [], field = "", inQ = false;
+    text = text.replace(/^﻿/, "");
+    for (var i = 0; i < text.length; i++){
+      var ch = text[i];
+      if (inQ){
+        if (ch === '"'){
+          if (text[i+1] === '"'){ field += '"'; i++; } else { inQ = false; }
+        } else field += ch;
+      } else if (ch === '"'){ inQ = true; }
+      else if (ch === delim){ row.push(field); field = ""; }
+      else if (ch === "\n"){ row.push(field); rows.push(row); row = []; field = ""; }
+      else if (ch === "\r"){ /* skip */ }
+      else field += ch;
+    }
+    row.push(field); rows.push(row);
+    return rows.filter(function(r){ return r.some(function(c){ return String(c).trim() !== ""; }); });
+  }
+
+  /* ---------- waarde-helpers ---------- */
+  function txt(row, map, key){
+    var i = map[key];
+    return i == null || i < 0 ? "" : String(row[i] == null ? "" : row[i]).trim();
+  }
+  function num(v){
+    if (v == null) return null;
+    var s = String(v).trim().replace(/[€\s%]/g, "");
+    if (s === "") return null;
+    if (s.indexOf(",") !== -1) s = s.replace(/\./g, "").replace(",", ".");
+    else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+    var n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
+  function dateKey(v){
+    var s = String(v == null ? "" : v).trim();
+    if (!s) return "";
+    var m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if (m) return m[3] + "-" + ("0"+m[2]).slice(-2) + "-" + ("0"+m[1]).slice(-2);
+    m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+    if (m) return m[1] + "-" + ("0"+m[2]).slice(-2) + "-" + ("0"+m[3]).slice(-2);
+    return s;
+  }
+  function jn(v){
+    var s = String(v == null ? "" : v).trim().toUpperCase();
+    if (s === "JA") return "J";
+    if (s === "NEE" || s === "NEEN") return "N";
+    return s;
+  }
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c];
+    });
+  }
+  function dash(v){ return String(v == null ? "" : v).trim() === "" ? "—" : v; }
+
+  /* ---------- controles ---------- */
+  function buildChecks(oud, nieuw, cfg){
+    var c = [];
+    function add(label, ov, nv, status, note){ c.push({ label: label, oud: ov, nieuw: nv, status: status, note: note || "" }); }
+    function eq(label, key, fmt, note){
+      var ov = txt(oud.row, oud.map, key), nv = txt(nieuw.row, nieuw.map, key);
+      var a = fmt ? fmt(ov) : ov, b = fmt ? fmt(nv) : nv;
+      var st = (a === b) ? (a === "" ? "warn" : "ok") : "fail";
+      add(label, ov, nv, st, st === "fail" ? "Waarden verschillen" : (a === "" ? "Beide leeg" : note || ""));
+    }
+
+    // 1. maatschappijcodes
+    var mOud = txt(oud.row, oud.map, "mij"), mNieuw = txt(nieuw.row, nieuw.map, "mij");
+    add("Maatschappij (oud " + cfg.mijOud + " / nieuw " + cfg.mijNieuw + ")", mOud, mNieuw,
+        (mOud.toUpperCase() === cfg.mijOud && mNieuw.toUpperCase() === cfg.mijNieuw) ? "ok" : "fail",
+        "Oud moet " + cfg.mijOud + " zijn, nieuw " + cfg.mijNieuw);
+
+    // 2. wijzigingsreden
+    var rOud = txt(oud.row, oud.map, "wijzreden"), rNieuw = txt(nieuw.row, nieuw.map, "wijzreden");
+    add("Wijzigingsreden (47 oud / 2 nieuw)", rOud, rNieuw,
+        (rOud === "47" && rNieuw === "2") ? "ok" : "fail", "Oud 47, nieuw 2");
+
+    // 3. koppeling polisnummer
+    var pOud = txt(oud.row, oud.map, "polisnr");
+    var ref1 = txt(nieuw.row, nieuw.map, "oudpolisnr");
+    var ref2 = txt(nieuw.row, nieuw.map, "oudpolisnr2");
+    add("Polisnr. oude mij. (kolom S) = polisnummer oud", pOud, ref1,
+        ref1 === "" ? "fail" : (ref1 === pOud ? "ok" : "fail"),
+        "Nieuwe polis verwijst naar het oude polisnummer");
+    add("Polisnr. oude mij. 2e veld (kolom AK) = polisnummer oud", pOud, ref2,
+        ref2 === "" ? "fail" : (ref2 === pOud ? "ok" : "fail"),
+        "Tweede verwijzingsveld, naast kolom AJ (2e maatschappij)");
+
+    // 4. ingangsdatum nieuw = hoofdvervaldatum oud
+    var hvdOud = txt(oud.row, oud.map, "hvd"), ingNieuw = txt(nieuw.row, nieuw.map, "ingang");
+    add("Ingangsdatum nieuw = hoofdvervaldatum oud", hvdOud, ingNieuw,
+        (dateKey(hvdOud) && dateKey(hvdOud) === dateKey(ingNieuw)) ? "ok" : "fail",
+        "Nieuwe polis start op de hoofdvervaldatum van de oude polis");
+
+    // 5. hoofdvervaldatum gelijk
+    eq("Hoofdvervaldatum polis", "hvd", dateKey);
+
+    // 6. termijn
+    eq("Termijn", "termijn");
+
+    // 7. incassobedrag binnen marge
+    var iOud = num(txt(oud.row, oud.map, "incasso")), iNieuw = num(txt(nieuw.row, nieuw.map, "incasso"));
+    var diff = (iOud == null || iNieuw == null) ? null : Math.abs(iOud - iNieuw);
+    add("Incassobedrag (marge " + cfg.tol.toFixed(2).replace(".", ",") + ")",
+        txt(oud.row, oud.map, "incasso"), txt(nieuw.row, nieuw.map, "incasso"),
+        diff == null ? "fail" : (diff <= cfg.tol + 1e-9 ? "ok" : "fail"),
+        diff == null ? "Bedrag ontbreekt of is onleesbaar" : "Verschil " + diff.toFixed(2).replace(".", ",") );
+
+    // 8. geschatte jaaromzet
+    var oOud = num(txt(oud.row, oud.map, "omzet")), oNieuw = num(txt(nieuw.row, nieuw.map, "omzet"));
+    add("Geschatte jaaromzet", txt(oud.row, oud.map, "omzet"), txt(nieuw.row, nieuw.map, "omzet"),
+        (oOud != null && oNieuw != null && oOud === oNieuw) ? "ok" : "fail",
+        (oOud == null || oNieuw == null) ? "Waarde ontbreekt" : (oOud === oNieuw ? "" : "Verschil " + (oNieuw - oOud)));
+
+    // 9. NHG
+    eq("NHG van toepassing", "nhg", jn);
+
+    // 10. volgend jaar van opgave
+    var jOud = txt(oud.row, oud.map, "opgavejaar"), jNieuw = txt(nieuw.row, nieuw.map, "opgavejaar");
+    add("Volgend jaar van opgave = " + cfg.jaar, jOud, jNieuw,
+        (jOud === cfg.jaar && jNieuw === cfg.jaar) ? "ok" : "fail",
+        "Verwacht " + cfg.jaar + " op beide regels" +
+        ((jOud !== cfg.jaar && jNieuw !== cfg.jaar) ? " (beide afwijkend)" :
+         (jOud !== cfg.jaar ? " (oud wijkt af)" : (jNieuw !== cfg.jaar ? " (nieuw wijkt af)" : ""))));
+
+    // 11. provisie
+    function provStatus(v){ var n2 = num(v); return n2 != null && cfg.prov.indexOf(n2) !== -1; }
+    var provOud = txt(oud.row, oud.map, "provisie"), provNieuw = txt(nieuw.row, nieuw.map, "provisie");
+    add("Incassoprovisie % (" + cfg.prov.join(" of ") + ")", provOud, provNieuw,
+        (provStatus(provOud) && provStatus(provNieuw)) ? "ok" : "fail",
+        "Toegestaan: " + cfg.prov.join("% of ") + "%");
+    var apOud = txt(oud.row, oud.map, "agentprov"), apNieuw = txt(nieuw.row, nieuw.map, "agentprov");
+    add("Agent 1 provisie %", apOud, apNieuw,
+        (provStatus(apOud) && provStatus(apNieuw)) ? "ok" : "fail",
+        "Moet gelijk zijn aan de incassoprovisie en binnen " + cfg.prov.join("/") + "%");
+    if (num(provNieuw) != null && num(apNieuw) != null && num(provNieuw) !== num(apNieuw)){
+      add("Incassoprovisie = agentprovisie (nieuw)", provNieuw, apNieuw, "fail", "Percentages op de nieuwe polis lopen uiteen");
+    }
+
+    // 12. PRO-code tegen percentage
+    var col = txt(nieuw.row, nieuw.map, "collect").toUpperCase();
+    if (col.indexOf("PRO") === 0){
+      var codeNum = num(col.replace("PRO", ""));
+      add("Collectiviteit " + col + " komt overeen met provisie", txt(oud.row, oud.map, "collect"), col,
+          (codeNum != null && codeNum === num(provNieuw)) ? "ok" : "fail",
+          "PRO-code moet het provisiepercentage van de nieuwe polis volgen");
+    } else {
+      add("Collectiviteit PRO-code", txt(oud.row, oud.map, "collect"), txt(nieuw.row, nieuw.map, "collect"),
+          "warn", "Geen PRO-code op de nieuwe polis gevonden");
+    }
+
+    return c;
+  }
+
+  /* ---------- verwerking ---------- */
+  var state = { text: SAMPLE, name: "voorbeeld (ingebouwd)", isSample: true, report: "" };
+
+  function readConfig(){
+    var prov = document.getElementById("prov").value.split(/[,;/ ]+/)
+      .map(function(s){ return num(s); }).filter(function(n){ return n != null; });
+    var mij = document.getElementById("mijoud").value.split("/");
+    return {
+      tol: (num(document.getElementById("tol").value) || 0),
+      jaar: String(document.getElementById("jaar").value).trim(),
+      prov: prov.length ? prov : [23, 25],
+      mijOud: (mij[0] || "P300").trim().toUpperCase(),
+      mijNieuw: (mij[1] || "N200").trim().toUpperCase()
+    };
+  }
+
+  function classify(row, map, cfg){
+    var m = txt(row, map, "mij").toUpperCase(), r = txt(row, map, "wijzreden");
+    if (m === cfg.mijNieuw || r === "2") return "nieuw";
+    if (m === cfg.mijOud || r === "47") return "oud";
+    return "?";
+  }
+
+  function run(){
+    var cfg = readConfig();
+    var delim = detectDelimiter(state.text);
+    var rows = parseDelimited(state.text, delim);
+    if (!rows.length){ render({ error: "Geen regels gevonden in het bestand." }); return; }
+
+    var header = rows[0], body = rows.slice(1);
+    var looksLikeHeader = header.join(" ").toLowerCase().indexOf("polis") !== -1;
+    if (!looksLikeHeader){ body = rows; }
+    var map = mapColumns(looksLikeHeader ? header : header.map(function(){ return ""; }));
+
+    var records = body.map(function(r, i){
+      return { row: r, map: map, line: i + (looksLikeHeader ? 2 : 1), kind: classify(r, map, cfg) };
+    });
+
+    var ouds = records.filter(function(r){ return r.kind === "oud"; });
+    var nieuws = records.filter(function(r){ return r.kind === "nieuw"; });
+    var pairs = [], usedOud = [];
+
+    nieuws.forEach(function(n){
+      var ref = txt(n.row, n.map, "oudpolisnr") || txt(n.row, n.map, "oudpolisnr2");
+      var match = null;
+      if (ref){
+        match = ouds.find(function(o){ return usedOud.indexOf(o) === -1 && txt(o.row, o.map, "polisnr") === ref; }) || null;
+      }
+      if (!match){
+        var rel = txt(n.row, n.map, "relatienr");
+        var cands = ouds.filter(function(o){ return usedOud.indexOf(o) === -1 && txt(o.row, o.map, "relatienr") === rel && rel !== ""; });
+        if (cands.length === 1) match = cands[0];
+      }
+      if (match) usedOud.push(match);
+      pairs.push({ nieuw: n, oud: match });
+    });
+
+    var losseOud = ouds.filter(function(o){ return usedOud.indexOf(o) === -1; });
+    var onbekend = records.filter(function(r){ return r.kind === "?"; });
+
+    var results = pairs.map(function(p){
+      if (!p.oud){
+        return { pair: p, status: "fail", checks: [], orphan: true };
+      }
+      var checks = buildChecks(p.oud, p.nieuw, cfg);
+      var status = checks.some(function(c){ return c.status === "fail"; }) ? "fail"
+                 : (checks.some(function(c){ return c.status === "warn"; }) ? "warn" : "ok");
+      return { pair: p, status: status, checks: checks, orphan: false };
+    });
+
+    render({ results: results, losseOud: losseOud, onbekend: onbekend, map: map, cfg: cfg,
+             rowCount: records.length, header: looksLikeHeader ? header : null, delim: delim });
+  }
+
+  /* ---------- weergave ---------- */
+  function render(data){
+    var out = document.getElementById("out");
+    if (data.error){
+      out.innerHTML = '<div class="banner fail">' + esc(data.error) + '</div>';
+      return;
+    }
+    var res = data.results;
+    var okN = res.filter(function(r){ return r.status === "ok"; }).length;
+    var failN = res.filter(function(r){ return r.status === "fail"; }).length;
+    var warnN = res.filter(function(r){ return r.status === "warn"; }).length;
+    var failChecks = res.reduce(function(a, r){ return a + r.checks.filter(function(c){ return c.status === "fail"; }).length; }, 0);
+
+    var html = "";
+    if (state.isSample){
+      html += '<div class="banner info"><strong>Voorbeeldgegevens.</strong> Dit is de meegeleverde voorbeeldexport — upload je eigen CSV om je eigen bestand te controleren.</div>';
+    }
+    html += '<h2>Samenvatting</h2><div class="tiles">' +
+      tile(res.length, "polisparen", "") +
+      tile(okN, "volledig akkoord", "ok") +
+      tile(failN, "met afwijking", failN ? "fail" : "") +
+      tile(failChecks, "afwijkende velden", failChecks ? "fail" : "") +
+      tile(data.losseOud.length + data.onbekend.length, "losse regels", (data.losseOud.length + data.onbekend.length) ? "warn" : "") +
+      '</div>';
+    html += '<div class="legend"><span>' + data.rowCount + ' dataregels gelezen</span><span>scheidingsteken: ' +
+            (data.delim === "\t" ? "tab" : esc(data.delim)) + '</span>' +
+            (warnN ? '<span>' + warnN + ' paar met aandachtspunt</span>' : '') + '</div>';
+
+    html += '<section><h2>Polisparen</h2>';
+    if (!res.length) html += '<p class="empty">Geen nieuwe polissen (' + esc(data.cfg.mijNieuw) + ' / wijzigingsreden 2) gevonden.</p>';
+
+    res.forEach(function(r){
+      var n = r.pair.nieuw, o = r.pair.oud;
+      var rel = txt(n.row, n.map, "relatienr");
+      var head = '<summary><h3>Relatie ' + esc(dash(rel)) + '</h3>' +
+        '<span class="meta">' + (o ? esc(txt(o.row, o.map, "polisnr")) + ' &rarr; ' : '') + esc(txt(n.row, n.map, "polisnr")) +
+        ' &middot; ' + esc(dash(txt(n.row, n.map, "brancheoms"))) + '</span>' +
+        '<span class="pill ' + r.status + '">' + (r.status === "ok" ? "akkoord" :
+          (r.status === "warn" ? "let op" : (r.orphan ? "geen oude polis" :
+          r.checks.filter(function(c){ return c.status === "fail"; }).length + " afwijking(en)"))) + '</span></summary>';
+
+      var bodyHtml;
+      if (r.orphan){
+        bodyHtml = '<div class="tablebox"><table><tbody><tr class="r-fail"><td>Geen bijbehorende ' + esc(data.cfg.mijOud) +
+          '-polis gevonden voor verwijzing <code>' + esc(dash(txt(n.row, n.map, "oudpolisnr"))) + '</code> (regel ' + n.line + ').</td></tr></tbody></table></div>';
+      } else {
+        var rowsHtml = r.checks.map(function(c){
+          return '<tr class="' + (c.status === "ok" ? "" : "r-" + c.status) + '">' +
+            '<td>' + esc(c.label) + '</td>' +
+            '<td class="val">' + esc(dash(c.oud)) + '</td>' +
+            '<td class="val">' + esc(dash(c.nieuw)) + '</td>' +
+            '<td><span class="pill ' + c.status + '">' + (c.status === "ok" ? "ok" : (c.status === "warn" ? "let op" : "fout")) + '</span></td>' +
+            '<td class="note">' + esc(c.note) + '</td></tr>';
+        }).join("");
+        bodyHtml = '<div class="tablebox"><table><thead><tr><th>Controle</th><th>Oud (' + esc(data.cfg.mijOud) +
+          ', regel ' + o.line + ')</th><th>Nieuw (' + esc(data.cfg.mijNieuw) + ', regel ' + n.line +
+          ')</th><th>Status</th><th>Toelichting</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>';
+      }
+      html += '<details class="pair ' + r.status + '"' + (r.status === "ok" ? "" : " open") + '>' + head + bodyHtml + '</details>';
+    });
+    html += '</section>';
+
+    if (data.losseOud.length || data.onbekend.length){
+      html += '<section><h2>Regels zonder paar</h2><div class="panel"><div class="tablebox"><table><thead><tr><th>Regel</th><th>Soort</th><th>Relatie</th><th>Maatschappij</th><th>Polisnummer</th><th>Wijz.reden</th></tr></thead><tbody>';
+      data.losseOud.concat(data.onbekend).forEach(function(r){
+        html += '<tr class="r-warn"><td class="val">' + r.line + '</td><td>' + (r.kind === "oud" ? "oude polis zonder nieuwe" : "onbekend") +
+          '</td><td class="val">' + esc(dash(txt(r.row, r.map, "relatienr"))) + '</td><td class="val">' + esc(dash(txt(r.row, r.map, "mij"))) +
+          '</td><td class="val">' + esc(dash(txt(r.row, r.map, "polisnr"))) + '</td><td class="val">' + esc(dash(txt(r.row, r.map, "wijzreden"))) + '</td></tr>';
+      });
+      html += '</tbody></table></div></div></section>';
+    }
+
+    out.innerHTML = html;
+    state.report = buildReport(data);
+    document.getElementById("export").disabled = false;
+  }
+
+  function tile(n, label, cls){
+    return '<div class="tile ' + cls + '"><div class="n">' + n + '</div><div class="l">' + label + '</div></div>';
+  }
+
+  function buildReport(data){
+    var lines = ["Polisparen controle — " + state.name, ""];
+    data.results.forEach(function(r){
+      var n = r.pair.nieuw, o = r.pair.oud;
+      lines.push("Relatie " + txt(n.row, n.map, "relatienr") + " | nieuw " + txt(n.row, n.map, "polisnr") +
+        (o ? " | oud " + txt(o.row, o.map, "polisnr") : " | GEEN OUDE POLIS") + " => " + r.status.toUpperCase());
+      r.checks.filter(function(c){ return c.status !== "ok"; }).forEach(function(c){
+        lines.push("   - " + c.label + ": oud=" + (c.oud || "-") + " nieuw=" + (c.nieuw || "-") + (c.note ? " (" + c.note + ")" : ""));
+      });
+    });
+    data.losseOud.forEach(function(r){
+      lines.push("Regel " + r.line + ": oude polis " + txt(r.row, r.map, "polisnr") + " zonder nieuwe polis");
+    });
+    return lines.join("\n");
+  }
+
+  /* ---------- invoer ---------- */
+  var drop = document.getElementById("drop"), fileInput = document.getElementById("file");
+
+  function loadFile(f){
+    var reader = new FileReader();
+    reader.onload = function(){
+      state.text = String(reader.result);
+      state.name = f.name;
+      state.isSample = false;
+      document.getElementById("fname").textContent = f.name;
+      document.getElementById("rowinfo").textContent = "(" + (state.text.split(/\r?\n/).filter(function(l){ return l.trim(); }).length) + " regels)";
+      run();
+    };
+    reader.onerror = function(){ render({ error: "Het bestand kon niet worden gelezen." }); };
+    reader.readAsText(f, "utf-8");
+  }
+
+  drop.addEventListener("click", function(){ fileInput.click(); });
+  drop.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); } });
+  fileInput.addEventListener("change", function(){ if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+  ["dragenter","dragover"].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("is-over"); });
+  });
+  ["dragleave","drop"].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("is-over"); });
+  });
+  drop.addEventListener("drop", function(e){
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+
+  document.getElementById("check").addEventListener("click", run);
+  document.getElementById("sample").addEventListener("click", function(){
+    state.text = SAMPLE; state.name = "voorbeeld (ingebouwd)"; state.isSample = true;
+    document.getElementById("fname").textContent = state.name;
+    document.getElementById("rowinfo").textContent = "(3 polissen)";
+    run();
+  });
+  document.getElementById("export").addEventListener("click", function(){
+    var btn = this;
+    var done = function(msg){ btn.textContent = msg; setTimeout(function(){ btn.textContent = "Kopieer rapport"; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(state.report).then(function(){ done("Gekopieerd"); }, function(){ done("Kopiëren mislukt"); });
+    } else done("Kopiëren mislukt");
+  });
+  ["tol","jaar","prov","mijoud"].forEach(function(id){
+    document.getElementById(id).addEventListener("change", run);
+  });
+
+  document.getElementById("rowinfo").textContent = "(3 polissen)";
+  run();
+})();
+</script>
+</body>
+</html>
