@@ -35,3 +35,8 @@ Temporary Items
 # Old files
 *_old.html
 clubs_old.html
+
+# Node / test tooling (playwright-core voor lokale browsertests)
+node_modules/
+package.json
+package-lock.json
