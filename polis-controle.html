@@ -73,6 +73,7 @@
   .nav button.pijl:hover{background:var(--dwa-groen);color:var(--wit)}
   .nav button.pijl:disabled{opacity:.3;cursor:not-allowed;background:var(--wit);color:var(--dwa-groen)}
   .nav .teller{font-weight:700;font-size:.95rem;min-width:120px;text-align:center}
+  .nav .klantnaam-nav{font-weight:800;font-size:1.1rem;color:var(--dwa-groen);flex:1 1 220px}
   .nav select{font:inherit;padding:9px 10px;border:1px solid var(--rand);border-radius:8px;background:var(--wit);color:var(--tekst);max-width:100%;flex:1 1 260px}
   .nav .springnaar{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
@@ -108,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 3</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 4</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -306,8 +307,19 @@
     vergelijk("Aantal personeelsleden","personeel","num",{soft:true,diffNote:function(a,b){return "Verschil "+(num(b)-num(a));}});
     vergelijk("Jaarloon (polis)","jaarloon","num",{soft:true});
     vergelijk("Eigen risico bedrag","eigenrisico","num");
-    vergelijk("Verzekerd bedrag","verzbedrag","num",{soft:true});
-    vergelijk("Verzekerd bedrag A","verzbedraga","num",{soft:true});
+    // Verzekerd bedrag: mag in "Verzekerd bedrag" OF "Verzekerd bedrag A" staan.
+    // Minimaal één van beide moet gevuld zijn; het bedrag moet oud = nieuw zijn,
+    // ongeacht in welke van de twee kolommen het staat.
+    function effVerz(rec){
+      var a=num(txt(rec.row,rec.map,"verzbedrag"))||0, b=num(txt(rec.row,rec.map,"verzbedraga"))||0;
+      return Math.max(a,b);
+    }
+    function fmtEur(n){ return n?String(n):"0"; }
+    var evO=effVerz(oud), evN=effVerz(nieuw);
+    add("Verzekerd bedrag (kolom of kolom A)", fmtEur(evO), fmtEur(evN),
+        (evO<=0||evN<=0) ? "fail" : (evO===evN?"ok":"fail"),
+        (evO<=0||evN<=0) ? "Minimaal één van beide velden moet gevuld zijn" :
+        (evO===evN ? "Bedrag mag in 'Verzekerd bedrag' of 'Verzekerd bedrag A' staan" : "Verzekerde bedragen verschillen"));
     // 10. J/N-kenmerken (staan vaak alleen op de nieuwe polis -> let op i.p.v. kruis)
     vergelijk("Product bewerking J/N","productbew","jn",{soft:true});
     vergelijk("Mvz. voorrisico J/N","mvzvoorrisico","jn",{soft:true});
@@ -320,15 +332,19 @@
     var jOud=txt(oud.row,oud.map,"opgavejaar"), jNieuw=txt(nieuw.row,nieuw.map,"opgavejaar");
     add("Volgend jaar van opgave = "+cfg.jaar,jOud,jNieuw,(jOud===cfg.jaar&&jNieuw===cfg.jaar)?"ok":"fail",
         "Verwacht "+cfg.jaar+((jOud!==cfg.jaar&&jNieuw!==cfg.jaar)?" (beide afwijkend)":(jOud!==cfg.jaar?" (oud wijkt af)":(jNieuw!==cfg.jaar?" (nieuw wijkt af)":""))));
-    // 12. provisie — bij een #0376-product (verzekeringsvorm nieuw) is ook 20% goed.
+    // 12. provisie — bij een #0376-product of een ZM-polis is ook 20% goed.
     var vormNieuw = txt(nieuw.row,nieuw.map,"vorm").replace(/\s/g,"");
+    function heeftZM(rec){ for(var i=0;i<rec.row.length;i++){ if(/(^|[^A-Z])ZM([^A-Z]|$)/.test(String(rec.row[i]).toUpperCase())) return true; } return false; }
+    var isZM = heeftZM(nieuw) || heeftZM(oud);
+    var extra20 = (vormNieuw==="#0376" || isZM);
     var provToegestaan = cfg.prov.slice();
-    if(vormNieuw==="#0376" && provToegestaan.indexOf(20)===-1) provToegestaan.push(20);
+    if(extra20 && provToegestaan.indexOf(20)===-1) provToegestaan.push(20);
+    var extraNote = extra20 ? " (20% toegestaan bij "+(vormNieuw==="#0376"?"#0376":"ZM")+")" : "";
     function provOk(v){ var n2=num(v); return n2!=null&&provToegestaan.indexOf(n2)!==-1; }
     var provOud=txt(oud.row,oud.map,"provisie"), provNieuw=txt(nieuw.row,nieuw.map,"provisie");
-    add("Incassoprovisie % ("+provToegestaan.join(" of ")+")",provOud,provNieuw,(provOk(provOud)&&provOk(provNieuw))?"ok":"fail","Toegestaan: "+provToegestaan.join("% of ")+"%"+(vormNieuw==="#0376"?" (20% toegestaan bij #0376)":""));
+    add("Incassoprovisie % ("+provToegestaan.join(" of ")+")",provOud,provNieuw,(provOk(provOud)&&provOk(provNieuw))?"ok":"fail","Toegestaan: "+provToegestaan.join("% of ")+"%"+extraNote);
     var apOud=txt(oud.row,oud.map,"agentprov"), apNieuw=txt(nieuw.row,nieuw.map,"agentprov");
-    add("Agent 1 provisie %",apOud,apNieuw,(provOk(apOud)&&provOk(apNieuw))?"ok":"fail","Gelijk aan incassoprovisie, binnen "+provToegestaan.join("/")+"%");
+    add("Agent 1 provisie %",apOud,apNieuw,(provOk(apOud)&&provOk(apNieuw))?"ok":"fail","Gelijk aan incassoprovisie, binnen "+provToegestaan.join("/")+"%"+extraNote);
     if(num(provNieuw)!=null&&num(apNieuw)!=null&&num(provNieuw)!==num(apNieuw)) add("Incassoprovisie = agentprovisie (nieuw)",provNieuw,apNieuw,"fail","Percentages op de nieuwe polis lopen uiteen");
     var col=txt(nieuw.row,nieuw.map,"collect").toUpperCase();
     if(col.indexOf("PRO")===0){ var cn=num(col.replace("PRO","")); add("Collectiviteit "+col+" komt overeen met provisie",txt(oud.row,oud.map,"collect"),col,(cn!=null&&cn===num(provNieuw))?"ok":"fail","PRO-code moet het provisiepercentage van de nieuwe polis volgen"); }
@@ -449,6 +465,12 @@
     if(r.status==="warn") return "let op";
     return r.checks.filter(function(c){return c.status==="fail";}).length+" afwijking(en)";
   }
+  function klantNaam(r){
+    var n=r.pair.nieuw;
+    var vl=txt(n.row,n.map,"voorletters");
+    var rel=txt(n.row,n.map,"relatienr");
+    return (vl?vl+" — ":"")+"Relatie "+dash(rel);
+  }
 
   function renderNavigatie(){
     var s=st(), res=s.results.results;
@@ -464,6 +486,7 @@
       '<button class="pijl" id="prev" title="Vorige klant" '+(s.idx===0?"disabled":"")+'>&#8592;</button>'+
       '<div class="teller">Klant '+(s.idx+1)+' van '+res.length+'</div>'+
       '<button class="pijl" id="next" title="Volgende klant" '+(s.idx===res.length-1?"disabled":"")+'>&#8594;</button>'+
+      '<div class="klantnaam-nav">'+esc(klantNaam(res[s.idx]))+' <span class="badge '+res[s.idx].status+'">'+esc(statusWoord(res[s.idx]))+'</span></div>'+
       '<div class="springnaar"><label for="spring" style="font-size:.8rem;color:var(--ink-2)">Spring naar:</label>'+
       '<select id="spring">'+opts+'</select>'+
       '<button class="ghost" id="nextFail" title="Volgende met afwijking">Volgende afwijking &#187;</button></div>'+
@@ -482,7 +505,7 @@
     var r=res[s.idx], n=r.pair.nieuw, o=r.pair.oud, cfg=d.cfg;
     var rel=txt(n.row,n.map,"relatienr");
     var html='<div class="klantkop">'+
-      '<span class="naam">Relatie '+esc(dash(rel))+'</span>'+
+      '<span class="naam">'+esc(klantNaam(r))+'</span>'+
       '<span class="sub">'+(o?esc(txt(o.row,o.map,"polisnr"))+' &rarr; ':'')+esc(txt(n.row,n.map,"polisnr"))+' &middot; '+esc(dash(txt(n.row,n.map,"brancheoms")))+'</span>'+
       '<span class="badge '+r.status+'">'+esc(statusWoord(r))+'</span></div>';
 
