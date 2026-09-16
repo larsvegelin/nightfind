@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 9</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 10</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -410,6 +410,14 @@
     if(!looksHeader) body=rows;
     var map=mapColumns(looksHeader?header:header.map(function(){return "";}), p.cols);
     var records=body.map(function(r,i){ return { row:r, map:map, line:i+(looksHeader?2:1), kind:classify(r,map,cfg) }; });
+    // Ontdubbel identieke regels: hetzelfde polisnummer bij dezelfde soort is
+    // één polis (dubbele exportregel), geen tweede AVB. Alleen verschillende
+    // polisnummers tellen als aparte AVB's.
+    var gezien={};
+    records=records.filter(function(r){
+      var pol=txt(r.row,r.map,"polisnr"); if(!pol) return true;
+      var key=r.kind+"|"+pol; if(gezien[key]) return false; gezien[key]=true; return true;
+    });
     var ouds=records.filter(function(r){return r.kind==="oud";});
     var nieuws=records.filter(function(r){return r.kind==="nieuw";});
     var pairs=[], usedOud=[];
