@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 4</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 5</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -405,6 +405,10 @@
       var status=checks.some(function(c){return c.status==="fail";})?"fail":(checks.some(function(c){return c.status==="warn";})?"warn":"ok");
       return {pair:pr,status:status,checks:checks,orphan:false};
     });
+    // Meerdere AVB's per klant: nummer ze per relatienummer (AVB 1 van 2, ...).
+    var relTot={}, relSeen={};
+    results.forEach(function(r){ var rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr"); relTot[rel]=(relTot[rel]||0)+1; });
+    results.forEach(function(r){ var rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr"); relSeen[rel]=(relSeen[rel]||0)+1; r.avbIdx=relSeen[rel]; r.avbTot=relTot[rel]; });
     s.results={ results:results, losseOud:losseOud, onbekend:onbekend, cfg:cfg, rowCount:records.length, delim:delim, header:looksHeader };
     if(s.idx>=results.length) s.idx=0;
     s.report=buildReport(s.results);
@@ -469,7 +473,9 @@
     var n=r.pair.nieuw;
     var vl=txt(n.row,n.map,"voorletters");
     var rel=txt(n.row,n.map,"relatienr");
-    return (vl?vl+" — ":"")+"Relatie "+dash(rel);
+    var basis=(vl?vl+" — ":"")+"Relatie "+dash(rel);
+    if(r.avbTot>1) basis+=" (AVB "+r.avbIdx+" van "+r.avbTot+")";
+    return basis;
   }
 
   function renderNavigatie(){
@@ -478,8 +484,10 @@
     if(s.idx<0) s.idx=0; if(s.idx>=res.length) s.idx=res.length-1;
     var opts=res.map(function(r,i){
       var rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr");
+      var pol=txt(r.pair.nieuw.row,r.pair.nieuw.map,"polisnr");
       var mark=r.status==="ok"?"✓":(r.status==="warn"?"!":"✗");
-      return '<option value="'+i+'"'+(i===s.idx?" selected":"")+'>'+mark+"  Klant "+esc(dash(rel))+" — "+esc(statusWoord(r))+'</option>';
+      var avb=r.avbTot>1?" [AVB "+r.avbIdx+"/"+r.avbTot+"]":"";
+      return '<option value="'+i+'"'+(i===s.idx?" selected":"")+'>'+mark+"  Klant "+esc(dash(rel))+avb+" · polis "+esc(dash(pol))+" — "+esc(statusWoord(r))+'</option>';
     }).join("");
     $("navigatie").innerHTML=
       '<div class="nav">'+
