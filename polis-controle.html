@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 14</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 15</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -400,9 +400,28 @@
     var apOud=txt(oud.row,oud.map,"agentprov"), apNieuw=txt(nieuw.row,nieuw.map,"agentprov");
     add("Agent 1 provisie % (max "+maxProv+"%)",apOud,apNieuw,provPaarOk(apOud,apNieuw)?"ok":"fail","Nieuw t/m "+maxProv+"% (lager mag); 0% blijft 0%; gelijk is goed");
     if(num(provNieuw)!=null&&num(apNieuw)!=null&&num(provNieuw)!==num(apNieuw)) add("Incassoprovisie = agentprovisie (nieuw)",provNieuw,apNieuw,"fail","Percentages op de nieuwe polis lopen uiteen");
-    var col=txt(nieuw.row,nieuw.map,"collect").toUpperCase();
-    if(col.indexOf("PRO")===0){ var cn=num(col.replace("PRO","")); add("Collectiviteit "+col+" komt overeen met provisie",txt(oud.row,oud.map,"collect"),col,(cn!=null&&cn===num(provNieuw))?"ok":"fail","PRO-code moet het provisiepercentage van de nieuwe polis volgen"); }
-    else add("Collectiviteit PRO-code",txt(oud.row,oud.map,"collect"),txt(nieuw.row,nieuw.map,"collect"),"warn","Geen PRO-code op de nieuwe polis gevonden");
+    // Collectiviteitscode (PRO23 / PR275) = provisiepercentage zonder komma en
+    // in stappen van een halve procent: 23 -> 23%, 275 -> 27,5%. De code moet
+    // gelijk zijn aan de INCASSOprovisie van de nieuwe polis (niet de provinciale
+    // / agentprovisie). Onbekende codes worden alleen ter info getoond.
+    function collectPct(code){
+      var d=String(code==null?"":code).toUpperCase().replace(/[^0-9]/g,""); if(!d) return null;
+      var kand = d.length<=2 ? [parseInt(d,10)] : [parseInt(d,10), parseInt(d,10)/10];
+      for(var i=0;i<kand.length;i++){ var v=kand[i]; if(v>=0 && v<=50 && Math.abs(v*2-Math.round(v*2))<1e-9) return v; }
+      return null; // geen herkenbaar (half-procent) provisiepercentage
+    }
+    function fmtPct(v){ return String(v).replace(".",","); }
+    var colRaw=txt(nieuw.row,nieuw.map,"collect"), colOud=txt(oud.row,oud.map,"collect");
+    var colPct=collectPct(colRaw), provN=num(provNieuw);
+    if(colRaw===""){
+      add("Collectiviteitscode",colOud,colRaw,"warn","Geen collectiviteitscode op de nieuwe polis gevonden");
+    } else if(colPct==null){
+      add("Collectiviteit "+colRaw,colOud,colRaw,"info","Code niet herleidbaar naar een provisiepercentage — ter controle");
+    } else {
+      add("Collectiviteit "+colRaw+" = incassoprovisie "+fmtPct(colPct)+"%",colOud,colRaw,
+          (provN!=null && Math.abs(colPct-provN)<1e-9)?"ok":"fail",
+          "Code "+colRaw+" = "+fmtPct(colPct)+"% moet gelijk zijn aan de incassoprovisie"+(provN!=null?" ("+fmtPct(provN)+"%)":"")+" — niet de provinciale/agentprovisie");
+    }
     // 13. Polisteksten (Tekst 1-5): ter controle overnemen; verschil = geel, nooit fout.
     function teksten(rec){
       return ["tekst1","tekst2","tekst3","tekst4","tekst5"]
