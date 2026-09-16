@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 15</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 16</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -199,6 +199,16 @@
       mijOud: "P300", mijNieuw: "N200",
       // Andere exportindeling (extra Kantoorcode-kolom vooraan + extra velden
       // achteraan); kolommen worden op de koptekst herkend.
+      cols: COLS_STD,
+      checks: buildAvbChecks
+    },
+    {
+      id: "inb",
+      naam: "Inboedel",
+      titel: "Inventaris en goederen",
+      mijOud: "P300", mijNieuw: "N200",
+      // Zelfde exportindeling als Bedrijfsgebouw (Kantoorcode vooraan +
+      // risicoadres-/bouwvelden achteraan); herkend op de koptekst.
       cols: COLS_STD,
       checks: buildAvbChecks
     }
