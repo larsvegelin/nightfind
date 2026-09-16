@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 8</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 9</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -350,20 +350,20 @@
     } else {
       add("Volgend jaar van opgave",jOud,jNieuw,"ok","NHG niet van toepassing — geen eis aan volgend jaar van opgave");
     }
-    // 12. provisie — oud mag 23/25 (of 20 bij #0376/ZM); nieuw mag 20/23/25.
-    var vormNieuw = txt(nieuw.row,nieuw.map,"vorm").replace(/\s/g,"");
-    function heeftZM(rec){ for(var i=0;i<rec.row.length;i++){ if(/(^|[^A-Z])ZM([^A-Z]|$)/.test(String(rec.row[i]).toUpperCase())) return true; } return false; }
-    var isZM = heeftZM(nieuw) || heeftZM(oud);
-    var extra20 = (vormNieuw==="#0376" || isZM);
+    // 12. provisie — de percentages zijn een MAXIMUM: lager mag ook. 0% blijft 0%.
     var provOud=txt(oud.row,oud.map,"provisie"), provNieuw=txt(nieuw.row,nieuw.map,"provisie");
-    function provOkOud(v){ var n2=num(v); return n2!=null&&(cfg.prov.indexOf(n2)!==-1||(extra20&&n2===20)); }
-    function provOkNieuw(v){ var n2=num(v); return n2!=null&&(cfg.prov.indexOf(n2)!==-1||n2===20); } // 20% altijd goed op nieuw
-    // Gelijke provisie op oud en nieuw is altijd goed (er is niets veranderd).
-    function provPaarOk(ov,nv){ var a=num(ov),b=num(nv); if(a!=null&&b!=null&&a===b) return true; return provOkOud(ov)&&provOkNieuw(nv); }
-    add("Incassoprovisie % (oud "+cfg.prov.join("/")+", nieuw 20/"+cfg.prov.join("/")+")",provOud,provNieuw,
-        provPaarOk(provOud,provNieuw)?"ok":"fail","Oud "+cfg.prov.join("/")+"%"+(extra20?"/20%":"")+", nieuw 20/"+cfg.prov.join("/")+"% (of oud = nieuw)");
+    var maxProv=Math.max.apply(null,cfg.prov); // bijv. 25
+    function provPaarOk(ov,nv){
+      var o=num(ov), n=num(nv);
+      if(n==null) return false;
+      if(o!=null && o===0) return n===0;          // 0% provisie moet 0% blijven
+      if(o!=null && o===n) return true;           // gelijk is altijd goed
+      return n>0 && n<=maxProv+1e-9;              // nieuw t/m het maximum
+    }
+    add("Incassoprovisie % (max "+maxProv+"%)",provOud,provNieuw,
+        provPaarOk(provOud,provNieuw)?"ok":"fail","Nieuw t/m "+maxProv+"% (lager mag); 0% blijft 0%; gelijk is goed");
     var apOud=txt(oud.row,oud.map,"agentprov"), apNieuw=txt(nieuw.row,nieuw.map,"agentprov");
-    add("Agent 1 provisie %",apOud,apNieuw,provPaarOk(apOud,apNieuw)?"ok":"fail","Gelijk aan incassoprovisie; nieuw mag 20% (of oud = nieuw)");
+    add("Agent 1 provisie % (max "+maxProv+"%)",apOud,apNieuw,provPaarOk(apOud,apNieuw)?"ok":"fail","Nieuw t/m "+maxProv+"% (lager mag); 0% blijft 0%; gelijk is goed");
     if(num(provNieuw)!=null&&num(apNieuw)!=null&&num(provNieuw)!==num(apNieuw)) add("Incassoprovisie = agentprovisie (nieuw)",provNieuw,apNieuw,"fail","Percentages op de nieuwe polis lopen uiteen");
     var col=txt(nieuw.row,nieuw.map,"collect").toUpperCase();
     if(col.indexOf("PRO")===0){ var cn=num(col.replace("PRO","")); add("Collectiviteit "+col+" komt overeen met provisie",txt(oud.row,oud.map,"collect"),col,(cn!=null&&cn===num(provNieuw))?"ok":"fail","PRO-code moet het provisiepercentage van de nieuwe polis volgen"); }
@@ -552,7 +552,10 @@
       html+='<div class="banner fail">Geen bijbehorende '+esc(cfg.mijOud)+'-polis gevonden voor verwijzing <code>'+esc(dash(txt(n.row,n.map,"oudpolisnr")))+'</code> (regel '+n.line+').</div>';
       $("klant").innerHTML=html; return;
     }
-    var rowsHtml=r.checks.map(function(c){
+    // Bij 'Alleen afwijkingen' tonen we alleen de afwijkende regels (fout/let op),
+    // niet de hele lijst met alles wat goed staat.
+    var zichtbareChecks = s.onlyDev ? r.checks.filter(function(c){ return c.status==="fail"||c.status==="warn"; }) : r.checks;
+    var rowsHtml=zichtbareChecks.map(function(c){
       var mk=c.status==="ok"?'<span class="mark ok">&#10003;</span>':(c.status==="warn"?'<span class="mark warn">!</span>':(c.status==="info"?'<span class="mark info">&ndash;</span>':'<span class="mark fail">&#10007;</span>'));
       return '<tr class="'+(c.status==="ok"?"":"r-"+c.status)+'">'+
         '<td>'+esc(c.label)+'</td>'+
@@ -560,7 +563,7 @@
         '<td class="val col-nieuw">'+esc(dash(c.nieuw))+'</td>'+
         '<td class="st">'+mk+'</td>'+
         '<td class="note">'+esc(c.note)+'</td></tr>';
-    }).join("");
+    }).join("") || '<tr><td colspan="5" style="color:var(--ok)">&#10003; Geen afwijkingen voor deze klant.</td></tr>';
     html+='<div class="tablewrap"><table><thead><tr>'+
       '<th>Controle</th>'+
       '<th class="col-oud">Oud &middot; '+esc(cfg.mijOud)+' (regel '+o.line+')</th>'+
