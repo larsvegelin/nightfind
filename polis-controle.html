@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 5</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 6</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -301,10 +301,16 @@
     add("Incassobedrag (marge "+cfg.tol.toFixed(2).replace(".",",")+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
         diff==null?"fail":(diff<=cfg.tol+1e-9?"ok":"fail"), diff==null?"Bedrag ontbreekt of onleesbaar":"Verschil "+diff.toFixed(2).replace(".",","));
     // 9. bedragen / aantallen
+    // Geschatte jaaromzet: verschil = geel (let op), niet rood — staat niet in een pakket.
     var oOud=num(txt(oud.row,oud.map,"omzet")), oNieuw=num(txt(nieuw.row,nieuw.map,"omzet"));
     add("Geschatte jaaromzet",txt(oud.row,oud.map,"omzet"),txt(nieuw.row,nieuw.map,"omzet"),
-        (oOud!=null&&oNieuw!=null&&oOud===oNieuw)?"ok":"fail",(oOud==null||oNieuw==null)?"Waarde ontbreekt":(oOud===oNieuw?"":"Verschil "+(oNieuw-oOud)));
-    vergelijk("Aantal personeelsleden","personeel","num",{soft:true,diffNote:function(a,b){return "Verschil "+(num(b)-num(a));}});
+        (oOud!=null&&oNieuw!=null&&oOud===oNieuw)?"ok":"warn",
+        (oOud==null||oNieuw==null)?"Waarde ontbreekt (ter controle)":(oOud===oNieuw?"":"Verschil "+(oNieuw-oOud)+" — niet in een pakket, ter controle"));
+    // Aantal personeelsleden: alleen ter info, geen waarschuwing.
+    var perOud=num(txt(oud.row,oud.map,"personeel")), perNw=num(txt(nieuw.row,nieuw.map,"personeel"));
+    add("Aantal personeelsleden",txt(oud.row,oud.map,"personeel"),txt(nieuw.row,nieuw.map,"personeel"),
+        (perOud!=null&&perNw!=null&&perOud===perNw)?"ok":"info",
+        (perOud!=null&&perNw!=null&&perOud!==perNw)?"Ter info; telt niet als afwijking":"");
     vergelijk("Jaarloon (polis)","jaarloon","num",{soft:true});
     vergelijk("Eigen risico bedrag","eigenrisico","num");
     // Verzekerd bedrag: mag in "Verzekerd bedrag" OF "Verzekerd bedrag A" staan.
@@ -332,19 +338,18 @@
     var jOud=txt(oud.row,oud.map,"opgavejaar"), jNieuw=txt(nieuw.row,nieuw.map,"opgavejaar");
     add("Volgend jaar van opgave = "+cfg.jaar,jOud,jNieuw,(jOud===cfg.jaar&&jNieuw===cfg.jaar)?"ok":"fail",
         "Verwacht "+cfg.jaar+((jOud!==cfg.jaar&&jNieuw!==cfg.jaar)?" (beide afwijkend)":(jOud!==cfg.jaar?" (oud wijkt af)":(jNieuw!==cfg.jaar?" (nieuw wijkt af)":""))));
-    // 12. provisie — bij een #0376-product of een ZM-polis is ook 20% goed.
+    // 12. provisie — oud mag 23/25 (of 20 bij #0376/ZM); nieuw mag 20/23/25.
     var vormNieuw = txt(nieuw.row,nieuw.map,"vorm").replace(/\s/g,"");
     function heeftZM(rec){ for(var i=0;i<rec.row.length;i++){ if(/(^|[^A-Z])ZM([^A-Z]|$)/.test(String(rec.row[i]).toUpperCase())) return true; } return false; }
     var isZM = heeftZM(nieuw) || heeftZM(oud);
     var extra20 = (vormNieuw==="#0376" || isZM);
-    var provToegestaan = cfg.prov.slice();
-    if(extra20 && provToegestaan.indexOf(20)===-1) provToegestaan.push(20);
-    var extraNote = extra20 ? " (20% toegestaan bij "+(vormNieuw==="#0376"?"#0376":"ZM")+")" : "";
-    function provOk(v){ var n2=num(v); return n2!=null&&provToegestaan.indexOf(n2)!==-1; }
     var provOud=txt(oud.row,oud.map,"provisie"), provNieuw=txt(nieuw.row,nieuw.map,"provisie");
-    add("Incassoprovisie % ("+provToegestaan.join(" of ")+")",provOud,provNieuw,(provOk(provOud)&&provOk(provNieuw))?"ok":"fail","Toegestaan: "+provToegestaan.join("% of ")+"%"+extraNote);
+    function provOkOud(v){ var n2=num(v); return n2!=null&&(cfg.prov.indexOf(n2)!==-1||(extra20&&n2===20)); }
+    function provOkNieuw(v){ var n2=num(v); return n2!=null&&(cfg.prov.indexOf(n2)!==-1||n2===20); } // 20% altijd goed op nieuw
+    add("Incassoprovisie % (oud "+cfg.prov.join("/")+", nieuw 20/"+cfg.prov.join("/")+")",provOud,provNieuw,
+        (provOkOud(provOud)&&provOkNieuw(provNieuw))?"ok":"fail","Oud "+cfg.prov.join("/")+"%"+(extra20?"/20%":"")+", nieuw 20/"+cfg.prov.join("/")+"%");
     var apOud=txt(oud.row,oud.map,"agentprov"), apNieuw=txt(nieuw.row,nieuw.map,"agentprov");
-    add("Agent 1 provisie %",apOud,apNieuw,(provOk(apOud)&&provOk(apNieuw))?"ok":"fail","Gelijk aan incassoprovisie, binnen "+provToegestaan.join("/")+"%"+extraNote);
+    add("Agent 1 provisie %",apOud,apNieuw,(provOkOud(apOud)&&provOkNieuw(apNieuw))?"ok":"fail","Gelijk aan incassoprovisie; nieuw mag 20%");
     if(num(provNieuw)!=null&&num(apNieuw)!=null&&num(provNieuw)!==num(apNieuw)) add("Incassoprovisie = agentprovisie (nieuw)",provNieuw,apNieuw,"fail","Percentages op de nieuwe polis lopen uiteen");
     var col=txt(nieuw.row,nieuw.map,"collect").toUpperCase();
     if(col.indexOf("PRO")===0){ var cn=num(col.replace("PRO","")); add("Collectiviteit "+col+" komt overeen met provisie",txt(oud.row,oud.map,"collect"),col,(cn!=null&&cn===num(provNieuw))?"ok":"fail","PRO-code moet het provisiepercentage van de nieuwe polis volgen"); }
@@ -355,7 +360,7 @@
   /* ================= State per product ================= */
   var actiefId = PRODUCTEN[0].id;
   var stateVan = {};
-  PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:SAMPLES[p.id]||"", name:"voorbeeld (ingebouwd)", isSample:true, results:null, idx:0, report:"" }; });
+  PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:"", name:"", isSample:false, results:null, idx:0, report:"" }; });
   function prod(){ for(var i=0;i<PRODUCTEN.length;i++) if(PRODUCTEN[i].id===actiefId) return PRODUCTEN[i]; }
   function st(){ return stateVan[actiefId]; }
 
@@ -379,6 +384,7 @@
   /* ================= Verwerking ================= */
   function run(){
     var p=prod(), s=st(), cfg=readConfig();
+    if(!s.text || !s.text.trim()){ s.results=null; s.idx=0; renderAll(); return; }
     var delim=detectDelimiter(s.text);
     var rows=parseDelimited(s.text,delim);
     if(!rows.length){ s.results={error:"Geen regels gevonden in het bestand."}; s.idx=0; renderAll(); return; }
@@ -436,14 +442,14 @@
 
   function syncUploadUI(){
     var s=st();
-    $("fname").textContent=s.name;
-    $("rowinfo").textContent="("+s.text.split(/\r?\n/).filter(function(l){return l.trim();}).length+" regels)";
+    $("fname").textContent=s.name||"— nog geen bestand gekozen —";
+    $("rowinfo").textContent=(s.text&&s.text.trim())?("("+s.text.split(/\r?\n/).filter(function(l){return l.trim();}).length+" regels)"):"";
     $("export").disabled=!s.results||!!s.results.error;
   }
 
   function renderAll(){
     var s=st();
-    if(!s.results){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML=""; renderFooter(); return; }
+    if(!s.results){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner info">Upload een export voor <strong>'+esc(prod().naam)+'</strong> (of klik op &laquo;Voorbeeld laden&raquo;) om te beginnen.</div>'; renderFooter(); return; }
     if(s.results.error){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner fail">'+esc(s.results.error)+'</div>'; renderFooter(); return; }
     renderSamenvatting(); renderNavigatie(); renderKlant(); renderFooter();
     $("export").disabled=false;
@@ -599,7 +605,7 @@
 
   renderProductTabs();
   syncUploadUI();
-  run();
+  renderAll();
 })();
 </script>
 </body>
