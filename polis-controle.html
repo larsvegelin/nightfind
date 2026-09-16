@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DWA Poliscontrole per product</title>
+<style>
+  :root{
+    /* Officiële De Waerdse huisstijlkleuren */
+    --dwa-groen:#00441D; --dwa-groen-80:#316648; --dwa-groen-60:#628C74;
+    --dwa-accent:#00913E; --dwa-goud:#FFC000; --dwa-goud-80:#FDCA31; --dwa-goud-60:#FBD663;
+    --dwa-wit:#F8F8F8; --dwa-grijs:#E6E6E6;
+    --wit:#ffffff; --tekst:#1a241e; --ink-2:#4a5866; --ink-3:#74838f;
+    --rand:#d5ddd7; --rand-soft:#e7ece9;
+    --ok:#00913E; --ok-soft:#e4f4ea;
+    --warn:#8a5d05; --warn-soft:#fff4d6;
+    --fail:#a62f28; --fail-soft:#fbe6e4;
+    --radius:12px;
+    --mono:ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--dwa-wit);color:var(--tekst);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  header.top{background:var(--dwa-groen);color:var(--dwa-wit);padding:22px 32px 18px;border-bottom:6px solid var(--dwa-goud)}
+  header.top h1{margin:0;font-size:1.5rem;letter-spacing:.3px}
+  header.top h1 span{font-size:.7rem;font-weight:400;opacity:.85}
+  header.top p{margin:5px 0 0;font-size:.9rem;color:#c7d5cc;max-width:80ch}
+  main{padding:24px 24px 64px;max-width:1120px;margin:0 auto}
+  section{margin-top:22px}
+  h2{font-size:1.05rem;margin:0 0 12px;color:var(--dwa-groen)}
+  .panel{background:var(--wit);border:1px solid var(--rand);border-radius:var(--radius);padding:18px}
+
+  /* product-tabs */
+  .producttabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .producttabs button{
+    background:var(--wit);border:2px solid var(--dwa-groen);color:var(--dwa-groen);
+    border-radius:14px;padding:12px 24px;font:inherit;font-weight:700;cursor:pointer;
+  }
+  .producttabs button:hover{background:var(--dwa-groen-licht,#eef3f0)}
+  .producttabs button.actief{background:var(--dwa-groen);color:var(--wit)}
+  .producttabs button:disabled{opacity:.45;cursor:not-allowed;border-style:dashed}
+
+  /* upload */
+  .drop{border:2px dashed var(--dwa-groen);border-radius:var(--radius);background:#eef3f0;padding:28px 18px;text-align:center;cursor:pointer;transition:.15s}
+  .drop:hover,.drop.is-over{border-color:var(--dwa-goud-80);background:var(--dwa-goud-60)}
+  .drop strong{display:block;font-size:1.05rem;margin-bottom:4px}
+  .drop span{color:var(--ink-2);font-size:.85rem}
+  .drop input{display:none}
+  .filerow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;font-size:.85rem;color:var(--ink-2)}
+  .filename{font-family:var(--mono);color:var(--tekst)}
+  .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  button.primary{background:var(--dwa-groen);border:none;color:var(--wit);border-radius:10px;padding:12px 26px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 0 var(--dwa-groen-80)}
+  button.primary:hover{background:var(--dwa-groen-80)}
+  button.ghost{background:transparent;border:1px solid var(--dwa-groen);color:var(--dwa-groen);border-radius:10px;padding:11px 20px;font:inherit;font-weight:600;cursor:pointer}
+  button.ghost:hover{background:#eef3f0}
+  button.ghost:disabled{opacity:.4;cursor:not-allowed}
+  details.settings{margin-top:14px;border-top:1px solid var(--rand-soft);padding-top:12px}
+  details.settings summary{cursor:pointer;font-weight:600;color:var(--dwa-groen);font-size:.9rem}
+  .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:14px}
+  .field label{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px;font-weight:700}
+  .field input{width:100%;font:inherit;font-family:var(--mono);padding:8px 10px;border:1px solid var(--rand);border-radius:8px;background:var(--wit);color:var(--tekst)}
+
+  /* samenvatting */
+  .tiles{display:flex;flex-wrap:wrap;gap:14px}
+  .tile{flex:1 1 150px;background:var(--wit);border:1px solid var(--rand);border-radius:var(--radius);padding:14px 18px}
+  .tile .n{font-size:1.8rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--dwa-groen-80)}
+  .tile .l{font-size:.8rem;color:var(--ink-2);margin-top:2px}
+  .tile.ok .n{color:var(--ok)} .tile.fail .n{color:var(--fail)} .tile.warn .n{color:var(--warn)}
+
+  /* klant-navigator */
+  .nav{display:flex;flex-wrap:wrap;align-items:center;gap:14px;background:var(--wit);border:1px solid var(--rand);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;position:sticky;top:0;z-index:5}
+  .nav button.pijl{width:46px;height:46px;border-radius:12px;border:2px solid var(--dwa-groen);background:var(--wit);color:var(--dwa-groen);font-size:1.4rem;font-weight:800;cursor:pointer;line-height:1}
+  .nav button.pijl:hover{background:var(--dwa-groen);color:var(--wit)}
+  .nav button.pijl:disabled{opacity:.3;cursor:not-allowed;background:var(--wit);color:var(--dwa-groen)}
+  .nav .teller{font-weight:700;font-size:.95rem;min-width:120px;text-align:center}
+  .nav select{font:inherit;padding:9px 10px;border:1px solid var(--rand);border-radius:8px;background:var(--wit);color:var(--tekst);max-width:100%;flex:1 1 260px}
+  .nav .springnaar{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  .klantkop{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:12px}
+  .klantkop .naam{font-size:1.15rem;font-weight:700}
+  .klantkop .sub{color:var(--ink-2);font-size:.9rem;font-family:var(--mono)}
+  .badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.8rem;font-weight:700}
+  .badge.ok{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok)}
+  .badge.fail{background:var(--fail-soft);color:var(--fail);border:1px solid var(--fail)}
+  .badge.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--rand);border-radius:var(--radius)}
+  table{border-collapse:collapse;width:100%;font-size:.9rem}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--rand-soft);vertical-align:top}
+  thead th{background:var(--dwa-grijs);color:var(--dwa-groen);font-size:.72rem;letter-spacing:.05em;text-transform:uppercase}
+  td.val{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.st{text-align:center;width:56px}
+  td.note{color:var(--ink-2);font-size:.82rem;min-width:170px}
+  tr.r-fail td{background:var(--fail-soft)}
+  tr.r-warn td{background:var(--warn-soft)}
+  .mark{font-size:1.25rem;font-weight:800;line-height:1}
+  .mark.ok{color:var(--ok)} .mark.fail{color:var(--fail)} .mark.warn{color:var(--warn)}
+  .col-oud{border-left:3px solid var(--dwa-goud)}
+  .col-nieuw{border-left:3px solid var(--dwa-accent)}
+  .banner{border-radius:var(--radius);padding:12px 16px;font-size:.9rem;margin-bottom:14px;border:1px solid var(--rand)}
+  .banner.info{background:var(--dwa-goud-60);border-color:var(--dwa-goud)}
+  .banner.fail{background:var(--fail-soft);border-color:var(--fail);color:var(--fail-tekst,#96302f)}
+  .empty{color:var(--ink-2)}
+  code{font-family:var(--mono);font-size:.9em}
+  footer{margin-top:34px;border-top:1px solid var(--rand);padding-top:14px;color:var(--ink-3);font-size:.8rem}
+  @media (max-width:560px){ header.top{padding:18px} main{padding:18px 14px 48px} .nav .springnaar{margin-left:0} }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>DWA Poliscontrole per product <span>versie 1</span></h1>
+  <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
+</header>
+
+<main>
+  <div class="producttabs" id="producttabs"></div>
+
+  <section>
+    <div class="panel">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Kies een bestand of sleep het hierheen">
+        <strong>Sleep de export hierheen</strong>
+        <span>of klik om te bladeren &middot; .exp, .csv, .tsv of .txt &middot; scheidingsteken <code>tab</code> <code>;</code> of <code>,</code> wordt herkend</span>
+        <input type="file" id="file" accept=".csv,.tsv,.txt,.exp,text/csv">
+      </div>
+      <div class="filerow">
+        <span>Bestand:</span><span class="filename" id="fname">voorbeeld (ingebouwd)</span>
+        <span id="rowinfo"></span>
+      </div>
+      <div class="actions">
+        <button class="primary" id="check" type="button">Controleer</button>
+        <button class="ghost" id="sample" type="button">Voorbeeld laden</button>
+        <button class="ghost" id="export" type="button" disabled>Kopieer rapport</button>
+      </div>
+      <details class="settings">
+        <summary>Instellingen</summary>
+        <div class="settings-grid">
+          <div class="field"><label for="tol">Marge incassobedrag (&euro;)</label><input id="tol" type="number" step="0.01" min="0" value="0.06"></div>
+          <div class="field"><label for="jaar">Volgend jaar van opgave</label><input id="jaar" type="number" min="2000" max="2100" value="2027"></div>
+          <div class="field"><label for="prov">Toegestane provisie %</label><input id="prov" type="text" value="23, 25"></div>
+          <div class="field"><label for="mijoud">Maatschappij oud / nieuw</label><input id="mijoud" type="text" value="P300 / N200"></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section id="samenvatting"></section>
+  <section id="navigatie"></section>
+  <section id="klant" aria-live="polite"></section>
+
+  <footer id="footer"></footer>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= Producten (start met alleen AVB) ================= */
+  var PRODUCTEN = [
+    {
+      id: "avb",
+      naam: "AVB",
+      titel: "Aansprakelijkheid Bedrijven",
+      mijOud: "P300", mijNieuw: "N200",
+      // vaste exportvolgorde + herkenning op koptekst
+      cols: [
+        ["agent",0,"agent op relatieniv"],["relatienr",1,"relatienummer"],["voorletters",2,"voorletters"],
+        ["mij",3,"polis+wacht->maatschappij"],["mijoms",4,"polis+wachtoms->maatschappij"],
+        ["branche",5,"polis+wacht->branche"],["brancheoms",6,"polis+wachtoms->branche"],["vorm",7,"verzekeringsvorm"],
+        ["polisnr",8,"polisnummer"],["wijzreden",9,"wijzigingsreden"],["wijzdatum",10,"wijzigingsdatum"],
+        ["ingang",11,"ingangsdatum"],["hvd",12,"hoofdvervaldatum"],["contractvd",13,"contractvervaldatum"],
+        ["expiratie",14,"expiratiedatum"],["termijn",15,"termijn"],["hoedanigheid",16,"hoedanigheid"],
+        ["incasso",17,"incassobedrag"],["oudpolisnr",18,"polisnr. oude mij."],["wacht",19,"wacht j/n"],
+        ["personeel",20,"aantal personeelsleden"],["omzet",21,"geschatte jaaromzet"],["jaarloon",22,"jaarloon"],
+        ["eigenrisico",29,"eigen risico bedrag"],["verzbedrag",30,"verzekerd bedrag"],["nhg",31,"nhg van toepassing"],
+        ["opgavejaar",32,"volgend jaar van opgav"],["provisie",33,"incassoprovisie"],["collect",34,"collectiviteit"],
+        ["mij2",35,"2e maatschappij"],["oudpolisnr2",36,null],["agentprov",45,"agent 1 provisie"]
+      ],
+      checks: buildAvbChecks
+    }
+  ];
+
+  var SAMPLE_AVB = [
+    "Relatie->Agent op relatienivo\tRelatie->Relatienummer\tRelatie->Voorletters/voorvoegsels/a\tPolis+Wacht->Maatschappij\tPolis+WachtOms->Maatschappij\tPolis+Wacht->Branche\tPolis+WachtOms->Branche\tPolis+Wacht->Verzekeringsvorm\tPolis+Wacht->Polisnummer\tPolis+Wacht->Wijzigingsreden\tPolis+Wacht->Wijzigingsdatum\tPolis+Wacht->Ingangsdatum\tPolis+Wacht->Hoofdvervaldatum polis\tPolis+Wacht->Contractvervaldatum\tPolis+Wacht->Expiratiedatum\tPolis+Wacht->Termijn\tPolis+WachtOms->Hoedanigheid\tPolis+Wacht->Incassobedrag\tPolis+Wacht->Polisnr. oude mij.\tPolis+Wacht->Wacht j/n\tPolis+Wacht->Aantal personeelsleden\tPolis+Wacht->Geschatte jaaromzet di\tPolis+Wacht->Jaarloon (polis)\tPolis+Wacht->Product bewerking J/N\tPolis+Wacht->Mvz. voorrisico J/N\tPolis+Wacht->Mvz. uitbreiding Wegam\tPolis+Wacht->Explosieve / gevaarlij\tPolis+Wacht->Bijsluiter/gebruiksaan\tPolis+Wacht->Meeverzekerd gelieerde\tPolis+Wacht->Eigen risico bedrag\tPolis+Wacht->Verzekerd bedrag\tPolis+Wacht->NHG van toepassing\tPolis+Wacht->Volgend jaar van opgav\tDekking+Wacht->Incassoprovisie % ni\tPolis+Wacht->Collectiviteit\tPolis+Wacht->2e maatschappij\tPolis+Wacht->Polisnr. oude mij.\tPolis+Wacht->Tekst 1\tPolis+Wacht->Tekst 2\tPolis+Wacht->Tekst 3\tPolis+Wacht->Tekst 4\tPolis+Wacht->Tekst 5\tPolis+Wacht->Voorrisico meeverzeker\tPolis+Wacht->Clausule 10\tPolis+Wacht->Verzekerd bedrag A\tDekking+Wacht->Agent 1 provisie%",
+    "3\t982\t\tN200\tNationale-Nederlanden Schadeverz My\t6503\tAansprakelijkheid Bedrijven\t#0376\t801058436\t2\t1-1-2027\t1-1-2027\t1-1-2027\t1-1-2027\t\t1\t\t86,25\t800765782\tJ\t1\t250000\t0\t\tJ\tN\tN\tN\tN\t250\t2500000\tN\t2028\t23\tPRO23\tW740\t800765782\t\t\t\t\t\t\tO2602\t0\t23",
+    "8\t3602\t\tP300\tDe Waerdse Assuradeuren B.V.\t6500\tAansprakelijkheid bedrijf\t\t800743121\t47\t1-1-2027\t15-8-2011\t1-1-2027\t1-1-2027\t\t1\t\t35,86\t\tJ\t0\t48994\t0\t\t\t\t\t\t\t500\t0\tJ\t2027\t25\t\t\t\tIn tegenstelling tot hetgeen is bepaald in clausule N850\tmet betrekking tot uitbesteed werk is dit meeverzekerd op de\tpolis.\t\t\t\t\t2500000\t25",
+    "8\t3602\t\tN200\tNationale-Nederlanden Schadeverz My\t6503\tAansprakelijkheid Bedrijven\t#0376\t801058468\t2\t1-1-2027\t1-1-2027\t1-1-2027\t1-1-2027\t\t1\t\t35,86\t800743121\tJ\t1\t48994\t0\tN\tN\tN\tN\tN\tN\t500\t2500000\tJ\t2028\t23\tPRO23\tW740\t800743121\t\t\t\t\t\t\tO2602\t0\t23"
+  ].join("\n");
+  var SAMPLES = { avb: SAMPLE_AVB };
+
+  /* ================= Helpers ================= */
+  var $ = function(id){ return document.getElementById(id); };
+  function norm(s){ return String(s==null?"":s).toLowerCase().replace(/\s+/g," ").trim(); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];}); }
+  function dash(v){ return String(v==null?"":v).trim()===""?"—":v; }
+
+  function mapColumns(header, cols){
+    var map={}, used={}, heads=header.map(norm);
+    cols.forEach(function(c){
+      var key=c[0], fallback=c[1], needle=c[2], idx=-1;
+      if(needle){ for(var i=0;i<heads.length;i++){ if(heads[i].indexOf(needle)!==-1 && !used[i]){ idx=i; break; } } }
+      if(idx===-1 && key==="oudpolisnr2"){ for(var j=heads.length-1;j>=0;j--){ if(heads[j].indexOf("polisnr. oude mij")!==-1 && !used[j]){ idx=j; break; } } }
+      if(idx===-1) idx=fallback;
+      used[idx]=true; map[key]=idx;
+    });
+    return map;
+  }
+  function detectDelimiter(text){
+    var line=text.split(/\r?\n/)[0]||"";
+    var counts={ "\t":(line.match(/\t/g)||[]).length, ";":(line.match(/;/g)||[]).length, ",":(line.match(/,/g)||[]).length };
+    var best="\t"; Object.keys(counts).forEach(function(d){ if(counts[d]>counts[best]) best=d; });
+    return counts[best]===0?"\t":best;
+  }
+  function parseDelimited(text, delim){
+    var rows=[],row=[],field="",inQ=false; text=text.replace(/^﻿/,"");
+    for(var i=0;i<text.length;i++){
+      var ch=text[i];
+      if(inQ){ if(ch==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; } else field+=ch; }
+      else if(ch==='"') inQ=true;
+      else if(ch===delim){ row.push(field); field=""; }
+      else if(ch==="\n"){ row.push(field); rows.push(row); row=[]; field=""; }
+      else if(ch==="\r"){}
+      else field+=ch;
+    }
+    row.push(field); rows.push(row);
+    return rows.filter(function(r){ return r.some(function(c){ return String(c).trim()!==""; }); });
+  }
+  function txt(row,map,key){ var i=map[key]; return i==null||i<0?"":String(row[i]==null?"":row[i]).trim(); }
+  function num(v){
+    if(v==null) return null;
+    var s=String(v).trim().replace(/[€\s%]/g,"");
+    if(s==="") return null;
+    if(s.indexOf(",")!==-1) s=s.replace(/\./g,"").replace(",",".");
+    else if(/^-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
+    var n=parseFloat(s); return isNaN(n)?null:n;
+  }
+  function dateKey(v){
+    var s=String(v==null?"":v).trim(); if(!s) return "";
+    var m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/); if(m) return m[3]+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[1]).slice(-2);
+    m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/); if(m) return m[1]+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[3]).slice(-2);
+    return s;
+  }
+  function jn(v){ var s=String(v==null?"":v).trim().toUpperCase(); if(s==="JA") return "J"; if(s==="NEE"||s==="NEEN") return "N"; return s; }
+
+  /* ================= AVB-controles ================= */
+  function buildAvbChecks(oud, nieuw, cfg){
+    var c=[];
+    function add(label,ov,nv,status,note){ c.push({label:label,oud:ov,nieuw:nv,status:status,note:note||""}); }
+    function eq(label,key,fmt,note){
+      var ov=txt(oud.row,oud.map,key), nv=txt(nieuw.row,nieuw.map,key);
+      var a=fmt?fmt(ov):ov, b=fmt?fmt(nv):nv;
+      var st=(a===b)?(a===""?"warn":"ok"):"fail";
+      add(label,ov,nv,st, st==="fail"?"Waarden verschillen":(a===""?"Beide leeg":note||""));
+    }
+    var mOud=txt(oud.row,oud.map,"mij"), mNieuw=txt(nieuw.row,nieuw.map,"mij");
+    add("Maatschappij (oud "+cfg.mijOud+" / nieuw "+cfg.mijNieuw+")",mOud,mNieuw,
+        (mOud.toUpperCase()===cfg.mijOud && mNieuw.toUpperCase()===cfg.mijNieuw)?"ok":"fail","Oud "+cfg.mijOud+", nieuw "+cfg.mijNieuw);
+    var rOud=txt(oud.row,oud.map,"wijzreden"), rNieuw=txt(nieuw.row,nieuw.map,"wijzreden");
+    add("Wijzigingsreden (47 oud / 2 nieuw)",rOud,rNieuw,(rOud==="47"&&rNieuw==="2")?"ok":"fail","Oud 47, nieuw 2");
+    var pOud=txt(oud.row,oud.map,"polisnr");
+    var ref1=txt(nieuw.row,nieuw.map,"oudpolisnr"), ref2=txt(nieuw.row,nieuw.map,"oudpolisnr2");
+    add("Polisnr. oude mij. (kolom S) = polisnummer oud",pOud,ref1, ref1===""?"fail":(ref1===pOud?"ok":"fail"),"Nieuwe polis verwijst naar het oude polisnummer");
+    add("Polisnr. oude mij. 2e veld (kolom AK) = polisnummer oud",pOud,ref2, ref2===""?"fail":(ref2===pOud?"ok":"fail"),"Tweede verwijzingsveld naast 2e maatschappij");
+    var hvdOud=txt(oud.row,oud.map,"hvd"), ingNieuw=txt(nieuw.row,nieuw.map,"ingang");
+    add("Ingangsdatum nieuw = hoofdvervaldatum oud",hvdOud,ingNieuw,(dateKey(hvdOud)&&dateKey(hvdOud)===dateKey(ingNieuw))?"ok":"fail","Nieuwe polis start op de hoofdvervaldatum van de oude polis");
+    eq("Hoofdvervaldatum polis","hvd",dateKey);
+    eq("Termijn","termijn");
+    var iOud=num(txt(oud.row,oud.map,"incasso")), iNieuw=num(txt(nieuw.row,nieuw.map,"incasso"));
+    var diff=(iOud==null||iNieuw==null)?null:Math.abs(iOud-iNieuw);
+    add("Incassobedrag (marge "+cfg.tol.toFixed(2).replace(".",",")+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
+        diff==null?"fail":(diff<=cfg.tol+1e-9?"ok":"fail"), diff==null?"Bedrag ontbreekt of onleesbaar":"Verschil "+diff.toFixed(2).replace(".",","));
+    var oOud=num(txt(oud.row,oud.map,"omzet")), oNieuw=num(txt(nieuw.row,nieuw.map,"omzet"));
+    add("Geschatte jaaromzet",txt(oud.row,oud.map,"omzet"),txt(nieuw.row,nieuw.map,"omzet"),
+        (oOud!=null&&oNieuw!=null&&oOud===oNieuw)?"ok":"fail",(oOud==null||oNieuw==null)?"Waarde ontbreekt":(oOud===oNieuw?"":"Verschil "+(oNieuw-oOud)));
+    eq("NHG van toepassing","nhg",jn);
+    var jOud=txt(oud.row,oud.map,"opgavejaar"), jNieuw=txt(nieuw.row,nieuw.map,"opgavejaar");
+    add("Volgend jaar van opgave = "+cfg.jaar,jOud,jNieuw,(jOud===cfg.jaar&&jNieuw===cfg.jaar)?"ok":"fail",
+        "Verwacht "+cfg.jaar+((jOud!==cfg.jaar&&jNieuw!==cfg.jaar)?" (beide afwijkend)":(jOud!==cfg.jaar?" (oud wijkt af)":(jNieuw!==cfg.jaar?" (nieuw wijkt af)":""))));
+    function provOk(v){ var n2=num(v); return n2!=null&&cfg.prov.indexOf(n2)!==-1; }
+    var provOud=txt(oud.row,oud.map,"provisie"), provNieuw=txt(nieuw.row,nieuw.map,"provisie");
+    add("Incassoprovisie % ("+cfg.prov.join(" of ")+")",provOud,provNieuw,(provOk(provOud)&&provOk(provNieuw))?"ok":"fail","Toegestaan: "+cfg.prov.join("% of ")+"%");
+    var apOud=txt(oud.row,oud.map,"agentprov"), apNieuw=txt(nieuw.row,nieuw.map,"agentprov");
+    add("Agent 1 provisie %",apOud,apNieuw,(provOk(apOud)&&provOk(apNieuw))?"ok":"fail","Gelijk aan incassoprovisie, binnen "+cfg.prov.join("/")+"%");
+    if(num(provNieuw)!=null&&num(apNieuw)!=null&&num(provNieuw)!==num(apNieuw)) add("Incassoprovisie = agentprovisie (nieuw)",provNieuw,apNieuw,"fail","Percentages op de nieuwe polis lopen uiteen");
+    var col=txt(nieuw.row,nieuw.map,"collect").toUpperCase();
+    if(col.indexOf("PRO")===0){ var cn=num(col.replace("PRO","")); add("Collectiviteit "+col+" komt overeen met provisie",txt(oud.row,oud.map,"collect"),col,(cn!=null&&cn===num(provNieuw))?"ok":"fail","PRO-code moet het provisiepercentage van de nieuwe polis volgen"); }
+    else add("Collectiviteit PRO-code",txt(oud.row,oud.map,"collect"),txt(nieuw.row,nieuw.map,"collect"),"warn","Geen PRO-code op de nieuwe polis gevonden");
+    return c;
+  }
+
+  /* ================= State per product ================= */
+  var actiefId = PRODUCTEN[0].id;
+  var stateVan = {};
+  PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:SAMPLES[p.id]||"", name:"voorbeeld (ingebouwd)", isSample:true, results:null, idx:0, report:"" }; });
+  function prod(){ for(var i=0;i<PRODUCTEN.length;i++) if(PRODUCTEN[i].id===actiefId) return PRODUCTEN[i]; }
+  function st(){ return stateVan[actiefId]; }
+
+  function readConfig(){
+    var p=prod();
+    var prov=$("prov").value.split(/[,;/ ]+/).map(num).filter(function(n){return n!=null;});
+    var mij=$("mijoud").value.split("/");
+    return {
+      tol:(num($("tol").value)||0), jaar:String($("jaar").value).trim(),
+      prov:prov.length?prov:[23,25],
+      mijOud:(mij[0]||p.mijOud).trim().toUpperCase(), mijNieuw:(mij[1]||p.mijNieuw).trim().toUpperCase()
+    };
+  }
+  function classify(row,map,cfg){
+    var m=txt(row,map,"mij").toUpperCase(), r=txt(row,map,"wijzreden");
+    if(m===cfg.mijNieuw||r==="2") return "nieuw";
+    if(m===cfg.mijOud||r==="47") return "oud";
+    return "?";
+  }
+
+  /* ================= Verwerking ================= */
+  function run(){
+    var p=prod(), s=st(), cfg=readConfig();
+    var delim=detectDelimiter(s.text);
+    var rows=parseDelimited(s.text,delim);
+    if(!rows.length){ s.results={error:"Geen regels gevonden in het bestand."}; s.idx=0; renderAll(); return; }
+    var header=rows[0], body=rows.slice(1);
+    var looksHeader=header.join(" ").toLowerCase().indexOf("polis")!==-1;
+    if(!looksHeader) body=rows;
+    var map=mapColumns(looksHeader?header:header.map(function(){return "";}), p.cols);
+    var records=body.map(function(r,i){ return { row:r, map:map, line:i+(looksHeader?2:1), kind:classify(r,map,cfg) }; });
+    var ouds=records.filter(function(r){return r.kind==="oud";});
+    var nieuws=records.filter(function(r){return r.kind==="nieuw";});
+    var pairs=[], usedOud=[];
+    nieuws.forEach(function(n){
+      var ref=txt(n.row,n.map,"oudpolisnr")||txt(n.row,n.map,"oudpolisnr2"), match=null;
+      if(ref) match=ouds.find(function(o){ return usedOud.indexOf(o)===-1 && txt(o.row,o.map,"polisnr")===ref; })||null;
+      if(!match){ var rel=txt(n.row,n.map,"relatienr"); var cands=ouds.filter(function(o){ return usedOud.indexOf(o)===-1 && txt(o.row,o.map,"relatienr")===rel && rel!==""; }); if(cands.length===1) match=cands[0]; }
+      if(match) usedOud.push(match);
+      pairs.push({nieuw:n,oud:match});
+    });
+    var losseOud=ouds.filter(function(o){return usedOud.indexOf(o)===-1;});
+    var onbekend=records.filter(function(r){return r.kind==="?";});
+    var results=pairs.map(function(pr){
+      if(!pr.oud) return {pair:pr,status:"fail",checks:[],orphan:true};
+      var checks=p.checks(pr.oud,pr.nieuw,cfg);
+      var status=checks.some(function(c){return c.status==="fail";})?"fail":(checks.some(function(c){return c.status==="warn";})?"warn":"ok");
+      return {pair:pr,status:status,checks:checks,orphan:false};
+    });
+    s.results={ results:results, losseOud:losseOud, onbekend:onbekend, cfg:cfg, rowCount:records.length, delim:delim, header:looksHeader };
+    if(s.idx>=results.length) s.idx=0;
+    s.report=buildReport(s.results);
+    renderAll();
+  }
+
+  /* ================= Weergave ================= */
+  function tile(n,label,cls){ return '<div class="tile '+(cls||"")+'"><div class="n">'+n+'</div><div class="l">'+label+'</div></div>'; }
+
+  function renderProductTabs(){
+    var bar=$("producttabs"); bar.innerHTML="";
+    PRODUCTEN.forEach(function(p){
+      var b=document.createElement("button");
+      b.textContent=p.naam+" — "+p.titel;
+      if(p.id===actiefId) b.classList.add("actief");
+      b.addEventListener("click",function(){ actiefId=p.id; syncUploadUI(); renderAll(); });
+      bar.appendChild(b);
+    });
+    // Ruimte voor toekomstige producten (uitgeschakeld tot ze zijn toegevoegd).
+    var toekomst=document.createElement("button");
+    toekomst.textContent="Meer producten volgen";
+    toekomst.disabled=true; toekomst.title="Er is nu alleen AVB. Andere producten worden later toegevoegd.";
+    bar.appendChild(toekomst);
+  }
+
+  function syncUploadUI(){
+    var s=st();
+    $("fname").textContent=s.name;
+    $("rowinfo").textContent="("+s.text.split(/\r?\n/).filter(function(l){return l.trim();}).length+" regels)";
+    $("export").disabled=!s.results||!!s.results.error;
+  }
+
+  function renderAll(){
+    var s=st();
+    if(!s.results){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML=""; renderFooter(); return; }
+    if(s.results.error){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner fail">'+esc(s.results.error)+'</div>'; renderFooter(); return; }
+    renderSamenvatting(); renderNavigatie(); renderKlant(); renderFooter();
+    $("export").disabled=false;
+  }
+
+  function renderSamenvatting(){
+    var s=st(), d=s.results, res=d.results;
+    var okN=res.filter(function(r){return r.status==="ok";}).length;
+    var failN=res.filter(function(r){return r.status==="fail";}).length;
+    var warnN=res.filter(function(r){return r.status==="warn";}).length;
+    var los=d.losseOud.length+d.onbekend.length;
+    var html="";
+    if(s.isSample) html+='<div class="banner info"><strong>Voorbeeldgegevens.</strong> Upload je eigen export om je eigen bestand te controleren.</div>';
+    html+='<h2>Samenvatting — '+esc(prod().naam)+' ('+esc(prod().titel)+')</h2><div class="tiles">'+
+      tile(res.length,"polisparen","")+tile(okN,"akkoord","ok")+tile(warnN,"let op",warnN?"warn":"")+
+      tile(failN,"met afwijking",failN?"fail":"")+tile(los,"losse regels",los?"warn":"")+'</div>';
+    $("samenvatting").innerHTML=html;
+  }
+
+  function statusWoord(r){
+    if(r.orphan) return "geen oude polis";
+    if(r.status==="ok") return "akkoord";
+    if(r.status==="warn") return "let op";
+    return r.checks.filter(function(c){return c.status==="fail";}).length+" afwijking(en)";
+  }
+
+  function renderNavigatie(){
+    var s=st(), res=s.results.results;
+    if(!res.length){ $("navigatie").innerHTML='<p class="empty">Geen nieuwe polissen ('+esc(s.results.cfg.mijNieuw)+' / wijzigingsreden 2) gevonden.</p>'; return; }
+    if(s.idx<0) s.idx=0; if(s.idx>=res.length) s.idx=res.length-1;
+    var opts=res.map(function(r,i){
+      var rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr");
+      var mark=r.status==="ok"?"✓":(r.status==="warn"?"!":"✗");
+      return '<option value="'+i+'"'+(i===s.idx?" selected":"")+'>'+mark+"  Klant "+esc(dash(rel))+" — "+esc(statusWoord(r))+'</option>';
+    }).join("");
+    $("navigatie").innerHTML=
+      '<div class="nav">'+
+      '<button class="pijl" id="prev" title="Vorige klant" '+(s.idx===0?"disabled":"")+'>&#8592;</button>'+
+      '<div class="teller">Klant '+(s.idx+1)+' van '+res.length+'</div>'+
+      '<button class="pijl" id="next" title="Volgende klant" '+(s.idx===res.length-1?"disabled":"")+'>&#8594;</button>'+
+      '<div class="springnaar"><label for="spring" style="font-size:.8rem;color:var(--ink-2)">Spring naar:</label>'+
+      '<select id="spring">'+opts+'</select>'+
+      '<button class="ghost" id="nextFail" title="Volgende met afwijking">Volgende afwijking &#187;</button></div>'+
+      '</div>';
+    $("prev").onclick=function(){ if(s.idx>0){ s.idx--; renderNavigatie(); renderKlant(); } };
+    $("next").onclick=function(){ if(s.idx<res.length-1){ s.idx++; renderNavigatie(); renderKlant(); } };
+    $("spring").onchange=function(){ s.idx=parseInt(this.value,10)||0; renderNavigatie(); renderKlant(); };
+    $("nextFail").onclick=function(){
+      for(var k=1;k<=res.length;k++){ var j=(s.idx+k)%res.length; if(res[j].status==="fail"){ s.idx=j; renderNavigatie(); renderKlant(); return; } }
+    };
+  }
+
+  function renderKlant(){
+    var s=st(), d=s.results, res=d.results;
+    if(!res.length){ $("klant").innerHTML=""; return; }
+    var r=res[s.idx], n=r.pair.nieuw, o=r.pair.oud, cfg=d.cfg;
+    var rel=txt(n.row,n.map,"relatienr");
+    var html='<div class="klantkop">'+
+      '<span class="naam">Relatie '+esc(dash(rel))+'</span>'+
+      '<span class="sub">'+(o?esc(txt(o.row,o.map,"polisnr"))+' &rarr; ':'')+esc(txt(n.row,n.map,"polisnr"))+' &middot; '+esc(dash(txt(n.row,n.map,"brancheoms")))+'</span>'+
+      '<span class="badge '+r.status+'">'+esc(statusWoord(r))+'</span></div>';
+
+    if(r.orphan){
+      html+='<div class="banner fail">Geen bijbehorende '+esc(cfg.mijOud)+'-polis gevonden voor verwijzing <code>'+esc(dash(txt(n.row,n.map,"oudpolisnr")))+'</code> (regel '+n.line+').</div>';
+      $("klant").innerHTML=html; return;
+    }
+    var rowsHtml=r.checks.map(function(c){
+      var mk=c.status==="ok"?'<span class="mark ok">&#10003;</span>':(c.status==="warn"?'<span class="mark warn">!</span>':'<span class="mark fail">&#10007;</span>');
+      return '<tr class="'+(c.status==="ok"?"":"r-"+c.status)+'">'+
+        '<td>'+esc(c.label)+'</td>'+
+        '<td class="val col-oud">'+esc(dash(c.oud))+'</td>'+
+        '<td class="val col-nieuw">'+esc(dash(c.nieuw))+'</td>'+
+        '<td class="st">'+mk+'</td>'+
+        '<td class="note">'+esc(c.note)+'</td></tr>';
+    }).join("");
+    html+='<div class="tablewrap"><table><thead><tr>'+
+      '<th>Controle</th>'+
+      '<th class="col-oud">Oud &middot; '+esc(cfg.mijOud)+' (regel '+o.line+')</th>'+
+      '<th class="col-nieuw">Nieuw &middot; '+esc(cfg.mijNieuw)+' (regel '+n.line+')</th>'+
+      '<th class="st">Klopt?</th><th>Toelichting</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';
+
+    if(d.losseOud.length||d.onbekend.length){
+      html+='<details style="margin-top:16px"><summary style="cursor:pointer;font-weight:600;color:var(--dwa-groen)">Regels zonder paar ('+(d.losseOud.length+d.onbekend.length)+')</summary>'+
+        '<div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Regel</th><th>Soort</th><th>Relatie</th><th>Maatschappij</th><th>Polisnummer</th><th>Wijz.reden</th></tr></thead><tbody>';
+      d.losseOud.concat(d.onbekend).forEach(function(x){
+        html+='<tr class="r-warn"><td class="val">'+x.line+'</td><td>'+(x.kind==="oud"?"oude polis zonder nieuwe":"onbekend")+
+          '</td><td class="val">'+esc(dash(txt(x.row,x.map,"relatienr")))+'</td><td class="val">'+esc(dash(txt(x.row,x.map,"mij")))+
+          '</td><td class="val">'+esc(dash(txt(x.row,x.map,"polisnr")))+'</td><td class="val">'+esc(dash(txt(x.row,x.map,"wijzreden")))+'</td></tr>';
+      });
+      html+='</tbody></table></div></details>';
+    }
+    $("klant").innerHTML=html;
+  }
+
+  function renderFooter(){
+    $("footer").innerHTML="Kolommen worden herkend op koptekst; ontbreekt een kop, dan valt de tool terug op de vaste kolomvolgorde van de standaardexport. "+
+      "Koppeling oud&rarr;nieuw via <code>Polisnr. oude mij.</code> van de nieuwe polis tegenover het polisnummer van de oude polis. Nu actief: alleen AVB.";
+  }
+
+  function buildReport(d){
+    if(!d||d.error) return "";
+    var lines=["Poliscontrole "+prod().naam+" — "+st().name,""];
+    d.results.forEach(function(r){
+      var n=r.pair.nieuw,o=r.pair.oud;
+      lines.push("Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+(o?" | oud "+txt(o.row,o.map,"polisnr"):" | GEEN OUDE POLIS")+" => "+r.status.toUpperCase());
+      r.checks.filter(function(c){return c.status!=="ok";}).forEach(function(c){
+        lines.push("   - "+c.label+": oud="+(c.oud||"-")+" nieuw="+(c.nieuw||"-")+(c.note?" ("+c.note+")":""));
+      });
+    });
+    d.losseOud.forEach(function(r){ lines.push("Regel "+r.line+": oude polis "+txt(r.row,r.map,"polisnr")+" zonder nieuwe polis"); });
+    return lines.join("\n");
+  }
+
+  /* ================= Invoer ================= */
+  var drop=$("drop"), fileInput=$("file");
+  function loadFile(f){
+    var reader=new FileReader();
+    reader.onload=function(){ var s=st(); s.text=String(reader.result); s.name=f.name; s.isSample=false; s.idx=0; syncUploadUI(); run(); };
+    reader.onerror=function(){ st().results={error:"Het bestand kon niet worden gelezen."}; renderAll(); };
+    reader.readAsText(f,"utf-8");
+  }
+  drop.addEventListener("click",function(){ fileInput.click(); });
+  drop.addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileInput.click(); } });
+  fileInput.addEventListener("change",function(){ if(fileInput.files[0]) loadFile(fileInput.files[0]); });
+  ["dragenter","dragover"].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add("is-over"); }); });
+  ["dragleave","drop"].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove("is-over"); }); });
+  drop.addEventListener("drop",function(e){ var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) loadFile(f); });
+
+  $("check").addEventListener("click",run);
+  $("sample").addEventListener("click",function(){ var s=st(); s.text=SAMPLES[actiefId]||""; s.name="voorbeeld (ingebouwd)"; s.isSample=true; s.idx=0; syncUploadUI(); run(); });
+  $("export").addEventListener("click",function(){
+    var btn=this, done=function(m){ btn.textContent=m; setTimeout(function(){ btn.textContent="Kopieer rapport"; },1600); };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(st().report).then(function(){done("Gekopieerd");},function(){done("Kopiëren mislukt");});
+    else done("Kopiëren mislukt");
+  });
+  ["tol","jaar","prov","mijoud"].forEach(function(id){ $(id).addEventListener("change",run); });
+  document.addEventListener("keydown",function(e){
+    if(e.target && /input|select|textarea/i.test(e.target.tagName)) return;
+    if(e.key==="ArrowLeft" && $("prev")) $("prev").click();
+    if(e.key==="ArrowRight" && $("next")) $("next").click();
+  });
+
+  renderProductTabs();
+  syncUploadUI();
+  run();
+})();
+</script>
+</body>
+</html>
