@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 6</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 7</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -334,10 +334,16 @@
     vergelijk("Bijsluiter / gebruiksaanwijzing","bijsluiter","jn",{soft:true});
     vergelijk("Meeverzekerd gelieerde","meeverzgel","jn",{soft:true});
     vergelijk("NHG van toepassing","nhg","jn");
-    // 11. volgend jaar van opgave (nieuw moet op cfg.jaar staan)
+    // 11. volgend jaar van opgave — alleen relevant als NHG van toepassing = J.
     var jOud=txt(oud.row,oud.map,"opgavejaar"), jNieuw=txt(nieuw.row,nieuw.map,"opgavejaar");
-    add("Volgend jaar van opgave = "+cfg.jaar,jOud,jNieuw,(jOud===cfg.jaar&&jNieuw===cfg.jaar)?"ok":"fail",
-        "Verwacht "+cfg.jaar+((jOud!==cfg.jaar&&jNieuw!==cfg.jaar)?" (beide afwijkend)":(jOud!==cfg.jaar?" (oud wijkt af)":(jNieuw!==cfg.jaar?" (nieuw wijkt af)":""))));
+    var nhgNieuw=jn(txt(nieuw.row,nieuw.map,"nhg"));
+    if(nhgNieuw==="J"){
+      add("Volgend jaar van opgave = "+cfg.jaar+" (NHG = J)",jOud,jNieuw,
+          (jNieuw===cfg.jaar)?"ok":"fail",
+          (jNieuw===cfg.jaar)?"":"NHG van toepassing: nieuw moet "+cfg.jaar+" zijn"+(jOud!==cfg.jaar?" (oud staat op "+dash(jOud)+")":""));
+    } else {
+      add("Volgend jaar van opgave",jOud,jNieuw,"ok","NHG niet van toepassing — geen eis aan volgend jaar van opgave");
+    }
     // 12. provisie — oud mag 23/25 (of 20 bij #0376/ZM); nieuw mag 20/23/25.
     var vormNieuw = txt(nieuw.row,nieuw.map,"vorm").replace(/\s/g,"");
     function heeftZM(rec){ for(var i=0;i<rec.row.length;i++){ if(/(^|[^A-Z])ZM([^A-Z]|$)/.test(String(rec.row[i]).toUpperCase())) return true; } return false; }
