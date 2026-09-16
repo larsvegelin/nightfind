@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 7</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 8</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -266,16 +266,18 @@
       var ovRaw=txt(oud.row,oud.map,key), nvRaw=txt(nieuw.row,nieuw.map,key);
       var a=waarde(oud,key,mode), b=waarde(nieuw,key,mode), st, note="";
       if(a===""&&b===""){ st="info"; note="Beide leeg"; }
-      else if(a===""||b===""){ st=opts.soft?"info":"fail"; note="Alleen op één polis ingevuld"; }
+      else if(a===""||b===""){ st=(opts.soft||opts.info)?"info":"fail"; note="Alleen op één polis ingevuld"; }
       else if(a===b){ st="ok"; }
-      else { st=opts.soft?"warn":"fail"; note=opts.diffNote?opts.diffNote(ovRaw,nvRaw):"Waarden verschillen"; }
+      else { st=opts.info?"info":(opts.soft?"warn":"fail"); note=opts.diffNote?opts.diffNote(ovRaw,nvRaw):(opts.info?"Wijkt af — niet als fout gerekend":"Waarden verschillen"); }
       add(label, ovRaw, nvRaw, st, note);
     }
 
-    // 1. maatschappijcodes
+    // 1. maatschappijcodes — nieuw moet de nieuwe maatschappij zijn; oud is de
+    //    oude maatschappij (P300/P701/P513/... ), dus elke code behalve de nieuwe.
     var mOud=txt(oud.row,oud.map,"mij"), mNieuw=txt(nieuw.row,nieuw.map,"mij");
-    add("Maatschappij (oud "+cfg.mijOud+" / nieuw "+cfg.mijNieuw+")",mOud,mNieuw,
-        (mOud.toUpperCase()===cfg.mijOud && mNieuw.toUpperCase()===cfg.mijNieuw)?"ok":"fail","Oud "+cfg.mijOud+", nieuw "+cfg.mijNieuw);
+    add("Maatschappij (oud &rarr; "+cfg.mijNieuw+")",mOud,mNieuw,
+        (mNieuw.toUpperCase()===cfg.mijNieuw && mOud!=="" && mOud.toUpperCase()!==cfg.mijNieuw)?"ok":"fail",
+        "Nieuw moet "+cfg.mijNieuw+" zijn; oud = oude maatschappij (bijv. "+cfg.mijOud+"/P701/P513)");
     // 2. wijzigingsreden (voorloopnullen negeren: 00047 = 47, 00002 = 2)
     var rOud=stripZeros(txt(oud.row,oud.map,"wijzreden")), rNieuw=stripZeros(txt(nieuw.row,nieuw.map,"wijzreden"));
     add("Wijzigingsreden (47 oud / 2 nieuw)",txt(oud.row,oud.map,"wijzreden"),txt(nieuw.row,nieuw.map,"wijzreden"),
@@ -291,8 +293,8 @@
     var hvdOud=txt(oud.row,oud.map,"hvd"), ingNieuw=txt(nieuw.row,nieuw.map,"ingang");
     add("Ingangsdatum nieuw = hoofdvervaldatum oud",hvdOud,ingNieuw,(dateKey(hvdOud)&&dateKey(hvdOud)===dateKey(ingNieuw))?"ok":"fail","Nieuwe polis start op de hoofdvervaldatum van de oude polis");
     // 6-7. datums en termijn
-    vergelijk("Hoofdvervaldatum polis","hvd","date");
-    vergelijk("Contractvervaldatum","contractvd","date",{soft:true});
+    vergelijk("Hoofdvervaldatum polis","hvd","date",{info:true});
+    vergelijk("Contractvervaldatum","contractvd","date",{info:true});
     vergelijk("Termijn","termijn","num");
     vergelijk("Hoedanigheid","hoedanigheid","",{soft:true});
     // 8. incassobedrag binnen marge
@@ -301,31 +303,35 @@
     add("Incassobedrag (marge "+cfg.tol.toFixed(2).replace(".",",")+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
         diff==null?"fail":(diff<=cfg.tol+1e-9?"ok":"fail"), diff==null?"Bedrag ontbreekt of onleesbaar":"Verschil "+diff.toFixed(2).replace(".",","));
     // 9. bedragen / aantallen
-    // Geschatte jaaromzet: verschil = geel (let op), niet rood — staat niet in een pakket.
+    // Geschatte jaaromzet: alleen ter info, geen waarschuwing (niet in een pakket).
     var oOud=num(txt(oud.row,oud.map,"omzet")), oNieuw=num(txt(nieuw.row,nieuw.map,"omzet"));
     add("Geschatte jaaromzet",txt(oud.row,oud.map,"omzet"),txt(nieuw.row,nieuw.map,"omzet"),
-        (oOud!=null&&oNieuw!=null&&oOud===oNieuw)?"ok":"warn",
-        (oOud==null||oNieuw==null)?"Waarde ontbreekt (ter controle)":(oOud===oNieuw?"":"Verschil "+(oNieuw-oOud)+" — niet in een pakket, ter controle"));
+        (oOud!=null&&oNieuw!=null&&oOud===oNieuw)?"ok":"info",
+        (oOud!=null&&oNieuw!=null&&oOud!==oNieuw)?"Ter info; niet in een pakket, telt niet als afwijking":"");
     // Aantal personeelsleden: alleen ter info, geen waarschuwing.
     var perOud=num(txt(oud.row,oud.map,"personeel")), perNw=num(txt(nieuw.row,nieuw.map,"personeel"));
     add("Aantal personeelsleden",txt(oud.row,oud.map,"personeel"),txt(nieuw.row,nieuw.map,"personeel"),
         (perOud!=null&&perNw!=null&&perOud===perNw)?"ok":"info",
         (perOud!=null&&perNw!=null&&perOud!==perNw)?"Ter info; telt niet als afwijking":"");
     vergelijk("Jaarloon (polis)","jaarloon","num",{soft:true});
-    vergelijk("Eigen risico bedrag","eigenrisico","num");
-    // Verzekerd bedrag: mag in "Verzekerd bedrag" OF "Verzekerd bedrag A" staan.
-    // Minimaal één van beide moet gevuld zijn; het bedrag moet oud = nieuw zijn,
-    // ongeacht in welke van de twee kolommen het staat.
+    // Eigen risico: gelijk is goed, en een wijziging naar 250 is ook goedgekeurd.
+    var erOud=num(txt(oud.row,oud.map,"eigenrisico")), erNw=num(txt(nieuw.row,nieuw.map,"eigenrisico"));
+    add("Eigen risico bedrag",txt(oud.row,oud.map,"eigenrisico"),txt(nieuw.row,nieuw.map,"eigenrisico"),
+        (erNw===250||(erOud!=null&&erNw!=null&&erOud===erNw))?"ok":((erOud==null||erNw==null)?"info":"fail"),
+        (erNw===250&&erOud!==250)?"Naar 250 — goedgekeurd":((erOud!=null&&erNw!=null&&erOud!==erNw)?"Eigen risico verschilt":""));
+    // Verzekerd bedrag: nieuw moet gevuld zijn (in kolom of kolom A). Als de
+    // oude polis geen verzekerd bedrag heeft, is dat neutraal (oud systeem).
     function effVerz(rec){
       var a=num(txt(rec.row,rec.map,"verzbedrag"))||0, b=num(txt(rec.row,rec.map,"verzbedraga"))||0;
       return Math.max(a,b);
     }
     function fmtEur(n){ return n?String(n):"0"; }
-    var evO=effVerz(oud), evN=effVerz(nieuw);
-    add("Verzekerd bedrag (kolom of kolom A)", fmtEur(evO), fmtEur(evN),
-        (evO<=0||evN<=0) ? "fail" : (evO===evN?"ok":"fail"),
-        (evO<=0||evN<=0) ? "Minimaal één van beide velden moet gevuld zijn" :
-        (evO===evN ? "Bedrag mag in 'Verzekerd bedrag' of 'Verzekerd bedrag A' staan" : "Verzekerde bedragen verschillen"));
+    var evO=effVerz(oud), evN=effVerz(nieuw), vbSt, vbNote;
+    if(evN<=0){ vbSt="fail"; vbNote="Nieuwe polis heeft geen verzekerd bedrag (kolom of kolom A)"; }
+    else if(evO<=0){ vbSt="info"; vbNote="Oude polis heeft geen verzekerd bedrag; nieuw = "+fmtEur(evN); }
+    else if(evO===evN){ vbSt="ok"; vbNote="Bedrag mag in 'Verzekerd bedrag' of 'Verzekerd bedrag A' staan"; }
+    else { vbSt="fail"; vbNote="Verzekerde bedragen verschillen"; }
+    add("Verzekerd bedrag (kolom of kolom A)", fmtEur(evO), fmtEur(evN), vbSt, vbNote);
     // 10. J/N-kenmerken (staan vaak alleen op de nieuwe polis -> let op i.p.v. kruis)
     vergelijk("Product bewerking J/N","productbew","jn",{soft:true});
     vergelijk("Mvz. voorrisico J/N","mvzvoorrisico","jn",{soft:true});
@@ -333,7 +339,7 @@
     vergelijk("Explosieve / gevaarlijke stoffen","explosieve","jn",{soft:true});
     vergelijk("Bijsluiter / gebruiksaanwijzing","bijsluiter","jn",{soft:true});
     vergelijk("Meeverzekerd gelieerde","meeverzgel","jn",{soft:true});
-    vergelijk("NHG van toepassing","nhg","jn");
+    vergelijk("NHG van toepassing","nhg","jn",{soft:true});
     // 11. volgend jaar van opgave — alleen relevant als NHG van toepassing = J.
     var jOud=txt(oud.row,oud.map,"opgavejaar"), jNieuw=txt(nieuw.row,nieuw.map,"opgavejaar");
     var nhgNieuw=jn(txt(nieuw.row,nieuw.map,"nhg"));
@@ -352,10 +358,12 @@
     var provOud=txt(oud.row,oud.map,"provisie"), provNieuw=txt(nieuw.row,nieuw.map,"provisie");
     function provOkOud(v){ var n2=num(v); return n2!=null&&(cfg.prov.indexOf(n2)!==-1||(extra20&&n2===20)); }
     function provOkNieuw(v){ var n2=num(v); return n2!=null&&(cfg.prov.indexOf(n2)!==-1||n2===20); } // 20% altijd goed op nieuw
+    // Gelijke provisie op oud en nieuw is altijd goed (er is niets veranderd).
+    function provPaarOk(ov,nv){ var a=num(ov),b=num(nv); if(a!=null&&b!=null&&a===b) return true; return provOkOud(ov)&&provOkNieuw(nv); }
     add("Incassoprovisie % (oud "+cfg.prov.join("/")+", nieuw 20/"+cfg.prov.join("/")+")",provOud,provNieuw,
-        (provOkOud(provOud)&&provOkNieuw(provNieuw))?"ok":"fail","Oud "+cfg.prov.join("/")+"%"+(extra20?"/20%":"")+", nieuw 20/"+cfg.prov.join("/")+"%");
+        provPaarOk(provOud,provNieuw)?"ok":"fail","Oud "+cfg.prov.join("/")+"%"+(extra20?"/20%":"")+", nieuw 20/"+cfg.prov.join("/")+"% (of oud = nieuw)");
     var apOud=txt(oud.row,oud.map,"agentprov"), apNieuw=txt(nieuw.row,nieuw.map,"agentprov");
-    add("Agent 1 provisie %",apOud,apNieuw,(provOkOud(apOud)&&provOkNieuw(apNieuw))?"ok":"fail","Gelijk aan incassoprovisie; nieuw mag 20%");
+    add("Agent 1 provisie %",apOud,apNieuw,provPaarOk(apOud,apNieuw)?"ok":"fail","Gelijk aan incassoprovisie; nieuw mag 20% (of oud = nieuw)");
     if(num(provNieuw)!=null&&num(apNieuw)!=null&&num(provNieuw)!==num(apNieuw)) add("Incassoprovisie = agentprovisie (nieuw)",provNieuw,apNieuw,"fail","Percentages op de nieuwe polis lopen uiteen");
     var col=txt(nieuw.row,nieuw.map,"collect").toUpperCase();
     if(col.indexOf("PRO")===0){ var cn=num(col.replace("PRO","")); add("Collectiviteit "+col+" komt overeen met provisie",txt(oud.row,oud.map,"collect"),col,(cn!=null&&cn===num(provNieuw))?"ok":"fail","PRO-code moet het provisiepercentage van de nieuwe polis volgen"); }
@@ -366,7 +374,7 @@
   /* ================= State per product ================= */
   var actiefId = PRODUCTEN[0].id;
   var stateVan = {};
-  PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:"", name:"", isSample:false, results:null, idx:0, report:"" }; });
+  PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:"", name:"", isSample:false, results:null, idx:0, onlyDev:false, report:"" }; });
   function prod(){ for(var i=0;i<PRODUCTEN.length;i++) if(PRODUCTEN[i].id===actiefId) return PRODUCTEN[i]; }
   function st(){ return stateVan[actiefId]; }
 
@@ -381,9 +389,12 @@
     };
   }
   function classify(row,map,cfg){
-    var m=txt(row,map,"mij").toUpperCase(), r=txt(row,map,"wijzreden");
-    if(m===cfg.mijNieuw||r==="2") return "nieuw";
-    if(m===cfg.mijOud||r==="47") return "oud";
+    var m=txt(row,map,"mij").toUpperCase(), r=stripZeros(txt(row,map,"wijzreden"));
+    // Wijzigingsreden is leidend: 2 = nieuwe polis, 47 = oude polis (oversluiting).
+    if(r==="2") return "nieuw";
+    if(r==="47") return "oud";
+    if(m===cfg.mijNieuw) return "nieuw";
+    if(m===cfg.mijOud || m!=="") return "oud";
     return "?";
   }
 
@@ -493,9 +504,20 @@
   function renderNavigatie(){
     var s=st(), res=s.results.results;
     if(!res.length){ $("navigatie").innerHTML='<p class="empty">Geen nieuwe polissen ('+esc(s.results.cfg.mijNieuw)+' / wijzigingsreden 2) gevonden.</p>'; return; }
-    if(s.idx<0) s.idx=0; if(s.idx>=res.length) s.idx=res.length-1;
-    var opts=res.map(function(r,i){
-      var rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr");
+    // Zichtbare set: alle klanten of (bij 'alleen afwijkingen') alleen niet-akkoord.
+    var visible=[]; for(var vi=0;vi<res.length;vi++){ if(!s.onlyDev || res[vi].status!=="ok") visible.push(vi); }
+    var chk='<label class="chk" style="margin-left:auto;display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="onlyDev"'+(s.onlyDev?" checked":"")+'> Alleen afwijkingen</label>';
+    if(!visible.length){
+      $("navigatie").innerHTML='<div class="nav">'+
+        '<div class="klantnaam-nav" style="color:var(--ok)">&#10003; Geen afwijkingen — alle '+res.length+' polissen akkoord</div>'+chk+'</div>';
+      $("onlyDev").onchange=function(){ s.onlyDev=this.checked; renderNavigatie(); renderKlant(); };
+      $("klant").innerHTML="";
+      return;
+    }
+    if(visible.indexOf(s.idx)===-1) s.idx=visible[0];
+    var pos=visible.indexOf(s.idx);
+    var opts=visible.map(function(i){
+      var r=res[i], rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr");
       var pol=txt(r.pair.nieuw.row,r.pair.nieuw.map,"polisnr");
       var mark=r.status==="ok"?"✓":(r.status==="warn"?"!":"✗");
       var avb=r.avbTot>1?" [AVB "+r.avbIdx+"/"+r.avbTot+"]":"";
@@ -503,20 +525,17 @@
     }).join("");
     $("navigatie").innerHTML=
       '<div class="nav">'+
-      '<button class="pijl" id="prev" title="Vorige klant" '+(s.idx===0?"disabled":"")+'>&#8592;</button>'+
-      '<div class="teller">Klant '+(s.idx+1)+' van '+res.length+'</div>'+
-      '<button class="pijl" id="next" title="Volgende klant" '+(s.idx===res.length-1?"disabled":"")+'>&#8594;</button>'+
+      '<button class="pijl" id="prev" title="Vorige" '+(pos===0?"disabled":"")+'>&#8592;</button>'+
+      '<div class="teller">'+(pos+1)+' van '+visible.length+(s.onlyDev?' afwijkingen':'')+'</div>'+
+      '<button class="pijl" id="next" title="Volgende" '+(pos===visible.length-1?"disabled":"")+'>&#8594;</button>'+
       '<div class="klantnaam-nav">'+esc(klantNaam(res[s.idx]))+' <span class="badge '+res[s.idx].status+'">'+esc(statusWoord(res[s.idx]))+'</span></div>'+
       '<div class="springnaar"><label for="spring" style="font-size:.8rem;color:var(--ink-2)">Spring naar:</label>'+
-      '<select id="spring">'+opts+'</select>'+
-      '<button class="ghost" id="nextFail" title="Volgende met afwijking">Volgende afwijking &#187;</button></div>'+
+      '<select id="spring">'+opts+'</select></div>'+chk+
       '</div>';
-    $("prev").onclick=function(){ if(s.idx>0){ s.idx--; renderNavigatie(); renderKlant(); } };
-    $("next").onclick=function(){ if(s.idx<res.length-1){ s.idx++; renderNavigatie(); renderKlant(); } };
+    $("prev").onclick=function(){ if(pos>0){ s.idx=visible[pos-1]; renderNavigatie(); renderKlant(); } };
+    $("next").onclick=function(){ if(pos<visible.length-1){ s.idx=visible[pos+1]; renderNavigatie(); renderKlant(); } };
     $("spring").onchange=function(){ s.idx=parseInt(this.value,10)||0; renderNavigatie(); renderKlant(); };
-    $("nextFail").onclick=function(){
-      for(var k=1;k<=res.length;k++){ var j=(s.idx+k)%res.length; if(res[j].status==="fail"){ s.idx=j; renderNavigatie(); renderKlant(); return; } }
-    };
+    $("onlyDev").onchange=function(){ s.onlyDev=this.checked; renderNavigatie(); renderKlant(); };
   }
 
   function renderKlant(){
