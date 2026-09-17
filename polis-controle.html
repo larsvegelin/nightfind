@@ -109,7 +109,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 16</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 17</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -159,6 +159,7 @@
   // Alle producten gebruiken dezelfde exportindeling (kolommen) en dezelfde
   // oversluitcontroles (P300/... -> N200, wijzigingsreden 47 -> 2).
   var COLS_STD = [
+    ["kantoor",null,"kantoorcode"],
     ["agent",0,"agent op relatieniv"],["relatienr",1,"relatienummer"],["voorletters",2,"voorletters"],
     ["mij",3,"polis+wacht->maatschappij"],["mijoms",4,"polis+wachtoms->maatschappij"],
     ["branche",5,"polis+wacht->branche"],["brancheoms",6,"polis+wachtoms->branche"],["vorm",7,"verzekeringsvorm"],
@@ -448,7 +449,7 @@
   /* ================= State per product ================= */
   var actiefId = PRODUCTEN[0].id;
   var stateVan = {};
-  PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:"", name:"", isSample:false, results:null, idx:0, onlyDev:false, report:"" }; });
+  PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:"", name:"", isSample:false, results:null, idx:0, onlyDev:false, filterTermijn:"", filterKantoor:"", report:"" }; });
   function prod(){ for(var i=0;i<PRODUCTEN.length;i++) if(PRODUCTEN[i].id===actiefId) return PRODUCTEN[i]; }
   function st(){ return stateVan[actiefId]; }
 
@@ -570,7 +571,7 @@
   }
 
   function statusWoord(r){
-    if(r.orphan) return "geen oude polis";
+    if(r.orphan) return "nog invoeren";
     if(r.status==="ok") return "akkoord";
     if(r.status==="warn") return "let op";
     return r.checks.filter(function(c){return c.status==="fail";}).length+" afwijking(en)";
@@ -584,17 +585,60 @@
     return basis;
   }
 
+  function termijnLabel(t){
+    var n=num(t);
+    if(n===1) return "per jaar";
+    if(n===2) return "per halfjaar";
+    if(n===4) return "per kwartaal";
+    if(n===12) return "per maand";
+    return t?("termijn "+t):"onbekend";
+  }
   function renderNavigatie(){
     var s=st(), res=s.results.results;
     if(!res.length){ $("navigatie").innerHTML='<p class="empty">Geen nieuwe polissen ('+esc(s.results.cfg.mijNieuw)+' / wijzigingsreden 2) gevonden.</p>'; return; }
-    // Zichtbare set: alle klanten of (bij 'alleen afwijkingen') alleen niet-akkoord.
-    var visible=[]; for(var vi=0;vi<res.length;vi++){ if(!s.onlyDev || res[vi].status!=="ok") visible.push(vi); }
-    var chk='<label class="chk" style="margin-left:auto;display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="onlyDev"'+(s.onlyDev?" checked":"")+'> Alleen afwijkingen</label>';
+
+    // Beschikbare betaaltermijnen en kantoren afleiden uit de nieuwe polissen.
+    var termOrder=[], termSeen={}, kantOrder=[], kantSeen={};
+    res.forEach(function(r){
+      var t=txt(r.pair.nieuw.row,r.pair.nieuw.map,"termijn");
+      if(t!==""&&!termSeen[t]){ termSeen[t]=true; termOrder.push(t); }
+      var k=txt(r.pair.nieuw.row,r.pair.nieuw.map,"kantoor");
+      if(k!==""&&!kantSeen[k]){ kantSeen[k]=true; kantOrder.push(k); }
+    });
+    termOrder.sort(function(a,b){ return (num(a)||0)-(num(b)||0); });
+    kantOrder.sort(function(a,b){ var na=num(a),nb=num(b); return (na!=null&&nb!=null)?(na-nb):String(a).localeCompare(String(b)); });
+    if(s.filterTermijn!==""&&!termSeen[s.filterTermijn]) s.filterTermijn=""; // filter bestaat niet meer
+    if(s.filterKantoor!==""&&!kantSeen[s.filterKantoor]) s.filterKantoor="";
+
+    function matcht(r){
+      if(s.onlyDev && r.status==="ok") return false;
+      if(s.filterTermijn!==""&&txt(r.pair.nieuw.row,r.pair.nieuw.map,"termijn")!==s.filterTermijn) return false;
+      if(s.filterKantoor!==""&&txt(r.pair.nieuw.row,r.pair.nieuw.map,"kantoor")!==s.filterKantoor) return false;
+      return true;
+    }
+    var visible=[]; for(var vi=0;vi<res.length;vi++){ if(matcht(res[vi])) visible.push(vi); }
+
+    var fStyle='display:flex;gap:6px;align-items:center';
+    var lStyle='font-size:.8rem;color:var(--ink-2)';
+    var termSel = termOrder.length ?
+      '<div class="filtersel" style="'+fStyle+'"><label for="fTerm" style="'+lStyle+'">Betaaltermijn:</label><select id="fTerm"><option value=""'+(s.filterTermijn===""?" selected":"")+'>Alle</option>'+
+        termOrder.map(function(t){ return '<option value="'+esc(t)+'"'+(s.filterTermijn===t?" selected":"")+'>'+esc(termijnLabel(t))+'</option>'; }).join("")+'</select></div>' : '';
+    var kantSel = kantOrder.length ?
+      '<div class="filtersel" style="'+fStyle+'"><label for="fKant" style="'+lStyle+'">Kantoor:</label><select id="fKant"><option value=""'+(s.filterKantoor===""?" selected":"")+'>Alle</option>'+
+        kantOrder.map(function(k){ return '<option value="'+esc(k)+'"'+(s.filterKantoor===k?" selected":"")+'>'+esc(k)+'</option>'; }).join("")+'</select></div>' : '';
+    var chk='<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="onlyDev"'+(s.onlyDev?" checked":"")+'> Alleen afwijkingen</label>';
+    var gefilterd=(s.onlyDev||s.filterTermijn!==""||s.filterKantoor!=="");
+
+    function wireFilters(){
+      if($("fTerm")) $("fTerm").onchange=function(){ s.filterTermijn=this.value; s.idx=0; renderNavigatie(); renderKlant(); };
+      if($("fKant")) $("fKant").onchange=function(){ s.filterKantoor=this.value; s.idx=0; renderNavigatie(); renderKlant(); };
+      if($("onlyDev")) $("onlyDev").onchange=function(){ s.onlyDev=this.checked; s.idx=0; renderNavigatie(); renderKlant(); };
+    }
+
     if(!visible.length){
-      $("navigatie").innerHTML='<div class="nav">'+
-        '<div class="klantnaam-nav" style="color:var(--ok)">&#10003; Geen afwijkingen — alle '+res.length+' polissen akkoord</div>'+chk+'</div>';
-      $("onlyDev").onchange=function(){ s.onlyDev=this.checked; renderNavigatie(); renderKlant(); };
-      $("klant").innerHTML="";
+      $("navigatie").innerHTML='<div class="nav">'+termSel+kantSel+
+        '<div class="klantnaam-nav" style="color:var(--ink-2)">Geen polissen die aan de filters voldoen (0 van '+res.length+')</div>'+chk+'</div>';
+      wireFilters(); $("klant").innerHTML='<div class="banner info">Pas de filters aan om polissen te tonen.</div>';
       return;
     }
     if(visible.indexOf(s.idx)===-1) s.idx=visible[0];
@@ -609,16 +653,17 @@
     $("navigatie").innerHTML=
       '<div class="nav">'+
       '<button class="pijl" id="prev" title="Vorige" '+(pos===0?"disabled":"")+'>&#8592;</button>'+
-      '<div class="teller">'+(pos+1)+' van '+visible.length+(s.onlyDev?' afwijkingen':'')+'</div>'+
+      '<div class="teller">'+(pos+1)+' van '+visible.length+(gefilterd?' (gefilterd)':'')+'</div>'+
       '<button class="pijl" id="next" title="Volgende" '+(pos===visible.length-1?"disabled":"")+'>&#8594;</button>'+
       '<div class="klantnaam-nav">'+esc(klantNaam(res[s.idx]))+' <span class="badge '+res[s.idx].status+'">'+esc(statusWoord(res[s.idx]))+'</span></div>'+
-      '<div class="springnaar"><label for="spring" style="font-size:.8rem;color:var(--ink-2)">Spring naar:</label>'+
+      termSel+kantSel+
+      '<div class="springnaar"><label for="spring" style="'+lStyle+'">Spring naar:</label>'+
       '<select id="spring">'+opts+'</select></div>'+chk+
       '</div>';
     $("prev").onclick=function(){ if(pos>0){ s.idx=visible[pos-1]; renderNavigatie(); renderKlant(); } };
     $("next").onclick=function(){ if(pos<visible.length-1){ s.idx=visible[pos+1]; renderNavigatie(); renderKlant(); } };
     $("spring").onchange=function(){ s.idx=parseInt(this.value,10)||0; renderNavigatie(); renderKlant(); };
-    $("onlyDev").onchange=function(){ s.onlyDev=this.checked; renderNavigatie(); renderKlant(); };
+    wireFilters();
   }
 
   function renderKlant(){
@@ -632,7 +677,7 @@
       '<span class="badge '+r.status+'">'+esc(statusWoord(r))+'</span></div>';
 
     if(r.orphan){
-      html+='<div class="banner fail">Geen bijbehorende '+esc(cfg.mijOud)+'-polis gevonden voor verwijzing <code>'+esc(dash(txt(n.row,n.map,"oudpolisnr")))+'</code> (regel '+n.line+').</div>';
+      html+='<div class="banner warn"><strong>Nog invoeren.</strong> Geen bijbehorende '+esc(cfg.mijOud)+'-polis gevonden voor verwijzing <code>'+esc(dash(txt(n.row,n.map,"oudpolisnr")))+'</code> (regel '+n.line+'). De oude polis moet nog worden ingevoerd.</div>';
       $("klant").innerHTML=html; return;
     }
     // Bij 'Alleen afwijkingen' tonen we alleen de afwijkende regels (fout/let op),
