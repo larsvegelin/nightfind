@@ -103,6 +103,8 @@
   .banner{border-radius:var(--radius);padding:12px 16px;font-size:.9rem;margin-bottom:14px;border:1px solid var(--rand)}
   .banner.info{background:var(--dwa-goud-60);border-color:var(--dwa-goud)}
   .banner.fail{background:var(--fail-soft);border-color:var(--fail);color:var(--fail-tekst,#96302f)}
+  .banner.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+  .banner.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
   .empty{color:var(--ink-2)}
   code{font-family:var(--mono);font-size:.9em}
   footer{margin-top:34px;border-top:1px solid var(--rand);padding-top:14px;color:var(--ink-3);font-size:.8rem}
@@ -111,7 +113,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 18</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 19</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -177,6 +179,7 @@
     ["opgavejaar",32,"volgend jaar van opgav"],["provisie",33,"incassoprovisie"],["collect",34,"collectiviteit"],
     ["mij2",35,"2e maatschappij"],["oudpolisnr2",36,null],
     ["tekst1",37,"tekst 1"],["tekst2",38,"tekst 2"],["tekst3",39,"tekst 3"],["tekst4",40,"tekst 4"],["tekst5",41,"tekst 5"],
+    ["clausule",43,"clausule 10"],
     ["verzbedraga",44,"verzekerd bedrag a"],["agentprov",45,"agent 1 provisie"]
   ];
   var PRODUCTEN = [
@@ -451,6 +454,19 @@
           (provN!=null && Math.abs(colPct-provN)<1e-9)?"ok":"fail",
           "Code "+colRaw+" = "+fmtPct(colPct)+"% moet gelijk zijn aan de incassoprovisie"+(provN!=null?" ("+fmtPct(provN)+"%)":"")+" — niet de provinciale/agentprovisie");
     }
+    // 12b. Clausule O2602 moet op elke nieuwe polis staan — over alle branches
+    // en selecties. Detectie is robuust: eerst het veld 'Clausule 10', anders de
+    // hele regel doorzoeken (kolomindeling verschilt per selectie).
+    var clsCode="O2602";
+    function heeftClausule(rec,code){
+      var v=txt(rec.row,rec.map,"clausule").toUpperCase();
+      if(v.indexOf(code)!==-1) return true;
+      return rec.row.some(function(cell){ return String(cell==null?"":cell).toUpperCase().indexOf(code)!==-1; });
+    }
+    var clsNwVal=txt(nieuw.row,nieuw.map,"clausule"), clsOudVal=txt(oud.row,oud.map,"clausule");
+    var clsNwOk=heeftClausule(nieuw,clsCode);
+    add("Clausule "+clsCode+" op nieuwe polis",dash(clsOudVal),dash(clsNwVal),
+        clsNwOk?"ok":"fail",clsNwOk?"":"Clausule "+clsCode+" ontbreekt op de nieuwe polis");
     // 13. Polisteksten (Tekst 1-5): ter controle overnemen; verschil = geel, nooit fout.
     function teksten(rec){
       return ["tekst1","tekst2","tekst3","tekst4","tekst5"]
@@ -701,6 +717,9 @@
 
     if(r.orphan){
       html+='<div class="banner warn"><strong>Nog invoeren.</strong> Geen bijbehorende '+esc(cfg.mijOud)+'-polis gevonden voor verwijzing <code>'+esc(dash(txt(n.row,n.map,"oudpolisnr")))+'</code> (regel '+n.line+'). De oude polis moet nog worden ingevoerd.</div>';
+      // Clausule O2602 wordt ook op deze losse nieuwe polis gecontroleerd.
+      var oCode=n.row.some(function(cell){ return String(cell==null?"":cell).toUpperCase().indexOf("O2602")!==-1; });
+      html+='<div class="banner '+(oCode?"ok":"fail")+'">Clausule O2602 op de nieuwe polis: '+(oCode?"aanwezig &#10003;":"ontbreekt &#10007;")+'</div>';
       $("klant").innerHTML=html; return;
     }
     // Bij 'Alleen afwijkingen' tonen we alleen de afwijkende regels (fout/let op),
