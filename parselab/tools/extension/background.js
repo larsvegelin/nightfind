@@ -134,23 +134,69 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'wt-log') { appendLog(msg.entry || {}).then(() => sendResponse({ ok: true })); return true; }
 });
 
-// Klik op het icoon (of de sneltoets): paneel aan/uit op het actieve tabblad. activeTab geeft
-// op dat moment toegang tot precies dat tabblad; het paneel wordt dan geïnjecteerd.
+// ---- Klik op het icoon (of de sneltoets) ----------------------------------------------
+// Het paneel hoort te openen op het tabblad waar je op dat moment staat. Daarom vragen we
+// het tabblad zelf hoe het ervoor staat (wt-ping) in plaats van te vertrouwen op een
+// bewaarde vlag: die is er maar één voor alle tabbladen en stond na een ander tabblad of
+// een herstart soms nog "aan", waardoor een klik het paneel juist probeerde te sluiten en
+// er niets gebeurde. Weet de pagina van niets, dan injecteren we altijd.
+const PAGINA_VAN_BROWSER = /^(chrome|edge|brave|opera|vivaldi|about|devtools|view-source|chrome-extension|moz-extension|chrome-search|chrome-untrusted):/i;
+const PAGINA_WINKEL = /^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com|microsoftedge\.microsoft\.com\/addons|addons\.mozilla\.org)/i;
+
+// Waarom kan het hier niet? null = wel proberen (ook bij een onbekend adres).
+function waaromNiet(url) {
+    if (!url) return null;
+    if (/^file:\/\//i.test(url)) return 'zet bij chrome://extensions onder ParseLab "Toegang tot bestands-URL\'s toestaan" aan';
+    if (PAGINA_WINKEL.test(url)) return 'de browserwinkel laat geen extensies toe; open een gewone website';
+    if (PAGINA_VAN_BROWSER.test(url)) return 'browserpagina\'s laten geen extensies toe; open eerst een gewone website';
+    return null;
+}
+// Een klik die niets kan doen mag niet stil blijven: rood uitroepteken op het icoon en de
+// reden in de tooltip. Verdwijnt zodra je naar een andere pagina gaat.
+async function meldOpIcoon(tabId, tekst) {
+    // Elk onderdeel apart: mislukt de badge (bijvoorbeeld bij een tabblad dat net weg is),
+    // dan moet de uitleg in de tooltip er nog steeds komen.
+    try { await chrome.action.setTitle({ tabId, title: 'ParseLab kan hier niet openen — ' + tekst }); } catch (e) {}
+    try { await chrome.action.setBadgeText({ tabId, text: '!' }); } catch (e) {}
+    try { await chrome.action.setBadgeBackgroundColor({ tabId, color: '#B3261E' }); } catch (e) {}
+    console.info('ParseLab: ' + tekst);
+}
+async function wisMeldingOpIcoon(tabId) {
+    try { await chrome.action.setBadgeText({ tabId, text: '' }); } catch (e) {}
+    try { await chrome.action.setTitle({ tabId, title: 'ParseLab — klik om te openen' }); } catch (e) {}
+}
+// Staat het paneelscript al in dit tabblad, en staat het paneel open?
+async function paneelStatus(tabId) {
+    try {
+        const r = await chrome.tabs.sendMessage(tabId, { type: 'wt-ping' });
+        return { aanwezig: true, open: !!(r && r.open) };
+    } catch (e) { return { aanwezig: false, open: false }; }
+}
+
 async function togglePanel(tab) {
     if (!tab || !tab.id) return;
-    if (/^(chrome|edge|about|chrome-extension|devtools|https:\/\/chrome\.google\.com\/webstore|https:\/\/chromewebstore)/i.test(tab.url || '')) return;
-    const cur = await chrome.storage.local.get('wt-active');
-    const next = !(cur && cur['wt-active']);
-    await chrome.storage.local.set({ 'wt-active': next });
+    const reden = waaromNiet(tab.url || tab.pendingUrl || '');
+    if (reden) { await meldOpIcoon(tab.id, reden); return; }
+    await wisMeldingOpIcoon(tab.id);
+
+    const st = await paneelStatus(tab.id);
+    if (st.aanwezig) {
+        // Het script draait hier al: gewoon omklappen, wat de bewaarde vlag ook zegt.
+        const next = !st.open;
+        try { await chrome.storage.local.set({ 'wt-active': next }); } catch (e) {}
+        try { await chrome.tabs.sendMessage(tab.id, { type: 'wt-set', active: next }); } catch (e) {}
+        return;
+    }
+    // Nog geen paneel in dit tabblad: eerst de vlag aan (het script leest die bij het starten),
+    // daarna injecteren. activeTab geeft hiervoor toegang tot precies dit tabblad.
+    try { await chrome.storage.local.set({ 'wt-active': true }); } catch (e) {}
     try {
-        await chrome.tabs.sendMessage(tab.id, { type: 'wt-set', active: next });
+        await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ['panel.css'] });
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['panel.js'] });
     } catch (e) {
-        if (next) {
-            try {
-                await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ['panel.css'] });
-                await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['panel.js'] });
-            } catch (e2) { console.warn('ParseLab kon niet laden:', e2 && e2.message); }
-        }
+        const m = (e && e.message) || 'onbekende fout';
+        console.warn('ParseLab kon niet laden:', m);
+        await meldOpIcoon(tab.id, /cannot be scripted|Cannot access|blocked/i.test(m) ? 'deze pagina laat geen extensies toe' : m);
     }
 }
 chrome.action.onClicked.addListener(togglePanel);
@@ -161,6 +207,9 @@ if (chrome.commands && chrome.commands.onCommand) {
         if (tab) togglePanel(tab);
     });
 }
+// Bij een nieuwe pagina in hetzelfde tabblad is de melding niet meer waar.
+chrome.tabs.onUpdated.addListener((tabId, info) => { if (info.status === 'loading') wisMeldingOpIcoon(tabId); });
+
 // Na installatie één keer een korte uitleg tonen.
 chrome.runtime.onInstalled.addListener((d) => {
     if (d && d.reason === 'install') {

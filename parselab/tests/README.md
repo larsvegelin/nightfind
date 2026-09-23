@@ -16,6 +16,13 @@ Dan: `cd parselab/tests && node qa.mjs`. Resultaat staat in `qa-result.txt`, sch
 
 `webflow.mjs` test de vijf ParsePDF-embeds uit `parselab/webflow/`. Die test start zelf wat hij nodig heeft: hij bouwt met `webflow-proef.mjs` een proefpagina in `proef/` (namaak-Supabase, pdf.js uit `tools/parsepdf.html`, drie proef-PDF's), zet daar een server op 8123 bij, controleert ook de losse pagina uit `webflow/bouw-pagina.mjs` en sluit alles weer af. Los draaien: `node webflow.mjs`.
 
+`extensie.mjs` laadt de browserextensie in een echte Chromium en controleert het openen: een klik op
+het icoon opent het paneel ook als de bewaarde vlag nog "aan" stond van een ander tabblad of een
+vorige sessie, een tweede klik sluit het, er ontstaat geen tweede paneel, en op een browserpagina
+komt er uitleg op het icoon. De test zet zelf een pagina op poort 9100 neer en draait op een kopie
+van de extensie met de testsite in het manifest, omdat `activeTab` alleen bij een echte muisklik
+geldt. Los draaien: `node extensie.mjs`.
+
 `pdfs/` bevat zeven proef-PDF's met de verwachte uitkomsten (`pdfs/README.md`), te herbouwen met `node pdfs/maak-pdfs.mjs`.
 
 De extensie heeft een eigen test in `tools/extension/` (zie README daar).

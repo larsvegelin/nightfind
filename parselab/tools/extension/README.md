@@ -28,7 +28,10 @@ dat jij daar op het icoon klikt.
 ## Zo werkt het
 
 1. **Open de pagina** waar je wilt werken en klik op het ParseLab-icoon. Het paneel verschijnt op
-   de pagina. (Sluiten: ✕ rechtsboven in het paneel.)
+   de pagina; nog een klik sluit het weer. (Ook sluiten: ✕ rechtsboven in het paneel.)
+   Gebeurt er niets, kijk dan naar het icoon: staat er een rood uitroepteken, houd de muis er dan
+   op. Op browserpagina's (`chrome://`, nieuw tabblad), in de browserwinkel en bij bestanden op je
+   schijf mag geen enkele extensie werken. Open eerst een gewone website.
 2. **Wijs aan wat er moet gebeuren.** Klik op *+ Stap toevoegen* en kies:
    - **Invullen** — klik het veld, de keuzelijst of het hele formulier. ParseLab ziet zelf of het een
      tekstveld, datum of keuzelijst is.
@@ -119,6 +122,10 @@ store-id netter.
 - Vast: `activeTab`, `scripting`, `storage`, `downloads`. Er is géén `host_permissions: <all_urls>`
   en géén content-script op alle pagina's. Het paneel wordt pas in een tabblad geladen na een klik
   op het icoon (of de sneltoets Alt+Shift+S).
+- Openen/sluiten gaat per tabblad. Het achtergrondscript vraagt het tabblad eerst zelf of het paneel
+  daar draait (`wt-ping`) en klapt dan de goede kant op; de bewaarde vlag `wt-active` bepaalt alleen
+  of het paneel na een paginawissel terugkomt, nooit of een klik iets doet. Kan het op die pagina
+  niet, dan komt er een rood uitroepteken met uitleg op het icoon in plaats van stilte.
 - Optioneel, per site: `optional_host_permissions: <all_urls>`. Bij *Bewaar taak* of *Start* vraagt
   ParseLab toegang tot precies die origin (bv. `https://portaal.example.nl/*`) en registreert het
   paneel daar als content-script, zodat een lopende ronde en het paneel terugkomen na een

@@ -42,6 +42,7 @@ parselab/server/data/
 parselab/server/node_modules/
 parselab/tests/shots/
 parselab/tests/qa-result.txt
+parselab/tests/extensie-result.txt
 parselab/tests/qa-board.csv
 
 # Proefpagina van de Webflow-embeds; wordt gebouwd door tests/webflow-proef.mjs

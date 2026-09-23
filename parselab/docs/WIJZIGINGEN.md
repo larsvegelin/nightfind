@@ -6,7 +6,28 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 16)
+## Wat er het laatst veranderde (ronde 17)
+
+**Vraag:** de extensie opent niet als je erop klikt; permanent oplossen.
+
+**Oorzaak.** `togglePanel` in `tools/extension/background.js` las één bewaarde vlag (`wt-active`) die voor álle tabbladen samen gold. Stond die nog op *aan* — omdat het paneel in een ander tabblad openstond, of omdat de browser was afgesloten terwijl het paneel open was — dan berekende een klik *uit*, stuurde een `wt-set`-bericht naar een tabblad zonder paneelscript (dat stil mislukt) en sloeg het injecteren over, want dat gebeurde alleen bij *aan*. Resultaat: de eerste klik in elk nieuw tabblad deed niets, de tweede pas wel. Op browserpagina's, in de browserwinkel en bij `file://` stopte de functie helemaal zonder enig teken.
+
+### De extensie (`tools/extension/`, versie 1.18.1 → 1.19.0)
+
+- **Per tabblad beslissen.** `background.js` vraagt het tabblad eerst zelf hoe het ervoor staat met een nieuw bericht `wt-ping`; `panel.js` antwoordt `{ok, open}`. Draait het script daar al, dan klapt de klik om vanuit die echte stand; draait het er niet, dan wordt er altijd geïnjecteerd. De bewaarde vlag bepaalt alleen nog of het paneel na een paginawissel terugkomt, nooit meer of een klik iets doet.
+- **Geen stille klik meer.** Kan het paneel op die pagina niet (browserpagina, nieuw tabblad, browserwinkel, `file://`, of een geweigerde injectie), dan komt er een rood uitroepteken op het icoon met de reden in de tooltip. De melding verdwijnt zodra je naar een andere pagina gaat. Titel en badge worden apart gezet, zodat de uitleg er ook komt als de badge mislukt.
+- **Sneltoets blijft werken.** Bij Alt+Shift+S komt het tabblad zonder adres terug (de extensie heeft geen `tabs`-recht); een onbekend adres blokkeert nu niets meer, er wordt gewoon geprobeerd.
+- **Geen dubbel paneel.** Omdat er alleen nog wordt geïnjecteerd als het script er echt niet is, kan `panel.js` niet meer twee keer in dezelfde pagina belanden (wat eerder een tweede berichtenluisteraar opleverde).
+
+### Test (`tests/extensie.mjs`, nieuw)
+
+Laadt de extensie in een echte Chromium en controleert negen dingen: extensie start, klik opent het paneel terwijl de vlag nog "aan" stond, tweede klik sluit, derde opent weer, nieuw tabblad via de sneltoets opent, geen tweede paneel na open/dicht/open, en een browserpagina geeft uitleg op het icoon. De test zet zelf een pagina op poort 9100 neer en draait op een kopie van de extensie met die testsite in het manifest, omdat `activeTab` alleen bij een echte muisklik geldt. Toegevoegd aan `.github/workflows/qa.yml`.
+
+- `tools/parselab-extension.zip` opnieuw gebouwd (1.19.0); `tools/extension/README.md` en `tests/README.md` bijgewerkt.
+
+---
+
+## Ronde 16
 
 **Vraag:** *Er ging iets mis (405)*: zorg dat je vanuit het dashboard websites kunt uitlezen, en schrijf een zo uitgebreid mogelijke handleiding hoe dat wél kan.
 

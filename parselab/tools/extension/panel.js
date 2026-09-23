@@ -2340,6 +2340,9 @@
             try {
                 chrome.runtime.onMessage.addListener((m, sender, send) => {
                 if (!m) return;
+                // Het achtergrondscript vraagt hiermee of het paneel hier al draait en openstaat,
+                // zodat een klik op het icoon altijd de goede kant op klapt.
+                if (m.type === 'wt-ping') { try { send({ ok: true, open: !!window.__WT_PANEL__ }); } catch (e) {} return true; }
                 if (m.type === 'wt-set') { if (m.active) { removeBadge(); buildPanel(); } else removePanel(); return; }
                 if (m.type === 'wt-api-readfields') { try { send({ ok: true, fields: apiReadFields(m.scope) }); } catch (e) { send({ ok: false, error: String(e && e.message || e) }); } return true; }
                 if (m.type === 'wt-api-fill') { apiFill(m.payload).then(r => send({ ok: true, result: r })).catch(e => send({ ok: false, error: String(e && e.message || e) })); return true; }

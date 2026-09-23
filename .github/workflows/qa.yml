@@ -35,6 +35,9 @@ jobs:
       - name: Webflow-embeds van ParsePDF
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node webflow.mjs
+      - name: Browserextensie
+        working-directory: parselab/tests
+        run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node extensie.mjs
       - name: Resultaat en schermafbeeldingen bewaren
         if: always()
         uses: actions/upload-artifact@v4
@@ -42,5 +45,6 @@ jobs:
           name: parselab-qa
           path: |
             parselab/tests/qa-result.txt
+            parselab/tests/extensie-result.txt
             parselab/tests/shots/
             /tmp/parselab.log
