@@ -45,6 +45,8 @@
   .drop:hover,.drop.is-over{border-color:var(--dwa-goud-80);background:var(--dwa-goud-60)}
   .drop strong{display:block;font-size:1.05rem;margin-bottom:4px}
   .drop span{color:var(--ink-2);font-size:.85rem}
+  .drop .selectiehint{display:block;color:var(--dwa-groen);font-size:.9rem;margin-bottom:6px}
+  .drop .selectiehint code{background:var(--dwa-goud-60);color:var(--ink);padding:1px 6px;border-radius:4px;font-weight:700}
   .drop input{display:none}
   .filerow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;font-size:.85rem;color:var(--ink-2)}
   .filename{font-family:var(--mono);color:var(--tekst)}
@@ -109,7 +111,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 17</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 18</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -120,6 +122,7 @@
     <div class="panel">
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Kies een bestand of sleep het hierheen">
         <strong>Sleep de export hierheen</strong>
+        <span id="selectiehint" class="selectiehint"></span>
         <span>of klik om te bladeren &middot; .exp, .csv, .tsv of .txt &middot; scheidingsteken <code>tab</code> <code>;</code> of <code>,</code> wordt herkend</span>
         <input type="file" id="file" accept=".csv,.tsv,.txt,.exp,text/csv">
       </div>
@@ -181,6 +184,7 @@
       id: "avb",
       naam: "AVB",
       titel: "Aansprakelijkheid Bedrijven",
+      selectie: "AVBCO",
       mijOud: "P300", mijNieuw: "N200",
       cols: COLS_STD,
       checks: buildAvbChecks
@@ -189,6 +193,7 @@
       id: "ev",
       naam: "Eigen vervoer",
       titel: "Eigen vervoer",
+      selectie: "EVVCO",
       mijOud: "P300", mijNieuw: "N200",
       cols: COLS_STD,
       checks: buildAvbChecks
@@ -197,6 +202,7 @@
       id: "bg",
       naam: "Bedrijfsgebouw",
       titel: "Bedrijfsgebouw",
+      selectie: "",
       mijOud: "P300", mijNieuw: "N200",
       // Andere exportindeling (extra Kantoorcode-kolom vooraan + extra velden
       // achteraan); kolommen worden op de koptekst herkend.
@@ -207,9 +213,21 @@
       id: "inb",
       naam: "Inboedel",
       titel: "Inventaris en goederen",
+      selectie: "INVCO",
       mijOud: "P300", mijNieuw: "N200",
       // Zelfde exportindeling als Bedrijfsgebouw (Kantoorcode vooraan +
       // risicoadres-/bouwvelden achteraan); herkend op de koptekst.
+      cols: COLS_STD,
+      checks: buildAvbChecks
+    },
+    {
+      id: "bs",
+      naam: "Bedrijfsschade",
+      titel: "Bedrijfsschade",
+      selectie: "BSCHC",
+      mijOud: "P300", mijNieuw: "N200",
+      // Zelfde aanpak; export heeft Bouwaard-kolommen tussen Bijsluiter en
+      // Meeverzekerd gelieerde. Kolommen worden op de koptekst herkend.
       cols: COLS_STD,
       checks: buildAvbChecks
     }
@@ -541,10 +559,15 @@
   }
 
   function syncUploadUI(){
-    var s=st();
+    var s=st(), p=prod();
     $("fname").textContent=s.name||"— nog geen bestand gekozen —";
     $("rowinfo").textContent=(s.text&&s.text.trim())?("("+s.text.split(/\r?\n/).filter(function(l){return l.trim();}).length+" regels)"):"";
     $("export").disabled=!s.results||!!s.results.error;
+    if($("selectiehint")){
+      $("selectiehint").innerHTML = p.selectie
+        ? ('Upload de export van <strong>'+esc(p.naam)+'</strong> &middot; selectie <code>'+esc(p.selectie)+'</code>')
+        : ('Upload de export van <strong>'+esc(p.naam)+'</strong>');
+    }
   }
 
   function renderAll(){
