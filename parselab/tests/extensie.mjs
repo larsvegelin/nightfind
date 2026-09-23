@@ -27,17 +27,6 @@ const mf = JSON.parse(fs.readFileSync(path.join(EXT, 'manifest.json'), 'utf8'));
 mf.host_permissions = ['http://127.0.0.1/*'];
 fs.writeFileSync(path.join(EXT, 'manifest.json'), JSON.stringify(mf, null, 2));
 
-const ctx = await chromium.launchPersistentContext(profiel, {
-  executablePath: exe,
-  args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`, '--no-sandbox'],
-  viewport: { width: 1280, height: 900 }
-});
-
-// De service worker van de extensie; die draait het achtergrondscript.
-let sw = ctx.serviceWorkers()[0];
-if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 20000 });
-ok('extensie geladen (service worker draait)', !!sw, sw && sw.url());
-
 // Een gewone website in een tabblad. Een data:-URL kan niet, dus zetten we zelf een
 // minimale pagina neer; zo heeft de test niets van buiten nodig.
 const POORT = Number(process.env.PARSELAB_EXT_PORT || 9100);
@@ -47,6 +36,27 @@ const web = http.createServer((req, res) => {
 });
 await new Promise(r => web.listen(POORT, '127.0.0.1', r));
 const site = 'http://127.0.0.1:' + POORT + '/';
+
+// Belangrijk: de standaard headless-browser van Playwright ("headless shell") laadt geen
+// extensies. Met een eigen pad pakken we de volle Chromium; anders vragen we met channel om
+// de volle Chromium in plaats van die shell. Zonder dit start de service worker nooit.
+const start = exe ? { executablePath: exe } : { channel: 'chromium' };
+const ctx = await chromium.launchPersistentContext(profiel, Object.assign({
+  args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`, '--no-sandbox'],
+  viewport: { width: 1280, height: 900 }
+}, start));
+
+// De service worker van de extensie; die draait het achtergrondscript.
+let sw = ctx.serviceWorkers()[0];
+if (!sw) {
+  try { sw = await ctx.waitForEvent('serviceworker', { timeout: 30000 }); }
+  catch (e) {
+    ok('extensie geladen (service worker draait)', false, 'geen service worker; draait dit op de headless shell in plaats van de volle Chromium?');
+    await ctx.close(); web.close(); process.exit(1);
+  }
+}
+ok('extensie geladen (service worker draait)', !!sw, sw && sw.url());
+
 const p = await ctx.newPage();
 await p.goto(site, { waitUntil: 'load' });
 

@@ -893,8 +893,13 @@
     doc.body.appendChild(overlay);
     // De highlight-/aanwijs-box in de browser-top-layer (via popover), zodat hij óók boven
     // pagina-modals/overlays zichtbaar is. position:fixed → viewport-coördinaten (geen scroll).
+    // Let op: de browser geeft elk popover-element zelf "inset:0; margin:auto" mee. Samen met
+    // onze left/top/width/height is de box dan overbepaald en centreert de browser hem midden
+    // in het venster — het kader stond dan honderden pixels naast het element waar je boven
+    // zweefde. Daarom zetten we right/bottom/margin hier expliciet uit.
     function ovlShow(r) {
         overlay.style.position = 'fixed';
+        overlay.style.right = 'auto'; overlay.style.bottom = 'auto'; overlay.style.margin = '0';
         overlay.style.left = r.left + 'px'; overlay.style.top = r.top + 'px';
         overlay.style.width = r.width + 'px'; overlay.style.height = r.height + 'px';
         if (overlay.showPopover) {

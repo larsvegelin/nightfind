@@ -6,7 +6,28 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 17)
+## Wat er het laatst veranderde (ronde 18)
+
+**Vraag:** het kader bij het aanwijzen wijst een heel ander vak aan dan waar de muis boven staat, en *Invullen* levert geen stap op.
+
+**Oorzaak (één, voor beide klachten).** Het aanwijskader (`.wt-ovl` in `tools/extension/panel.js`) wordt met de Popover-API in de top-layer gezet, zodat het ook boven modals van de pagina zichtbaar is. De browser geeft elk popover-element van zichzelf `inset: 0` en `margin: auto` mee. Samen met onze eigen `left/top/width/height` is de box dan overbepaald, en de browser lost dat op door hem te **centreren** in het venster. Het kader stond daardoor honderden pixels naast het element; gemeten in de nieuwe test: 236 tot 668 px, oplopend bij een gescrolde pagina. Wie op het kader klikt in plaats van op het veld, wijst dus een verkeerd element aan, en dan meldt *Invullen* "geen invoerveld herkend" en komt er geen stap bij. Het paneel zelf zette die reset al wel (`inset:auto; margin:0` op de host); het kader was vergeten.
+
+### De extensie (`tools/extension/`, 1.19.0 → 1.19.1)
+
+- `ovlShow` zet nu expliciet `right:auto; bottom:auto; margin:0` naast `left/top/width/height`, zodat de box niet meer overbepaald is. Dezelfde reset staat ook in `panel.css`, voor het geval het kader zonder popover wordt getoond.
+- Meetresultaat na de fix: 0 px afwijking op tekstveld, keuzelijst en knop, en ook op een veld ver onderaan een gescrolde pagina.
+
+### Test (`tests/extensie-aanwijzen.mjs`, nieuw)
+
+Bouwt een portaalachtige pagina na (kaart met zoekveld, keuzelijst, knop, een zoekvak met icoon, en een veld ver onderaan), opent het paneel in een echte Chromium, kiest *Invullen* en vergelijkt per element de rechthoek van het kader met die van het element: hoogstens 2 px verschil. Verder: klikken op het veld levert een stap op die het juiste veld noemt, en ook klikken op het label of op het zoekicoon ernaast levert een stap. Tien controles, toegevoegd aan `.github/workflows/qa.yml`.
+
+### Ook in deze ronde
+
+- `tests/extensie.mjs` startte in CI niet: de standaard headless-browser van Playwright ("headless shell") laadt geen extensies, waardoor de service worker nooit kwam. De test pakt nu de volle Chromium (eigen pad, anders `channel: 'chromium'`) en meldt het netjes als die er niet is. De eigen testserver start nu vóór de browser.
+
+---
+
+## Ronde 17
 
 **Vraag:** de extensie opent niet als je erop klikt; permanent oplossen.
 

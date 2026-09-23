@@ -23,6 +23,11 @@ komt er uitleg op het icoon. De test zet zelf een pagina op poort 9100 neer en d
 van de extensie met de testsite in het manifest, omdat `activeTab` alleen bij een echte muisklik
 geldt. Los draaien: `node extensie.mjs`.
 
+`extensie-aanwijzen.mjs` controleert het aanwijzen op een nagebouwd portaal: het blauwe kader moet
+op de pixel om het element liggen waar de muis boven staat (tekstveld, keuzelijst, knop, en ook na
+scrollen), en klikken moet een stap opleveren — ook als je net naast het veld klikt, op het label of
+op het zoekicoon ernaast. Los draaien: `node extensie-aanwijzen.mjs`.
+
 `pdfs/` bevat zeven proef-PDF's met de verwachte uitkomsten (`pdfs/README.md`), te herbouwen met `node pdfs/maak-pdfs.mjs`.
 
 De extensie heeft een eigen test in `tools/extension/` (zie README daar).
