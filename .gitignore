@@ -45,6 +45,7 @@ parselab/tests/qa-result.txt
 parselab/tests/extensie-result.txt
 parselab/tests/extensie-aanwijzen-result.txt
 parselab/tests/extensie-schaduw-result.txt
+parselab/tests/extensie-velden-result.txt
 parselab/tests/qa-board.csv
 
 # Proefpagina van de Webflow-embeds; wordt gebouwd door tests/webflow-proef.mjs

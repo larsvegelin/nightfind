@@ -44,6 +44,9 @@ jobs:
       - name: Browserextensie — velden in webcomponenten
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node extensie-schaduw.mjs
+      - name: Browserextensie — velden ophalen
+        working-directory: parselab/tests
+        run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node extensie-velden.mjs
       - name: Resultaat en schermafbeeldingen bewaren
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,5 +57,6 @@ jobs:
             parselab/tests/extensie-result.txt
             parselab/tests/extensie-aanwijzen-result.txt
             parselab/tests/extensie-schaduw-result.txt
+            parselab/tests/extensie-velden-result.txt
             parselab/tests/shots/
             /tmp/parselab.log

@@ -6,7 +6,27 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 19)
+## Wat er het laatst veranderde (ronde 20)
+
+**Vraag:** een knop om de invulvelden op te halen die je op de pagina ziet — naast *Lijst uploaden* en *Download bestand* — zodat je de velden ook kunt gebruiken om een lijst (een loop) mee te geven.
+
+### De extensie (`tools/extension/`, 1.19.2 → 1.19.3)
+
+- Nieuwe knop **Velden ophalen** naast *Maak mijn invullijst (Excel)*. Hij kijkt welke invulvelden er nu op de pagina staan — ook die in webcomponenten — en zet ze onder de knoppen in een lijstje: kolomnaam, soort veld en het label. Velden die je niet kunt invullen (verborgen, weggestyled, hulpvelden van een kalender) blijven eruit.
+- Per veld een knopje **toon**: het blauwe kader springt naar dat veld op de pagina, zodat je ziet welk vakje je te pakken hebt.
+- Vink af wat mee moet en kies dan:
+  - **Maak invulstap** — maakt in één keer een *Formulier invullen*-stap met precies die velden. Dat is de stap die per regel van je lijst wordt uitgevoerd; upload je een lijst met 40 regels, dan draait de taak 40 rondes.
+  - **Invullijst (Excel)** — een Excel-bestand met een kolom per aangevinkt veld, klaar om in te vullen en daarna te uploaden met *Lijst uploaden*.
+- Het scannen slaat ons eigen paneel over (dat staat zelf ook in een shadow DOM), anders zouden de instellingen van ParseLab tussen de velden van de pagina komen.
+- `readFormFieldsIn` kijkt nu door webcomponenten heen en schrijft voor die velden een selector die de grens oversteekt, zodat het invullen ze later terugvindt.
+
+### Test (`tests/extensie-velden.mjs`, nieuw)
+
+Een formulier met gewone velden, een keuzelijst, een veld in een webcomponent en twee velden die niet meetellen (verborgen en weggestyled). Dertien controles: de knop staat er, precies de vier echte velden worden gevonden, *toon* wijst het veld in de webcomponent aan (0 px afwijking), *Maak invulstap* levert een stap met 4/4 velden, een CSV met twee regels wordt geladen en de taak vult bij het draaien beide regels in — ook de keuzelijst en het veld in de webcomponent. Toegevoegd aan `.github/workflows/qa.yml`.
+
+---
+
+## Ronde 19
 
 **Vraag:** "kan invoerveld niet herkennen, rest gaat goed" — bij een zoekveld van een verzekeraarsportaal (`<input type="search" role="combobox" class="asr-text-md" …>`).
 

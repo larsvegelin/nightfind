@@ -51,7 +51,14 @@ dat jij daar op het icoon klikt.
 
 ### Je lijst maken (ParseForm)
 
-Klik op **Maak mijn invullijst (Excel)**. ParseLab maakt een Excel-bestand met precies één kolom
+De snelste weg: klik op **Velden ophalen**. ParseLab kijkt welke invulvelden er nu op de pagina
+staan — ook die in webcomponenten — en zet ze op een rij: kolomnaam, soort veld en label. Met het
+knopje ernaast laat hij zien waar een veld staat. Vink af wat mee moet en kies dan **Maak
+invulstap** (één stap die alle aangevinkte velden invult, één keer per regel van je lijst) of
+**Invullijst (Excel)** (een Excel met een kolom per veld). Verborgen velden en hulpvelden van een
+kalender blijven eruit.
+
+Wil je liever zelf aanwijzen, klik dan op **Maak mijn invullijst (Excel)**. ParseLab maakt een Excel-bestand met precies één kolom
 per veld dat je hebt aangewezen. Vul dat in Excel in en klik op **Lijst uploaden**. Excel (.xlsx)
 en CSV werken allebei.
 

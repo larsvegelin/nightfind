@@ -37,6 +37,7 @@
         save_flow: { nl: 'Bewaar taak', en: 'Save task', de: 'Aufgabe speichern', fr: 'Enregistrer la tâche', es: 'Guardar tarea' },
         settings: { nl: 'Instellingen', en: 'Settings', de: 'Einstellungen', fr: 'Paramètres', es: 'Ajustes' },
         advanced: { nl: 'Gevorderd', en: 'Advanced', de: 'Erweitert', fr: 'Avancé', es: 'Avanzado' },
+        scan_fields: { nl: 'Velden ophalen', en: 'Find fields', de: 'Felder holen', fr: 'Repérer les champs', es: 'Buscar campos' },
         tmpl_xlsx: { nl: 'Maak mijn invullijst (Excel)', en: 'Make my fill-in list (Excel)', de: 'Meine Ausfüllliste erstellen (Excel)', fr: 'Créer ma liste à remplir (Excel)', es: 'Crear mi lista para rellenar (Excel)' },
         data_hint: { nl: 'Upload je lijst (Excel of CSV): de taak draait één ronde per regel.', en: 'Upload your list (Excel or CSV): the task runs one round per row.', de: 'Lade deine Liste hoch (Excel oder CSV): die Aufgabe läuft eine Runde pro Zeile.', fr: 'Importez votre liste (Excel ou CSV) : la tâche tourne une fois par ligne.', es: 'Sube tu lista (Excel o CSV): la tarea se ejecuta una ronda por fila.' },
         clear_csv: { nl: 'Lijst wissen', en: 'Clear list', de: 'Liste löschen', fr: 'Effacer la liste', es: 'Borrar lista' },
@@ -426,19 +427,24 @@
     }
     function inSchaduw(el) { try { const r = el.getRootNode && el.getRootNode(); return !!(r && r.host); } catch (_) { return false; } }
     function schaduwOuder(el) { return el.parentElement || (el.parentNode && el.parentNode.host) || null; }
+    // Ons eigen paneel staat óók in een shadow DOM; daar hoeven we nooit in te kijken.
+    function vanOnsZelf(n) {
+        try { return n === window.__wtHost || n.id === 'wt-scraper-host' || (typeof n.className === 'string' && n.className.indexOf('wt-') === 0); }
+        catch (_) { return false; }
+    }
     function diepZoek(root, sel) {
         if (!root) return null;
         let e = null; try { e = root.querySelector(sel); } catch (_) { return null; }
         if (e) return e;
         let kinderen = []; try { kinderen = root.querySelectorAll('*'); } catch (_) { return null; }
-        for (let i = 0; i < kinderen.length; i++) { const h = kinderen[i]; if (h.shadowRoot) { const v = diepZoek(h.shadowRoot, sel); if (v) return v; } }
+        for (let i = 0; i < kinderen.length; i++) { const h = kinderen[i]; if (h.shadowRoot && !vanOnsZelf(h)) { const v = diepZoek(h.shadowRoot, sel); if (v) return v; } }
         return null;
     }
     function diepAlles(root, sel, uit) {
         uit = uit || [];
         if (!root) return uit;
         try { root.querySelectorAll(sel).forEach(e => uit.push(e)); } catch (_) { return uit; }
-        try { root.querySelectorAll('*').forEach(h => { if (h.shadowRoot) diepAlles(h.shadowRoot, sel, uit); }); } catch (_) {}
+        try { root.querySelectorAll('*').forEach(h => { if (h.shadowRoot && !vanOnsZelf(h)) diepAlles(h.shadowRoot, sel, uit); }); } catch (_) {}
         return uit;
     }
     // Zoekt een selector op. ">>>" stapt een webcomponent binnen; zonder ">>>" kijkt hij eerst
@@ -559,14 +565,16 @@
     }
     function readFormFieldsIn(scope) {
         const fields = [], seen = new Set();
-        scope.querySelectorAll('input,select,textarea').forEach(el => {
+        diepAlles(scope, 'input,select,textarea').forEach(el => {
             if (/^(hidden|submit|button|reset|image|file)$/i.test(el.type)) return;
             // Sla hulp-invoervelden van kalenders/pickers over (bv. MudDatePicker toont een
             // kalender-popover met maand/jaar-velden). Zo blijft één datumveld ook één kolom.
             if (el.closest('.mud-picker-content,.mud-picker-calendar,.mud-popover,.mud-overlay,[role="dialog"],[role="tooltip"]')) return;
-            const key = el.name || el.id; if (!key || seen.has(key)) return; seen.add(key);
+            const key = el.name || el.id || cssPath(el); if (!key || seen.has(key)) return; seen.add(key);
             const label = fieldLabel(el);
-            const selector = el.id ? '#' + CSS.escape(el.id)
+            // In een webcomponent helpt "#id" niet: dan een pad dat de grens oversteekt.
+            const selector = inSchaduw(el) ? cssPath(el)
+                : el.id ? '#' + CSS.escape(el.id)
                 : el.name ? el.tagName.toLowerCase() + attrSel(el.name) : cssPath(el);
             fields.push({ key, label, type: (el.type || el.tagName.toLowerCase()), selector });
         });
@@ -585,7 +593,7 @@
             let col = base, i = 2;
             while (taken.has(col.toLowerCase())) col = base + ' ' + (i++);
             taken.add(col.toLowerCase());
-            return { col, selector: f.selector, key: f.key, label: f.label, on: true };
+            return { col, selector: f.selector, key: f.key, label: f.label, type: f.type, on: true };
         });
     }
     function enabledCols(s) { return (s.colmap || []).filter(m => m.on !== false); }
@@ -1398,6 +1406,72 @@
         });
         return cols;
     }
+    // ---- Velden ophalen: wat staat er nu op deze pagina, en maak daar een invulstap van ----
+    function zichtbaarVeld(el) {
+        try {
+            if (el.type === 'hidden') return false;
+            const r = el.getBoundingClientRect();
+            if (!r.width && !r.height) return false;
+            const st = getComputedStyle(el);
+            return st.visibility !== 'hidden' && st.display !== 'none';
+        } catch (e) { return true; }
+    }
+    function scanPaginaVelden() {
+        const velden = readFormFieldsIn(doc).filter(f => { const el = qs(f.selector, doc); return el ? zichtbaarVeld(el) : false; });
+        const colmap = buildColumnMap(velden);
+        // Staan ze allemaal in hetzelfde formulier, dan koppelen we de stap daaraan.
+        let formSel = '';
+        try {
+            const els = colmap.map(m => qs(m.selector, doc)).filter(Boolean);
+            const forms = els.map(e => (e.closest && e.closest('form')) || null);
+            if (els.length && forms[0] && forms.every(f => f === forms[0])) formSel = cssPath(forms[0]);
+        } catch (e) {}
+        return { colmap, formSel };
+    }
+    function renderVelden(r) {
+        const box = $('#flow-fields');
+        box.style.display = 'block';
+        if (!r.colmap.length) {
+            box.innerHTML = '<div class="hint"><b style="color:var(--bad)">Geen invulvelden gevonden op deze pagina.</b> Staat het formulier achter een knop of in een venster dat nog open moet? Open het en klik opnieuw op <b>Velden ophalen</b>.</div>';
+            return;
+        }
+        box.innerHTML = '<div class="hint"><b>' + r.colmap.length + ' invulveld(en) gevonden.</b> Vink af wat mee moet — deze namen worden de kolomkoppen van je lijst.</div>' +
+            '<div style="max-height:190px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-ctl);padding:6px;margin:6px 0">' +
+            r.colmap.map((m, i) => '<label class="row" style="display:flex;gap:6px;align-items:center;padding:2px 0">' +
+                '<input type="checkbox" data-veld="' + i + '" checked> <b>' + esc(m.col) + '</b>' +
+                '<span class="hint">' + esc(m.type || '') + (m.label && m.label !== m.col ? ' · ' + esc(m.label) : '') + '</span>' +
+                '<button class="mini" data-veldtoon="' + i + '" title="Laat zien waar dit veld staat">' + IC('target', 'ico-sm') + '</button></label>').join('') +
+            '</div>' +
+            '<div class="wt-row"><button class="wt-btn primary" id="velden-stap">' + IC('plus', 'ico-sm') + ' Maak invulstap</button>' +
+            '<button class="wt-btn alt" id="velden-tmpl">' + IC('file-plus', 'ico-sm') + ' Invullijst (Excel)</button>' +
+            '<button class="wt-btn alt" id="velden-dicht">' + IC('x', 'ico-sm') + ' Sluiten</button></div>';
+        const gekozen = () => r.colmap.filter((m, i) => { const c = box.querySelector('[data-veld="' + i + '"]'); return c && c.checked; });
+        box.querySelectorAll('[data-veldtoon]').forEach(b => b.onclick = (e) => {
+            e.preventDefault();
+            const m = r.colmap[+b.dataset.veldtoon], el = qs(m.selector, doc);
+            if (el) highlightEl(el); else flash(b, '✗ niet gevonden');
+        });
+        $('#velden-stap').onclick = function () {
+            const cols = gekozen().map(m => Object.assign({}, m));
+            if (!cols.length) { flash(this, 'niets aangevinkt'); return; }
+            const st = { type: 'fill', name: 'Formulier invullen', selector: r.formSel, colmap: cols };
+            updateFillDetail(st); addStep(st);
+            $('#flow-csvinfo').innerHTML = 'Invulstap gemaakt met <b>' + cols.length + ' veld(en)</b>. Maak nu je <b>Invullijst (Excel)</b>, vul hem in en klik op <b>Lijst uploaden</b> — de taak draait dan één keer per regel.';
+        };
+        $('#velden-tmpl').onclick = function () {
+            const cols = gekozen().map(m => m.col);
+            if (!cols.length) { flash(this, 'niets aangevinkt'); return; }
+            downloadBytes(toXlsx([], cols), 'mijn-invullijst.xlsx', XLSX_MIME);
+            flash(this, '✔ ' + cols.length + ' kolommen');
+            $('#flow-csvinfo').innerHTML = 'Je invullijst staat in je map Downloads/' + esc(currentFolder) + ': <b>' + cols.length + ' kolom(men)</b> — ' + cols.map(esc).join(', ') + '. Vul hem in en klik daarna op <b>Lijst uploaden</b>.';
+        };
+        $('#velden-dicht').onclick = () => { box.style.display = 'none'; };
+    }
+    $('#flow-scan').onclick = function () {
+        const r = scanPaginaVelden();
+        renderVelden(r);
+        flash(this, r.colmap.length ? '✔ ' + r.colmap.length + ' velden' : 'geen velden');
+    };
     $('#flow-tmpl').onclick = () => {
         const cols = collectCsvColumns();
         if (!cols.length) { $('#flow-csvinfo').innerHTML = '<b style="color:var(--bad)">Nog geen invulvelden.</b> Voeg eerst een <i>Invullen</i>-stap toe en wijs een veld of formulier aan.'; return; }
@@ -2257,10 +2331,12 @@
       <button class="wt-btn" id="flow-save" title="Bewaart alleen de stappen voor deze site, niet je lijst">` + IC('save') + ` <span data-i18n="save_flow">Bewaar taak</span></button>
     </div>
     <div class="wt-row">
+      <button class="wt-btn alt" id="flow-scan" title="Kijkt welke invulvelden er nu op deze pagina staan, ook in webcomponenten">` + IC('search', 'ico-sm') + ` <span data-i18n="scan_fields">Velden ophalen</span></button>
       <button class="wt-btn alt" id="flow-tmpl" title="Maakt een Excel-bestand met een kolom per invulveld; vul het in en upload het">` + IC('file-plus', 'ico-sm') + ` <span data-i18n="tmpl_xlsx">Maak mijn invullijst (Excel)</span></button>
       <input type="file" id="flow-file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
       <button class="wt-btn alt" id="flow-clearcsv" title="Wis de geladen lijst zodat je een nieuwe kunt uploaden">` + IC('x', 'ico-sm') + ` <span data-i18n="clear_csv">Lijst wissen</span></button>
     </div>
+    <div id="flow-fields" style="display:none"></div>
     <div class="hint" id="flow-csvinfo">Geen lijst geladen — de taak draait één keer.</div>
     <div class="wt-prog" id="flow-progress" style="display:none"></div>
     <div class="wt-pre" id="flow-log">Nog niet gestart.</div>

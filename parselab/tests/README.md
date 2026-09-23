@@ -34,6 +34,10 @@ buitenkant op en `document.querySelector` kijkt er niet in. De test bouwt het ve
 controleert dat het kader op het veld zelf ligt, dat *Invullen* een stap oplevert met het label uit
 de component, en dat de stap het veld later terugvindt. Los draaien: `node extensie-schaduw.mjs`.
 
+`extensie-velden.mjs` controleert de knop *Velden ophalen*: welke invulvelden ziet ParseLab op de
+pagina, wat komt er niet in (verborgen velden), wordt er een invulstap van gemaakt, en vult de taak
+met een geüploade lijst van twee regels beide regels in. Los draaien: `node extensie-velden.mjs`.
+
 `pdfs/` bevat zeven proef-PDF's met de verwachte uitkomsten (`pdfs/README.md`), te herbouwen met `node pdfs/maak-pdfs.mjs`.
 
 De extensie heeft een eigen test in `tools/extension/` (zie README daar).
