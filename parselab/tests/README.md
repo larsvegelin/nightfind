@@ -28,6 +28,12 @@ op de pixel om het element liggen waar de muis boven staat (tekstveld, keuzelijs
 scrollen), en klikken moet een stap opleveren — ook als je net naast het veld klikt, op het label of
 op het zoekicoon ernaast. Los draaien: `node extensie-aanwijzen.mjs`.
 
+`extensie-schaduw.mjs` controleert velden die in een webcomponent (shadow DOM) zitten, zoals
+verzekeraarsportalen die bouwen. Zo'n veld staat niet in de gewone pagina: een klik levert de
+buitenkant op en `document.querySelector` kijkt er niet in. De test bouwt het veld na en
+controleert dat het kader op het veld zelf ligt, dat *Invullen* een stap oplevert met het label uit
+de component, en dat de stap het veld later terugvindt. Los draaien: `node extensie-schaduw.mjs`.
+
 `pdfs/` bevat zeven proef-PDF's met de verwachte uitkomsten (`pdfs/README.md`), te herbouwen met `node pdfs/maak-pdfs.mjs`.
 
 De extensie heeft een eigen test in `tools/extension/` (zie README daar).

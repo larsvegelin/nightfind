@@ -229,11 +229,17 @@
         if (!el) return el;
         const FC = 'input:not([type=hidden]),select,textarea';
         if ((el.matches && el.matches(FC)) || el.isContentEditable) return el;
+        const DIEP = 'input.mud-select-input,' + FC;
+        // Webcomponent: het echte veld zit binnen in dit element (shadow DOM).
+        if (el.shadowRoot) { const s = diepZoek(el.shadowRoot, DIEP); if (s) return s; }
         // Klim omhoog: het dichtstbijzijnde blok dat een echt veld bevat, wint.
         let node = el;
         for (let i = 0; i < 5 && node && node.tagName !== 'BODY' && node.tagName !== 'HTML'; i++) {
-            if (node.querySelector) { const f = node.querySelector('input.mud-select-input,' + FC); if (f) return f; }
-            node = node.parentElement;
+            if (node.querySelector) {
+                const f = node.querySelector(DIEP) || (node.shadowRoot ? diepZoek(node.shadowRoot, DIEP) : null);
+                if (f) return f;
+            }
+            node = schaduwOuder(node);
         }
         return el;
     }
@@ -409,23 +415,81 @@
         const text = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
         return navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.resolve();
     }
+    // ---- Webcomponenten (shadow DOM) ----
+    // Veel portalen bouwen hun velden in een webcomponent. Een klik levert dan de buitenkant
+    // (de host) op in plaats van het veld, en querySelector kijkt niet in zo'n component.
+    // Daarom: het echte doel uit het samengestelde pad halen, selectors met ">>>" over de
+    // grens schrijven, en opzoeken dwars door de componenten heen.
+    function echtDoel(e) {
+        try { const pad = e.composedPath && e.composedPath(); if (pad && pad.length) return pad[0]; } catch (_) {}
+        return e.target;
+    }
+    function inSchaduw(el) { try { const r = el.getRootNode && el.getRootNode(); return !!(r && r.host); } catch (_) { return false; } }
+    function schaduwOuder(el) { return el.parentElement || (el.parentNode && el.parentNode.host) || null; }
+    function diepZoek(root, sel) {
+        if (!root) return null;
+        let e = null; try { e = root.querySelector(sel); } catch (_) { return null; }
+        if (e) return e;
+        let kinderen = []; try { kinderen = root.querySelectorAll('*'); } catch (_) { return null; }
+        for (let i = 0; i < kinderen.length; i++) { const h = kinderen[i]; if (h.shadowRoot) { const v = diepZoek(h.shadowRoot, sel); if (v) return v; } }
+        return null;
+    }
+    function diepAlles(root, sel, uit) {
+        uit = uit || [];
+        if (!root) return uit;
+        try { root.querySelectorAll(sel).forEach(e => uit.push(e)); } catch (_) { return uit; }
+        try { root.querySelectorAll('*').forEach(h => { if (h.shadowRoot) diepAlles(h.shadowRoot, sel, uit); }); } catch (_) {}
+        return uit;
+    }
+    // Zoekt een selector op. ">>>" stapt een webcomponent binnen; zonder ">>>" kijkt hij eerst
+    // gewoon en daarna alsnog in de componenten.
+    function qs(sel, scope) {
+        if (!sel) return null;
+        scope = scope || doc;
+        const delen = String(sel).split('>>>');
+        if (delen.length === 1) { let e = null; try { e = scope.querySelector(sel); } catch (_) { return null; } return e || diepZoek(scope, sel); }
+        let node = scope;
+        for (let i = 0; i < delen.length; i++) {
+            const d = delen[i].trim(); if (!d) return null;
+            let e = null; try { e = node.querySelector(d); } catch (_) { return null; }
+            if (!e) return null;
+            if (i === delen.length - 1) return e;
+            if (!e.shadowRoot) return null;
+            node = e.shadowRoot;
+        }
+        return null;
+    }
     function cssPath(el) {
         if (!el || el.nodeType !== 1) return '';
-        if (el.id) return '#' + CSS.escape(el.id);
-        const path = []; let n = el;
+        if (el.id && !inSchaduw(el)) return '#' + CSS.escape(el.id);
+        const stukken = []; let path = [], n = el;
+        // Eén stap omhoog; staat het element onderin een webcomponent, dan sluiten we dit
+        // stuk af en gaan we verder bij de host ervan.
+        const omhoog = () => {
+            if (n.parentElement) { n = n.parentElement; return true; }
+            const gastheer = n.parentNode && n.parentNode.host;
+            if (!gastheer) { n = null; return false; }
+            stukken.unshift(path.join(' > ')); path = []; n = gastheer; return true;
+        };
         while (n && n.nodeType === 1 && n.tagName !== 'HTML') {
             let part = n.tagName.toLowerCase();
-            if (n.id) { path.unshift('#' + CSS.escape(n.id)); break; }
+            if (n.id && !inSchaduw(n)) { path.unshift('#' + CSS.escape(n.id)); break; }
             const cls = Array.from(n.classList).find(c => !/^(active|hover|focus|selected|open|wt-)/.test(c));
             if (cls) {
                 part += '.' + CSS.escape(cls);
-                if (n.parentElement && n.parentElement.querySelectorAll(':scope > ' + part).length === 1) { path.unshift(part); n = n.parentElement; continue; }
+                const ouder = n.parentElement || n.parentNode;
+                let uniek = false; try { uniek = !!(ouder && ouder.querySelectorAll && ouder.querySelectorAll(':scope > ' + part).length === 1); } catch (_) {}
+                if (uniek) { path.unshift(part); if (!omhoog()) break; continue; }
             }
             let i = 1, s = n; while ((s = s.previousElementSibling)) if (s.tagName === n.tagName) i++;
-            part += ':nth-of-type(' + i + ')'; path.unshift(part); n = n.parentElement;
+            part += ':nth-of-type(' + i + ')'; path.unshift(part); if (!omhoog()) break;
         }
-        while (path.length > 1 && doc.querySelectorAll(path.slice(1).join(' > ')).length === 1) path.shift();
-        return path.join(' > ');
+        stukken.unshift(path.join(' > '));
+        const uit = stukken.filter(Boolean);
+        if (uit.length > 1) return uit.join('>>>');
+        const p = uit[0] ? uit[0].split(' > ') : [];
+        while (p.length > 1 && doc.querySelectorAll(p.slice(1).join(' > ')).length === 1) p.shift();
+        return p.join(' > ');
     }
 
     // ============================================ Octoparse-stijl lijst-detectie
@@ -485,7 +549,7 @@
     // Leesbaar label van een veld: echte <label for>, omringende <label>, MudBlazor
     // .mud-input-label, dan aria-label/placeholder.
     function fieldLabel(el) {
-        try { if (el.id) { const l = doc.querySelector('label[for="' + CSS.escape(el.id) + '"]'); if (l && txt(l)) return txt(l); } } catch (e) {}
+        try { if (el.id) { const r = (el.getRootNode && el.getRootNode()) || doc; const l = (r.querySelector ? r : doc).querySelector('label[for="' + CSS.escape(el.id) + '"]'); if (l && txt(l)) return txt(l); } } catch (e) {}
         // Omhullend <label>: alleen de labeltekst, niet de tekst van het veld/de opties erin.
         const wrap = el.closest && el.closest('label');
         if (wrap) { try { const c = wrap.cloneNode(true); c.querySelectorAll('input,select,textarea,button,option').forEach(x => x.remove()); const s = txt(c); if (s) return s; } catch (e) { if (txt(wrap)) return txt(wrap); } }
@@ -539,17 +603,24 @@
     // Structuurpad: tag + :nth-of-type, verankerd op een stabiel id/form. Geen vluchtige id's/namen.
     function nodeSel(el) {
         let s = el.tagName.toLowerCase();
-        const par = el.parentElement;
-        if (par) { const same = Array.from(par.children).filter(c => c.tagName === el.tagName); if (same.length > 1) s += ':nth-of-type(' + (same.indexOf(el) + 1) + ')'; }
+        const par = el.parentElement || el.parentNode;
+        if (par && par.children) { const same = Array.from(par.children).filter(c => c.tagName === el.tagName); if (same.length > 1) s += ':nth-of-type(' + (same.indexOf(el) + 1) + ')'; }
         return s;
     }
     function structSelector(el) {
-        const parts = []; let node = el, depth = 0;
+        const stukken = []; let parts = [], node = el, depth = 0;
         while (node && node.nodeType === 1 && node.tagName !== 'BODY' && node.tagName !== 'HTML' && depth < 8) {
-            if (node.id && !looksGenerated(node.id)) { try { parts.unshift('#' + CSS.escape(node.id)); break; } catch (e) {} }
-            parts.unshift(nodeSel(node)); node = node.parentElement; depth++;
+            if (node.id && !looksGenerated(node.id) && !inSchaduw(node)) { try { parts.unshift('#' + CSS.escape(node.id)); break; } catch (e) {} }
+            parts.unshift(nodeSel(node));
+            const op = node.parentElement;
+            if (op) { node = op; depth++; continue; }
+            const gastheer = node.parentNode && node.parentNode.host;
+            if (!gastheer) break;
+            stukken.unshift(parts.join('>')); parts = [];   // grens van de webcomponent
+            node = gastheer; depth++;
         }
-        return parts.join('>');
+        stukken.unshift(parts.join('>'));
+        return stukken.filter(Boolean).join('>>>');
     }
     // Vingerafdruk = HTML-structuur (pad, type, stabiele klassen) + de HTML zelf. Géén naam/label.
     function fingerprint(el) {
@@ -572,8 +643,8 @@
     // anders de best scorende kandidaat op type + stabiele klassen + placeholder + HTML-gelijkenis.
     function findByFingerprint(fp, scope) {
         scope = scope || doc; if (!fp) return null;
-        if (fp.path) { try { const e = scope.querySelector(fp.path); if (e) return e; } catch (_) {} }
-        const cands = Array.from(scope.querySelectorAll((fp.tag || 'input').toLowerCase()));
+        if (fp.path) { try { const e = qs(fp.path, scope); if (e) return e; } catch (_) {} }
+        const cands = diepAlles(scope, (fp.tag || 'input').toLowerCase());
         let best = null, bs = 0, bstruct = 0;
         cands.forEach(el => {
             let s = 0;   // structurele signalen (type, stabiele klassen, placeholder, pad)
@@ -592,8 +663,8 @@
     function targetEl(s, scope) {
         scope = scope || doc;
         let el = null;
-        try { el = s.selector ? scope.querySelector(s.selector) : null; } catch (e) {}
-        if (!el && s.selector) { try { el = doc.querySelector(s.selector); } catch (e) {} }
+        try { el = s.selector ? qs(s.selector, scope) : null; } catch (e) {}
+        if (!el && s.selector) { try { el = qs(s.selector, doc); } catch (e) {} }
         if (!el && s.fp) el = findByFingerprint(s.fp, scope) || findByFingerprint(s.fp, doc);
         return el;
     }
@@ -808,7 +879,7 @@
             const c = col.trim();
             let m = (colmap || []).find(x => x.col.toLowerCase() === c.toLowerCase())
                 || (colmap || []).find(x => (x.label || '').toLowerCase() === c.toLowerCase() || (x.key || '').toLowerCase() === c.toLowerCase());
-            let el = m ? (scope.querySelector(m.selector) || doc.querySelector(m.selector)) : null;
+            let el = m ? (qs(m.selector, scope) || qs(m.selector, doc)) : null;
             if (!el) el = findFieldIn(scope, c);
             const value = resolveValue(row[col], ctx);
             if (el && await fillElement(el, value)) rep.filled.push(c); else rep.missed.push(c);
@@ -928,10 +999,16 @@
         clearTimeout(hlTimer); hlTimer = setTimeout(() => { if (!picking) ovlHide(); }, 1800);
         return true;
     }
-    function isOurs(t) { return t === host || host.contains(t) || t === overlay || overlay.contains(t) || (t.className && String(t.className).indexOf('wt-') === 0); }
+    // Het paneel zit zelf in een shadow DOM, en de pagina kan dat ook doen. Daarom kijken we
+    // naar het samengestelde pad van de gebeurtenis in plaats van alleen naar e.target.
+    function isOurs(t, e) {
+        if (!t) return false;
+        try { if (e && e.composedPath) { const pad = e.composedPath(); if (pad.indexOf(host) >= 0 || pad.indexOf(overlay) >= 0) return true; } } catch (_) {}
+        return t === host || host.contains(t) || t === overlay || overlay.contains(t) || (t.className && String(t.className).indexOf('wt-') === 0);
+    }
     doc.addEventListener('mousemove', e => {
         if (!picking) return;
-        const t = e.target; if (!t || isOurs(t)) { ovlHide(); return; }
+        const t = echtDoel(e); if (!t || isOurs(t, e)) { ovlHide(); return; }
         const r = t.getBoundingClientRect();
         ovlShow(r);
         let d = t.tagName.toLowerCase(); if (t.id) d += '#' + t.id; else if (t.classList[0]) d += '.' + t.classList[0];
@@ -942,12 +1019,12 @@
     // reageert (bv. een dropdown die opengaat of een overlay die de klik opvangt).
     ['pointerdown', 'mousedown', 'mouseup'].forEach(evt => doc.addEventListener(evt, e => {
         if (!picking || !e.isTrusted) return;
-        if (isOurs(e.target)) return;
+        if (isOurs(echtDoel(e), e)) return;
         e.preventDefault(); e.stopPropagation();
     }, true));
     doc.addEventListener('click', e => {
         if (!picking || !e.isTrusted) return;
-        const t = e.target; if (!t || isOurs(t)) return;
+        const t = echtDoel(e); if (!t || isOurs(t, e)) return;
         e.preventDefault(); e.stopPropagation();
         const h = pickHandler; endPick(); if (h) h(t);
     }, true);
@@ -1466,7 +1543,7 @@
             log('  ✎ ' + s.name + ' = "' + String(val).slice(0, 30) + '"');
             await sleep(80);
         } else if (s.type === 'fill') {
-            const scope = doc.querySelector(s.selector) || doc;
+            const scope = qs(s.selector, doc) || doc;
             const ctx = Object.assign({}, row || {}, extraCtx || {});
             const rep = await fillRowWith(row || {}, enabledCols(s), scope, ctx);
             log('  ✎ ' + s.name + ': ' + rep.filled.length + ' gevuld' + (rep.missed.length ? ', niet gevonden: ' + rep.missed.join(', ') : ''));
@@ -2276,7 +2353,7 @@
         let root = doc; try { root = scopeSel ? (doc.querySelector(scopeSel) || doc) : (doc.querySelector('form') || doc); } catch (e) {}
         const cm = buildColumnMap(readFormFieldsIn(root));
         return cm.map(m => {
-            let el = null; try { el = doc.querySelector(m.selector); } catch (e) {}
+            let el = null; try { el = qs(m.selector, doc); } catch (e) {}
             return { column: m.col, label: m.label || '', name: m.key || '', selector: m.selector, type: (el && (el.type || el.tagName.toLowerCase())) || '', options: (el && el.tagName === 'SELECT') ? Array.from(el.options).map(o => o.value || txt(o)) : undefined, fp: el ? fingerprint(el) : null };
         });
     }
@@ -2295,7 +2372,7 @@
             const sub = payload.submit;
             if (sub) {
                 let btn = null;
-                try { btn = sub.selector ? doc.querySelector(sub.selector) : null; } catch (e) {}
+                try { btn = sub.selector ? qs(sub.selector, doc) : null; } catch (e) {}
                 if (!btn && sub.fp) btn = findByFingerprint(sub.fp, doc);
                 if (!btn && sub.text) { const t = String(sub.text).toLowerCase(); btn = Array.from(doc.querySelectorAll('button,a,[role="button"],input[type="submit"],input[type="button"]')).find(b => (txt(b) || b.value || '').toLowerCase().includes(t)); }
                 if (btn) { (btn.closest('button,a,[role="button"],.mud-button-root,input[type="submit"],input[type="button"]') || btn).click(); submitted = true; }

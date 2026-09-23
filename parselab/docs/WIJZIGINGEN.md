@@ -6,7 +6,28 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 18)
+## Wat er het laatst veranderde (ronde 19)
+
+**Vraag:** "kan invoerveld niet herkennen, rest gaat goed" — bij een zoekveld van een verzekeraarsportaal (`<input type="search" role="combobox" class="asr-text-md" …>`).
+
+**Oorzaak.** Zulke portalen bouwen hun velden in **webcomponenten**: het `<input>` zit niet in de gewone pagina maar in de schaduw-DOM van een eigen element (bijvoorbeeld `<asr-zoekveld>`). Twee dingen gaan daar mis. Een klik of muisbeweging komt bij ons binnen met de *buitenkant* als doel (de browser herschrijft `event.target` naar de host zodra de gebeurtenis de component verlaat), en `document.querySelector` kijkt niet in zo'n component. Het gevolg: het kader lag om het hele blok in plaats van om het veld, en *Invullen* kreeg de host binnen. Zat er toevallig een ander veld in de buurt, dan koppelde de stap stilletjes dát veld; zat dat er niet, dan volgde "Geen invoerveld herkend". Dat verklaart precies waarom de rest wél werkte: knoppen, teksten en lijsten staan op deze portalen gewoon in de pagina.
+
+### De extensie (`tools/extension/panel.js`, 1.19.1 → 1.19.2)
+
+- Aanwijzen gebruikt nu het samengestelde pad van de gebeurtenis (`echtDoel` → `composedPath()[0]`) in plaats van `event.target`, bij muisbeweging, muis-neer en klik. Daarmee wijst het kader het échte veld aan en krijgt *Invullen* dat veld binnen.
+- `isOurs` kijkt ook via dat pad of de gebeurtenis uit ons eigen paneel komt; anders zou het paneel (dat zelf in een schaduw-DOM zit) niet meer als "van ons" herkend worden.
+- `resolveField` kijkt nu ook ín een webcomponent: klik je net naast het invoervak, op de rand of het icoon van de component, dan wordt het veld daarbinnen gepakt.
+- Selectors kunnen de grens van een component oversteken: `structSelector` en `cssPath` schrijven die grens als `>>>` (`asr-zoekveld>>>div.wrap>input`), en de nieuwe `qs()` loopt zo'n pad stap voor stap door de componenten heen. Alle plekken die een stap terugzoeken gebruiken die functie: *Toon*, het uitvoeren van een stap, formulier-invullen en de API-aanroepen. Een selector zonder `>>>` werkt precies als vroeger, met als extra dat er alsnog in de componenten gekeken wordt als de pagina zelf niets oplevert.
+- De vingerafdruk-zoektocht (`findByFingerprint`) neemt kandidaten uit de componenten mee.
+- Het label van een veld wordt in dezelfde schaduw-DOM gezocht, niet in het document; anders bleef de kolomnaam "veld1" in plaats van het echte label.
+
+### Test (`tests/extensie-schaduw.mjs`, nieuw)
+
+Bouwt precies dit veld na in een webcomponent, met een label ernaast en een gewoon veld op dezelfde pagina. Elf controles: het kader ligt op het veld binnen de component (0 px afwijking), klikken levert een stap op, er komt geen melding "Geen invoerveld herkend", de stap gebruikt het label uit de component, *Toon* vindt het veld later terug (dat lukt alleen met een selector die de grens oversteekt), klikken op de rand van de component werkt ook, en een gewoon veld op dezelfde pagina blijft werken. Tegen de vorige versie gedraaid faalt deze test op drie punten: kader 509 px mis, de stap koppelde het verkeerde veld en *Toon* wees het verkeerde element aan. Toegevoegd aan `.github/workflows/qa.yml`.
+
+---
+
+## Ronde 18
 
 **Vraag:** het kader bij het aanwijzen wijst een heel ander vak aan dan waar de muis boven staat, en *Invullen* levert geen stap op.
 

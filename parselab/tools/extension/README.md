@@ -34,7 +34,9 @@ dat jij daar op het icoon klikt.
    schijf mag geen enkele extensie werken. Open eerst een gewone website.
 2. **Wijs aan wat er moet gebeuren.** Klik op *+ Stap toevoegen* en kies:
    - **Invullen** — klik het veld, de keuzelijst of het hele formulier. ParseLab ziet zelf of het een
-     tekstveld, datum of keuzelijst is.
+     tekstveld, datum of keuzelijst is. Zit het veld in een webcomponent (veel
+     verzekeraarsportalen bouwen zo), dan pakt ParseLab het veld daarbinnen — ook als je net naast
+     het invoervak klikt, op de rand of op het zoekicoon.
    - **Klikken** — klik op de knop die ingedrukt moet worden (Opslaan, Volgende…).
    - **Uitlezen** — klik op een tekst, prijs of één regel van een lijst. ParseLab vraagt dan:
      *Alleen dit, of de hele lijst?* en laat zien wat er meekomt.
