@@ -306,6 +306,14 @@ const FILTERS = [
 const LEEG_LABEL = '(leeg)';
 const RIJEN_PER_PAGINA = 50;
 
+/* Datumbereikfilters (van/tot); sleutel verwijst naar het datumveld op de rij */
+const DATUM_FILTERS = [
+  { key: 'wdatum', prefix: 'wd', label: 'Wijzigingsdatum', sleutel: 'wd',
+    leegTekst: 'ook rijen zonder wijzigingsdatum' },
+  { key: 'pdatum', prefix: 'pv', label: 'Premievervaldatum', sleutel: 'pv',
+    leegTekst: 'ook rijen zonder premievervaldatum' },
+];
+
 const nfInt = new Intl.NumberFormat('nl-NL');
 const nfEur = new Intl.NumberFormat('nl-NL', {
   style: 'currency', currency: 'EUR',
@@ -329,9 +337,12 @@ const staat = {
   kaGroepen: [],       // [{kantoor, agenten:[naam]}]
   kaSelectie: new Set(),
   kaTotaal: 0,
-  wdVan: null,         // datumbereik wijzigingsdatum (sleutel JJJJMMDD)
+  wdVan: null,         // datumbereikfilters (sleutels JJJJMMDD of null)
   wdTot: null,
   wdLeeg: false,
+  pvVan: null,
+  pvTot: null,
+  pvLeeg: false,
   aantalSpans: {},     // key -> Map(waarde -> span) voor meebewegende aantallen
   kaAgentSpans: new Map(),
   kaKantoorSpans: new Map(),
@@ -517,9 +528,11 @@ function laadBestand(file) {
     staat.overgeslagen = resultaat.overgeslagen;
     staat.sorteer = { index: null, richting: 1 };
     staat.pagina = 1;
-    staat.wdVan = null;
-    staat.wdTot = null;
-    staat.wdLeeg = false;
+    for (const df of DATUM_FILTERS) {
+      staat[df.prefix + 'Van'] = null;
+      staat[df.prefix + 'Tot'] = null;
+      staat[df.prefix + 'Leeg'] = false;
+    }
     toonBestandsinfo();
     bouwFilterData();
     bouwFilterUI();
@@ -804,15 +817,16 @@ function bouwKantoorAgentSectie() {
   return sectie;
 }
 
-function bouwDatumFilterSectie() {
+function bouwDatumFilterSectie(df) {
   const sectie = document.createElement('section');
   sectie.className = 'filter';
-  sectie.dataset.key = 'wdatum';
-  const { kop, acties } = maakFilterKop('Wijzigingsdatum', false);
+  sectie.dataset.key = df.key;
+  const { kop, acties } = maakFilterKop(df.label, false);
   const wis = document.createElement('button');
   wis.type = 'button';
   wis.className = 'btn-klein';
-  wis.id = 'wdWis';
+  wis.id = df.prefix + 'Wis';
+  wis.dataset.dfWis = df.prefix;
   wis.textContent = 'Wis';
   wis.title = 'Datumbereik wissen';
   acties.appendChild(wis);
@@ -820,14 +834,15 @@ function bouwDatumFilterSectie() {
 
   const bereik = document.createElement('div');
   bereik.className = 'datum-bereik';
-  [['wdVan', 'Van'], ['wdTot', 'Tot en met']].forEach(([id, tekst]) => {
+  [['Van', 'Van'], ['Tot', 'Tot en met']].forEach(([rol, tekst]) => {
     const label = document.createElement('label');
     const span = document.createElement('span');
     span.textContent = tekst;
     const invoer = document.createElement('input');
     invoer.type = 'date';
-    invoer.id = id;
-    invoer.setAttribute('aria-label', tekst + ' wijzigingsdatum');
+    invoer.id = df.prefix + rol;
+    invoer.dataset.df = df.prefix;
+    invoer.setAttribute('aria-label', tekst + ' ' + df.label.toLowerCase());
     label.appendChild(span);
     label.appendChild(invoer);
     bereik.appendChild(label);
@@ -838,10 +853,11 @@ function bouwDatumFilterSectie() {
   leegLabel.className = 'filter-optie';
   const leegCb = document.createElement('input');
   leegCb.type = 'checkbox';
-  leegCb.id = 'wdLeeg';
+  leegCb.id = df.prefix + 'Leeg';
+  leegCb.dataset.dfLeeg = df.prefix;
   const leegTekst = document.createElement('span');
   leegTekst.className = 'fo-tekst';
-  leegTekst.textContent = 'ook rijen zonder wijzigingsdatum';
+  leegTekst.textContent = df.leegTekst;
   leegLabel.appendChild(leegCb);
   leegLabel.appendChild(leegTekst);
   sectie.appendChild(leegLabel);
@@ -890,8 +906,10 @@ function bouwFilterUI() {
     staat.aantalSpans[f.key] = spans;
     sectie.appendChild(lijst);
     frag.appendChild(sectie);
-    // datumbereikfilter direct onder het wijzigingsreden-filter
-    if (f.key === 'wijzigingsreden') frag.appendChild(bouwDatumFilterSectie());
+    // datumbereikfilters direct onder het wijzigingsreden-filter
+    if (f.key === 'wijzigingsreden') {
+      for (const df of DATUM_FILTERS) frag.appendChild(bouwDatumFilterSectie(df));
+    }
   }
   houder.appendChild(frag);
 }
@@ -903,14 +921,15 @@ $('filterContainer').addEventListener('change', (e) => {
   const cb = e.target;
   if (!(cb instanceof HTMLInputElement)) return;
 
-  if (cb.id === 'wdVan' || cb.id === 'wdTot') {
-    staat.wdVan = datumInputSleutel($('wdVan').value);
-    staat.wdTot = datumInputSleutel($('wdTot').value);
+  if (cb.dataset.df) {
+    const p = cb.dataset.df;
+    staat[p + 'Van'] = datumInputSleutel($(p + 'Van').value);
+    staat[p + 'Tot'] = datumInputSleutel($(p + 'Tot').value);
     verversAlles();
     return;
   }
-  if (cb.id === 'wdLeeg') {
-    staat.wdLeeg = cb.checked;
+  if (cb.dataset.dfLeeg) {
+    staat[cb.dataset.dfLeeg + 'Leeg'] = cb.checked;
     verversAlles();
     return;
   }
@@ -957,13 +976,14 @@ function werkKantoorCheckboxBij(groepEl) {
 }
 
 $('filterContainer').addEventListener('click', (e) => {
-  if (e.target && e.target.id === 'wdWis') {
-    $('wdVan').value = '';
-    $('wdTot').value = '';
-    $('wdLeeg').checked = false;
-    staat.wdVan = null;
-    staat.wdTot = null;
-    staat.wdLeeg = false;
+  if (e.target && e.target.dataset && e.target.dataset.dfWis) {
+    const p = e.target.dataset.dfWis;
+    $(p + 'Van').value = '';
+    $(p + 'Tot').value = '';
+    $(p + 'Leeg').checked = false;
+    staat[p + 'Van'] = null;
+    staat[p + 'Tot'] = null;
+    staat[p + 'Leeg'] = false;
     verversAlles();
     return;
   }
@@ -1053,10 +1073,13 @@ $('wisFilters').addEventListener('click', () => {
   staat.wdVan = null;
   staat.wdTot = null;
   staat.wdLeeg = false;
+  staat.pvVan = null;
+  staat.pvTot = null;
+  staat.pvLeeg = false;
 
   document.querySelectorAll('#filterContainer .filter').forEach((sectie) => {
     sectie.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
-      if (cb.id === 'wdLeeg') { cb.checked = false; return; }
+      if (cb.dataset.dfLeeg) { cb.checked = false; return; }
       cb.checked = true;
       cb.indeterminate = false;
     });
@@ -1066,7 +1089,7 @@ $('wisFilters').addEventListener('click', () => {
     const zoek = sectie.querySelector('.filter-zoek');
     if (zoek) zoek.value = '';
   });
-  if ($('wdVan')) { $('wdVan').value = ''; $('wdTot').value = ''; }
+  document.querySelectorAll('#filterContainer .datum-bereik input').forEach((inv) => { inv.value = ''; });
   verversAlles();
 });
 
@@ -1075,7 +1098,6 @@ $('wisFilters').addEventListener('click', () => {
    ================================================================ */
 function verwerkFilters() {
   const kaActief = staat.kaSelectie.size < staat.kaTotaal;
-  const wdActief = staat.wdVan !== null || staat.wdTot !== null;
 
   /* secties in vaste volgorde; elke sectie krijgt één bit in het masker */
   const secties = [];
@@ -1095,15 +1117,21 @@ function verwerkFilters() {
       telling: new Map(),
     });
   }
-  secties.push({
-    soort: 'wd',
-    actief: wdActief,
-    pas: (r) => {
-      if (r.wd === null) return staat.wdLeeg;
-      return (staat.wdVan === null || r.wd >= staat.wdVan) &&
-             (staat.wdTot === null || r.wd <= staat.wdTot);
-    },
-  });
+  for (const df of DATUM_FILTERS) {
+    const van = staat[df.prefix + 'Van'];
+    const tot = staat[df.prefix + 'Tot'];
+    const leeg = staat[df.prefix + 'Leeg'];
+    const sleutel = df.sleutel;
+    secties.push({
+      soort: 'datum',
+      actief: van !== null || tot !== null,
+      pas: (r) => {
+        const w = r[sleutel];
+        if (w === null) return leeg;
+        return (van === null || w >= van) && (tot === null || w <= tot);
+      },
+    });
+  }
 
   const n = secties.length;
   const VOL = (1 << n) - 1;
@@ -1181,8 +1209,9 @@ function werkFilterBadgesBij() {
     const key = sectie.dataset.key;
     const badge = sectie.querySelector('.filter-badge');
     if (!badge) return;
-    if (key === 'wdatum') {
-      badge.hidden = staat.wdVan === null && staat.wdTot === null;
+    const df = DATUM_FILTERS.find((d) => d.key === key);
+    if (df) {
+      badge.hidden = staat[df.prefix + 'Van'] === null && staat[df.prefix + 'Tot'] === null;
       badge.textContent = 'actief';
       return;
     }
