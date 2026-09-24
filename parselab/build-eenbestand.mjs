@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Maakt ParseLab.html: één bestand met het dashboard en alle vier de tools erin.
+ * Maakt ParseLab.html: één bestand met het dashboard en alle tools erin.
  * Dubbelklikken is genoeg; ParsePDF en ParseBoard werken volledig, ParseForm toont de extensie-uitleg.
  * Websites uitlezen vraagt de ParseLab-server; het dashboard zegt dat erbij.
  *
@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const out = process.argv[2] || path.join(here, "ParseLab.html");
-const TOOLS = ["parsescraper.html", "parsepdf.html", "parseboard.html"];
+const TOOLS = ["parsescraper.html", "parsepdf.html", "parseboard.html", "parsesheet.html"];
 // Een sluittag mag niet letterlijk in dit bestand staan; hij wordt vervangen door dit teken en bij het openen hersteld.
 const TOKEN = "<\\/script";
 

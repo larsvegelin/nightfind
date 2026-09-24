@@ -183,6 +183,22 @@
   .cell-tool { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--muted); }
   .empty { padding:8px 0; }
 
+  /* ===== Werkbank: bronkeuze, gegevenslijst en uitvoer ===== */
+  .werk-bronnen { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+  .werk-bron { display:flex; align-items:center; gap:14px; text-align:left; background:var(--navy); color:var(--on-dark); border-radius:18px; padding:18px 20px; min-height:88px; box-shadow:var(--shadow-dark); transition:transform 180ms ease; }
+  .werk-bron:hover { transform:translateY(-3px); }
+  .werk-bron .ltile { width:38px; height:38px; flex:none; border-radius:999px; color:var(--navy); font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; }
+  .werk-bron .stack { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+  .werk-bron .lt { font-size:17px; font-weight:600; line-height:1.25; }
+  .werk-bron .ls { font-size:14px; color:var(--on-dark-muted); line-height:1.45; }
+  .werk-bron .pijl { font-size:20px; color:var(--on-dark-muted); }
+  .werk-set { grid-template-columns:minmax(0,1.4fr) auto; padding:16px 0; }
+  .werk-knoppen { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
+  .werk-knoppen .btn-pill { padding:8px 16px; min-height:38px; font-size:14px; }
+  .werk-uit { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; }
+  .werk-uitvak { display:flex; flex-direction:column; gap:8px; border:1px solid var(--hairline); border-radius:16px; padding:18px; background:var(--cream-white); }
+  @media (max-width:720px) { .werk-set { grid-template-columns:1fr; } .werk-knoppen { justify-content:flex-start; } }
+
   /* ===== Meter, dropzone en laden (styleguide 6.5, 6.9, 6.10) ===== */
   .pld-bar { height:10px; border-radius:999px; background:var(--hairline); overflow:hidden; }
   .pld-bar > i { display:block; height:100%; border-radius:999px; background:var(--blue); }
@@ -429,6 +445,12 @@ function toolDefs() {
       sections:[ { id:"upload", label:"Uploaden" }, { id:"define", label:"Aanwijzen" }, { id:"check", label:"Controleren" }, { id:"download", label:"Downloaden" }, { id:"templates", label:"Sjablonen" } ], numbered:true,
       bench:{ kind:"frame", src:"tools/parsepdf.html" },
       steps:[ { title:"Sleep je documenten", body:"Ze blijven op jouw computer." }, { title:"Wijs aan wat je nodig hebt", body:"Teken een vak, of kies een sjabloon." }, { title:"Controleer en download", body:"Als Excel." } ] },
+    { key:"sheet", name:"ParseSheet", task:"Rommelige Excel netjes maken", tagline:"Een export met rommel wordt één nette tabel", mark:"PX", tone:TONE.pdf,
+      projectWord:"tabel", projectWords:"tabellen", projectSection:"opschonen",
+      local:"Blijft op je computer: je bestand wordt in je browser gelezen en niet verstuurd.",
+      sections:[ { id:"bron", label:"Bestand" }, { id:"opschonen", label:"Opschonen" }, { id:"klaar", label:"Klaar" } ], numbered:true,
+      bench:{ kind:"frame", src:"tools/parsesheet.html" },
+      steps:[ { title:"Sleep je Excel of CSV", body:"Ook met een logo erboven en lege regels ertussen." }, { title:"Kijk de kopregel na", body:"ParseLab raadt hem; jij bevestigt." }, { title:"Netjes maken", body:"Download als Excel, of stuur hem door." } ] },
     { key:"board", name:"ParseBoard", task:"Overzichten maken", tagline:"Cijfers en grafieken uit je bestand", mark:"PB", tone:TONE.board,
       projectWord:"overzicht", projectWords:"overzichten", projectSection:"1",
       local:"Blijft op je computer: je bestand en je overzicht worden lokaal bewaard.",
@@ -448,8 +470,274 @@ function lock(text) { return `<span class="lock">${LOCK_ICO}<span>${esc(text)}</
 function greeting() { const h = new Date().getHours(); return h < 6 ? "Goedenacht" : h < 12 ? "Goedemorgen" : h < 18 ? "Goedemiddag" : "Goedenavond"; }
 function when(iso) { try { return new Date(iso).toLocaleString("nl-NL", { dateStyle:"short", timeStyle:"short" }); } catch (e) { return ""; } }
 
+/* ===== Werkbank: alle tools in één werkstroom ==============================
+   Bron (document, website, rommelige Excel) → nette tabel → uitvoer (Excel,
+   dashboard, rapport). Elke tool houdt zijn eigen pagina; wat ze opleveren
+   komt hier samen in één lijst met gegevens. */
+const DATASETS_KEY = "parselab-datasets-v1";
+const MAX_SETS = 12, MAX_RIJEN = 5000;
+const BRONNEN = { pdf:"Document (ParsePDF)", scrape:"Website (ParseScraper)", sheet:"Excel (ParseSheet)", board:"Overzicht (ParseBoard)", form:"Formulier (ParseForm)" };
+function readDatasets() { try { const a = JSON.parse(localStorage.getItem(DATASETS_KEY) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function writeDatasets(list) { try { localStorage.setItem(DATASETS_KEY, JSON.stringify(list.slice(0, MAX_SETS))); } catch (e) {} }
+function getalVan(v) {
+  if (typeof v === "number") return isFinite(v) ? v : null;
+  let s = String(v == null ? "" : v).trim().replace(/[€$£\s]/g, "");
+  if (!s) return null;
+  const procent = /%$/.test(s); s = s.replace(/%$/, "");
+  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, "").replace(",", ".");
+  else if (/^-?\d+,\d+$/.test(s)) s = s.replace(",", ".");
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
+  const n = parseFloat(s);
+  return isNaN(n) ? null : (procent ? n / 100 : n);
+}
+function isDatumWaarde(v) { return /^\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}$|^\d{4}-\d{2}-\d{2}$/.test(String(v == null ? "" : v).trim()); }
+function typenVan(kolommen, rijen) {
+  const t = {};
+  kolommen.forEach(k => {
+    const w = rijen.map(r => r[k]).filter(v => v !== "" && v != null);
+    if (!w.length) { t[k] = "leeg"; return; }
+    const g = w.filter(v => getalVan(v) != null).length, d = w.filter(isDatumWaarde).length;
+    t[k] = d / w.length >= .8 ? "datum" : g / w.length >= .8 ? "getal" : "tekst";
+  });
+  return t;
+}
+/* Een tool levert een tabel op → die komt hier in de lijst. Zelfde naam uit
+   dezelfde tool vervangt de vorige, anders groeit de lijst bij elke klik. */
+function saveDataset(d) {
+  const kolommen = ((d.kolommen && d.kolommen.length) ? d.kolommen : Object.keys((d.rijen || [])[0] || {})).map(x => String(x));
+  const bron = d.bron || d.tool || "";
+  const rijen = (d.rijen || []).slice(0, MAX_RIJEN).map(r => Array.isArray(r) ? kolommen.reduce((o, k, i) => (o[k] = r[i] == null ? "" : r[i], o), {}) : Object.assign({}, r));
+  if (!kolommen.length || !rijen.length) return null;
+  const set = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    naam: String(d.naam || "Gegevens").slice(0, 80), bron,
+    kolommen, rijen, typen: d.typen || typenVan(kolommen, rijen),
+    totaal: (d.rijen || []).length, when: new Date().toISOString()
+  };
+  const lijst = readDatasets().filter(x => !(x.naam === set.naam && x.bron === set.bron));
+  lijst.unshift(set); writeDatasets(lijst);
+  if (state.view === "werk") render();
+  return set;
+}
+
+/* ---------- Excel schrijven (zelfde mini-zip als in de tools) ---------- */
+const CRC_T = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function bytesVan(s) { return new TextEncoder().encode(s); }
+function zipStore(files) {
+  const u16 = n => [n & 255, (n >> 8) & 255], u32 = n => [n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >> 24) & 255];
+  const delen = [], centraal = []; let offset = 0;
+  files.forEach(f => {
+    const nb = bytesVan(f.name), crc = crc32(f.bytes), size = f.bytes.length;
+    const lokaal = new Uint8Array([].concat([0x50,0x4b,0x03,0x04], u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(size), u32(size), u16(nb.length), u16(0)));
+    delen.push(lokaal, nb, f.bytes);
+    centraal.push(new Uint8Array([].concat([0x50,0x4b,0x01,0x02], u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(size), u32(size), u16(nb.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset))), nb);
+    offset += lokaal.length + nb.length + f.bytes.length;
+  });
+  let cen = 0; centraal.forEach(c => cen += c.length);
+  const eind = new Uint8Array([].concat([0x50,0x4b,0x05,0x06], u16(0), u16(0), u16(files.length), u16(files.length), u32(cen), u32(offset), u16(0)));
+  const alles = delen.concat(centraal, [eind]); let totaal = 0; alles.forEach(a => totaal += a.length);
+  const out = new Uint8Array(totaal); let p = 0; alles.forEach(a => { out.set(a, p); p += a.length; });
+  return out;
+}
+function xmlEsc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function kolomRef(n) { let s = ""; n++; while (n) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; } return s; }
+function naarXlsx(rijen, kolommen) {
+  const cel = (c, r, v) => '<c r="' + kolomRef(c) + r + '" t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(v) + "</t></is></c>";
+  let sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  sheet += '<row r="1">' + kolommen.map((k, c) => cel(c, 1, k)).join("") + "</row>";
+  rijen.forEach((r, i) => { sheet += '<row r="' + (i + 2) + '">' + kolommen.map((k, c) => cel(c, i + 2, r[k] == null ? "" : r[k])).join("") + "</row>"; });
+  sheet += "</sheetData></worksheet>";
+  const CT = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+  const RELS = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const WB = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  const WBR = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+  return zipStore([
+    { name:"[Content_Types].xml", bytes:bytesVan(CT) },
+    { name:"_rels/.rels", bytes:bytesVan(RELS) },
+    { name:"xl/workbook.xml", bytes:bytesVan(WB) },
+    { name:"xl/_rels/workbook.xml.rels", bytes:bytesVan(WBR) },
+    { name:"xl/worksheets/sheet1.xml", bytes:bytesVan(sheet) }
+  ]);
+}
+function bewaarBestand(blob, naam) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = naam; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+function veiligeNaam(s) { return String(s || "parselab").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "parselab"; }
+function downloadXlsx(set) { bewaarBestand(new Blob([naarXlsx(set.rijen, set.kolommen)], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), veiligeNaam(set.naam) + ".xlsx"); }
+function downloadCsv(set) {
+  const cel = v => /[";\n]/.test(String(v == null ? "" : v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v == null ? "" : v);
+  const tekst = "﻿" + [set.kolommen.map(cel).join(";")].concat(set.rijen.map(r => set.kolommen.map(k => cel(r[k])).join(";"))).join("\n");
+  bewaarBestand(new Blob([tekst], { type:"text/csv;charset=utf-8" }), veiligeNaam(set.naam) + ".csv");
+}
+
+/* ---------- rapport: dezelfde inhoud als Markdown én als HTML ---------- */
+function kerncijfers(set) {
+  return set.kolommen.filter(k => set.typen[k] === "getal").map(k => {
+    const w = set.rijen.map(r => getalVan(r[k])).filter(n => n != null);
+    if (!w.length) return null;
+    const som = w.reduce((a, b) => a + b, 0);
+    return { kolom:k, aantal:w.length, som, gem:som / w.length, min:Math.min(...w), max:Math.max(...w) };
+  }).filter(Boolean);
+}
+function verdeling(set) {
+  return set.kolommen.filter(k => set.typen[k] === "tekst").map(k => {
+    const telling = {};
+    set.rijen.forEach(r => { const v = String(r[k] == null ? "" : r[k]).trim(); if (v) telling[v] = (telling[v] || 0) + 1; });
+    const paren = Object.entries(telling).sort((a, b) => b[1] - a[1]);
+    if (paren.length < 2 || paren.length > 12) return null;
+    return { kolom:k, paren:paren.slice(0, 12) };
+  }).filter(Boolean).slice(0, 3);
+}
+function nl(n) { return Number(n).toLocaleString("nl-NL", { maximumFractionDigits:2 }); }
+function rapportMd(sets) {
+  const nu = new Date().toLocaleString("nl-NL", { dateStyle:"long", timeStyle:"short" });
+  const uit = ["# ParseLab-rapport", "", "Gemaakt op " + nu + " · " + sets.length + " bron" + (sets.length === 1 ? "" : "nen") + ".", "",
+    "| Bron | Waar vandaan | Regels | Kolommen |", "| --- | --- | --- | --- |"];
+  sets.forEach(s => uit.push("| " + s.naam + " | " + (BRONNEN[s.bron] || s.bron || "onbekend") + " | " + s.rijen.length + " | " + s.kolommen.length + " |"));
+  sets.forEach(s => {
+    uit.push("", "## " + s.naam, "", "*" + (BRONNEN[s.bron] || s.bron || "onbekend") + " · " + when(s.when) + " · " + s.rijen.length + " regels × " + s.kolommen.length + " kolommen*", "",
+      "**Kolommen.** " + s.kolommen.map(k => k + " (" + (s.typen[k] || "tekst") + ")").join(", "));
+    const kc = kerncijfers(s);
+    if (kc.length) {
+      uit.push("", "### Kerncijfers", "", "| Kolom | Gevuld | Som | Gemiddeld | Laagste | Hoogste |", "| --- | ---: | ---: | ---: | ---: | ---: |");
+      kc.forEach(c => uit.push("| " + c.kolom + " | " + c.aantal + " | " + nl(c.som) + " | " + nl(c.gem) + " | " + nl(c.min) + " | " + nl(c.max) + " |"));
+    }
+    verdeling(s).forEach(v => {
+      uit.push("", "### Verdeling — " + v.kolom, "", "| Waarde | Aantal |", "| --- | ---: |");
+      v.paren.forEach(([w, n]) => uit.push("| " + w + " | " + n + " |"));
+    });
+    uit.push("", "### Eerste regels", "", "| " + s.kolommen.join(" | ") + " |", "| " + s.kolommen.map(() => "---").join(" | ") + " |");
+    s.rijen.slice(0, 10).forEach(r => uit.push("| " + s.kolommen.map(k => String(r[k] == null ? "" : r[k]).replace(/\|/g, "\\|")).join(" | ") + " |"));
+    if (s.rijen.length > 10) uit.push("", "*Eerste 10 van " + s.rijen.length + " regels; het Excel-bestand bevat alles.*");
+  });
+  uit.push("", "---", "", "Gemaakt met ParseLab. De gegevens zijn in je eigen browser verwerkt.");
+  return uit.join("\n") + "\n";
+}
+function rapportHtml(sets) {
+  const nu = new Date().toLocaleString("nl-NL", { dateStyle:"long", timeStyle:"short" });
+  const balk = (waarde, max) => `<span class="bar"><i style="width:${max ? Math.max(2, Math.round(waarde / max * 100)) : 2}%"></i></span>`;
+  const stuk = s => {
+    const kc = kerncijfers(s), vd = verdeling(s);
+    const maxSom = Math.max(1, ...kc.map(c => Math.abs(c.som)));
+    return `
+  <section class="blok">
+    <h2>${esc(s.naam)}</h2>
+    <p class="meta">${esc(BRONNEN[s.bron] || s.bron || "onbekend")} · ${esc(when(s.when))} · ${s.rijen.length} regels × ${s.kolommen.length} kolommen</p>
+    <p class="typen">${s.kolommen.map(k => `<span class="type"><b>${esc(k)}</b> ${esc(s.typen[k] || "tekst")}</span>`).join("")}</p>
+    ${kc.length ? `<h3>Kerncijfers</h3><table><thead><tr><th>Kolom</th><th class="r">Gevuld</th><th class="r">Som</th><th class="r">Gemiddeld</th><th class="r">Laagste</th><th class="r">Hoogste</th><th>Aandeel</th></tr></thead><tbody>${kc.map(c => `<tr><td>${esc(c.kolom)}</td><td class="r">${c.aantal}</td><td class="r">${esc(nl(c.som))}</td><td class="r">${esc(nl(c.gem))}</td><td class="r">${esc(nl(c.min))}</td><td class="r">${esc(nl(c.max))}</td><td>${balk(Math.abs(c.som), maxSom)}</td></tr>`).join("")}</tbody></table>` : ""}
+    ${vd.map(v => { const max = Math.max(...v.paren.map(p => p[1])); return `<h3>Verdeling — ${esc(v.kolom)}</h3><table><tbody>${v.paren.map(([w, n]) => `<tr><td>${esc(w)}</td><td class="r">${n}</td><td>${balk(n, max)}</td></tr>`).join("")}</tbody></table>`; }).join("")}
+    <h3>Eerste regels</h3>
+    <div class="scroll"><table><thead><tr>${s.kolommen.map(k => `<th class="${s.typen[k] === "getal" ? "r" : ""}">${esc(k)}</th>`).join("")}</tr></thead><tbody>${s.rijen.slice(0, 25).map(r => `<tr>${s.kolommen.map(k => `<td class="${s.typen[k] === "getal" ? "r" : ""}">${esc(r[k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    ${s.rijen.length > 25 ? `<p class="meta">Eerste 25 van ${s.rijen.length} regels; het Excel-bestand bevat alles.</p>` : ""}
+  </section>`;
+  };
+  return `<!DOCTYPE html>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ParseLab-rapport</title>
+<style>
+ :root { --navy:#1F3A5F; --cream:#F2F0E7; --ink:#16293F; --muted:#4A5A6C; --line:#E6E3D8; --gold:#C9A961; --blue:#2C6FA8; }
+ * { box-sizing:border-box; } body { margin:0; background:#FBFAF6; color:var(--ink); font:16px/1.55 -apple-system,"Segoe UI",system-ui,sans-serif; }
+ .wrap { max-width:960px; margin:0 auto; padding:40px 24px 80px; }
+ h1 { font-size:30px; letter-spacing:-.01em; margin:0 0 6px; } h2 { font-size:22px; margin:0 0 4px; } h3 { font-size:16px; margin:22px 0 8px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+ .meta { color:var(--muted); font-size:14px; margin:0 0 14px; }
+ .blok { background:#fff; border:1px solid var(--line); border-radius:16px; padding:24px; margin:20px 0; }
+ table { border-collapse:collapse; width:100%; font-size:14px; margin:6px 0 4px; }
+ th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); }
+ th { background:var(--cream); font-weight:600; } td.r, th.r { text-align:right; font-variant-numeric:tabular-nums; }
+ .scroll { overflow-x:auto; }
+ .bar { display:block; height:8px; background:var(--cream); border-radius:999px; overflow:hidden; min-width:80px; }
+ .bar i { display:block; height:100%; background:var(--blue); }
+ .typen { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 6px; }
+ .type { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:3px 10px; background:#fff; }
+ .top { background:var(--navy); color:var(--cream); border-radius:16px; padding:26px; }
+ .top p { color:rgba(242,240,231,.82); margin:6px 0 0; }
+ footer { color:var(--muted); font-size:14px; margin-top:26px; }
+ @media print { body { background:#fff; } .blok, .top { break-inside:avoid; } }
+</style></head><body><div class="wrap">
+  <div class="top"><h1>ParseLab-rapport</h1><p>Gemaakt op ${esc(nu)} · ${sets.length} bron${sets.length === 1 ? "" : "nen"}</p></div>
+  <section class="blok"><h2>Overzicht</h2><table><thead><tr><th>Bron</th><th>Waar vandaan</th><th class="r">Regels</th><th class="r">Kolommen</th></tr></thead><tbody>${sets.map(s => `<tr><td>${esc(s.naam)}</td><td>${esc(BRONNEN[s.bron] || s.bron || "onbekend")}</td><td class="r">${s.rijen.length}</td><td class="r">${s.kolommen.length}</td></tr>`).join("")}</tbody></table></section>
+  ${sets.map(stuk).join("")}
+  <footer>Gemaakt met ParseLab. De gegevens zijn in je eigen browser verwerkt en niet verstuurd.</footer>
+</div></body></html>`;
+}
+function maakRapport(sets) {
+  if (!sets.length) return;
+  const naam = "parselab-rapport-" + new Date().toISOString().slice(0, 10);
+  bewaarBestand(new Blob([rapportMd(sets)], { type:"text/markdown;charset=utf-8" }), naam + ".md");
+  setTimeout(() => bewaarBestand(new Blob([rapportHtml(sets)], { type:"text/html;charset=utf-8" }), naam + ".html"), 250);
+}
+
+/* ---------- de werkbank-pagina ---------- */
+function renderWerk(defs) {
+  const sets = readDatasets();
+  const bronKnop = (key, titel, uitleg) => {
+    const t = defs.find(d => d.key === key);
+    return `<button type="button" class="werk-bron" data-bench="${key}">
+      <span class="ltile" style="background:${key === "scrape" ? "#DCE8F2" : "#EDE7D5"}">${esc(t ? t.mark : "PL")}</span>
+      <span class="stack"><span class="lt">${esc(titel)}</span><span class="ls">${esc(uitleg)}</span></span>
+      <span class="pijl" aria-hidden="true">→</span></button>`;
+  };
+  const rij = s => `
+    <div class="tr werk-set">
+      <div class="cell-main"><span class="pname">${esc(s.naam)}</span><span class="mono-12">${esc(BRONNEN[s.bron] || s.bron || "onbekend")} · ${s.rijen.length} regels × ${s.kolommen.length} kolommen${s.totaal > s.rijen.length ? " (van " + s.totaal + ")" : ""} · ${esc(when(s.when))}</span></div>
+      <div class="werk-knoppen">
+        <button type="button" class="btn-pill" data-xlsx="${esc(s.id)}">Excel</button>
+        <button type="button" class="btn-pill" data-csv="${esc(s.id)}">CSV</button>
+        <button type="button" class="btn-pill" data-board="${esc(s.id)}">Dashboard</button>
+        <button type="button" class="link" data-del-set="${esc(s.id)}">Weg</button>
+      </div>
+    </div>`;
+  return `
+    <div style="display:flex; flex-direction:column; gap:28px;">
+      <div class="pld-card card">
+        <div class="card-head"><div class="pld-caps caps">Stap 1 · Waar komt het vandaan?</div></div>
+        <p class="pld-text note">Kies je bron. Elke bron heeft zijn eigen pagina; wat eruit komt belandt hieronder in dezelfde lijst.</p>
+        <div class="werk-bronnen">
+          ${bronKnop("pdf", "Document (PDF)", "Facturen, bonnen, polisbladen en rapporten.")}
+          ${bronKnop("scrape", "Website", "Een lijst of tabel van een pagina.")}
+          ${bronKnop("sheet", "Rommelige Excel", "Export met koppen, lege regels en samengevoegde cellen.")}
+        </div>
+      </div>
+
+      <div class="pld-card card">
+        <div class="card-head"><div class="pld-caps caps">Stap 2 · Je gegevens</div>${sets.length ? `<span class="pld-text note">${sets.length} tabel${sets.length === 1 ? "" : "len"}</span>` : ""}</div>
+        ${sets.length ? `<div class="pld-table table">${sets.map(rij).join("")}</div>` :
+        `<div class="pld-text note empty">Nog niets uitgelezen. Kies hierboven een bron; zodra een tool een tabel oplevert staat hij hier, klaar voor Excel, een dashboard of een rapport.</div>`}
+      </div>
+
+      <div class="pld-card card">
+        <div class="card-head"><div class="pld-caps caps">Stap 3 · Wat wil je ermee?</div></div>
+        <div class="werk-uit">
+          <div class="werk-uitvak"><span class="pld-caps caps">Excel of CSV</span><p class="pld-text note">Per tabel, met de knoppen hierboven. Kolommen houden hun type: getallen blijven getallen.</p></div>
+          <div class="werk-uitvak"><span class="pld-caps caps">Dashboard</span><p class="pld-text note">Stuur een tabel naar ParseBoard voor cijfers en grafieken.</p></div>
+          <div class="werk-uitvak"><span class="pld-caps caps">Rapport</span>
+            <p class="pld-text note">Eén rapport met alles: overzicht, kerncijfers, verdelingen en de eerste regels. Je krijgt het als <b>Markdown</b> (.md) én als <b>webpagina</b> (.html) — zelfde inhoud, ander formaat.</p>
+            <div class="bench-actions">
+              <button type="button" class="pld-btn btn btn-navy" id="maak-rapport" ${sets.length ? "" : "disabled"}>Maak rapport (.md + .html)</button>
+              <button type="button" class="pld-btn pld-btn--ghost btn btn-outline" id="toon-rapport" ${sets.length ? "" : "disabled"}>Bekijk eerst</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function bindWerk() {
+  const zoek = id => readDatasets().find(s => s.id === id);
+  document.querySelectorAll("[data-xlsx]").forEach(el => el.onclick = () => { const s = zoek(el.getAttribute("data-xlsx")); if (s) downloadXlsx(s); });
+  document.querySelectorAll("[data-csv]").forEach(el => el.onclick = () => { const s = zoek(el.getAttribute("data-csv")); if (s) downloadCsv(s); });
+  document.querySelectorAll("[data-board]").forEach(el => el.onclick = () => {
+    const s = zoek(el.getAttribute("data-board")); if (!s) return;
+    state.doorgeven = { naar:"board", naam:s.naam, kolommen:s.kolommen, rijen:s.rijen };
+    go("board", "1");
+  });
+  document.querySelectorAll("[data-del-set]").forEach(el => el.onclick = () => { writeDatasets(readDatasets().filter(s => s.id !== el.getAttribute("data-del-set"))); render(); });
+  const mr = document.getElementById("maak-rapport"); if (mr) mr.onclick = () => maakRapport(readDatasets());
+  const tr = document.getElementById("toon-rapport"); if (tr) tr.onclick = () => {
+    const w = window.open("", "_blank"); if (!w) return;
+    w.document.write(rapportHtml(readDatasets())); w.document.close();
+  };
+}
+
 /* ===== state & routing: #view/section/project ===== */
-const VIEWS = ["overview", "files", "help", "form", "scrape", "pdf", "board"];
+const VIEWS = ["overview", "werk", "files", "help", "form", "scrape", "pdf", "board", "sheet"];
 const state = { view:"overview", bench:false, section:null, project:null, toolMax:null, query:"", menu:null, modal:null, user:null };
 function parseHash() {
   const [view, sub, proj] = location.hash.replace(/^#\/?/, "").split("/");
@@ -476,7 +764,7 @@ function render() {
   if (!root.querySelector(".shell")) { root.innerHTML = renderShell(); bindShell(); }
   const defs = toolDefs(), tool = defs.find(d => d.key === state.view) || null;
 
-  document.getElementById("nav-main").innerHTML = navItem({ label:"Overzicht", key:"overview", lead:dot("#F2F0E7") }) + navItem({ label:"Bestanden", key:"files", lead:dot("rgba(242,240,231,.5)") }) + navItem({ label:"Hulp", key:"help", lead:dot("rgba(242,240,231,.5)") });
+  document.getElementById("nav-main").innerHTML = navItem({ label:"Overzicht", key:"overview", lead:dot("#F2F0E7") }) + navItem({ label:"Werkbank", key:"werk", lead:dot("var(--gold)") }) + navItem({ label:"Bestanden", key:"files", lead:dot("rgba(242,240,231,.5)") }) + navItem({ label:"Hulp", key:"help", lead:dot("rgba(242,240,231,.5)") });
   document.getElementById("nav-tools").innerHTML = defs.map(d => navItem({ label:d.name, key:d.key, meta:navMeta(d), lead:tile(d, 26) }) + navSub(d)).join("");
   document.getElementById("user-initials").textContent = state.user.initials;
   document.getElementById("user-name").textContent = state.user.name;
@@ -491,7 +779,7 @@ function render() {
     action.textContent = "Nieuwe " + tool.projectWord; action.onclick = () => { state.modal = { kind:"newproject", tool:tool.key }; render(); focusLater("np-name"); };
     document.title = (pr ? pr.name + " · " : "") + tool.name + " · ParseLab";
   } else {
-    const heads = { files:["Bestanden", "Wat ParseLab voor je heeft uitgelezen."], help:["Hulp", "Zo werkt elke tool, in gewone taal."] };
+    const heads = { werk:["Werkbank", "Van document, website of rommelige Excel naar Excel, dashboard of rapport."], files:["Bestanden", "Wat ParseLab voor je heeft uitgelezen."], help:["Hulp", "Zo werkt elke tool, in gewone taal."] };
     const h = heads[state.view] || [greeting() + ", " + state.user.name.split(" ")[0], "Waar wil je mee verder?"];
     eyebrow.textContent = "ParseLab"; title.textContent = h[0]; sub.textContent = h[1];
     document.querySelector(".topbar-text").classList.toggle("overview-title", state.view === "overview");
@@ -509,7 +797,7 @@ function render() {
     sendSection(frame, state.section);
     if (state.project && frame.dataset.project !== state.project) { frame.dataset.project = state.project; sendProject(frame, state.project); }
   } else {
-    view.innerHTML = tool ? renderBench(tool) : state.view === "files" ? renderFiles(defs) : state.view === "help" ? renderHelp(defs) : renderOverview(defs);
+    view.innerHTML = tool ? renderBench(tool) : state.view === "werk" ? renderWerk(defs) : state.view === "files" ? renderFiles(defs) : state.view === "help" ? renderHelp(defs) : renderOverview(defs);
     const f = view.querySelector("iframe.bench-frame");
     if (f) f.addEventListener("load", () => initFrame(f));
     if (state.view === "files") loadFiles();
@@ -617,6 +905,12 @@ function renderOverview(defs) {
   const byKey = Object.fromEntries(defs.map(d => [d.key, d]));
   return `
     <div style="display:flex; flex-direction:column; gap:32px;">
+      <div class="pld-card card">
+        <div class="card-head"><div class="pld-caps caps">Begin hier</div></div>
+        <div class="title-24" style="max-width:34ch">Werkbank — van document, website of rommelige Excel naar Excel, dashboard of rapport</div>
+        <p class="pld-text note">Eén werkstroom over alle software heen. Je kiest een bron, ParseLab maakt er een nette tabel van, en die gaat door naar Excel, een overzicht of een rapport (Markdown én webpagina).</p>
+        <div class="bench-actions"><button type="button" class="pld-btn btn btn-navy" data-go="werk">Open de werkbank <span class="arrow">→</span></button></div>
+      </div>
       <div class="launch">
         ${defs.map(t => `<button type="button" data-bench="${t.key}">
           <span class="lh"><span class="ltile" style="background:${t.key === "form" ? "#DCE8F2" : "#EDE7D5"}">${esc(t.mark)}</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span>
@@ -742,7 +1036,8 @@ function renderHelp(defs) {
     form:[ ["Voeg ParseLab toe aan je browser", "één keer."], ["Open het portaal", "en klik op het ParseLab-icoon rechtsboven."], ["Klik op Invullen", "en wijs het formulier of het veld aan."], ["Maak je invullijst (Excel)", "vul hem in en laad hem."], ["Klik op Start", "elke regel krijgt een vinkje."] ],
     scrape:[ ["Plak het adres", "van de pagina met de lijst."], ["Klik één item aan", "en kies 'de hele lijst'."], ["Download voor Excel", "of bewaar als taak die elke dag draait."], ["Moet je inloggen?", "kies dan 'Extensie (ingelogd)'."] ],
     pdf:[ ["Sleep je documenten", "naar ParsePDF. Ze blijven op je computer."], ["Kies een sjabloon", "of teken een vak om het bedrag of de datum."], ["Controleer", "de regels om na te kijken staan bovenaan."], ["Download voor Excel", "."] ],
-    board:[ ["Kies een bron", "je bestand of de voorbeeldgegevens."], ["Kies je cijfers", "de suggesties staan klaar."], ["Sla op", "en download je overzicht."] ]
+    board:[ ["Kies een bron", "je bestand of de voorbeeldgegevens."], ["Kies je cijfers", "de suggesties staan klaar."], ["Sla op", "en download je overzicht."] ],
+    sheet:[ ["Sleep je Excel of CSV", "ook een export met een logo erboven en lege regels ertussen."], ["Kijk de kopregel na", "ParseLab raadt hem; jij bevestigt met één klik."], ["Netjes maken", "download als Excel, of stuur hem door naar een overzicht."] ]
   };
   return `<div class="help-grid">${defs.map(t => `
     <div class="pld-card card help-card">
@@ -874,7 +1169,10 @@ window.addEventListener("message", ev => {
   if (d.type === "parselab:open" && d.view) { go(d.view, d.section); return; }
   // De ene tool geeft rijen door aan de andere: bewaren, daarheen gaan, en zodra
   // die tool klaar is de gegevens sturen. Zo hangen de tools aan elkaar.
+  // Een tool levert een tabel op: die komt in de werkbank te staan, ook zonder handover.
+  if (d.type === "parselab:dataset" && Array.isArray(d.rijen)) { saveDataset(d); return; }
   if (d.type === "parselab:handover" && d.naar) {
+    saveDataset({ naam:d.naam, bron:d.tool, kolommen:d.kolommen, rijen:d.rijen });
     state.doorgeven = { naar:d.naar, naam:d.naam || "Gegevens", kolommen:d.kolommen || [], rijen:d.rijen || [] };
     go(d.naar, d.section || null);
     return;
@@ -904,6 +1202,7 @@ function bindNav() {
 }
 function bindActions() {
   bindNav();
+  if (state.view === "werk") bindWerk();
   document.querySelectorAll("[data-bench]").forEach(el => { el.onclick = () => go(el.getAttribute("data-bench")); });
   document.querySelectorAll("[data-open-project]").forEach(el => { el.onclick = () => { const t = toolDefs().find(x => x.key === el.getAttribute("data-open-tool")); go(t.key, t.projectSection, el.getAttribute("data-open-project")); }; });
   document.querySelectorAll("[data-edit-project]").forEach(el => { el.onclick = () => { state.modal = { kind:"project", id:el.getAttribute("data-edit-project") }; render(); }; });

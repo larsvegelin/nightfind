@@ -42,6 +42,7 @@ parselab/server/data/
 parselab/server/node_modules/
 parselab/tests/shots/
 parselab/tests/qa-result.txt
+parselab/tests/werkbank-result.txt
 parselab/tests/extensie-result.txt
 parselab/tests/extensie-aanwijzen-result.txt
 parselab/tests/extensie-schaduw-result.txt

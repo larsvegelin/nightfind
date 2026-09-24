@@ -6,7 +6,37 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 20)
+## Wat er het laatst veranderde (ronde 21)
+
+**Vraag:** maak er één grote tool van die PDF's, websites en ongestructureerde Excel-data gestructureerd kan maken — als Excel of als dashboard — met alle tools in één geheel, aparte pagina's per tool, en een md-bestand samen met een html met alles erin.
+
+### De Werkbank (`index.html`, nieuwe weergave `#werk`)
+
+De voorkant van ParseLab is nu één werkstroom in plaats van vier losse ingangen: **bron → nette tabel → uitvoer**.
+
+- **Stap 1 — bron.** Drie knoppen: document (ParsePDF), website (ParseScraper), rommelige Excel (ParseSheet). Elke knop opent die tool op zijn eigen pagina, in dezelfde schil.
+- **Stap 2 — je gegevens.** Elke tool meldt zijn tabel aan de Werkbank (nieuw bericht `parselab:dataset`); ze staan onder elkaar met herkomst, omvang en tijdstip. Bewaard in de browser (`parselab-datasets-v1`, maximaal twaalf tabellen van 5.000 regels); dezelfde naam uit dezelfde tool vervangt de vorige.
+- **Stap 3 — uitvoer.** Per tabel Excel of CSV (getallen blijven getallen, datums dd-mm-jjjj), doorsturen naar het dashboard, of een rapport.
+- **Rapport.** Eén knop levert twee bestanden met dezelfde inhoud: `parselab-rapport-JJJJ-MM-DD.md` en `.html`. Daarin: een overzicht van alle bronnen, en per bron de kolommen met hun type, kerncijfers per getalkolom (gevuld, som, gemiddelde, laagste, hoogste), verdelingen van tekstkolommen met 2–12 waarden, en de eerste regels. De HTML staat op zichzelf — geen scripts, geen externe bestanden, met printstijl. Met *Bekijk eerst* zie je hem in een tabblad zonder te downloaden.
+- Op het overzicht staat de Werkbank bovenaan als startpunt, en in de navigatie onder *Werkruimte*.
+
+### ParseSheet (`tools/parsesheet.html`, nieuw)
+
+De ontbrekende schakel: rommelige Excel. Sleep een `.xlsx` of `.csv`, kies eventueel het werkblad, en ParseLab raadt de kopregel (met de regels eronder als controle; staat dezelfde kop verderop nog eens, dan wint de bovenste). Daarna ruimt hij op: lege regels en kolommen weg, samengevoegde cellen doorvullen, herhaalde kopregels weg, spaties opruimen, `€ 1.234,56` → `1234,56`, `12,5%` → `0,125`, datums naar dd-mm-jjjj, kolomnamen netjes, en desgewenst een kruistabel omzetten naar een lijst. Je ziet wat er is opgeruimd, de herkende typen en de tabel; download als Excel of CSV of stuur hem door. Excel lezen én schrijven zit in de pagina zelf (mini-zip + `DecompressionStream`): geen bibliotheek, geen netwerk, het bestand blijft op je computer.
+
+### Ook in deze ronde
+
+- ParsePDF en ParseScraper melden hun uitgelezen tabel nu automatisch aan de Werkbank (één regel per tool); *Naar dashboard* bewaart hem ook.
+- `build-eenbestand.mjs` neemt ParseSheet mee, dus het losse `ParseLab.html` bevat alle tools.
+- Hulp en de projectkeuze kennen ParseSheet; het overzicht telt vijf ingangen.
+
+### Test (`tests/werkbank.mjs`, nieuw)
+
+29 controles over de hele weg: kopregel herkennen tussen twee herhaalde koppen, doorgevulde cellen, bedragen als getal, datums gelijkgetrokken, een geldig `.xlsx`, de tabel die vanzelf in de Werkbank verschijnt, Excel en CSV uit de Werkbank, het rapport als `.md` en `.html` met kolommen, kerncijfers en de nagerekende som (4.821,35), en de rijen die aankomen in ParseBoard. Toegevoegd aan `.github/workflows/qa.yml`; `tests/qa.mjs` telt nu vijf ingangen.
+
+---
+
+## Ronde 20
 
 **Vraag:** een knop om de invulvelden op te halen die je op de pagina ziet — naast *Lijst uploaden* en *Download bestand* — zodat je de velden ook kunt gebruiken om een lijst (een loop) mee te geven.
 

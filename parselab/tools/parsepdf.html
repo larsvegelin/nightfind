@@ -3588,6 +3588,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 return row;
             });
             results = { headers: headers, rows: rows, meta: colMeta, review: review, pages: pages, fileIds: ready.map(function (f) { return f.id; }) };
+            // De uitgelezen tabel melden aan de werkbank: daar komen alle tabellen samen.
+            if (rows.length) postToParent({ type: 'parselab:dataset', tool: 'pdf', bron: 'pdf',
+                naam: exportName('xlsx').replace(/\.xlsx$/, ''), kolommen: headers, rijen: rows });
             renderResults();
             updateDownloadState();
             setStatus(ready.length + ' document' + (ready.length === 1 ? '' : 'en') + ' uitgelezen, ' + rules.length + ' kolom(men).' +

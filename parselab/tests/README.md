@@ -16,6 +16,11 @@ Dan: `cd parselab/tests && node qa.mjs`. Resultaat staat in `qa-result.txt`, sch
 
 `webflow.mjs` test de vijf ParsePDF-embeds uit `parselab/webflow/`. Die test start zelf wat hij nodig heeft: hij bouwt met `webflow-proef.mjs` een proefpagina in `proef/` (namaak-Supabase, pdf.js uit `tools/parsepdf.html`, drie proef-PDF's), zet daar een server op 8123 bij, controleert ook de losse pagina uit `webflow/bouw-pagina.mjs` en sluit alles weer af. Los draaien: `node webflow.mjs`.
 
+`werkbank.mjs` loopt de hele werkstroom af: een rommelige Excel opschonen met ParseSheet, de
+tabel in de Werkbank zien verschijnen, Excel en CSV downloaden, het rapport maken als `.md` én
+`.html` (kolommen, kerncijfers en de som nagerekend) en de rijen doorgeven aan ParseBoard.
+Vraagt de ParseLab-server op 8080. Los draaien: `node werkbank.mjs`.
+
 `extensie.mjs` laadt de browserextensie in een echte Chromium en controleert het openen: een klik op
 het icoon opent het paneel ook als de bewaarde vlag nog "aan" stond van een ander tabblad of een
 vorige sessie, een tweede klik sluit het, er ontstaat geen tweede paneel, en op een browserpagina

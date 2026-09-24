@@ -43,8 +43,8 @@ await step('login', async () => {
 // ---------- 2. Overzicht ----------
 await step('overzicht', async () => {
   const cards = await p.locator('.launch button[data-bench]').count();
-  ok('overzicht: 4 startkaarten', cards === 4, cards);
-  ok('overzicht: 4 visuals', await p.locator('.launch .lv').count() === 4);
+  ok('overzicht: 5 startkaarten', cards === 5, cards);
+  ok('overzicht: 5 visuals', await p.locator('.launch .lv').count() === 5);
   ok('overzicht: lege projectstaat zonder nepdata', await p.locator('.proj-row').count() === 0 && await p.locator('.empty').count() >= 1);
   const h = await p.locator('.overview-title').innerText(); ok('begroeting met naam', /Sanne/.test(h), h);
   const scrollW = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -286,7 +286,7 @@ await step('mobiel', async () => {
   await p.click('.nav-item[data-go="files"]'); await p.waitForTimeout(400);
   ok('mobiel: menu sluit na keuze', !(await p.locator('#nav-tools').isVisible()) && (await hash()).startsWith('#files'));
   await p.click('#top-action'); await p.waitForTimeout(200);
-  ok('bestanden: "Nieuw project" toont keuze uit 4 tools', await p.locator('#modal [data-new-project]').count() === 4);
+  ok('bestanden: "Nieuw project" toont keuze uit 5 tools', await p.locator('#modal [data-new-project]').count() === 5);
   await p.keyboard.press('Escape');
   await p.screenshot({ path:S+'/shots/qa-mobile.png', fullPage:true });
   await p.setViewportSize({ width:1440, height:1000 });

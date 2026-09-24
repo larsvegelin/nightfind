@@ -1,6 +1,15 @@
 # ParseLab
 
-Eén schil voor vier tools: ParseForm, ParseScraper, ParsePDF en ParseBoard. Minimalistisch: een overzicht met vier ingangen en je projecten, en per tool een korte flow. Geen voorbeelddata; alles wat je ziet komt uit de tools zelf.
+Eén tool met vijf ingangen: ParseForm, ParseScraper, ParsePDF, ParseSheet en ParseBoard. Elke ingang houdt zijn eigen pagina, maar ze komen samen in de **Werkbank**: je kiest een bron (document, website of rommelige Excel), ParseLab maakt er een nette tabel van, en die gaat door naar Excel, een dashboard of een rapport — als Markdown én als webpagina. Geen voorbeelddata; alles wat je ziet komt uit de tools zelf.
+
+| Bron | Tool | Wordt |
+|---|---|---|
+| PDF (factuur, bon, polisblad) | ParsePDF | tabel |
+| Website | ParseScraper | tabel |
+| Rommelige Excel of CSV | ParseSheet | tabel |
+| Tabel | ParseBoard | dashboard |
+| Tabel | Werkbank | Excel, CSV of rapport (.md + .html) |
+| Tabel | ParseForm | ingevulde formulieren in een portaal |
 
 ## Starten
 

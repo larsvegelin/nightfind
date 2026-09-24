@@ -9,6 +9,8 @@ Opdracht: ga per tool na waar het simpeler en gebruiksvriendelijker kan voor men
 | `parsescraper.md` | ParseScraper, inclusief "scraper zonder extensie" | `tools/extension/`, `mcp-server/` |
 | `parsepdf.md` | ParsePDF | `tools/parsepdf.html` |
 | `parseboard.md` | ParseBoard | `tools/parseboard.html` |
+| `parsesheet.md` | ParseSheet (rommelige Excel) | `tools/parsesheet.html` |
+| `werkbank.md` | Werkbank (alles in één werkstroom) | `parselab/index.html` |
 
 Elk element krijgt vier regels: **Nu** (wat er staat), **Simpeler** (voor iemand zonder IT-achtergrond), **Veiliger** (waar dat speelt) en **Prioriteit** (1 = eerst doen, 3 = later).
 
