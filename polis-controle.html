@@ -113,7 +113,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 19</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 20</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -231,6 +231,26 @@
       mijOud: "P300", mijNieuw: "N200",
       // Zelfde aanpak; export heeft Bouwaard-kolommen tussen Bijsluiter en
       // Meeverzekerd gelieerde. Kolommen worden op de koptekst herkend.
+      cols: COLS_STD,
+      checks: buildAvbChecks
+    },
+    {
+      id: "wml",
+      naam: "Werkmaterieel",
+      titel: "Werk- en landbouwmaterieel",
+      selectie: "WMLCO",
+      mijOud: "P300", mijNieuw: "N200",
+      // Export heeft machine-kolommen (Gebruik werktuig, Soort machine,
+      // Meldcode, Kenteken, Merk); kolommen worden op de koptekst herkend.
+      cols: COLS_STD,
+      checks: buildAvbChecks
+    },
+    {
+      id: "aan",
+      naam: "Aanhanger",
+      titel: "Aanhanger",
+      selectie: "AANCO",
+      mijOud: "P300", mijNieuw: "N200",
       cols: COLS_STD,
       checks: buildAvbChecks
     }
@@ -394,7 +414,8 @@
     }
     function fmtEur(n){ return n?String(n):"0"; }
     var evO=effVerz(oud), evN=effVerz(nieuw), vbSt, vbNote;
-    if(evN<=0){ vbSt="fail"; vbNote="Nieuwe polis heeft geen verzekerd bedrag (kolom of kolom A)"; }
+    if(evO<=0&&evN<=0){ vbSt="info"; vbNote="Geen verzekerd bedrag van toepassing (bijv. WA-dekking)"; }
+    else if(evN<=0){ vbSt="fail"; vbNote="Nieuwe polis mist verzekerd bedrag; oud had "+fmtEur(evO); }
     else if(evO<=0){ vbSt="info"; vbNote="Oude polis heeft geen verzekerd bedrag; nieuw = "+fmtEur(evN); }
     else if(evO===evN){ vbSt="ok"; vbNote="Bedrag mag in 'Verzekerd bedrag' of 'Verzekerd bedrag A' staan"; }
     else { vbSt="fail"; vbNote="Verzekerde bedragen verschillen"; }
