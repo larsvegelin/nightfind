@@ -1,0 +1,129 @@
+<!-- ParsePDF — embed 5b van 12: parsen op eisen. Zeg wat je zoekt, in plaats van waar het staat. -->
+<script>
+window.PLP_EIS=(function(){
+var S=window.PLP_S;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+
+// Een eis: "een datum, na het woord Geboortedatum, op pagina 1, in kolom 2".
+// Elk deel is los te laten; wat je invult moet allemaal kloppen.
+function pas(doc,eis){
+  var ST=window.PLP_ST,cellen=doc.cellen||[],rijen=ST.perRij(cellen);
+  var kol=ST.kolommen(cellen).map(function(k){return k.x;}).sort(function(a,b){return a-b;});
+  var patroon=null;
+  if(eis.soort&&eis.soort!=="tekst")ST.patronen.forEach(function(p){if(p.naam===eis.soort)patroon=p;});
+  var woord=String(eis.woord||"").trim().toLowerCase();
+  var esc=woord.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),wre=woord?new RegExp("(^|[^\\p{L}])"+esc,"iu"):null;
+  function heeft(c){return !!(c&&wre&&wre.test(String(c.t)));}
+  var kandidaten=[];
+  cellen.forEach(function(c){
+    if(eis.pagina&&c.pagina!==Number(eis.pagina)-1)return;
+    if(eis.kolom&&kol.length){
+      var idx=0;for(var i=0;i<kol.length;i++)if(Math.abs(c.x-kol[i])<=6)idx=i+1;
+      if(idx!==Number(eis.kolom))return;
+    }
+    if(patroon){
+      var m=String(c.t).match(ST.re(patroon));
+      if(!m)return;
+      if(woord&&!heeft(c)&&!naWoord(c,heeft,rijen))return;
+      kandidaten.push({c:c,w:m[0]});return;
+    }
+    if(woord){
+      if(heeft(c)){
+        var rest=String(c.t).replace(new RegExp("^.*?"+esc+"\\s*[:\\-–]?\\s*","iu"),"").trim();
+        if(rest&&rest.toLowerCase()!==String(c.t).toLowerCase())kandidaten.push({c:c,w:rest});
+        else {var b=buur(c,rijen);if(b)kandidaten.push({c:b,w:b.t});}
+      }
+      return;
+    }
+    kandidaten.push({c:c,w:c.t});
+  });
+  if(!kandidaten.length)return "";
+  // Bij meer kandidaten wint de eerste op de pagina (van boven naar beneden, links naar rechts).
+  kandidaten.sort(function(a,b){return a.c.pagina-b.c.pagina||b.c.y-a.c.y||a.c.x-b.c.x;});
+  return kandidaten[0].w;
+}
+// Staat het woord links van deze cel op dezelfde regel, of er direct boven?
+function naWoord(c,heeft,rijen){return heeft(buurLinks(c,rijen))||heeft(cellBoven(c,rijen));}
+function buur(c,rijen){
+  for(var i=0;i<rijen.length;i++){
+    var rij=rijen[i];
+    var k=rij.indexOf(c);
+    if(k>=0)return rij[k+1]||((rijen[i+1]&&rijen[i+1][0].pagina===c.pagina)?rijen[i+1].filter(function(x){return Math.abs(x.x-c.x)<=6;})[0]:null);
+  }
+  return null;
+}
+function buurLinks(c,rijen){
+  for(var i=0;i<rijen.length;i++){var k=rijen[i].indexOf(c);if(k>0)return rijen[i][k-1];if(k===0)return null;}
+  return null;
+}
+function cellBoven(c,rijen){
+  for(var i=1;i<rijen.length;i++){
+    if(rijen[i].indexOf(c)<0)continue;
+    var vorige=rijen[i-1];
+    if(vorige[0].pagina!==c.pagina)return null;
+    return vorige.filter(function(x){return Math.abs(x.x-c.x)<=6;})[0]||null;
+  }
+  return null;
+}
+
+// Korte omschrijving van een eis, voor in het regelvenster.
+function omschrijf(eis){
+  var t=S.t,d=[];
+  if(eis.woord)d.push(t.eisAfter.replace("{w}",eis.woord));
+  if(eis.soort&&eis.soort!=="tekst")d.push(t["eis_"+eis.soort]||eis.soort);
+  if(eis.pagina)d.push(t.eisPage.replace("{n}",eis.pagina));
+  if(eis.kolom)d.push(t.eisCol.replace("{n}",eis.kolom));
+  return d.join(" · ")||t.eisAny;
+}
+
+// De kaart: vier velden en een knop, plus de AI die de eis voor je invult.
+function kaart(){
+  var t=S.t,k=el("div","pld-card");
+  k.appendChild(el("p","pld-text",t.eisHint));
+  var rij=el("div","plp-rule");
+  var naam=el("input","pld-in");naam.placeholder=t.fname;
+  var woord=el("input","pld-in");woord.placeholder=t.eisWordPh;
+  var soort=el("select","pld-sel");
+  ["tekst","datum","bedrag","iban","email","kenmerk","postcode","telefoon"].map(function(n){return [n,n==="tekst"?t.eisAny:t["eis_"+n]];})
+    .forEach(function(o){var op=el("option","",o[1]);op.value=o[0];soort.appendChild(op);});
+  var pagina=el("input","pld-in");pagina.type="number";pagina.min="1";pagina.placeholder=t.page;
+  var kolom=el("input","pld-in");kolom.type="number";kolom.min="1";kolom.placeholder=t.eisColPh;
+  var maak=el("button","pld-btn pld-btn--sm",t.eisAdd);maak.type="button";
+  function veld(l,i){var w=el("div");w.appendChild(el("label","pld-lbl",l));w.appendChild(i);return w;}
+  rij.appendChild(veld(t.fname,naam));rij.appendChild(veld(t.eisWord,woord));rij.appendChild(veld(t.eisKind,soort));
+  rij.appendChild(veld(t.page,pagina));rij.appendChild(veld(t.eisColPh,kolom));
+  k.appendChild(rij);
+  var onder=el("div","pld-row");onder.appendChild(maak);
+  var ai=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.eisAi);ai.type="button";
+  var zin=el("input","pld-in");zin.placeholder=t.eisAiPh;
+  onder.appendChild(zin);onder.appendChild(ai);
+  var melding=el("p","pld-text");onder.appendChild(melding);
+  k.appendChild(onder);
+  maak.addEventListener("click",function(){
+    var eis={woord:woord.value.trim(),soort:soort.value,pagina:pagina.value?Number(pagina.value):null,kolom:kolom.value?Number(kolom.value):null};
+    if(!naam.value.trim()){naam.focus();return;}
+    S.regels.unshift({naam:naam.value.trim(),type:"eis",waarde:omschrijf(eis),eis:eis,
+                      filter:eis.soort==="datum"||eis.soort==="bedrag"?eis.soort:"geen"});
+    try{localStorage.setItem("pl_parsepdf_regels",JSON.stringify(S.regels));}catch(e){}
+    window.PLP_UI.teken();window.PLP_UI.meld(t.eisAdded.replace("{naam}",naam.value.trim()));
+  });
+  ai.addEventListener("click",function(){
+    if(!zin.value.trim())return;
+    if(window.PLP_AI&&!window.PLP_AI.mag()){melding.textContent=t.aiPlan;return;}
+    ai.disabled=true;melding.textContent=t.aiBusy;
+    var eind=(window.PARSELAB&&window.PARSELAB.regelEndpoint)||"/api/parsepdf/regel";
+    fetch(eind,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({zin:zin.value.trim()})})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(j){
+        ai.disabled=false;
+        if(!j||!j.eis){melding.textContent=t.aiOff;return;}
+        naam.value=j.naam||naam.value;woord.value=j.eis.woord||"";soort.value=j.eis.soort||"tekst";
+        pagina.value=j.eis.pagina||"";kolom.value=j.eis.kolom||"";
+        melding.textContent=t.eisAiDone;
+      }).catch(function(){ai.disabled=false;melding.textContent=t.aiOff;});
+  });
+  return k;
+}
+return {pas:pas,kaart:kaart,omschrijf:omschrijf};
+})();
+</script>

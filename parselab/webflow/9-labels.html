@@ -1,0 +1,174 @@
+<!-- ParsePDF — embed 9 van 12: labels op de pagina, selectieknoppen en goedkeuren. -->
+<script>
+window.PLP_L=(function(){
+var S=window.PLP_S;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+
+// Klik op een gearceerd vlak: een klein venster bij dat vlak waarin je het veld een
+// naam geeft, de waarde ziet en het aan of uit zet. Zo benoem je in het document zelf.
+function labelVenster(vlak,box,veld,klaar){
+  sluitVensters(vlak);
+  var v=el("div","plp-label");
+  v.appendChild(el("p","pld-lbl",S.t.fName));
+  var naam=el("input","pld-in");naam.value=veld.naam||"";
+  v.appendChild(naam);
+  v.appendChild(el("p","plp-mono",veld.waarde));
+  var bron=el("p","plp-bron",(S.t[BRON[veld.bron]]||veld.bron)+(veld.slim?" · "+S.t.autoNamed:""));
+  v.appendChild(bron);
+  var rij=el("div","pld-row");
+  var ok=el("button","pld-btn pld-btn--sm",S.t.keepField);ok.type="button";
+  var weg=el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.dropField);weg.type="button";
+  rij.appendChild(ok);rij.appendChild(weg);v.appendChild(rij);
+  var links=Math.max(4,Math.min(box.offsetLeft,(vlak.clientWidth||400)-260));
+  v.style.left=links+"px";
+  v.style.top=(box.offsetTop+box.offsetHeight+6)+"px";
+  vlak.appendChild(v);
+  naam.focus();naam.select();
+  function bewaar(aan){
+    veld.naam=naam.value.trim()||veld.naam;
+    veld.aan=aan;
+    v.remove();klaar();
+  }
+  naam.addEventListener("keydown",function(e){
+    if(e.key==="Enter"){e.preventDefault();bewaar(true);}
+    if(e.key==="Escape")v.remove();
+  });
+  ok.addEventListener("click",function(){bewaar(true);});
+  weg.addEventListener("click",function(){bewaar(false);});
+}
+var BRON={kolomkop:"srcKolomkop",rechts:"srcRechts",inline:"srcInline",onder:"srcOnder",patroon:"srcPatroon",
+          ai:"srcAi",plek:"srcPlek",meta:"srcMeta",bestand:"srcBestand"};
+function sluitVensters(vlak){
+  [].slice.call(vlak.querySelectorAll(".plp-label")).forEach(function(n){n.remove();});
+}
+
+// Alles aan of alles uit, met de stand ernaast.
+function selectieBalk(velden,klaar){
+  var doos=el("div","pld-row");
+  var alles=el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.selectAll);alles.type="button";
+  var geen=el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.selectNone);geen.type="button";
+  var stand=el("span","plp-bron","");
+  function tel(){
+    var aan=velden.filter(function(v){return v.aan;}).length;
+    stand.textContent=S.t.chosen.replace("{n}",aan).replace("{t}",velden.length);
+  }
+  alles.addEventListener("click",function(){velden.forEach(function(v){v.aan=true;});tel();klaar();});
+  geen.addEventListener("click",function(){velden.forEach(function(v){v.aan=false;});tel();klaar();});
+  doos.appendChild(alles);doos.appendChild(geen);doos.appendChild(stand);
+  doos.bijwerken=tel;tel();
+  return doos;
+}
+
+// Wat de AI voorstelt gaat niet zomaar door: je ziet wat er verandert en keurt het goed.
+function goedkeuring(velden,voorstel,klaar,melding){
+  var oud=velden.map(function(v){return {naam:v.naam,aan:v.aan,bron:v.bron};});
+  var raakt=0;
+  voorstel.forEach(function(nw){
+    var bestaand=velden.filter(function(x){return x.waarde===nw.waarde;})[0];
+    if(bestaand){
+      if(nw.naam&&nw.naam!==bestaand.naam){bestaand.naam=nw.naam;raakt++;}
+      if(nw.houden===false&&bestaand.aan){bestaand.aan=false;raakt++;}
+      if(nw.houden===true&&!bestaand.aan){bestaand.aan=true;raakt++;}
+      bestaand.bron="ai";
+    }else if(nw.waarde){
+      velden.push({aan:true,slim:true,naam:nw.naam||S.t.fValue,waarde:nw.waarde,bron:"ai",
+                   vak:{pagina:-1,x:0,y:0,b:0,h:0},labelvak:null,
+                   vindregel:{type:"patroonwaarde",waarde:nw.waarde},filter:"geen"});
+      raakt++;
+    }
+  });
+  klaar();
+  if(!melding)return raakt;
+  melding.textContent="";
+  var rij=el("div","pld-row");
+  rij.appendChild(el("span","pld-text",S.t.aiChanged.replace("{n}",raakt)));
+  var ok=el("button","pld-btn pld-btn--sm",S.t.approve);ok.type="button";
+  var terug=el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.undo);terug.type="button";
+  ok.addEventListener("click",function(){rij.remove();melding.textContent=S.t.approved;});
+  terug.addEventListener("click",function(){
+    velden.length=oud.length;
+    oud.forEach(function(o,i){velden[i].naam=o.naam;velden[i].aan=o.aan;velden[i].bron=o.bron;});
+    rij.remove();melding.textContent=S.t.undone;klaar();
+  });
+  rij.appendChild(ok);rij.appendChild(terug);
+  melding.appendChild(rij);
+  return raakt;
+}
+
+
+// Geen tekstlaag: aanbieden om de tekst te laten herkennen, en daarna hetzelfde
+// voorstel opbouwen als bij een gewoon document.
+function ocrAanbod(blad,file,doc,klaar){
+  var t=S.t,P=window.PLP,ST=window.PLP_ST;
+  var vraag=el("div","pld-card");
+  vraag.appendChild(el("p","pld-text",t.ocrHint));
+  var rij=el("div","pld-row"),knop=el("button","pld-btn",t.ocr),stand=el("p","pld-text");
+  knop.type="button";rij.appendChild(knop);rij.appendChild(stand);
+  vraag.appendChild(rij);blad.appendChild(vraag);
+  knop.addEventListener("click",function(){
+    knop.disabled=true;stand.textContent=t.ocrBusy;
+    P.ocr(file,function(n,tot){stand.textContent=t.ocrBusy+" "+n+" / "+tot;}).then(function(res){
+      vraag.remove();
+      if(window.PLP_PDFUIT){
+        var pk=el("div","pld-card"),pr=el("div","pld-row"),pb=el("button","pld-btn pld-btn--ghost pld-btn--sm",t.pdfSearchable);
+        pb.type="button";pk.appendChild(el("p","pld-text",t.pdfSearchableHint));pr.appendChild(pb);pk.appendChild(pr);blad.appendChild(pk);
+        pb.addEventListener("click",function(){
+          pb.disabled=true;pb.textContent=t.pdfSearchableBusy;
+          window.PLP_PDFUIT.maak(file,res).then(function(blob){
+            window.PLP_PDFUIT.bewaar(String(file.name||"scan.pdf").replace(/\.pdf$/i,"")+"-doorzoekbaar.pdf",blob);
+            pb.disabled=false;pb.textContent=t.pdfSearchable;
+          }).catch(function(){pb.disabled=false;pb.textContent=t.pdfSearchable;});
+        });
+      }
+      doc.cellen=res.cellen;doc.maten=res.maten;doc.ocr=true;
+      doc.tekst=res.cellen.map(function(c){return c.t;}).join("\n");
+      var a2=ST.analyse(doc);
+      var v2=a2.velden.map(function(v){
+        return {aan:true,slim:true,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,
+                labelvak:v.labelvak,vindregel:v.vindregel,filter:ST.filterVoor(v)};
+      });
+      ST.alles(doc,a2.velden).forEach(function(v){
+        v2.push({aan:false,slim:false,naam:v.naam,waarde:v.waarde,bron:v.vindregel.type,vak:v.vak,
+                 labelvak:null,vindregel:v.vindregel,filter:ST.filterVoor(v)});
+      });
+      klaar(doc,a2,v2);
+      window.PLP_UI.meld(t.ocrDone.replace("{n}",res.cellen.length));
+    }).catch(function(){knop.disabled=false;stand.textContent=t.ocrOff;});
+  });
+}
+
+
+// De gearceerde vlakken op de pagina: goud voor het label, blauw voor de waarde.
+// Klikken opent het labelvenster, zweven toont naam en waarde.
+function vlakken(vlak,doc,velden,pagina,schaal,klaar){
+  [].slice.call(vlak.querySelectorAll(".plp-vlak,.plp-tip,.plp-label")).forEach(function(n){n.remove();});
+  var maat=(doc.maten&&doc.maten[pagina])||{hoog:842};
+  velden.forEach(function(v,i){
+    [[v.labelvak,"plp-vlak plp-vlak--label"],[v.vak,"plp-vlak"+(v.aan?"":" plp-vlak--uit")]].forEach(function(paar){
+      var vk=paar[0];
+      if(!vk||vk.pagina!==pagina)return;
+      var box=el("div",paar[1]);
+      box.style.left=(vk.x*schaal-2)+"px";
+      box.style.top=((maat.hoog-vk.y-vk.h)*schaal-2)+"px";
+      box.style.width=(vk.b*schaal+4)+"px";
+      box.style.height=(vk.h*schaal*1.35+2)+"px";
+      if(paar[1].indexOf("label")<0){
+        box.setAttribute("data-veld",i);
+        box.title=v.naam;
+        box.addEventListener("mouseenter",function(){tip(vlak,box,v.naam+" = "+v.waarde);});
+        box.addEventListener("mouseleave",function(){var q=vlak.querySelector(".plp-tip");if(q)q.remove();});
+        box.addEventListener("click",function(){labelVenster(vlak,box,v,klaar);});
+      }
+      vlak.appendChild(box);
+    });
+  });
+}
+function tip(vlak,box,tekst){
+  var q=el("div","plp-tip",tekst);
+  q.style.left=(box.offsetLeft+box.offsetWidth/2)+"px";q.style.top=(box.offsetTop-6)+"px";
+  vlak.appendChild(q);
+}
+
+return {vlakken:vlakken,ocrAanbod:ocrAanbod,labelVenster:labelVenster,selectieBalk:selectieBalk,goedkeuring:goedkeuring,sluitVensters:sluitVensters};
+})();
+</script>

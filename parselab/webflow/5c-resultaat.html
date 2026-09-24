@@ -1,0 +1,43 @@
+<!-- ParsePDF — embed 5c: de resultaattabel met download als CSV of Excel. -->
+<script>
+window.PLP_RES=(function(){
+var S=window.PLP_S,P=window.PLP;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+function kolommen(){return (S.kolommen&&S.kolommen.length)?S.kolommen:S.regels;}
+// Download in de vorm die bij Opties gekozen is; Excel als PLP_XLSX geladen is.
+function download(vorm){
+  var t=S.t,kol=kolommen();
+  if(vorm==="xlsx"&&window.PLP_XLSX){
+    window.PLP_XLSX.bewaar(t.xlsxName||"parselab-export.xlsx",window.PLP_XLSX.maak(kol,S.rijen,t.colFile,t.colPages));
+  }else P.bewaar(t.csvName,P.csv(kol,S.rijen,t.colFile,t.colPages));
+}
+function kaart(){
+  var t=S.t,k=el("div","pld-card"),kol=kolommen();
+  if(!S.rijen.length){k.appendChild(el("p","pld-text",t.empty));return k;}
+  var wrap=el("div","plp-scroll"),tab=el("table","plp-table"),thead=el("thead"),tr=el("tr");
+  [t.colFile,t.colPages].concat(kol.map(function(r){return r.naam||"—";}))
+    .forEach(function(h){tr.appendChild(el("th","",h));});
+  thead.appendChild(tr);tab.appendChild(thead);
+  var tb=el("tbody");
+  S.rijen.forEach(function(r){
+    var row=el("tr");
+    row.appendChild(el("td","",r.naam));
+    row.appendChild(el("td","plp-mono",String(r.paginas)));
+    kol.forEach(function(x,i){
+      row.appendChild(el("td",(x.filter==="bedrag"||x.filter==="datum")?"plp-mono":"",r.velden["k"+i]||"—"));});
+    tb.appendChild(row);});
+  tab.appendChild(tb);wrap.appendChild(tab);k.appendChild(wrap);
+  var rij=el("div","pld-row");
+  var csv=el("button","pld-btn",t.download);csv.type="button";
+  csv.addEventListener("click",function(){download("csv");});
+  rij.appendChild(csv);
+  if(window.PLP_XLSX){
+    var x=el("button","pld-btn pld-btn--ghost",t.downloadXlsx||"Download Excel");x.type="button";
+    x.addEventListener("click",function(){download("xlsx");});
+    rij.appendChild(x);
+  }
+  k.appendChild(rij);return k;
+}
+return {kaart:kaart,download:download};
+})();
+</script>

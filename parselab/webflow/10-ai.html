@@ -1,0 +1,90 @@
+<!-- ParsePDF — embed 10 van 12: uitlezen met AI. Vraagt toestemming en kijkt of het pakket het toelaat. -->
+<script>
+window.PLP_AI=(function(){
+var S=window.PLP_S,CFG=window.PARSELAB;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+
+// De AI kijkt pas mee nadat de gebruiker ja zegt.
+// AI draait op onze Claude-tegoeden; daarom alleen voor een betaald pakket.
+function magAi(){
+  var v=S.verbruik||{};
+  if(v.ai_allowed===false||v.ai===false)return false;
+  if(v.plan&&/gratis|free/i.test(String(v.plan)))return false;
+  return true;
+}
+function pakketKaart(melding){
+  var t=S.t,laag=document.createElement("div");laag.className="plp-modal";
+  var blad=el("div","plp-modal-blad pld-card--navy");
+  blad.appendChild(el("p","pld-caps",t.aiPlan));
+  blad.appendChild(el("p","pld-text",t.aiPlanText));
+  var rij=el("div","pld-row");
+  var naar=el("a","pld-btn pld-btn--cream",t.aiUpgrade);naar.href=(CFG&&CFG.dashboardPath)||"/dashboard";
+  var weg=el("button","pld-btn pld-btn--ghost",t.cancel);weg.type="button";
+  weg.addEventListener("click",function(){laag.remove();});
+  rij.appendChild(naar);rij.appendChild(weg);blad.appendChild(rij);
+  laag.appendChild(blad);document.body.appendChild(laag);
+  laag.addEventListener("click",function(e){if(e.target===laag)laag.remove();});
+  if(melding)melding.textContent=t.aiPlan;
+}
+
+function vraag(doc,velden,klaar,melding,knop){
+  if(!magAi())return pakketKaart(melding);
+  var t=S.t,laag=document.createElement("div");laag.className="plp-modal";
+  var blad=el("div","plp-modal-blad");
+  blad.appendChild(el("p","pld-caps",t.aiTitle));
+  blad.appendChild(el("p","pld-text",t.aiText));
+  var rij=el("div","pld-row");
+  var ja=el("button","pld-btn",t.aiYes),nee=el("button","pld-btn pld-btn--ghost",t.aiNo);
+  ja.type="button";nee.type="button";
+  rij.appendChild(ja);rij.appendChild(nee);blad.appendChild(rij);
+  laag.appendChild(blad);document.body.appendChild(laag);
+  function weg(){laag.remove();}
+  nee.addEventListener("click",weg);
+  laag.addEventListener("click",function(e){if(e.target===laag)weg();});
+  ja.addEventListener("click",function(){
+    weg();knop.disabled=true;melding.textContent=t.aiBusy;
+    haalAi(doc,velden).then(function(nieuw){
+      knop.disabled=false;
+      if(!nieuw){melding.textContent=t.aiOff;return;}
+      // Eén AI-controle is één tegoed; dat telt apart van de pagina's.
+      try{if(CFG&&CFG.client)CFG.client.rpc("record_usage",{p_tool:"parsepdf-ai",p_pages:1});}catch(e){}
+      // Het voorstel gaat pas door nadat de gebruiker het goedkeurt.
+      if(window.PLP_L)window.PLP_L.goedkeuring(velden,nieuw,klaar,melding);
+      else {nieuw.forEach(function(v){
+        var bestaand=velden.filter(function(x){return x.waarde===v.waarde;})[0];
+        if(bestaand){if(v.naam)bestaand.naam=v.naam;bestaand.bron="ai";}
+        else velden.push({aan:true,slim:true,naam:v.naam,waarde:v.waarde,bron:"ai",vak:{pagina:-1,x:0,y:0,b:0,h:0},
+                          labelvak:null,vindregel:{type:"patroonwaarde",waarde:v.waarde},filter:"geen"});
+      });melding.textContent=t.aiDone;klaar();}
+    }).catch(function(){knop.disabled=false;melding.textContent=t.aiOff;});
+  });
+}
+
+function haalAi(doc,velden){
+  var eind=(CFG&&CFG.aiEndpoint)||"/api/parsepdf/velden";
+  if(!/^https?:$/.test(location.protocol))return Promise.resolve(null);
+  var kop={"content-type":"application/json"};
+  return sessie().then(function(token){
+  if(token)kop.authorization="Bearer "+token;
+  return fetch(eind,{method:"POST",headers:kop,
+    body:JSON.stringify({tekst:(doc.tekst||"").slice(0,20000),
+      cellen:(doc.cellen||[]).slice(0,400).map(function(c){return {t:c.t,x:Math.round(c.x),y:Math.round(c.y),p:c.pagina};}),
+      gevonden:velden.map(function(v){return {naam:v.naam,waarde:v.waarde,aan:!!v.aan};})})
+  }).then(function(r){
+    if(!r.ok)return null;
+    return r.json().then(function(j){return (j&&j.velden)||null;});
+  }).catch(function(){return null;});
+  });
+}
+
+// Het toegangsbewijs van de ingelogde gebruiker; de server kijkt daarmee of het pakket klopt.
+function sessie(){
+  if(!CFG||!CFG.client)return Promise.resolve(null);
+  return CFG.client.auth.getSession().then(function(r){
+    return (r&&r.data&&r.data.session&&r.data.session.access_token)||null;
+  }).catch(function(){return null;});
+}
+
+return {vraag:vraag,haal:haalAi,mag:magAi};
+})();
+</script>
