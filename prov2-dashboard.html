@@ -1,0 +1,1353 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Provisie-dashboard – Portefeuille Provinciaal</title>
+<style>
+:root{
+  --groen:#14532d; --groen-donker:#0d3b21; --groen-60:#3f8f5f;
+  --goud:#eab308; --bg:#ffffff; --bg-2:#f4f6f5; --ink:#1c2420; --ink-2:#5b6660;
+  --rand:#dbe2de; --rood:#b91c1c; --ok:#15803d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font:14px/1.45 "Segoe UI",system-ui,sans-serif;background:var(--bg-2);color:var(--ink)}
+.kop{background:var(--groen);color:#fff;padding:18px 28px}
+.kop h1{margin:0;font-size:21px}
+.kop p{margin:4px 0 0;font-size:13px;color:#cde3d5}
+main{padding:18px 28px;max-width:1560px;margin:0 auto}
+.paneel{background:var(--bg);border:1px solid var(--rand);border-radius:12px;padding:16px}
+
+/* upload */
+.upload-paneel{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+.dropzone{
+  flex:1 1 420px;min-height:96px;border:2px dashed var(--groen-60);border-radius:10px;
+  display:flex;gap:14px;align-items:center;padding:14px 18px;cursor:pointer;background:var(--bg);
+}
+.dropzone:focus{outline:2px solid var(--groen-60)}
+.dropzone.sleep{background:#e9f4ee;border-color:var(--groen)}
+.dz-icoon{font-size:26px;color:var(--groen)}
+.dz-titel{font-weight:600}
+.dz-sub{font-size:12px;color:var(--ink-2);margin-top:2px}
+.upload-status{flex:1 1 320px}
+#bestandInfo{font-size:13.5px}
+#bestandInfo strong{font-weight:600}
+#bestandBadges{margin:8px 0}
+.badge{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;margin-right:6px}
+.badge-ok{background:#dcf3e4;color:var(--ok)}
+.badge-waarschuwing{background:#fdf0c5;color:#8a6d00}
+.btn{
+  border:1px solid var(--rand);background:var(--bg-2);color:var(--ink);
+  border-radius:8px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer;
+}
+.btn:hover{background:#e8ece9}
+.btn-groen{background:var(--groen);border-color:var(--groen);color:#fff}
+.btn-groen:hover{background:var(--groen-donker)}
+.btn-klein{border:none;background:none;color:var(--groen);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:2px 4px}
+.btn-klein:hover{text-decoration:underline}
+
+/* banner + kolomkoppeling */
+.banner{
+  margin-top:14px;background:#fdf0c5;border:1px solid #ecd280;border-radius:10px;
+  padding:10px 14px;font-size:13.5px;color:#6b5400;
+}
+#mappingPaneel{margin-top:14px}
+#mappingPaneel h2{margin:0 0 6px;font-size:16px;color:var(--groen)}
+#mappingSamenvatting{margin:0 0 10px;font-size:13px;color:var(--ink-2)}
+.mapping-tabel{width:100%;border-collapse:collapse;font-size:13px}
+.mapping-tabel th{background:var(--groen);color:#fff;text-align:left;padding:7px 10px;font-weight:600}
+.mapping-tabel td{padding:6px 10px;border-bottom:1px solid var(--rand)}
+.status-ok{color:var(--ok);font-weight:600}
+.status-fout{color:#8a6d00;font-weight:600}
+#mappingExtra{margin:10px 0 0;font-size:12.5px;color:#8a6d00}
+
+/* indeling */
+.inhoud{display:flex;gap:16px;margin-top:14px;align-items:flex-start}
+.zijbalk{width:308px;flex:0 0 308px;padding:14px}
+.rechts{flex:1;min-width:0}
+.zijbalk-kop{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+
+/* filters */
+.filter{border-top:1px solid var(--rand);padding:12px 0 10px}
+.filter:first-child{border-top:none;padding-top:2px}
+.filter-kop{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.filter-titel{font-weight:600;font-size:13.5px}
+.filter-badge{
+  background:var(--goud);color:#3d2f00;border-radius:999px;
+  font-size:11px;font-weight:700;padding:1px 8px;margin-left:7px;vertical-align:1px;
+}
+.filter-acties{display:flex;gap:2px}
+.filter-zoek{
+  width:100%;border:1px solid var(--rand);border-radius:7px;background:var(--bg-2);
+  padding:6px 9px;font:inherit;font-size:12.5px;margin-bottom:7px;color:var(--ink);
+}
+.filter-zoek:focus{outline:2px solid var(--groen-60);background:var(--bg)}
+.filter-lijst{max-height:190px;overflow:auto;border:1px solid var(--rand);border-radius:8px;padding:4px 6px}
+.filter-optie{display:flex;align-items:center;gap:7px;padding:3px 2px;font-size:12.5px;cursor:pointer}
+.filter-optie .fo-tekst{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filter-optie .fo-aantal{color:var(--ink-2);font-size:11.5px}
+.fo-nul{opacity:.45}
+
+/* datumbereik */
+.datum-bereik{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.datum-bereik label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink-2)}
+.datum-bereik input{border:1px solid var(--rand);border-radius:7px;padding:5px 8px;font-size:13px;background:var(--bg);color:var(--ink)}
+.datum-bereik input:focus{outline:2px solid var(--groen-60);border-color:var(--groen-60)}
+
+/* kantoor & agent */
+.ka-lijst{max-height:280px;overflow:auto;border:1px solid var(--rand);border-radius:8px;padding:4px 6px}
+.ka-kantoor{display:flex;align-items:center;gap:5px;padding:3px 0;font-size:12.5px}
+.ka-klap{border:none;background:none;cursor:pointer;color:var(--ink-2);width:18px;font-size:11px;padding:0}
+.ka-kantoor label{display:flex;align-items:center;gap:7px;flex:1;min-width:0;cursor:pointer;font-weight:600}
+.ka-kantoor .fo-tekst{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ka-kantoor .fo-aantal{color:var(--ink-2);font-size:11.5px;font-weight:400}
+.ka-agenten{margin-left:24px;border-left:2px solid var(--rand);padding-left:8px}
+.ka-agent{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:12.5px;cursor:pointer}
+.ka-agent .fo-tekst{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ka-agent .fo-aantal{color:var(--ink-2);font-size:11.5px}
+
+/* kpi's */
+.kpis{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.kpi{flex:1 1 220px;background:var(--bg);border:1px solid var(--rand);border-radius:12px;padding:14px 18px;border-top:4px solid var(--goud)}
+.kpi-label{font-size:13px;font-weight:600;color:var(--ink-2)}
+.kpi-waarde{font-size:27px;font-weight:700;margin-top:4px}
+.kpi-sub{font-size:12px;color:var(--ink-2);margin-top:2px;min-height:15px}
+
+/* tabel */
+.tabel-paneel{padding:16px}
+.tabel-kopbalk{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.tabel-kopbalk h2{margin:0;font-size:16px;color:var(--groen)}
+.tabel-scroll{overflow-x:auto;border:1px solid var(--rand);border-radius:8px}
+.data-tabel{width:100%;border-collapse:collapse;font-size:12.8px;min-width:1500px}
+.data-tabel th{
+  background:var(--groen);color:#fff;text-align:left;padding:0;
+  position:sticky;top:0;white-space:nowrap;
+}
+.data-tabel th button{
+  all:unset;display:flex;gap:6px;align-items:center;cursor:pointer;
+  padding:8px 10px;width:100%;font-weight:600;
+}
+.data-tabel th button:hover{background:var(--groen-donker)}
+.sorteer-pijl{font-size:10px;opacity:.75}
+.data-tabel td{padding:6px 10px;border-bottom:1px solid var(--rand);white-space:nowrap}
+.data-tabel tr:nth-child(even) td{background:#f8faf9}
+.getal{text-align:right}
+#tabelLeeg{padding:26px;text-align:center;color:var(--ink-2)}
+.tabel-voet{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12.5px;color:var(--ink-2);gap:10px;flex-wrap:wrap}
+.paginering{display:flex;align-items:center;gap:10px}
+.paginering button:disabled{opacity:.45;cursor:default}
+</style>
+</head>
+<body>
+<header class="kop">
+  <h1>Provisie-dashboard – Portefeuille Provinciaal</h1>
+  <p>PROV2-export inlezen, filteren en exporteren — werkt volledig offline</p>
+</header>
+<main>
+  <section class="paneel upload-paneel">
+    <div id="dropZone" class="dropzone" tabindex="0" role="button"
+         aria-label="PROV2-exportbestand kiezen of hierheen slepen">
+      <span class="dz-icoon">⭱</span>
+      <span>
+        <span class="dz-titel">Sleep PROV2.exp hierheen of klik om te kiezen</span>
+        <div class="dz-sub">Puntkomma-gescheiden export (.exp, .csv of .txt) · Windows-1252 ·
+          een nieuwe upload vervangt de vorige dataset</div>
+      </span>
+      <input type="file" id="bestandInput" accept=".exp,.csv,.txt" hidden>
+    </div>
+    <div class="upload-status">
+      <div id="bestandInfo">Nog geen bestand geladen.</div>
+      <div id="bestandBadges"></div>
+      <button id="mappingKnop" class="btn" type="button">Kolomkoppeling controleren</button>
+    </div>
+  </section>
+
+  <div id="mappingBanner" class="banner" hidden>
+    ⚠ <strong>Kolomkoppeling wijkt af:</strong> <span id="mappingBannerDetail"></span>
+    Controleer het paneel Kolomkoppeling hieronder.
+  </div>
+
+  <section id="mappingPaneel" class="paneel" hidden>
+    <h2>Kolomkoppeling</h2>
+    <p id="mappingSamenvatting"></p>
+    <table class="mapping-tabel">
+      <thead><tr><th>#</th><th>Dashboardveld</th><th>Verwachte bronkolom</th>
+        <th>Gevonden in bestand</th><th>Status</th></tr></thead>
+      <tbody id="mappingBody"></tbody>
+    </table>
+    <p id="mappingExtra" hidden></p>
+  </section>
+
+  <div class="inhoud">
+    <aside class="zijbalk paneel">
+      <div class="zijbalk-kop">
+        <strong>Filters</strong>
+        <button id="wisFilters" class="btn" type="button">Alle filters wissen</button>
+      </div>
+      <div id="filterContainer"></div>
+    </aside>
+
+    <div class="rechts">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-label">Aantal polissen</div>
+          <div class="kpi-waarde" id="kpiAantal">–</div>
+          <div class="kpi-sub" id="kpiAantalSub"></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Termijnprovisie</div>
+          <div class="kpi-waarde" id="kpiTermijn">–</div>
+          <div class="kpi-sub"></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Provisie per jaar</div>
+          <div class="kpi-waarde" id="kpiJaar">–</div>
+          <div class="kpi-sub"></div>
+        </div>
+      </div>
+
+      <section class="paneel tabel-paneel">
+        <div class="tabel-kopbalk">
+          <h2>Polisregels</h2>
+          <button id="csvKnop" class="btn btn-groen" type="button">⭳&nbsp; Download CSV</button>
+        </div>
+        <div class="tabel-scroll">
+          <table class="data-tabel">
+            <thead><tr id="tabelKopRij"></tr></thead>
+            <tbody id="tabelBody"></tbody>
+          </table>
+          <div id="tabelLeeg" hidden>Geen rijen voldoen aan de huidige filters.</div>
+        </div>
+        <div class="tabel-voet">
+          <span id="rijTeller">Nog geen gegevens.</span>
+          <span class="paginering">
+            <button id="vorigeKnop" class="btn" type="button">← Vorige</button>
+            <span id="paginaInfo"></span>
+            <button id="volgendeKnop" class="btn" type="button">Volgende →</button>
+          </span>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+'use strict';
+
+/* ================================================================
+   Vaste definities: 18-koloms PROV2-indeling
+   ================================================================ */
+const VERWACHTE_KOLOMMEN = [
+  { bron: 'RelatieOms->Kantoorcode',             veld: 'Kantoor' },
+  { bron: 'RelatieOms->Agent op relatienivo',    veld: 'Agent' },
+  { bron: 'Relatie->Relatienummer',              veld: 'Relatienummer' },
+  { bron: 'Relatie->Voorletters/voorvoegsels/a', veld: 'Naam' },
+  { bron: 'Polis+WachtOms->Maatschappij',        veld: 'Maatschappij (omschrijving)' },
+  { bron: 'Polis+Wacht->Maatschappij',           veld: 'Maatschappij (code)' },
+  { bron: 'Polis+Wacht->Polisnummer',            veld: 'Polisnummer' },
+  { bron: 'Polis+WachtOms->Hoofdbranche',        veld: 'Hoofdbranche' },
+  { bron: 'Polis+WachtOms->Branche',             veld: 'Branche' },
+  { bron: 'Polis+Wacht->Termijn',                veld: 'Betaaltermijn' },
+  { bron: 'Polis+Wacht->Premievervaldatum',      veld: 'Premievervaldatum' },
+  { bron: 'Polis+Wacht->Hoofdvervaldatum polis', veld: 'Hoofdvervaldatum' },
+  { bron: 'Polis+Wacht->Wijzigingsdatum',        veld: 'Wijzigingsdatum' },
+  { bron: 'Polis+WachtOms->Wijzigingsreden',     veld: 'Wijzigingsreden' },
+  { bron: 'Polis+Wacht->Incassoprovisie bedrag', veld: 'Termijnprovisie (€)' },
+  { bron: 'Polis+WachtJaar->Incassoprovisie be', veld: 'Provisie/jaar (€)' },
+  { bron: 'Polis+Wacht->Incassowijze',           veld: 'Incassowijze (code)' },
+  { bron: 'Polis+WachtOms->Wacht j/n',           veld: 'Wacht J/N' },
+];
+const AANTAL_KOLOMMEN = VERWACHTE_KOLOMMEN.length; // 18
+const MIJOMS_INDEX = 4;  // Polis+WachtOms->Maatschappij (nieuw in 18-koloms indeling)
+const WD_INDEX = 12;     // Polis+Wacht->Wijzigingsdatum (nieuw in 17-koloms indeling)
+
+/* Oudere exportindelingen die automatisch worden herkend; ontbrekende
+   kolommen blijven leeg zodat oude bestanden bruikbaar blijven. */
+const OUDE_FORMATEN = [
+  { naam: 'v17', mist: [MIJOMS_INDEX],
+    tekst: 'oudere PROV2-indeling (17 kolommen) zonder maatschappij-omschrijving' },
+  { naam: 'v16', mist: [MIJOMS_INDEX, WD_INDEX],
+    tekst: 'oudere PROV2-indeling (16 kolommen) zonder maatschappij-omschrijving en wijzigingsdatum' },
+];
+
+/* Tabel- en CSV-kolommen. Maatschappij combineert code en omschrijving. */
+const TABEL_KOLOMMEN = [
+  { label: 'Relatienummer',     type: 'tekst',  waarde: (r) => r.c[2] },
+  { label: 'Polisnummer',       type: 'tekst',  waarde: (r) => r.c[6] },
+  { label: 'Naam',              type: 'tekst',  waarde: (r) => r.c[3] },
+  { label: 'Kantoor',           type: 'tekst',  waarde: (r) => r.c[0] },
+  { label: 'Agent',             type: 'tekst',  waarde: (r) => r.c[1] },
+  { label: 'Maatschappij',      type: 'tekst',  waarde: (r) => r.mj },
+  { label: 'Hoofdbranche',      type: 'tekst',  waarde: (r) => r.c[7] },
+  { label: 'Branche',           type: 'tekst',  waarde: (r) => r.c[8] },
+  { label: 'Wijzigingsreden',   type: 'tekst',  waarde: (r) => r.c[13] },
+  { label: 'Wijzigingsdatum',   type: 'datum',  waarde: (r) => r.c[12], sleutel: 'wd' },
+  { label: 'Hoofdvervaldatum',  type: 'datum',  waarde: (r) => r.c[11], sleutel: 'hv' },
+  { label: 'Premievervaldatum', type: 'datum',  waarde: (r) => r.c[10], sleutel: 'pv' },
+  { label: 'Termijn',           type: 'getal',  waarde: (r) => r.c[9],  sleutel: 'tn' },
+  { label: 'Termijnprovisie',   type: 'bedrag', waarde: (r) => r.tp,    sleutel: 'tp' },
+  { label: 'Provisie/jaar',     type: 'bedrag', waarde: (r) => r.pj,    sleutel: 'pj' },
+  { label: 'Incassowijze code', type: 'tekst',  waarde: (r) => r.c[16] },
+  { label: 'Wacht J/N',         type: 'tekst',  waarde: (r) => r.c[17] },
+];
+
+/* Checkbox-filters (kantoor & agent en wijzigingsdatum zijn aparte secties). */
+const FILTERS = [
+  { key: 'mij',            label: 'Maatschappij',    waarde: (r) => r.mj },
+  { key: 'hoofdbranche',   label: 'Hoofdbranche',    waarde: (r) => r.c[7] },
+  { key: 'branche',        label: 'Branche',         waarde: (r) => r.c[8] },
+  { key: 'wijzigingsreden',label: 'Wijzigingsreden', waarde: (r) => r.c[13] },
+  { key: 'termijn',        label: 'Betaaltermijn',   waarde: (r) => r.c[9], numeriek: true },
+  { key: 'wacht',          label: 'Wacht J/N',       waarde: (r) => r.c[17] },
+];
+
+const LEEG_LABEL = '(leeg)';
+const RIJEN_PER_PAGINA = 50;
+
+const nfInt = new Intl.NumberFormat('nl-NL');
+const nfEur = new Intl.NumberFormat('nl-NL', {
+  style: 'currency', currency: 'EUR',
+  minimumFractionDigits: 2, maximumFractionDigits: 2,
+});
+const collator = new Intl.Collator('nl', { numeric: true, sensitivity: 'base' });
+const $ = (id) => document.getElementById(id);
+
+/* ================================================================
+   Toestand
+   ================================================================ */
+const staat = {
+  bestandsnaam: null,
+  kopregel: null,
+  formaat: 'v18',      // 'v18' | 'v17' | 'v16'
+  rijen: [],
+  overgeslagen: 0,
+  gefilterd: [],
+  filterWaarden: {},   // key -> gesorteerde waarden
+  filterSelectie: {},  // key -> Set geselecteerde waarden
+  kaGroepen: [],       // [{kantoor, agenten:[naam]}]
+  kaSelectie: new Set(),
+  kaTotaal: 0,
+  wdVan: null,         // datumbereik wijzigingsdatum (sleutel JJJJMMDD)
+  wdTot: null,
+  wdLeeg: false,
+  aantalSpans: {},     // key -> Map(waarde -> span) voor meebewegende aantallen
+  kaAgentSpans: new Map(),
+  kaKantoorSpans: new Map(),
+  sorteer: { index: null, richting: 1 },
+  pagina: 1,
+};
+
+/* ================================================================
+   Hulpjes: parsen van waarden
+   ================================================================ */
+function parseBedrag(s) {
+  s = (s || '').trim();
+  if (s === '') return null;
+  s = s.replace(/\./g, '').replace(',', '.');
+  const n = Number(s);
+  return Number.isFinite(n) ? Math.round(n * 100) : null;
+}
+
+function parseGetal(s) {
+  s = (s || '').trim();
+  if (s === '') return null;
+  const n = Number(s.replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
+/* 'dd-mm-jjjj' -> sorteersleutel JJJJMMDD, anders null */
+function parseDatumSleutel(s) {
+  const m = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec((s || '').trim());
+  if (!m) return null;
+  return (+m[3]) * 10000 + (+m[2]) * 100 + (+m[1]);
+}
+
+/* 'JJJJ-MM-DD' uit een date-input -> sorteersleutel JJJJMMDD */
+function datumInputSleutel(waarde) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(waarde || '');
+  if (!m) return null;
+  return (+m[1]) * 10000 + (+m[2]) * 100 + (+m[3]);
+}
+
+function bedragTabel(cents) { return cents === null ? '' : nfEur.format(cents / 100); }
+function bedragCsv(cents) {
+  if (cents === null) return '';
+  const neg = cents < 0 ? '-' : '';
+  const abs = Math.abs(cents);
+  return neg + Math.floor(abs / 100) + ',' + String(abs % 100).padStart(2, '0');
+}
+function toonWaarde(v) { return v === '' ? LEEG_LABEL : v; }
+
+/* Maatschappij: code en omschrijving naast elkaar ("H041 - Reaal Leven") */
+function maatschappijWeergave(code, oms) {
+  code = (code || '').trim();
+  oms = (oms || '').trim();
+  if (code && oms) return code + ' - ' + oms;
+  return code || oms || '';
+}
+
+/* ================================================================
+   Regel-parser: puntkomma-gescheiden, "quotes", "" als escape
+   ================================================================ */
+function parseRegel(regel) {
+  const velden = [];
+  let veld = '';
+  let inQuotes = false;
+  for (let i = 0; i < regel.length; i++) {
+    const t = regel[i];
+    if (inQuotes) {
+      if (t === '"') {
+        if (regel[i + 1] === '"') { veld += '"'; i++; }
+        else inQuotes = false;
+      } else veld += t;
+    } else if (t === '"' && veld === '') {
+      inQuotes = true;
+    } else if (t === ';') {
+      velden.push(veld); veld = '';
+    } else veld += t;
+  }
+  velden.push(veld);
+  return velden;
+}
+
+function parseExport(tekst) {
+  if (tekst.charCodeAt(0) === 0xFEFF) tekst = tekst.slice(1);
+  const regels = tekst.split('\n');
+  let kopregel = null;
+  const rijen = [];
+  let overgeslagen = 0;
+
+  let begin = 0;
+  for (; begin < regels.length; begin++) {
+    let r = regels[begin];
+    if (r.endsWith('\r')) r = r.slice(0, -1);
+    if (r !== '') { kopregel = parseRegel(r); begin++; break; }
+  }
+  const verwacht = kopregel ? Math.max(kopregel.length, 1) : AANTAL_KOLOMMEN;
+
+  /* herken oudere indelingen: exact de verwachte kolommen minus de ontbrekende */
+  let formaat = 'v18';
+  let mist = [];
+  if (kopregel) {
+    const kopTrim = kopregel.map((h) => h.trim());
+    for (const oud of OUDE_FORMATEN) {
+      const bronnen = VERWACHTE_KOLOMMEN
+        .filter((_, i) => !oud.mist.includes(i)).map((k) => k.bron);
+      if (kopTrim.length === bronnen.length &&
+          bronnen.every((b, i) => kopTrim[i] === b)) {
+        formaat = oud.naam;
+        mist = oud.mist;
+        break;
+      }
+    }
+  }
+
+  for (let li = begin; li < regels.length; li++) {
+    let r = regels[li];
+    if (r.endsWith('\r')) r = r.slice(0, -1);
+    if (r === '') continue; // lege regels stil overslaan
+    const velden = parseRegel(r);
+    if (velden.length !== verwacht) { overgeslagen++; continue; }
+    // oude indeling: lege kolommen invoegen zodat de indexen kloppen
+    for (const idx of mist) velden.splice(idx, 0, '');
+    for (let k = velden.length; k < AANTAL_KOLOMMEN; k++) velden.push('');
+    rijen.push({
+      c: velden,
+      ka: velden[0] + '\u0000' + velden[1],
+      mj: maatschappijWeergave(velden[5], velden[4]),
+      tp: parseBedrag(velden[14]),
+      pj: parseBedrag(velden[15]),
+      tn: parseGetal(velden[9]),
+      wd: parseDatumSleutel(velden[12]),
+      hv: parseDatumSleutel(velden[11]),
+      pv: parseDatumSleutel(velden[10]),
+    });
+  }
+  return { kopregel, rijen, overgeslagen, formaat };
+}
+
+/* ================================================================
+   Upload
+   ================================================================ */
+const dropZone = $('dropZone');
+const bestandInput = $('bestandInput');
+
+dropZone.addEventListener('click', () => bestandInput.click());
+dropZone.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); bestandInput.click(); }
+});
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('sleep'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('sleep'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('sleep');
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) laadBestand(f);
+});
+bestandInput.addEventListener('change', () => {
+  if (bestandInput.files[0]) laadBestand(bestandInput.files[0]);
+  bestandInput.value = '';
+});
+
+function laadBestand(file) {
+  const lezer = new FileReader();
+  lezer.onload = () => {
+    const tekst = new TextDecoder('windows-1252').decode(lezer.result);
+    const resultaat = parseExport(tekst);
+    staat.bestandsnaam = file.name;
+    staat.kopregel = resultaat.kopregel;
+    staat.formaat = resultaat.formaat;
+    staat.rijen = resultaat.rijen;
+    staat.overgeslagen = resultaat.overgeslagen;
+    staat.sorteer = { index: null, richting: 1 };
+    staat.pagina = 1;
+    staat.wdVan = null;
+    staat.wdTot = null;
+    staat.wdLeeg = false;
+    toonBestandsinfo();
+    bouwFilterData();
+    bouwFilterUI();
+    bouwTabelKop();
+    controleerKolomkoppeling(true);
+    verversAlles();
+  };
+  lezer.readAsArrayBuffer(file);
+}
+
+function toonBestandsinfo() {
+  const info = $('bestandInfo');
+  info.textContent = '';
+  const naam = document.createElement('strong');
+  naam.textContent = staat.bestandsnaam;
+  info.appendChild(naam);
+  info.appendChild(document.createTextNode(
+    ' — ' + nfInt.format(staat.rijen.length) + ' rijen ingelezen.'));
+
+  const badges = $('bestandBadges');
+  badges.textContent = '';
+  if (staat.overgeslagen > 0) {
+    const b = document.createElement('span');
+    b.className = 'badge badge-waarschuwing';
+    b.textContent = nfInt.format(staat.overgeslagen) +
+      (staat.overgeslagen === 1
+        ? ' rij overgeslagen (afwijkend kolomaantal)'
+        : ' rijen overgeslagen (afwijkend kolomaantal)');
+    badges.appendChild(b);
+  } else if (staat.rijen.length > 0) {
+    const b = document.createElement('span');
+    b.className = 'badge badge-ok';
+    b.textContent = 'Alle rijen ingelezen';
+    badges.appendChild(b);
+  }
+}
+
+/* ================================================================
+   Kolomkoppeling
+   ================================================================ */
+$('mappingKnop').addEventListener('click', () => {
+  const paneel = $('mappingPaneel');
+  if (paneel.hidden) controleerKolomkoppeling(false);
+  paneel.hidden = !paneel.hidden;
+});
+
+function controleerKolomkoppeling(autoNaUpload) {
+  const kop = (staat.kopregel || []).map((h) => h.trim());
+  const oud = OUDE_FORMATEN.find((f) => f.naam === staat.formaat) || null;
+  const mist = oud ? oud.mist : [];
+  const body = $('mappingBody');
+  body.textContent = '';
+  let aantalFout = 0;
+
+  VERWACHTE_KOLOMMEN.forEach((verwacht, i) => {
+    // bij oudere indelingen schuiven de kolommen na een ontbrekende positie op
+    let bronIndex = i;
+    let ontbreektOud = false;
+    if (oud) {
+      if (mist.includes(i)) { ontbreektOud = true; bronIndex = -1; }
+      else bronIndex = i - mist.filter((m) => m < i).length;
+    }
+    const gevonden = bronIndex >= 0 && bronIndex < kop.length ? kop[bronIndex] : null;
+    let status, ok = false;
+    if (ontbreektOud) {
+      status = '⚠ niet in dit bestand (oudere PROV2-indeling) — veld blijft leeg';
+      aantalFout++;
+    } else if (gevonden !== null && gevonden === verwacht.bron) {
+      status = '✓ gekoppeld'; ok = true;
+    } else {
+      const elders = kop.indexOf(verwacht.bron);
+      if (elders !== -1) status = '⚠ staat op positie ' + (elders + 1) + ' i.p.v. ' + (i + 1);
+      else if (gevonden === null) status = '⚠ kolom ontbreekt in bestand';
+      else status = '⚠ afwijkende kolomnaam';
+      aantalFout++;
+    }
+    const tr = document.createElement('tr');
+    [String(i + 1), verwacht.veld, verwacht.bron,
+     gevonden === null ? '—' : (gevonden === '' ? LEEG_LABEL : gevonden),
+     status].forEach((tekst, ci) => {
+      const td = document.createElement('td');
+      td.textContent = tekst;
+      if (ci === 4) td.className = ok ? 'status-ok' : 'status-fout';
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+
+  const extra = $('mappingExtra');
+  if (kop.length > AANTAL_KOLOMMEN) {
+    extra.hidden = false;
+    extra.textContent = 'Het bestand bevat ' + (kop.length - AANTAL_KOLOMMEN) +
+      ' extra kolom(men) na de verwachte 18; deze worden genegeerd: ' +
+      kop.slice(AANTAL_KOLOMMEN).map((h) => (h === '' ? LEEG_LABEL : h)).join(', ');
+  } else {
+    extra.hidden = true;
+    extra.textContent = '';
+  }
+
+  let samenvatting;
+  if (oud) {
+    samenvatting = 'Dit bestand gebruikt een ' + oud.tekst +
+      '. De ontbrekende velden blijven leeg; de overige ' + (AANTAL_KOLOMMEN - mist.length) +
+      ' velden zijn correct gekoppeld.';
+  } else if (aantalFout === 0) {
+    samenvatting = 'Alle 18 verwachte bronkolommen zijn op de juiste positie gevonden. ' +
+      'De koppeling hieronder toont per dashboardveld de gekoppelde bronkolom.';
+  } else {
+    samenvatting = aantalFout + ' van de 18 verwachte bronkolommen wijken af of ontbreken. ' +
+      'De velden worden op vaste positie (1–18) ingelezen; controleer de uitkomsten hieronder.';
+  }
+  $('mappingSamenvatting').textContent = samenvatting;
+
+  const banner = $('mappingBanner');
+  const extraKolommen = kop.length - AANTAL_KOLOMMEN;
+  if (aantalFout > 0 || extraKolommen > 0) {
+    const delen = [];
+    if (oud) delen.push(oud.tekst);
+    else if (aantalFout > 0) delen.push(aantalFout + ' afwijkende kolom' + (aantalFout === 1 ? '' : 'men'));
+    if (extraKolommen > 0) delen.push(extraKolommen + ' extra kolom' + (extraKolommen === 1 ? '' : 'men'));
+    $('mappingBannerDetail').textContent = delen.join(' en ') + '.';
+    banner.hidden = false;
+    if (autoNaUpload) $('mappingPaneel').hidden = false;
+  } else {
+    banner.hidden = true;
+    if (autoNaUpload) $('mappingPaneel').hidden = true;
+  }
+}
+
+/* ================================================================
+   Filterdata en filter-UI
+   ================================================================ */
+function kaSleutel(kantoor, agent) { return kantoor + '\u0000' + agent; }
+
+function bouwFilterData() {
+  // hiërarchie kantoor -> agenten
+  const perKantoor = new Map();
+  for (const rij of staat.rijen) {
+    const kantoor = rij.c[0], agent = rij.c[1];
+    if (!perKantoor.has(kantoor)) perKantoor.set(kantoor, new Set());
+    perKantoor.get(kantoor).add(agent);
+  }
+  staat.kaGroepen = [...perKantoor.keys()].sort(collator.compare).map((kantoor) => ({
+    kantoor,
+    agenten: [...perKantoor.get(kantoor)].sort(collator.compare),
+  }));
+  staat.kaSelectie = new Set();
+  for (const groep of staat.kaGroepen) {
+    for (const agent of groep.agenten) staat.kaSelectie.add(kaSleutel(groep.kantoor, agent));
+  }
+  staat.kaTotaal = staat.kaSelectie.size;
+
+  // checkbox-filters: unieke waarden, standaard alles geselecteerd
+  staat.filterWaarden = {};
+  staat.filterSelectie = {};
+  for (const f of FILTERS) {
+    const uniek = new Set();
+    for (const rij of staat.rijen) uniek.add(f.waarde(rij));
+    const waarden = [...uniek].sort((a, b) => {
+      if (a === '') return -1;
+      if (b === '') return 1;
+      if (f.numeriek) {
+        const na = Number(a), nb = Number(b);
+        if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+      }
+      return collator.compare(a, b);
+    });
+    staat.filterWaarden[f.key] = waarden;
+    staat.filterSelectie[f.key] = new Set(waarden);
+  }
+}
+
+function maakFilterKop(titel, metActies) {
+  const kop = document.createElement('div');
+  kop.className = 'filter-kop';
+  const titelSpan = document.createElement('span');
+  titelSpan.className = 'filter-titel';
+  titelSpan.textContent = titel;
+  const badge = document.createElement('span');
+  badge.className = 'filter-badge';
+  badge.hidden = true;
+  titelSpan.appendChild(badge);
+  kop.appendChild(titelSpan);
+  const acties = document.createElement('span');
+  acties.className = 'filter-acties';
+  if (metActies) {
+    for (const [actie, tekst] of [['alles', 'Alles'], ['geen', 'Geen']]) {
+      const knop = document.createElement('button');
+      knop.type = 'button';
+      knop.className = 'btn-klein';
+      knop.dataset.actie = actie;
+      knop.textContent = tekst;
+      acties.appendChild(knop);
+    }
+  }
+  kop.appendChild(acties);
+  return { kop, acties };
+}
+
+function maakZoekveld(label) {
+  const zoek = document.createElement('input');
+  zoek.type = 'search';
+  zoek.className = 'filter-zoek';
+  zoek.placeholder = 'Zoeken in ' + label.toLowerCase() + '…';
+  return zoek;
+}
+
+function bouwKantoorAgentSectie() {
+  const sectie = document.createElement('section');
+  sectie.className = 'filter';
+  sectie.dataset.key = 'kantooragent';
+  sectie.appendChild(maakFilterKop('Kantoor & agent', true).kop);
+  sectie.appendChild(maakZoekveld('kantoor of agent'));
+
+  const lijst = document.createElement('div');
+  lijst.className = 'ka-lijst';
+  staat.kaAgentSpans = new Map();
+  staat.kaKantoorSpans = new Map();
+
+  for (const groep of staat.kaGroepen) {
+    const groepEl = document.createElement('div');
+    groepEl.className = 'ka-groep';
+    groepEl.dataset.kantoor = groep.kantoor;
+
+    const rij = document.createElement('div');
+    rij.className = 'ka-kantoor';
+    const klap = document.createElement('button');
+    klap.type = 'button';
+    klap.className = 'ka-klap';
+    klap.textContent = '▸';
+    klap.setAttribute('aria-label', 'Agenten tonen of verbergen');
+    rij.appendChild(klap);
+
+    const label = document.createElement('label');
+    const kcb = document.createElement('input');
+    kcb.type = 'checkbox';
+    kcb.className = 'ka-kcb';
+    kcb.checked = true;
+    const naam = document.createElement('span');
+    naam.className = 'fo-tekst';
+    naam.textContent = toonWaarde(groep.kantoor);
+    naam.title = toonWaarde(groep.kantoor);
+    const aantal = document.createElement('span');
+    aantal.className = 'fo-aantal';
+    label.appendChild(kcb);
+    label.appendChild(naam);
+    label.appendChild(aantal);
+    rij.appendChild(label);
+    groepEl.appendChild(rij);
+    staat.kaKantoorSpans.set(groep.kantoor, { span: aantal, el: rij });
+
+    const agenten = document.createElement('div');
+    agenten.className = 'ka-agenten';
+    agenten.hidden = true;
+    for (const agent of groep.agenten) {
+      const optie = document.createElement('label');
+      optie.className = 'ka-agent';
+      const acb = document.createElement('input');
+      acb.type = 'checkbox';
+      acb.className = 'ka-acb';
+      acb.dataset.ka = kaSleutel(groep.kantoor, agent);
+      acb.checked = true;
+      const at = document.createElement('span');
+      at.className = 'fo-tekst';
+      at.textContent = toonWaarde(agent);
+      at.title = toonWaarde(agent);
+      const aa = document.createElement('span');
+      aa.className = 'fo-aantal';
+      optie.appendChild(acb);
+      optie.appendChild(at);
+      optie.appendChild(aa);
+      agenten.appendChild(optie);
+      staat.kaAgentSpans.set(acb.dataset.ka, { span: aa, el: optie });
+    }
+    groepEl.appendChild(agenten);
+    lijst.appendChild(groepEl);
+  }
+  sectie.appendChild(lijst);
+  return sectie;
+}
+
+function bouwDatumFilterSectie() {
+  const sectie = document.createElement('section');
+  sectie.className = 'filter';
+  sectie.dataset.key = 'wdatum';
+  const { kop, acties } = maakFilterKop('Wijzigingsdatum', false);
+  const wis = document.createElement('button');
+  wis.type = 'button';
+  wis.className = 'btn-klein';
+  wis.id = 'wdWis';
+  wis.textContent = 'Wis';
+  wis.title = 'Datumbereik wissen';
+  acties.appendChild(wis);
+  sectie.appendChild(kop);
+
+  const bereik = document.createElement('div');
+  bereik.className = 'datum-bereik';
+  [['wdVan', 'Van'], ['wdTot', 'Tot en met']].forEach(([id, tekst]) => {
+    const label = document.createElement('label');
+    const span = document.createElement('span');
+    span.textContent = tekst;
+    const invoer = document.createElement('input');
+    invoer.type = 'date';
+    invoer.id = id;
+    invoer.setAttribute('aria-label', tekst + ' wijzigingsdatum');
+    label.appendChild(span);
+    label.appendChild(invoer);
+    bereik.appendChild(label);
+  });
+  sectie.appendChild(bereik);
+
+  const leegLabel = document.createElement('label');
+  leegLabel.className = 'filter-optie';
+  const leegCb = document.createElement('input');
+  leegCb.type = 'checkbox';
+  leegCb.id = 'wdLeeg';
+  const leegTekst = document.createElement('span');
+  leegTekst.className = 'fo-tekst';
+  leegTekst.textContent = 'ook rijen zonder wijzigingsdatum';
+  leegLabel.appendChild(leegCb);
+  leegLabel.appendChild(leegTekst);
+  sectie.appendChild(leegLabel);
+  return sectie;
+}
+
+function bouwFilterUI() {
+  const houder = $('filterContainer');
+  houder.textContent = '';
+  const frag = document.createDocumentFragment();
+  staat.aantalSpans = {};
+
+  frag.appendChild(bouwKantoorAgentSectie());
+
+  for (const f of FILTERS) {
+    const sectie = document.createElement('section');
+    sectie.className = 'filter';
+    sectie.dataset.key = f.key;
+    sectie.appendChild(maakFilterKop(f.label, true).kop);
+    sectie.appendChild(maakZoekveld(f.label));
+
+    const lijst = document.createElement('div');
+    lijst.className = 'filter-lijst';
+    const spans = new Map();
+    for (const waarde of staat.filterWaarden[f.key]) {
+      const optie = document.createElement('label');
+      optie.className = 'filter-optie';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.dataset.waarde = waarde;
+      const tekst = document.createElement('span');
+      tekst.className = 'fo-tekst';
+      tekst.textContent = toonWaarde(waarde);
+      tekst.title = toonWaarde(waarde);
+      const aantal = document.createElement('span');
+      aantal.className = 'fo-aantal';
+      optie.appendChild(cb);
+      optie.appendChild(tekst);
+      optie.appendChild(aantal);
+      lijst.appendChild(optie);
+      spans.set(waarde, { span: aantal, el: optie });
+    }
+    staat.aantalSpans[f.key] = spans;
+    sectie.appendChild(lijst);
+    frag.appendChild(sectie);
+    // datumbereikfilter direct onder het wijzigingsreden-filter
+    if (f.key === 'wijzigingsreden') frag.appendChild(bouwDatumFilterSectie());
+  }
+  houder.appendChild(frag);
+}
+
+/* ================================================================
+   Filterevents (gedelegeerd)
+   ================================================================ */
+$('filterContainer').addEventListener('change', (e) => {
+  const cb = e.target;
+  if (!(cb instanceof HTMLInputElement)) return;
+
+  if (cb.id === 'wdVan' || cb.id === 'wdTot') {
+    staat.wdVan = datumInputSleutel($('wdVan').value);
+    staat.wdTot = datumInputSleutel($('wdTot').value);
+    verversAlles();
+    return;
+  }
+  if (cb.id === 'wdLeeg') {
+    staat.wdLeeg = cb.checked;
+    verversAlles();
+    return;
+  }
+  if (cb.type !== 'checkbox') return;
+  const sectie = cb.closest('.filter');
+  if (!sectie) return;
+  const key = sectie.dataset.key;
+
+  if (key === 'kantooragent') {
+    if (cb.classList.contains('ka-kcb')) {
+      // kantoor: alle agenten van de groep aan/uit
+      const groepEl = cb.closest('.ka-groep');
+      const kantoor = groepEl.dataset.kantoor;
+      groepEl.querySelectorAll('.ka-acb').forEach((acb) => {
+        acb.checked = cb.checked;
+        if (cb.checked) staat.kaSelectie.add(acb.dataset.ka);
+        else staat.kaSelectie.delete(acb.dataset.ka);
+      });
+      cb.indeterminate = false;
+      void kantoor;
+    } else if (cb.classList.contains('ka-acb')) {
+      if (cb.checked) staat.kaSelectie.add(cb.dataset.ka);
+      else staat.kaSelectie.delete(cb.dataset.ka);
+      werkKantoorCheckboxBij(cb.closest('.ka-groep'));
+    }
+    verversAlles();
+    return;
+  }
+
+  const selectie = staat.filterSelectie[key];
+  if (!selectie) return;
+  const waarde = cb.dataset.waarde;
+  if (cb.checked) selectie.add(waarde);
+  else selectie.delete(waarde);
+  verversAlles();
+});
+
+function werkKantoorCheckboxBij(groepEl) {
+  const agenten = [...groepEl.querySelectorAll('.ka-acb')];
+  const aan = agenten.filter((a) => a.checked).length;
+  const kcb = groepEl.querySelector('.ka-kcb');
+  kcb.checked = aan === agenten.length;
+  kcb.indeterminate = aan > 0 && aan < agenten.length;
+}
+
+$('filterContainer').addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'wdWis') {
+    $('wdVan').value = '';
+    $('wdTot').value = '';
+    $('wdLeeg').checked = false;
+    staat.wdVan = null;
+    staat.wdTot = null;
+    staat.wdLeeg = false;
+    verversAlles();
+    return;
+  }
+  const klap = e.target.closest('.ka-klap');
+  if (klap) {
+    const agenten = klap.closest('.ka-groep').querySelector('.ka-agenten');
+    agenten.hidden = !agenten.hidden;
+    klap.textContent = agenten.hidden ? '▸' : '▾';
+    return;
+  }
+  const knop = e.target.closest('button[data-actie]');
+  if (!knop) return;
+  const sectie = knop.closest('.filter');
+  const key = sectie.dataset.key;
+  const alles = knop.dataset.actie === 'alles';
+
+  if (key === 'kantooragent') {
+    staat.kaSelectie = new Set();
+    sectie.querySelectorAll('.ka-acb').forEach((acb) => {
+      acb.checked = alles;
+      if (alles) staat.kaSelectie.add(acb.dataset.ka);
+    });
+    sectie.querySelectorAll('.ka-groep').forEach(werkKantoorCheckboxBij);
+  } else {
+    const selectie = staat.filterSelectie[key];
+    selectie.clear();
+    if (alles) for (const w of staat.filterWaarden[key]) selectie.add(w);
+    sectie.querySelectorAll('.filter-lijst input[type="checkbox"]').forEach((cb) => {
+      cb.checked = alles;
+    });
+  }
+  verversAlles();
+});
+
+/* zoeken binnen een filtersectie */
+$('filterContainer').addEventListener('input', (e) => {
+  const veld = e.target;
+  if (!(veld instanceof HTMLInputElement) || !veld.classList.contains('filter-zoek')) return;
+  const q = veld.value.trim().toLowerCase();
+  const sectie = veld.closest('.filter');
+
+  if (sectie.dataset.key === 'kantooragent') {
+    sectie.querySelectorAll('.ka-groep').forEach((groepEl) => {
+      const kantoor = groepEl.dataset.kantoor.toLowerCase();
+      let agentTreffer = false;
+      groepEl.querySelectorAll('.ka-agent').forEach((optie) => {
+        const naam = optie.querySelector('.fo-tekst').textContent.toLowerCase();
+        const zichtbaar = q === '' || naam.includes(q) || kantoor.includes(q);
+        optie.hidden = !zichtbaar;
+        if (q !== '' && naam.includes(q)) agentTreffer = true;
+      });
+      const groepZichtbaar = q === '' || kantoor.includes(q) || agentTreffer;
+      groepEl.hidden = !groepZichtbaar;
+      if (q !== '' && agentTreffer) {
+        groepEl.querySelector('.ka-agenten').hidden = false;
+        groepEl.querySelector('.ka-klap').textContent = '▾';
+      }
+    });
+    return;
+  }
+
+  sectie.querySelectorAll('.filter-optie').forEach((optie) => {
+    const tekst = optie.querySelector('.fo-tekst').textContent.toLowerCase();
+    optie.hidden = q !== '' && !tekst.includes(q);
+  });
+});
+
+$('wisFilters').addEventListener('click', () => {
+  for (const f of FILTERS) {
+    staat.filterSelectie[f.key] = new Set(staat.filterWaarden[f.key]);
+  }
+  staat.kaSelectie = new Set();
+  for (const groep of staat.kaGroepen) {
+    for (const agent of groep.agenten) staat.kaSelectie.add(kaSleutel(groep.kantoor, agent));
+  }
+  staat.wdVan = null;
+  staat.wdTot = null;
+  staat.wdLeeg = false;
+
+  document.querySelectorAll('#filterContainer .filter').forEach((sectie) => {
+    sectie.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+      if (cb.id === 'wdLeeg') { cb.checked = false; return; }
+      cb.checked = true;
+      cb.indeterminate = false;
+    });
+    sectie.querySelectorAll('.filter-optie, .ka-agent, .ka-groep').forEach((el) => { el.hidden = false; });
+    sectie.querySelectorAll('.ka-agenten').forEach((el) => { el.hidden = true; });
+    sectie.querySelectorAll('.ka-klap').forEach((el) => { el.textContent = '▸'; });
+    const zoek = sectie.querySelector('.filter-zoek');
+    if (zoek) zoek.value = '';
+  });
+  if ($('wdVan')) { $('wdVan').value = ''; $('wdTot').value = ''; }
+  verversAlles();
+});
+
+/* ================================================================
+   Filteren + meebewegende aantallen (facet-telling)
+   ================================================================ */
+function verwerkFilters() {
+  const kaActief = staat.kaSelectie.size < staat.kaTotaal;
+  const wdActief = staat.wdVan !== null || staat.wdTot !== null;
+
+  /* secties in vaste volgorde; elke sectie krijgt één bit in het masker */
+  const secties = [];
+  secties.push({
+    soort: 'ka',
+    actief: kaActief,
+    pas: (r) => staat.kaSelectie.has(r.ka),
+  });
+  for (const f of FILTERS) {
+    const selectie = staat.filterSelectie[f.key];
+    secties.push({
+      soort: 'cb',
+      key: f.key,
+      waarde: f.waarde,
+      actief: selectie.size < staat.filterWaarden[f.key].length,
+      pas: (r) => selectie.has(f.waarde(r)),
+      telling: new Map(),
+    });
+  }
+  secties.push({
+    soort: 'wd',
+    actief: wdActief,
+    pas: (r) => {
+      if (r.wd === null) return staat.wdLeeg;
+      return (staat.wdVan === null || r.wd >= staat.wdVan) &&
+             (staat.wdTot === null || r.wd <= staat.wdTot);
+    },
+  });
+
+  const n = secties.length;
+  const VOL = (1 << n) - 1;
+  const kaTelling = new Map();
+  const gefilterd = [];
+  let somTp = 0, somPj = 0;
+
+  for (const rij of staat.rijen) {
+    let masker = 0;
+    for (let s = 0; s < n; s++) {
+      if (!secties[s].actief || secties[s].pas(rij)) masker |= (1 << s);
+    }
+    if (masker === VOL) {
+      gefilterd.push(rij);
+      if (rij.tp !== null) somTp += rij.tp;
+      if (rij.pj !== null) somPj += rij.pj;
+    }
+    /* meebewegende aantallen: een rij telt mee voor sectie s als hij aan
+       alle ANDERE secties voldoet (eigen sectie buiten beschouwing) */
+    for (let s = 0; s < n; s++) {
+      if ((masker | (1 << s)) !== VOL) continue;
+      const sectie = secties[s];
+      if (sectie.soort === 'ka') {
+        kaTelling.set(rij.ka, (kaTelling.get(rij.ka) || 0) + 1);
+      } else if (sectie.soort === 'cb') {
+        const w = sectie.waarde(rij);
+        sectie.telling.set(w, (sectie.telling.get(w) || 0) + 1);
+      }
+    }
+  }
+
+  staat.gefilterd = gefilterd;
+  staat.somTp = somTp;
+  staat.somPj = somPj;
+  staat.kaTelling = kaTelling;
+  staat.cbTelling = {};
+  for (const s of secties) if (s.soort === 'cb') staat.cbTelling[s.key] = s.telling;
+}
+
+function werkAantallenBij() {
+  // kantoor & agent
+  for (const groep of staat.kaGroepen) {
+    let somKantoor = 0;
+    for (const agent of groep.agenten) {
+      const sleutel = kaSleutel(groep.kantoor, agent);
+      const aantal = staat.kaTelling.get(sleutel) || 0;
+      somKantoor += aantal;
+      const reg = staat.kaAgentSpans.get(sleutel);
+      if (reg) {
+        reg.span.textContent = '(' + nfInt.format(aantal) + ')';
+        reg.el.classList.toggle('fo-nul', aantal === 0);
+      }
+    }
+    const kreg = staat.kaKantoorSpans.get(groep.kantoor);
+    if (kreg) {
+      kreg.span.textContent = '(' + nfInt.format(somKantoor) + ')';
+      kreg.el.classList.toggle('fo-nul', somKantoor === 0);
+    }
+  }
+  // checkbox-filters
+  for (const f of FILTERS) {
+    const telling = staat.cbTelling[f.key];
+    const spans = staat.aantalSpans[f.key];
+    if (!spans) continue;
+    for (const [waarde, reg] of spans) {
+      const aantal = telling.get(waarde) || 0;
+      reg.span.textContent = '(' + nfInt.format(aantal) + ')';
+      reg.el.classList.toggle('fo-nul', aantal === 0);
+    }
+  }
+}
+
+function werkFilterBadgesBij() {
+  document.querySelectorAll('#filterContainer .filter').forEach((sectie) => {
+    const key = sectie.dataset.key;
+    const badge = sectie.querySelector('.filter-badge');
+    if (!badge) return;
+    if (key === 'wdatum') {
+      badge.hidden = staat.wdVan === null && staat.wdTot === null;
+      badge.textContent = 'actief';
+      return;
+    }
+    let sel, totaal;
+    if (key === 'kantooragent') {
+      sel = staat.kaSelectie.size;
+      totaal = staat.kaTotaal;
+    } else {
+      sel = staat.filterSelectie[key].size;
+      totaal = staat.filterWaarden[key].length;
+    }
+    badge.hidden = sel === totaal;
+    badge.textContent = sel + '/' + totaal;
+  });
+}
+
+/* ================================================================
+   Sorteren
+   ================================================================ */
+function bouwTabelKop() {
+  const rij = $('tabelKopRij');
+  rij.textContent = '';
+  TABEL_KOLOMMEN.forEach((kolom, i) => {
+    const th = document.createElement('th');
+    th.setAttribute('scope', 'col');
+    const knop = document.createElement('button');
+    knop.type = 'button';
+    knop.dataset.index = String(i);
+    const tekst = document.createElement('span');
+    tekst.textContent = kolom.label;
+    const pijl = document.createElement('span');
+    pijl.className = 'sorteer-pijl';
+    pijl.textContent = '↕';
+    knop.appendChild(tekst);
+    knop.appendChild(pijl);
+    th.appendChild(knop);
+    rij.appendChild(th);
+  });
+}
+
+$('tabelKopRij').addEventListener('click', (e) => {
+  const knop = e.target.closest('button[data-index]');
+  if (!knop) return;
+  const index = Number(knop.dataset.index);
+  if (staat.sorteer.index === index) staat.sorteer.richting = -staat.sorteer.richting;
+  else staat.sorteer = { index, richting: 1 };
+  staat.pagina = 1;
+  verversTabel();
+});
+
+function sorteerGefilterd() {
+  const { index, richting } = staat.sorteer;
+  if (index === null) return;
+  const kolom = TABEL_KOLOMMEN[index];
+  if (kolom.sleutel) {
+    const sleutel = kolom.sleutel;
+    staat.gefilterd.sort((a, b) => {
+      const va = a[sleutel], vb = b[sleutel];
+      if (va === null && vb === null) return 0;
+      if (va === null) return 1;  // lege waarden altijd achteraan
+      if (vb === null) return -1;
+      return (va - vb) * richting;
+    });
+  } else {
+    staat.gefilterd.sort((a, b) => {
+      const va = kolom.waarde(a), vb = kolom.waarde(b);
+      if (va === '' && vb === '') return 0;
+      if (va === '') return 1;
+      if (vb === '') return -1;
+      return collator.compare(va, vb) * richting;
+    });
+  }
+}
+
+function werkSorteerIndicatorBij() {
+  const { index, richting } = staat.sorteer;
+  document.querySelectorAll('#tabelKopRij th').forEach((th, i) => {
+    const pijl = th.querySelector('.sorteer-pijl');
+    if (i === index) {
+      pijl.textContent = richting === 1 ? '▲' : '▼';
+      th.setAttribute('aria-sort', richting === 1 ? 'ascending' : 'descending');
+    } else {
+      pijl.textContent = '↕';
+      th.removeAttribute('aria-sort');
+    }
+  });
+}
+
+/* ================================================================
+   Tabel + paginering + KPI's
+   ================================================================ */
+$('vorigeKnop').addEventListener('click', () => {
+  if (staat.pagina > 1) { staat.pagina--; verversTabel(); }
+});
+$('volgendeKnop').addEventListener('click', () => {
+  const totaal = Math.max(1, Math.ceil(staat.gefilterd.length / RIJEN_PER_PAGINA));
+  if (staat.pagina < totaal) { staat.pagina++; verversTabel(); }
+});
+
+function verversTabel() {
+  sorteerGefilterd();
+  werkSorteerIndicatorBij();
+
+  const body = $('tabelBody');
+  body.textContent = '';
+  const totaalRijen = staat.gefilterd.length;
+  const totaalPaginas = Math.max(1, Math.ceil(totaalRijen / RIJEN_PER_PAGINA));
+  if (staat.pagina > totaalPaginas) staat.pagina = totaalPaginas;
+  const begin = (staat.pagina - 1) * RIJEN_PER_PAGINA;
+  const einde = Math.min(begin + RIJEN_PER_PAGINA, totaalRijen);
+
+  const frag = document.createDocumentFragment();
+  for (let i = begin; i < einde; i++) {
+    const rij = staat.gefilterd[i];
+    const tr = document.createElement('tr');
+    for (const kolom of TABEL_KOLOMMEN) {
+      const td = document.createElement('td');
+      if (kolom.type === 'bedrag') {
+        td.textContent = bedragTabel(kolom.waarde(rij));
+        td.className = 'getal';
+      } else if (kolom.type === 'getal') {
+        td.textContent = kolom.waarde(rij);
+        td.className = 'getal';
+      } else {
+        td.textContent = kolom.waarde(rij);
+      }
+      tr.appendChild(td);
+    }
+    frag.appendChild(tr);
+  }
+  body.appendChild(frag);
+
+  $('tabelLeeg').hidden = totaalRijen > 0;
+
+  const teller = $('rijTeller');
+  const totaalTekst = ' (van ' + nfInt.format(staat.rijen.length) + ' totaal)';
+  if (totaalRijen === 0) teller.textContent = '0 rijen' + totaalTekst;
+  else teller.textContent = nfInt.format(begin + 1) + '–' + nfInt.format(einde) +
+    ' van ' + nfInt.format(totaalRijen) + ' rijen' + totaalTekst;
+
+  $('paginaInfo').textContent = 'Pagina ' + nfInt.format(staat.pagina) +
+    ' van ' + nfInt.format(totaalPaginas);
+  $('vorigeKnop').disabled = staat.pagina <= 1;
+  $('volgendeKnop').disabled = staat.pagina >= totaalPaginas;
+}
+
+function verversKpis() {
+  $('kpiAantal').textContent = nfInt.format(staat.gefilterd.length);
+  $('kpiAantalSub').textContent = 'van ' + nfInt.format(staat.rijen.length) + ' totaal';
+  $('kpiTermijn').textContent = nfEur.format(staat.somTp / 100);
+  $('kpiJaar').textContent = nfEur.format(staat.somPj / 100);
+}
+
+function verversAlles() {
+  verwerkFilters();
+  staat.pagina = 1;
+  verversTabel();
+  verversKpis();
+  werkFilterBadgesBij();
+  werkAantallenBij();
+}
+
+/* ================================================================
+   CSV-export van de gefilterde (en gesorteerde) selectie
+   ================================================================ */
+function csvVeld(tekst) {
+  if (/[";\n\r]/.test(tekst)) return '"' + tekst.replace(/"/g, '""') + '"';
+  return tekst;
+}
+
+$('csvKnop').addEventListener('click', () => {
+  const regels = [TABEL_KOLOMMEN.map((k) => k.label).join(';')];
+  for (const rij of staat.gefilterd) {
+    const velden = TABEL_KOLOMMEN.map((kolom) => {
+      if (kolom.type === 'bedrag') return bedragCsv(kolom.waarde(rij));
+      return csvVeld(String(kolom.waarde(rij)));
+    });
+    regels.push(velden.join(';'));
+  }
+  const inhoud = '﻿' + regels.join('\r\n') + '\r\n';
+  const blob = new Blob([inhoud], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = 'portefeuille-provinciaal-' + d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* lege begintoestand */
+bouwTabelKop();
+</script>
+</body>
+</html>
