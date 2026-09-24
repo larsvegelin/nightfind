@@ -294,7 +294,8 @@ const TABEL_KOLOMMEN = [
 
 /* Checkbox-filters (kantoor & agent en wijzigingsdatum zijn aparte secties). */
 const FILTERS = [
-  { key: 'mij',            label: 'Maatschappij',    waarde: (r) => r.mj },
+  { key: 'mij',            label: 'Maatschappij',    waarde: (r) => r.mj,
+    zoekTekst: 'op code of omschrijving' },
   { key: 'hoofdbranche',   label: 'Hoofdbranche',    waarde: (r) => r.c[7] },
   { key: 'branche',        label: 'Branche',         waarde: (r) => r.c[8] },
   { key: 'wijzigingsreden',label: 'Wijzigingsreden', waarde: (r) => r.c[13] },
@@ -378,6 +379,20 @@ function bedragCsv(cents) {
   return neg + Math.floor(abs / 100) + ',' + String(abs % 100).padStart(2, '0');
 }
 function toonWaarde(v) { return v === '' ? LEEG_LABEL : v; }
+
+/* Zoeknormalisatie: kleine letters en accenten/speciale tekens plat slaan,
+   zodat "avero" ook "Avéro" vindt. Een zoekopdracht wordt gesplitst in
+   woorden die allemaal moeten voorkomen ("reaal leven" vindt H041 - Reaal Leven). */
+function zoekNorm(s) {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/ø/g, 'o').replace(/æ/g, 'ae').replace(/ß/g, 'ss')
+    .replace(/đ/g, 'd').replace(/ł/g, 'l');
+}
+function zoekTermen(q) { return zoekNorm(q).split(/\s+/).filter(Boolean); }
+function voldoetAanZoek(haystack, termen) {
+  return termen.every((t) => haystack.includes(t));
+}
 
 /* Maatschappij: code en omschrijving naast elkaar ("H041 - Reaal Leven") */
 function maatschappijWeergave(code, oms) {
@@ -704,11 +719,11 @@ function maakFilterKop(titel, metActies) {
   return { kop, acties };
 }
 
-function maakZoekveld(label) {
+function maakZoekveld(tekst) {
   const zoek = document.createElement('input');
   zoek.type = 'search';
   zoek.className = 'filter-zoek';
-  zoek.placeholder = 'Zoeken in ' + label.toLowerCase() + '…';
+  zoek.placeholder = 'Zoeken ' + tekst + '…';
   return zoek;
 }
 
@@ -717,7 +732,7 @@ function bouwKantoorAgentSectie() {
   sectie.className = 'filter';
   sectie.dataset.key = 'kantooragent';
   sectie.appendChild(maakFilterKop('Kantoor & agent', true).kop);
-  sectie.appendChild(maakZoekveld('kantoor of agent'));
+  sectie.appendChild(maakZoekveld('in kantoor of agent'));
 
   const lijst = document.createElement('div');
   lijst.className = 'ka-lijst';
@@ -728,6 +743,7 @@ function bouwKantoorAgentSectie() {
     const groepEl = document.createElement('div');
     groepEl.className = 'ka-groep';
     groepEl.dataset.kantoor = groep.kantoor;
+    groepEl.dataset.zoek = zoekNorm(toonWaarde(groep.kantoor));
 
     const rij = document.createElement('div');
     rij.className = 'ka-kantoor';
@@ -762,6 +778,8 @@ function bouwKantoorAgentSectie() {
     for (const agent of groep.agenten) {
       const optie = document.createElement('label');
       optie.className = 'ka-agent';
+      // agent doorzoekbaar op eigen naam én kantoornaam
+      optie.dataset.zoek = zoekNorm(toonWaarde(groep.kantoor) + ' ' + toonWaarde(agent));
       const acb = document.createElement('input');
       acb.type = 'checkbox';
       acb.className = 'ka-acb';
@@ -843,7 +861,7 @@ function bouwFilterUI() {
     sectie.className = 'filter';
     sectie.dataset.key = f.key;
     sectie.appendChild(maakFilterKop(f.label, true).kop);
-    sectie.appendChild(maakZoekveld(f.label));
+    sectie.appendChild(maakZoekveld(f.zoekTekst || ('in ' + f.label.toLowerCase())));
 
     const lijst = document.createElement('div');
     lijst.className = 'filter-lijst';
@@ -851,6 +869,8 @@ function bouwFilterUI() {
     for (const waarde of staat.filterWaarden[f.key]) {
       const optie = document.createElement('label');
       optie.className = 'filter-optie';
+      // voor maatschappij bevat dit code én omschrijving ("h041 - reaal leven")
+      optie.dataset.zoek = zoekNorm(toonWaarde(waarde));
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = true;
@@ -959,45 +979,57 @@ $('filterContainer').addEventListener('click', (e) => {
   const sectie = knop.closest('.filter');
   const key = sectie.dataset.key;
   const alles = knop.dataset.actie === 'alles';
+  // met een actieve zoekopdracht werken Alles/Geen alleen op de zoekresultaten
+  const zoekVeld = sectie.querySelector('.filter-zoek');
+  const zoekActief = zoekVeld && zoekVeld.value.trim() !== '';
 
   if (key === 'kantooragent') {
-    staat.kaSelectie = new Set();
-    sectie.querySelectorAll('.ka-acb').forEach((acb) => {
-      acb.checked = alles;
-      if (alles) staat.kaSelectie.add(acb.dataset.ka);
+    sectie.querySelectorAll('.ka-groep').forEach((groepEl) => {
+      if (zoekActief && groepEl.hidden) return;
+      groepEl.querySelectorAll('.ka-agent').forEach((optie) => {
+        if (zoekActief && optie.hidden) return;
+        const acb = optie.querySelector('.ka-acb');
+        acb.checked = alles;
+        if (alles) staat.kaSelectie.add(acb.dataset.ka);
+        else staat.kaSelectie.delete(acb.dataset.ka);
+      });
     });
     sectie.querySelectorAll('.ka-groep').forEach(werkKantoorCheckboxBij);
   } else {
     const selectie = staat.filterSelectie[key];
-    selectie.clear();
-    if (alles) for (const w of staat.filterWaarden[key]) selectie.add(w);
-    sectie.querySelectorAll('.filter-lijst input[type="checkbox"]').forEach((cb) => {
+    sectie.querySelectorAll('.filter-optie').forEach((optie) => {
+      const cb = optie.querySelector('input[type="checkbox"]');
+      if (!cb || cb.dataset.waarde === undefined) return;
+      if (zoekActief && optie.hidden) return;
       cb.checked = alles;
+      if (alles) selectie.add(cb.dataset.waarde);
+      else selectie.delete(cb.dataset.waarde);
     });
   }
   verversAlles();
 });
 
-/* zoeken binnen een filtersectie */
+/* zoeken binnen een filtersectie: alle zoekwoorden moeten voorkomen,
+   ongevoelig voor hoofdletters en accenten */
 $('filterContainer').addEventListener('input', (e) => {
   const veld = e.target;
   if (!(veld instanceof HTMLInputElement) || !veld.classList.contains('filter-zoek')) return;
-  const q = veld.value.trim().toLowerCase();
+  const termen = zoekTermen(veld.value);
   const sectie = veld.closest('.filter');
 
   if (sectie.dataset.key === 'kantooragent') {
     sectie.querySelectorAll('.ka-groep').forEach((groepEl) => {
-      const kantoor = groepEl.dataset.kantoor.toLowerCase();
       let agentTreffer = false;
       groepEl.querySelectorAll('.ka-agent').forEach((optie) => {
-        const naam = optie.querySelector('.fo-tekst').textContent.toLowerCase();
-        const zichtbaar = q === '' || naam.includes(q) || kantoor.includes(q);
-        optie.hidden = !zichtbaar;
-        if (q !== '' && naam.includes(q)) agentTreffer = true;
+        // agent-haystack bevat ook de kantoornaam, dus een kantoortreffer
+        // laat automatisch alle agenten van dat kantoor zien
+        const past = termen.length === 0 || voldoetAanZoek(optie.dataset.zoek, termen);
+        optie.hidden = !past;
+        if (termen.length > 0 && past) agentTreffer = true;
       });
-      const groepZichtbaar = q === '' || kantoor.includes(q) || agentTreffer;
-      groepEl.hidden = !groepZichtbaar;
-      if (q !== '' && agentTreffer) {
+      const kantoorPast = voldoetAanZoek(groepEl.dataset.zoek, termen);
+      groepEl.hidden = termen.length > 0 && !kantoorPast && !agentTreffer;
+      if (termen.length > 0 && !groepEl.hidden && agentTreffer) {
         groepEl.querySelector('.ka-agenten').hidden = false;
         groepEl.querySelector('.ka-klap').textContent = '▾';
       }
@@ -1006,8 +1038,7 @@ $('filterContainer').addEventListener('input', (e) => {
   }
 
   sectie.querySelectorAll('.filter-optie').forEach((optie) => {
-    const tekst = optie.querySelector('.fo-tekst').textContent.toLowerCase();
-    optie.hidden = q !== '' && !tekst.includes(q);
+    optie.hidden = termen.length > 0 && !voldoetAanZoek(optie.dataset.zoek, termen);
   });
 });
 
