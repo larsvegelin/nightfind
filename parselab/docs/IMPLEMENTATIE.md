@@ -9,11 +9,11 @@ Alles wat er is, hoe je het live zet, en in welke volgorde. Eén document om van
 | Bestand | Wat het is | Waar het voor is |
 |---|---|---|
 | `parselab/ParseLab.html` | Het hele dashboard met de drie webtools erin, 2,8 MB | Dubbelklikken en werken, zonder installatie. Website uitlezen vraagt de server. |
-| `parselab/ParsePDF.html` | ParsePDF als losse pagina, 101 kB | Op elke webhost te zetten; werkt met de Supabase-login. |
-| `parselab/dist/parsepdf.js` + `embed-loader.html` | Dezelfde ParsePDF als één script | **De makkelijkste weg voor Webflow:** één embed in plaats van veertien. |
+| `parselab/ParsePDF.html` | de PDF-bron als losse pagina, 101 kB | Op elke webhost te zetten; werkt met de Supabase-login. |
+| `parselab/dist/parsepdf.js` + `embed-loader.html` | Dezelfde de PDF-bron als één script | **De makkelijkste weg voor Webflow:** één embed in plaats van veertien. |
 | `parselab/webflow/*.html` | De drieëntwintig embeds, elk onder de 10.000 tekens | De plakweg, als je liever geen extern script laadt. |
-| `parselab/tools/parsescraper.html` | ParseScraper als los bestand | Werkt met de ParseLab-server ernaast; zonder server zegt hij dat. |
-| `parselab/tools/parseboard.html` | ParseBoard als los bestand | Werkt volledig in de browser, geen server nodig. |
+| `parselab/tools/parsescraper.html` | de website-bron als los bestand | Werkt met de ParseLab-server ernaast; zonder server zegt hij dat. |
+| `parselab/tools/parseboard.html` | het dashboard als los bestand | Werkt volledig in de browser, geen server nodig. |
 | `parselab/tools/parselab-extension.zip` | De browserextensie | Formulieren invullen en uitlezen op pagina's waar je moet inloggen. |
 | `parselab/server/server.js` | De server | Website uitlezen, taken plannen, en alle AI-eindpunten. |
 
@@ -21,13 +21,13 @@ Alles wat er is, hoe je het live zet, en in welke volgorde. Eén document om van
 
 ## 2. De snelste weg naar iets werkends
 
-**Vandaag, zonder server:** stuur `ParseLab.html` naar jezelf en dubbelklik. ParsePDF en ParseBoard werken volledig, ParseForm toont de extensie-uitleg, Website uitlezen zegt dat de server niet draait. Goed genoeg om iemand te laten zien wat het is.
+**Vandaag, zonder server:** stuur `ParseLab.html` naar jezelf en dubbelklik. de PDF-bron en het dashboard werken volledig, formulier invullen toont de extensie-uitleg, Website uitlezen zegt dat de server niet draait. Goed genoeg om iemand te laten zien wat het is.
 
-**Deze week, op de site:** zet ParsePDF op je Webflow-pagina volgens §3, met de loader. Zet de server erbij volgens §4 zodra je Website uitlezen of de AI-knoppen wilt.
+**Deze week, op de site:** zet de PDF-bron op je Webflow-pagina volgens §3, met de loader. Zet de server erbij volgens §4 zodra je Website uitlezen of de AI-knoppen wilt.
 
 ---
 
-## 3. ParsePDF op de site
+## 3. de PDF-bron op de site
 
 ### 3.1 Met één embed (aanbevolen)
 
@@ -70,11 +70,11 @@ Online: `Dockerfile`, `railway.json` en `render.yaml` staan klaar. Kies de map `
 
 | Eindpunt | Voor | Wat er heen gaat |
 |---|---|---|
-| `POST /api/parsepdf/velden` | ParsePDF | tekst van dat ene document plus de gevonden velden |
-| `POST /api/parsepdf/regel` | ParsePDF | alleen de zin van de gebruiker ("het totaalbedrag onderaan pagina 1"); nooit het document |
-| `POST /api/parsepdf/detect` | ParsePDF (tool) | tekst van dat ene document |
-| `POST /api/scrape/kolommen` | ParseScraper | kolomnamen en drie voorbeeldwaarden |
-| `POST /api/board/panelen` | ParseBoard | kolomnamen en drie voorbeeldrijen |
+| `POST /api/parsepdf/velden` | de PDF-bron | tekst van dat ene document plus de gevonden velden |
+| `POST /api/parsepdf/regel` | de PDF-bron | alleen de zin van de gebruiker ("het totaalbedrag onderaan pagina 1"); nooit het document |
+| `POST /api/parsepdf/detect` | de PDF-bron (tool) | tekst van dat ene document |
+| `POST /api/scrape/kolommen` | de website-bron | kolomnamen en drie voorbeeldwaarden |
+| `POST /api/board/panelen` | het dashboard | kolomnamen en drie voorbeeldrijen |
 
 ---
 
@@ -121,14 +121,14 @@ De vier tools staan niet los van elkaar; wat de een oplevert gaat door naar de v
 
 ```
 Website uitlezen ─┐
-                  ├─► Overzicht maken (ParseBoard) ─► bewaren als project
+                  ├─► Overzicht maken (het dashboard) ─► bewaren als project
 Documenten uitlezen ┘
-                  └─► Formulieren invullen (ParseForm, via de extensie)
+                  └─► Formulieren invullen (formulier invullen, via de extensie)
 ```
 
-- In **ParseScraper** staat na een ronde de knop *Overzicht maken van deze rijen*.
-- In **ParsePDF** staat op de downloadstap *Maak er een overzicht van*, naast *Vul hiermee een formulier in*.
-- Beide sturen `parselab:handover { naar, naam, kolommen, rijen }` naar de schil. Die onthoudt het pakket, gaat naar de gekozen tool en levert het af met `parselab:data` zodra die tool `parselab:ready` meldt. ParseBoard laadt de rijen als eigen bron en springt naar stap 2, waar je de kolomtypen controleert.
+- In **de website-bron** staat na een ronde de knop *Overzicht maken van deze rijen*.
+- In **de PDF-bron** staat op de downloadstap *Maak er een overzicht van*, naast *Vul hiermee een formulier in*.
+- Beide sturen `parselab:handover { naar, naam, kolommen, rijen }` naar de schil. Die onthoudt het pakket, gaat naar de gekozen tool en levert het af met `parselab:data` zodra die tool `parselab:ready` meldt. het dashboard laadt de rijen als eigen bron en springt naar stap 2, waar je de kolomtypen controleert.
 - Er gaat niets over het internet: het blijft binnen de browser, van het ene iframe naar het andere via de schil.
 
 ## 7. Het dashboard
@@ -149,7 +149,7 @@ cd .. && python3 -m http.server 8765            # map boven parselab
 cd parselab/tests
 node qa.mjs          # 98 controles over het hele dashboard en de tools
 node styleguide.mjs  # 16 controles op de vormgeving
-node webflow.mjs     # 117 controles op de ParsePDF-embeds (start zelf wat hij nodig heeft)
+node webflow.mjs     # 117 controles op de de PDF-bron-embeds (start zelf wat hij nodig heeft)
 ```
 
 In `parselab/tests/pdfs/` staan acht proefdocumenten met de uitkomsten die eruit horen te komen, waaronder een webshopfactuur met kolomkoppen, een formulier met labels naast de waarden, en een scan zonder tekstlaag.
@@ -158,11 +158,11 @@ In `parselab/tests/pdfs/` staan acht proefdocumenten met de uitkomsten die eruit
 
 ## 9. Volgorde die ik zou aanhouden
 
-1. **ParsePDF live** met de loader en de Supabase-tabellen uit §5. Dat is het stuk dat af is.
+1. **de PDF-bron live** met de loader en de Supabase-tabellen uit §5. Dat is het stuk dat af is.
 2. **De server erbij** zodra je de AI-knoppen of Website uitlezen wilt aanbieden; zet meteen `PARSELAB_API_TOKEN`.
 3. **Echt inloggen** in het dashboard (nu is het een formaliteit) — dat blokkeert alles wat met team en delen te maken heeft.
 4. **Verbruik en AI-tegoeden zichtbaar** in de schil, zodat mensen weten wat ze opmaken.
-5. **ParseScraper uitbreiden** met de voorbeeldtabel en het verschil tussen ronden; dat maakt er een bewakingstool van.
+5. **de website-bron uitbreiden** met de voorbeeldtabel en het verschil tussen ronden; dat maakt er een bewakingstool van.
 6. **Team en rollen**, pas als 3 er is.
 
 ---

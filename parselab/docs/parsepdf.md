@@ -1,4 +1,4 @@
-# ParsePDF — per element
+# de PDF-bron — per element
 
 Basis: `tools/parsepdf.html` (de "PDF Scraper"). Alles draait in de browser: PDF-parsing, regels, export, en optioneel structuurherkenning via de Claude API.
 
@@ -6,7 +6,7 @@ Basis: `tools/parsepdf.html` (de "PDF Scraper"). Alles draait in de browser: PDF
 
 | Element | Status |
 |---|---|
-| Naam "ParsePDF" overal, woordenlijst (uitlezen, regel, sjabloon, bestand) | Toegepast |
+| Naam "de PDF-bron" overal, woordenlijst (uitlezen, regel, sjabloon, bestand) | Toegepast |
 | Branchekeuze → na de eerste upload "Dit lijkt een factuur. Klopt dat?" met herkenning factuur/bon/loonstrook/rapport | Toegepast; oude branchekeuze en opslag verwijderd |
 | Twee startroutes: Documenten uitlezen, Eerst rondkijken | Toegepast |
 | Eén rondleiding van drie stappen, geen losse instel-wizard | Toegepast |
@@ -22,7 +22,7 @@ Basis: `tools/parsepdf.html` (de "PDF Scraper"). Alles draait in de browser: PDF
 | API-sleutel weg; "Laat ParseLab de velden herkennen" met opt-in per document via `window.PARSELAB_API` | Toegepast; het endpoint zelf moet nog bestaan |
 | Regels om na te kijken gemarkeerd en als filter bovenaan | Toegepast |
 | "Download voor Excel" standaard, CSV altijd `;` zonder keuze, "Kopiëren — plak in Excel of Sheets" | Toegepast |
-| "Vul hiermee een formulier in" → invullijst en ParseForm openen in het dashboard | Toegepast |
+| "Vul hiermee een formulier in" → invullijst en formulier invullen openen in het dashboard | Toegepast |
 | Taal volgt het dashboard; taalkeuze verborgen als ingebed | Toegepast |
 | Eigen zijbalk verborgen in het dashboard; secties, tellers en openen via `postMessage` | Toegepast |
 
@@ -40,7 +40,7 @@ Basis: `tools/parsepdf.html` (de "PDF Scraper"). Alles draait in de browser: PDF
 
 ### Instel-wizard en rondleiding
 - **Nu:** "Onboarding — PDF Scraper instellen", "Start rondleiding".
-- **Simpeler:** één rondleiding van drie stappen, in de tool zelf (upload, aanwijzen, exporteren), en niet als apart scherm. Naam "PDF Scraper" wordt overal "ParsePDF".
+- **Simpeler:** één rondleiding van drie stappen, in de tool zelf (upload, aanwijzen, exporteren), en niet als apart scherm. Naam "PDF Scraper" wordt overal "de PDF-bron".
 - **Prioriteit:** 2
 
 ## Navigatie in de tool (Home · Documenten · Kolommen & templates · Resultaten & export · Automatiseren)
@@ -109,16 +109,16 @@ Basis: `tools/parsepdf.html` (de "PDF Scraper"). Alles draait in de browser: PDF
 - **Simpeler:** standaard "Download voor Excel" (xlsx). Het scheidingsteken is een implementatiedetail; wie een CSV wil, krijgt een Nederlandse (`;`) zonder keuze. "Kopiëren" blijft, met de tekst "Plak in Excel of Sheets".
 - **Prioriteit:** 1
 
-### Doorgeven aan ParseForm
+### Doorgeven aan formulier invullen
 - **Nu:** genoemd in de pagina-spec als feature, niet in de tool.
-- **Simpeler:** één knop na de export: "Vul hiermee een formulier in" die de tabel als invullijst naar ParseForm stuurt. Dit is de reden dat de suite één product is.
+- **Simpeler:** één knop na de export: "Vul hiermee een formulier in" die de tabel als invullijst naar formulier invullen stuurt. Dit is de reden dat de suite één product is.
 - **Prioriteit:** 2
 
 ## Automatiseren
 
 ### Pagina "Automatiseren"
 - **Nu:** aparte sectie.
-- **Simpeler:** wordt een keuze op de laatste stap: "Elke keer dat ik hier PDF's neerzet, gebruik sjabloon X en zet het resultaat in ParseBoard". Zonder backend kan de tool alleen automatiseren zolang het tabblad open staat; benoem dat eerlijk of laat de sectie weg tot er een backend is.
+- **Simpeler:** wordt een keuze op de laatste stap: "Elke keer dat ik hier PDF's neerzet, gebruik sjabloon X en zet het resultaat in het dashboard". Zonder backend kan de tool alleen automatiseren zolang het tabblad open staat; benoem dat eerlijk of laat de sectie weg tot er een backend is.
 - **Prioriteit:** 2
 
 ## Overig

@@ -1,4 +1,4 @@
-# ParsePDF in het dashboard zetten
+# de PDF-bron in het dashboard zetten
 
 Drieëntwintig embeds op één nieuwe Webflow-pagina, of één embed via `dist/embed-loader.html`. Reken op twintig minuten.
 Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
@@ -21,7 +21,7 @@ Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 | `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
 | `8-voorstel.html` | Doorkijkscherm met gearceerde velden en het voorstel |
 | `9-labels.html` | Labels per vlak, alles selecteren, goedkeuren en het OCR-aanbod |
-| `9b-uitleg.html` | "Hoe werkt ParsePDF?" in vijf stappen, met een voorbeeld dat je meteen kunt proberen |
+| `9b-uitleg.html` | "Hoe werkt de PDF-bron?" in vijf stappen, met een voorbeeld dat je meteen kunt proberen |
 | `10-ai.html` | Uitlezen met AI: pakketcontrole, toestemming en tegoeden |
 | `11-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
 | `12-verwerken.html` | Verwerking, limietbewaking, controle over alle documenten en opstarten |
@@ -32,10 +32,10 @@ Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens. Splits je la
 
 ## 2. De pagina maken
 
-1. Webflow Designer → **Pages** → **+** → naam `ParsePDF tool`, slug `parsepdf-tool`.
+1. Webflow Designer → **Pages** → **+** → naam `de PDF-bron tool`, slug `parsepdf-tool`.
    Wil je hem onder het dashboard hangen, maak dan eerst een folder `tools` en kies die als parent; het pad wordt dan `/tools/parsepdf-tool`.
 2. Page settings → SEO → zet **Exclude from search results** aan. Dit is een pagina achter de login en hoort niet in Google.
-3. Titel: `ParsePDF — ParseLab`. Beschrijving mag leeg blijven.
+3. Titel: `de PDF-bron — ParseLab`. Beschrijving mag leeg blijven.
 
 ## 3. De opbouw plaatsen
 
@@ -74,7 +74,7 @@ De volgorde van de embeds is niet vrij. Embed 12 gebruikt wat 1 tot en met 11 kl
 
 ## 4. Koppelen aan het dashboard
 
-Zet op `/dashboard` de kaart van ParsePDF om van "Binnenkort" naar een werkende knop, met een link naar de nieuwe pagina. Zeg het als je wilt dat ik dat in de dashboard-embed aanpas; dan haal ik meteen de "Binnenkort"-pill weg voor deze tool.
+Zet op `/dashboard` de kaart van de PDF-bron om van "Binnenkort" naar een werkende knop, met een link naar de nieuwe pagina. Zeg het als je wilt dat ik dat in de dashboard-embed aanpas; dan haal ik meteen de "Binnenkort"-pill weg voor deze tool.
 
 ---
 

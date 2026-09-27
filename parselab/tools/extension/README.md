@@ -3,10 +3,10 @@
 ParseLab is een kleine uitbreiding voor Chrome (en Edge). Hij doet twee dingen, allebei in je eigen
 browser, op de pagina die je zelf open hebt:
 
-- **ParseForm — formulieren laten invullen.** Je maakt een lijst in Excel, ParseLab vult het
+- **formulier invullen — formulieren laten invullen.** Je maakt een lijst in Excel, ParseLab vult het
   formulier op de website regel voor regel in en drukt op Opslaan. Handig voor portalen en
   extranetten waar je anders 30 keer hetzelfde intypt.
-- **ParseScraper — websites uitlezen.** Klik op een prijs, een naam of één regel van een lijst, en je
+- **de website-bron — websites uitlezen.** Klik op een prijs, een naam of één regel van een lijst, en je
   krijgt alles netjes in een Excel-bestand.
 
 Er gaat niets naar buiten: geen server, geen account, geen kopie van je gegevens. Alles blijft op
@@ -49,7 +49,7 @@ dat jij daar op het icoon klikt.
    regels er gaan lopen ("Start · 24 regels"). Na afloop zie je één samenvatting:
    "24 regels gedaan, 3 om na te kijken".
 
-### Je lijst maken (ParseForm)
+### Je lijst maken (formulier invullen)
 
 De snelste weg: klik op **Velden ophalen**. ParseLab kijkt welke invulvelden er nu op de pagina
 staan — ook die in webcomponenten — en zet ze op een rij: kolomnaam, soort veld en label. Met het
@@ -69,7 +69,7 @@ en CSV werken allebei.
 - Bij een formulier zie je per veld een voorbeeldwaarde uit de eerste regel van je lijst, zodat je
   vóór het starten ziet dat het klopt.
 
-### Uitlezen (ParseScraper)
+### Uitlezen (de website-bron)
 
 Bij elke *Uitlezen*-stap kies je *Wat wil je hebben?*: de tekst, de link of de afbeelding. Met het
 vinkje *Maak er een getal van* wordt "€ 49,95" netjes 49,95. **Download bestand** geeft een

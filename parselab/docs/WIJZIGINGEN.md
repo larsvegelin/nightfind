@@ -6,7 +6,40 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 21)
+## Wat er het laatst veranderde (ronde 22)
+
+**Vraag:** "noem het niet allemaal verschillende namen meer, maak 1 interface waaruit je kan kiezen uit extract data from a pdf, external website, a excel / or other data file, en dan maakt die tool dat gestructureerd en kan parsen en kan verwerken naar een dashboard … pas gehele flow en html aan naar dit."
+
+### Eén naam, één interface (`index.html`)
+
+De vijf productnamen (ParsePDF, ParseScraper, ParseSheet, ParseBoard, ParseForm) zijn uit de interface verdwenen. Wat overblijft is **ParseLab**, met drie stappen op één pagina:
+
+- **Stap 1 — Waar staat je data?** Drie grote kaarten: *Data uit een PDF*, *Data uit een website*, *Data uit Excel of CSV*. Geen merknamen meer, maar de bron zelf.
+- **Stap 2 — Je gestructureerde data.** Alle tabellen onder elkaar met herkomst, omvang en tijdstip.
+- **Stap 3 — In welk formaat?** Excel, CSV, dashboard of rapport (`.md` + `.html`), in de opmaak van het voorbeeldrapport.
+
+Verder in de schil:
+- De weergave `#werk`/`#overview` is er niet meer; alles zit in `#start` ("Data-extractie"). Oude links komen automatisch op die startpagina uit.
+- De navigatie heeft drie items: **Data-extractie**, **Bestanden**, **Hulp**. De zijbalkgroep heet nu *Bronnen en uitvoer*; de bronnen heten *PDF-document*, *Website*, *Databestand*, *Dashboard*, *Formulier invullen*.
+- De bewaarde projecten staan onderaan de startpagina als **Bewaarde opzetten** (de aparte overzichtspagina is vervallen).
+- Elke tabel heeft nu ook zelf een knop **Rapport**, zodat je van één bron direct een rapport maakt.
+- De woordenlijst in Hulp is herschreven rond de nieuwe begrippen: bron, gestructureerde data, sjabloon, taak, formaat.
+
+### De bronpagina's (`tools/*.html`)
+
+Titels en koppen dragen de bron, niet een merk: *Data uit een PDF · ParseLab*, *Data uit een website · ParseLab*, *Data uit Excel of CSV · ParseLab*, *Dashboard · ParseLab*. Meldingen en verwijzingen tussen de pagina's zijn mee veranderd.
+
+**Wat níet veranderde,** zodat bestaande opzetten blijven werken: de interne sleutels (`pdf`, `scrape`, `sheet`, `board`, `form`), de hash-adressen (`#pdf/upload`, `#scrape/url`, …), alle `parselab:*`-berichten en de opslagsleutels in de browser. De marketingpagina in `webflow/` houdt bewust zijn eigen naam.
+
+### Documentatie en tests
+
+README, `docs/00-overzicht.md`, `docs/werkbank.md` en de andere app-docs beschrijven nu één tool met drie bronnen en vier formaten. In de CI-workflow heet de stap *Werkstroom (bron → gestructureerde data → Excel, dashboard, rapport)*.
+
+Tests aangepast en groen: `tests/qa.mjs` (drie bronkaarten, drie stappen, één naam in de kop), `tests/werkbank.mjs` (één keuze met drie bronnen), `tests/styleguide.mjs` (`#start` in plaats van `#overview`). Tellers: werkbank 29/29, qa 107/108 (de enige uitval is een certificaatfout van de testcontainer, niet van de code), styleguide 16/16, webflow 117/117, extensie 9/9 + 10/10 + 11/11 + 13/13.
+
+---
+
+## Ronde 21
 
 **Vraag:** maak er één grote tool van die PDF's, websites en ongestructureerde Excel-data gestructureerd kan maken — als Excel of als dashboard — met alle tools in één geheel, aparte pagina's per tool, en een md-bestand samen met een html met alles erin.
 

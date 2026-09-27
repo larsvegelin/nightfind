@@ -42,7 +42,7 @@ Het dashboard is de schil om de vier tools heen: inloggen, overzicht, je project
 4. **Zoeken is één veld over namen.** Niet over de inhoud van projecten, niet over bestanden.
 5. **Bestanden is een lijst.** Geen mappen, geen labels, geen zoeken in de inhoud.
 6. **Geen geschiedenis.** Wat er drie ronden geleden uitkwam is weg zodra je het bestand kwijt bent.
-7. **Vier tools, één maat.** Elke tool krijgt dezelfde werkbank, terwijl ParseBoard eigenlijk het hele scherm wil en ParseForm vooral uitleg is.
+7. **Vier tools, één maat.** Elke tool krijgt dezelfde werkbank, terwijl het dashboard eigenlijk het hele scherm wil en formulier invullen vooral uitleg is.
 
 ---
 
@@ -67,7 +67,7 @@ Alles staat in `DASHBOARD-styleguide.md`; dit is wat er in de praktijk toe doet 
 ## 4. Functies die erbij moeten
 
 ### 4.1 Echt inloggen
-Een inloglink per mail (magic link), of Supabase-auth zoals de Webflow-versie van ParsePDF al gebruikt. Zolang dit er niet is, blijft "per gebruiker" een afspraak in plaats van een slot. Dit is de kop die van alle andere punten de voorwaarde is.
+Een inloglink per mail (magic link), of Supabase-auth zoals de Webflow-versie van de PDF-bron al gebruikt. Zolang dit er niet is, blijft "per gebruiker" een afspraak in plaats van een slot. Dit is de kop die van alle andere punten de voorwaarde is.
 
 ### 4.2 Team en rollen
 Organisatie, leden, en per project wie eigenaar is. In de opslag betekent dat: `owner` wordt `org_id` plus `created_by`, en de sleutel van `/api/store/:key` wordt de organisatie in plaats van het e-mailadres. Rollen: beheerder (facturatie, leden), gebruiker (alles behalve dat), meekijker (alleen resultaten).
@@ -79,20 +79,20 @@ Bovenaan drie dingen die er gisteren gebeurden: taken die liepen (met uitkomst),
 Elke ronde bewaren met datum, aantal rijen en het bestand. Een lijstje "laatste 10 ronden" in de zijbalk van een project, met downloadknop per ronde. Vraagt opslag op de server (nu bewaart hij alleen de laatste run).
 
 ### 4.5 Bestanden: mappen, labels en zoeken
-Dezelfde mappen als in ParsePDF, plus zoeken in de inhoud van CSV's en de tekst van PDF's. Bestanden staan al in IndexedDB; er is alleen een index nodig.
+Dezelfde mappen als in de PDF-bron, plus zoeken in de inhoud van CSV's en de tekst van PDF's. Bestanden staan al in IndexedDB; er is alleen een index nodig.
 
 ### 4.6 Meldingen
 Eén plek waar staat wat er is gebeurd terwijl je weg was: taken die liepen, taken die vielen, limieten die vol raakten. Met een belletje in de kop en, als de mailweg er is, een dagelijkse samenvatting.
 
 ### 4.7 Verbruik zichtbaar
-Wat de Webflow-versie van ParsePDF al toont (pagina's van je maandlimiet) hoort in de schil te staan, voor alle tools samen: pagina's, uitleesronden en AI-tegoeden, met een balk en een grens.
+Wat de Webflow-versie van de PDF-bron al toont (pagina's van je maandlimiet) hoort in de schil te staan, voor alle tools samen: pagina's, uitleesronden en AI-tegoeden, met een balk en een grens.
 
 ### 4.7b De flow tussen de tools (gebouwd)
 
-Wat de ene tool oplevert gaat met één klik door naar de volgende: ParseScraper en ParsePDF hebben allebei een knop die hun tabel doorgeeft aan ParseBoard, dat de rijen inlaadt en op de kolommenstap opent. De schil regelt de overdracht met `parselab:handover` en `parselab:data`; er verlaat niets de browser. Wat er nog bij kan: rijen uit ParseBoard terug naar ParseForm om ze in te vullen, en een zichtbare flow op het overzicht die laat zien welke tool waar uitkomt.
+Wat de ene tool oplevert gaat met één klik door naar de volgende: de website-bron en de PDF-bron hebben allebei een knop die hun tabel doorgeeft aan het dashboard, dat de rijen inlaadt en op de kolommenstap opent. De schil regelt de overdracht met `parselab:handover` en `parselab:data`; er verlaat niets de browser. Wat er nog bij kan: rijen uit het dashboard terug naar formulier invullen om ze in te vullen, en een zichtbare flow op het overzicht die laat zien welke tool waar uitkomt.
 
 ### 4.8 Werkbank per tool
-ParseBoard krijgt het volle scherm zodra hij een overzicht toont; ParseForm krijgt uitleg plus de extensieknop in plaats van een lege werkbank. Kleine ingreep, groot verschil in hoe af het voelt.
+het dashboard krijgt het volle scherm zodra hij een overzicht toont; formulier invullen krijgt uitleg plus de extensieknop in plaats van een lege werkbank. Kleine ingreep, groot verschil in hoe af het voelt.
 
 ---
 
@@ -104,12 +104,12 @@ De regel is overal dezelfde: **de sleutel staat op de server, er gaat niets weg 
 
 | Waar | Knop | Wat er heen gaat | Eindpunt |
 |---|---|---|---|
-| ParsePDF (Webflow) | Uitlezen met AI | de tekst van dat ene document plus de al gevonden velden | `POST /api/parsepdf/velden` |
-| ParsePDF (tool) | Laat ParseLab de velden herkennen | de tekst van dat ene document | `POST /api/parsepdf/detect` |
-| ParseScraper | Kolommen benoemen met AI | kolomnamen en drie voorbeeldwaarden | `POST /api/scrape/kolommen` |
-| ParseBoard | Overzicht voorstellen met AI | kolomnamen en drie voorbeeldrijen | `POST /api/board/panelen` |
+| de PDF-bron (Webflow) | Uitlezen met AI | de tekst van dat ene document plus de al gevonden velden | `POST /api/parsepdf/velden` |
+| de PDF-bron (tool) | Laat ParseLab de velden herkennen | de tekst van dat ene document | `POST /api/parsepdf/detect` |
+| de website-bron | Kolommen benoemen met AI | kolomnamen en drie voorbeeldwaarden | `POST /api/scrape/kolommen` |
+| het dashboard | Overzicht voorstellen met AI | kolomnamen en drie voorbeeldrijen | `POST /api/board/panelen` |
 
-ParseBoard krijgt terug welke kolom de datum is, waarop te groeperen, welke twee tot vier cijfers de moeite waard zijn en welke grafiek daarbij past, plus één zin over wat je ziet. Dat vult stap 3 en 4 in; je kunt alles daarna gewoon aanpassen.
+het dashboard krijgt terug welke kolom de datum is, waarop te groeperen, welke twee tot vier cijfers de moeite waard zijn en welke grafiek daarbij past, plus één zin over wat je ziet. Dat vult stap 3 en 4 in; je kunt alles daarna gewoon aanpassen.
 
 **Instellingen op de server:**
 
@@ -130,9 +130,9 @@ $$;
 
 **Wat er daarna bij hoort:**
 
-1. **AI-tegoeden in de schil.** Nu telt ParsePDF ze met `record_usage('parsepdf-ai', 1)`; de schil hoort te tonen hoeveel je er nog hebt, naast de pagina's.
+1. **AI-tegoeden in de schil.** Nu telt de PDF-bron ze met `record_usage('parsepdf-ai', 1)`; de schil hoort te tonen hoeveel je er nog hebt, naast de pagina's.
 2. **Eén AI-paneel per tool in Account.** Wat mag de AI zien, hoeveel is er gebruikt, en een knop om het per tool uit te zetten.
-3. **"Wat wil je?" in ParseScraper**, zie [`PARSESCRAPER-VOLGENDE-VERSIE.md`](PARSESCRAPER-VOLGENDE-VERSIE.md) §5.
+3. **"Wat wil je?" in de website-bron**, zie [`PARSESCRAPER-VOLGENDE-VERSIE.md`](PARSESCRAPER-VOLGENDE-VERSIE.md) §5.
 4. **Uitleg bij een fout.** Draait een taak stuk, dan mag de AI de foutmelding vertalen naar één zin met een voorstel. Kleine moeite, scheelt supportvragen.
 
 ---
@@ -167,4 +167,4 @@ Wat per nieuwe functie erbij hoort:
 
 ## 8. Wat het dashboard bewust niet wordt
 
-Geen bouwpakket met widgets die je zelf sleept, geen tweede ParseBoard, geen instellingenscherm met veertig schakelaars. Het is een schil: vier ingangen, je projecten, en per tool een korte flow. Alles wat daar niet aan bijdraagt hoort in een tool thuis, niet in de schil.
+Geen bouwpakket met widgets die je zelf sleept, geen tweede het dashboard, geen instellingenscherm met veertig schakelaars. Het is een schil: vier ingangen, je projecten, en per tool een korte flow. Alles wat daar niet aan bijdraagt hoort in een tool thuis, niet in de schil.

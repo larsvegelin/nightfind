@@ -1,6 +1,6 @@
-# ParseForm — per element
+# formulier invullen — per element
 
-Basis: de browserextensie in `tools/extension/` (`panel.js`, `background.js`, `manifest.json`, `README.md`). ParseForm en ParseScraper zijn technisch één extensie ("WebTool Scraper"); dit bestand gaat over alles wat met invullen en klikken te maken heeft. Het scrapen staat in `parsescraper.md`.
+Basis: de browserextensie in `tools/extension/` (`panel.js`, `background.js`, `manifest.json`, `README.md`). formulier invullen en de website-bron zijn technisch één extensie ("WebTool Scraper"); dit bestand gaat over alles wat met invullen en klikken te maken heeft. Het scrapen staat in `parsescraper.md`.
 
 ## Status van toepassing
 

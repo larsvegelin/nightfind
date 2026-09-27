@@ -58,7 +58,7 @@ Alle punten hieronder zijn toegepast in `index.html`, tenzij anders vermeld. Wat
 ### Gebruiker (avatar, naam, rol)
 - **Nu:** statisch; geen menu.
 - **Simpeler:** klikbaar met drie opties: Account, Team, Uitloggen. Niet meer.
-- **Veiliger:** hier hoort ook "Sessies en apparaten" en "Verbonden extensie" (zie ParseScraper), zodat de gebruiker ziet welke browser aan zijn account hangt en die kan loskoppelen.
+- **Veiliger:** hier hoort ook "Sessies en apparaten" en "Verbonden extensie" (zie de website-bron), zodat de gebruiker ziet welke browser aan zijn account hangt en die kan loskoppelen.
 - **Prioriteit:** 2
 
 ## Topbar
@@ -73,9 +73,9 @@ Alle punten hieronder zijn toegepast in `index.html`, tenzij anders vermeld. Wat
 - **Simpeler:** "flow" is jargon. Gebruik "Zoek een taak of bestand…". Zoeken over álle tools tegelijk (één resultatenlijst) is voor een leek logischer dan per weergave.
 - **Prioriteit:** 2
 
-### Primaire actie ("Nieuwe flow", "ParsePDF openen", "Terug naar …")
-- **Nu:** wisselt per weergave; op het overzicht opent "Nieuwe flow" de ParseForm-installatie.
-- **Simpeler:** op het overzicht is "Nieuwe flow" een raadsel voor een nieuwe gebruiker. Maak er "Wat wil je doen?" van met vier keuzes in mensentaal: *Documenten uitlezen*, *Een website uitlezen*, *Een formulier laten invullen*, *Een overzicht maken*. Elke keuze opent de juiste tool. Dat is dezelfde vraag die ParsePDF nu al stelt bij onboarding ("Wat wil je als eerste doen?"), maar dan één keer, op suite-niveau.
+### Primaire actie ("Nieuwe flow", "de PDF-bron openen", "Terug naar …")
+- **Nu:** wisselt per weergave; op het overzicht opent "Nieuwe flow" de formulier invullen-installatie.
+- **Simpeler:** op het overzicht is "Nieuwe flow" een raadsel voor een nieuwe gebruiker. Maak er "Wat wil je doen?" van met vier keuzes in mensentaal: *Documenten uitlezen*, *Een website uitlezen*, *Een formulier laten invullen*, *Een overzicht maken*. Elke keuze opent de juiste tool. Dat is dezelfde vraag die de PDF-bron nu al stelt bij onboarding ("Wat wil je als eerste doen?"), maar dan één keer, op suite-niveau.
 - **Prioriteit:** 1
 
 ## Overzicht
@@ -109,12 +109,12 @@ Alle punten hieronder zijn toegepast in `index.html`, tenzij anders vermeld. Wat
 - **Prioriteit:** 1
 
 ### Drie KPI-kaarten met delta-pil
-- **Nu:** feitelijke delta's (`+8,2%`, `−2 sec`, `live`); ParseBoard toont `—` als delta.
+- **Nu:** feitelijke delta's (`+8,2%`, `−2 sec`, `live`); het dashboard toont `—` als delta.
 - **Simpeler:** een delta-pil zonder cijfer weglaten in plaats van `—` tonen. "Foutloos 97,4%" is voor een leek beter als "48 regels om na te kijken" met een knop.
 - **Prioriteit:** 3
 
 ### Lijst (Flows / Scrapes / Sjablonen / Dashboards)
-- **Nu:** voorbeelddata; de ParsePDF-sjablonen en het ParseBoard-dashboard komen wel uit de opslag van de ingebedde tool.
+- **Nu:** voorbeelddata; de de PDF-bron-sjablonen en het het dashboard-dashboard komen wel uit de opslag van de ingebedde tool.
 - **Simpeler:** elke rij is een knop die de werkbank op dát item opent. Kolomkoppen in gewone taal: "sjabloon / soort document / velden / status".
 - **Veiliger:** de tellers lezen nu `localStorage` van de tools op dezelfde origin. Dat werkt alleen zolang alles op één domein staat en de gebruiker één browser gebruikt. Met accounts hoort dit uit een backend te komen, met de gebruiker als eigenaar.
 - **Prioriteit:** 2
@@ -127,18 +127,18 @@ Alle punten hieronder zijn toegepast in `index.html`, tenzij anders vermeld. Wat
 ### Laatste export met "Download opnieuw"
 - **Nu:** visueel.
 - **Simpeler:** goed idee. Voeg de bestemming toe ("in je map Downloads/ParseLab") en maak van "Download opnieuw" ook "Open in Excel" wanneer het een xlsx is.
-- **Veiliger:** exports met persoonsgegevens (ParseForm, ParsePDF) horen niet oneindig bewaard te worden. Toon "wordt na 30 dagen verwijderd" en maak dat instelbaar per werkruimte.
+- **Veiliger:** exports met persoonsgegevens (formulier invullen, de PDF-bron) horen niet oneindig bewaard te worden. Toon "wordt na 30 dagen verwijderd" en maak dat instelbaar per werkruimte.
 - **Prioriteit:** 2
 
-## Werkbank
+## De werkstroom: bron → gestructureerde data → formaat
 
-### Iframe-werkbank (ParsePDF, ParseBoard)
+### Iframe-werkbank (de PDF-bron, het dashboard)
 - **Nu:** de echte tool in een witte kaart, met "In nieuw tabblad openen" en "Sluiten".
-- **Simpeler:** gedaan. De eigen navigatie van de tool (ParsePDF: Uploaden/Aanwijzen/Controleren/Downloaden; ParseBoard: zes stappen) is in de werkbank verborgen en klapt uit als sub-items onder de tool in de dashboardzijbalk. De tool meldt zijn eigen sectie terug (bijv. na "Volgende"), zodat de zijbalk meeloopt; de hash wordt `#pdf/docs` of `#board/3`. Bij ParseBoard zijn stappen die nog niet bereikt zijn gedimd, precies zoals de stappenbalk van de tool dat deed. De extensie-tools klappen uit naar "Extensie installeren". Volgende stap: ParsePDF's "Rondleiding" en taalkeuze (stonden in de verborgen zijbalk) een plek geven in Instellingen.
+- **Simpeler:** gedaan. De eigen navigatie van de tool (de PDF-bron: Uploaden/Aanwijzen/Controleren/Downloaden; het dashboard: zes stappen) is in de werkbank verborgen en klapt uit als sub-items onder de tool in de dashboardzijbalk. De tool meldt zijn eigen sectie terug (bijv. na "Volgende"), zodat de zijbalk meeloopt; de hash wordt `#pdf/docs` of `#board/3`. Bij het dashboard zijn stappen die nog niet bereikt zijn gedimd, precies zoals de stappenbalk van de tool dat deed. De extensie-tools klappen uit naar "Extensie installeren". Volgende stap: de PDF-bron's "Rondleiding" en taalkeuze (stonden in de verborgen zijbalk) een plek geven in Instellingen.
 - **Veiliger:** een iframe op dezelfde origin deelt opslag en cookies met het dashboard. Zet de tools op een eigen subdomein (`app.parselab.nl/pdf`, of `pdf.parselab.nl`) met een `sandbox`-attribuut dat alleen `allow-same-origin allow-scripts allow-forms allow-downloads` geeft, en laat het dashboard via `postMessage` om tellers vragen in plaats van `localStorage` te lezen.
 - **Prioriteit:** 2
 
-### Installatiepaneel (ParseForm, ParseScraper)
+### Installatiepaneel (formulier invullen, de website-bron)
 - **Nu:** drie stappen, downloadknop voor de zip, handleiding (README), sneltoets, pakketinfo (versie, rechten), MCP-notitie.
 - **Simpeler:** vervang het hele paneel door één knop "Toevoegen aan Chrome" naar de Web Store, en daaronder "Zo zie je dat het werkt: het ParseLab-icoon staat rechtsboven in je browser". De pakketinfo (manifest v3, `activeTab · storage · downloads`) en de MCP-notitie zijn voor beheerders, niet voor gebruikers; zet die achter "Voor IT-beheer". De README als handleiding is voor een leek onleesbaar (het is een ontwikkelaarsdocument); schrijf een gebruikershandleiding van één pagina met schermafbeeldingen.
 - **Veiliger:** een losse zip die de gebruiker zelf laadt in ontwikkelaarsmodus is niet te updaten en niet te controleren. De Web Store lost beide op. Zie `parsescraper.md`.

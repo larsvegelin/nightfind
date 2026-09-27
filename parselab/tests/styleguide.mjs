@@ -36,7 +36,7 @@ ok('raster gap 24px en kaarten met min-width 0', grid.gap==='24px'&&grid.kids, J
 await p.click('.nav-item[data-go="help"]'); await p.waitForTimeout(500);
 const btn = await p.evaluate(()=>{const e=[...document.querySelectorAll('.btn, .btn-pill')].find(x=>x.offsetParent) || document.querySelector('.launch button');const r=e.getBoundingClientRect();return {h:Math.round(r.height), radius:getComputedStyle(e).borderRadius};});
 ok('knop minstens 44px hoog, radius 14', btn.h>=44&&btn.radius==='14px', JSON.stringify(btn));
-await p.evaluate(() => { location.hash = '#overview'; }); await p.waitForTimeout(400);
+await p.evaluate(() => { location.hash = '#start'; }); await p.waitForTimeout(400);
 await p.keyboard.press('Tab');
 const focus = await p.evaluate(()=>{const e=document.activeElement;const c=getComputedStyle(e);return c.outlineColor+' '+c.outlineWidth+' '+c.outlineOffset;});
 ok('focusring goud, 2px, 3px afstand', /201, 169, 97/.test(focus)&&focus.includes('2px')&&focus.includes('3px'), focus);
@@ -50,7 +50,7 @@ ok('componenten dragen de pld-naam', pld.card>0&&pld.btn>0&&pld.caps>0, JSON.str
 // breedtes
 for (const w of [1440, 768, 375]) {
   await p.setViewportSize({width:w,height:900});
-  await p.evaluate(() => { location.hash = "#overview"; }); await p.waitForTimeout(600);
+  await p.evaluate(() => { location.hash = "#start"; }); await p.waitForTimeout(600);
   const sw = await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   ok('geen horizontale scroll op '+w+'px', sw<=0, sw);
   await p.screenshot({path:S+'/shots/sg-'+w+'.png', fullPage:true});

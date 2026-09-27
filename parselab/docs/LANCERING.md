@@ -1,14 +1,14 @@
-# ParseLab lanceren: ParsePDF als eerste
+# ParseLab lanceren: de PDF-bron als eerste
 
-Dit is het plan om de site live te zetten met één werkende tool. ParsePDF gaat als eerste, de rest volgt. Reken op een halve dag, waarvan het meeste wachten op jezelf is: teksten, prijzen, een keer goed doorklikken.
+Dit is het plan om de site live te zetten met één werkende tool. de PDF-bron gaat als eerste, de rest volgt. Reken op een halve dag, waarvan het meeste wachten op jezelf is: teksten, prijzen, een keer goed doorklikken.
 
 ---
 
-## 1. Waarom ParsePDF eerst
+## 1. Waarom de PDF-bron eerst
 
 - Hij draait volledig in de browser van de gebruiker. Geen server die je moet betalen, geen documenten die je moet bewaren, geen verwerkersovereenkomst nodig voor het uitlezen zelf.
 - Het is de tool met de duidelijkste belofte: een map facturen erin, een tabel eruit.
-- Hij is af en getest. ParseScraper vraagt een draaiende server met een browser erin; dat is de volgende stap, niet de eerste.
+- Hij is af en getest. de website-bron vraagt een draaiende server met een browser erin; dat is de volgende stap, niet de eerste.
 
 Zet de andere drie op de site op "Binnenkort". Eén tool die het doet is meer waard dan vier die half af zijn.
 
@@ -53,7 +53,7 @@ De publishable key in embed 1 hoort in de browser te staan; dat is de bedoeling 
 6. Download de CSV en open hem in Excel. De kolommen horen meteen goed te staan.
 7. Kijk op je telefoon of de velden onder elkaar staan en de tabel binnen zijn eigen kader schuift.
 8. Zet je verbruik in de database vlak onder de limiet en probeer een grote batch. Je hoort de kaart te zien die zegt hoeveel pagina's je nog hebt.
-9. Zet de kaart van ParsePDF op het dashboard om van "Binnenkort" naar een knop.
+9. Zet de kaart van de PDF-bron op het dashboard om van "Binnenkort" naar een knop.
 10. Publiceer.
 
 Stap 3 tot en met 8 zijn precies de controles die `node parselab/tests/webflow.mjs` geautomatiseerd doet, met een namaak-Supabase. Draai die test na elke wijziging aan de embeds; dan hoef je dit lijstje alleen bij de echte lancering met de hand af.
@@ -62,7 +62,7 @@ Stap 3 tot en met 8 zijn precies de controles die `node parselab/tests/webflow.m
 
 ## 5. Teksten voor de site
 
-**Kop:** ParsePDF
+**Kop:** de PDF-bron
 
 **Ondertitel:** Haal velden uit je PDF's met regels die je één keer instelt. Alles gebeurt in je eigen browser; er wordt geen document verstuurd.
 
@@ -101,7 +101,7 @@ Drie dingen, meer niet:
 
 1. Hoeveel mensen maken een account en lezen daadwerkelijk iets uit? Wie inlogt en niets uitleest, liep vast; vraag die persoon wat er misging.
 2. Hoeveel pagina's per gebruiker per maand? Dat vertelt of 50 gratis pagina's te ruim of te krap is.
-3. Hoe vaak komt de melding over een ontbrekende tekstlaag? Komt die veel, dan is tekstherkenning de volgende bouwstap en niet ParseScraper.
+3. Hoe vaak komt de melding over een ontbrekende tekstlaag? Komt die veel, dan is tekstherkenning de volgende bouwstap en niet de website-bron.
 
 Kijk daar na twee weken naar en beslis dan pas wat er als tweede komt.
 
@@ -109,13 +109,13 @@ Kijk daar na twee weken naar en beslis dan pas wat er als tweede komt.
 
 ## 8. Daarna
 
-Hoe ParsePDF zelf beter wordt — sjablonen in mappen, automatische veldherkenning en de AI-controle — staat apart in [`PARSEPDF-VOLGENDE-VERSIE.md`](PARSEPDF-VOLGENDE-VERSIE.md). Fase 1 en 2 daarvan wegen zwaarder dan alles hieronder, want ze halen het intikwerk weg.
+Hoe de PDF-bron zelf beter wordt — sjablonen in mappen, automatische veldherkenning en de AI-controle — staat apart in [`PARSEPDF-VOLGENDE-VERSIE.md`](PARSEPDF-VOLGENDE-VERSIE.md). Fase 1 en 2 daarvan wegen zwaarder dan alles hieronder, want ze halen het intikwerk weg.
 
 De volgorde die ik zou aanhouden:
 
 1. **Regels aan het account koppelen** in plaats van aan de browser. Kleine tabel, groot verschil zodra iemand een tweede computer heeft.
-2. **ParseScraper**, want die vraagt een server met Chromium erin en dus een echte hostingrekening. `Dockerfile`, `railway.json` en `render.yaml` staan klaar.
+2. **de website-bron**, want die vraagt een server met Chromium erin en dus een echte hostingrekening. `Dockerfile`, `railway.json` en `render.yaml` staan klaar.
 3. **Tekstherkenning** voor gescande documenten, als punt 3 hierboven daarom vraagt.
-4. **ParseForm** met de extensie in de Chrome Web Store; dat is een aanmeldproces met wachttijd, dus begin er vroeg mee als je hem wilt.
+4. **formulier invullen** met de extensie in de Chrome Web Store; dat is een aanmeldproces met wachttijd, dus begin er vroeg mee als je hem wilt.
 
-ParseBoard kan mee zodra je zin hebt; die draait net als ParsePDF volledig in de browser en heeft geen server nodig.
+het dashboard kan mee zodra je zin hebt; die draait net als de PDF-bron volledig in de browser en heeft geen server nodig.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>ParseSheet — rommelige Excel netjes maken</title>
+<title>Data uit Excel of CSV · ParseLab</title>
 <style>
   :root {
     color-scheme: light;
@@ -68,7 +68,7 @@
 <body>
 <div class="wrap">
   <div class="page-head">
-    <div class="caps">ParseLab · ParseSheet</div>
+    <div class="caps">ParseLab · data uit Excel of CSV</div>
     <h1>Rommelige Excel netjes maken</h1>
     <p class="note">Een export met een logo erboven, samengevoegde cellen, lege regels en getallen als tekst wordt hier één nette tabel. Alles gebeurt in je eigen browser; het bestand wordt niet verstuurd.</p>
   </div>
@@ -139,7 +139,7 @@
 <script>
 "use strict";
 /* ============================================================================
-   ParseSheet — rommelige Excel/CSV naar één nette tabel.
+   Data uit Excel of CSV — een rommelige export naar één nette tabel.
    Alles in de browser: geen server, geen upload. De schil (ParseLab-dashboard)
    praat met deze pagina via postMessage, net als de andere tools.
    ========================================================================== */
@@ -503,7 +503,7 @@ function toonNetjes() {
   $("#meldingen").innerHTML = u.rijen.length
     ? `<div class="melding ok">${m.length ? esc(m.join(" · ")) : "Niets op te ruimen — de tabel was al netjes."}</div>`
     : `<div class="melding let">Geen regels overgebleven. Kies een andere kopregel of zet “lege regels weg” uit.</div>`;
-  $("#deel-note").textContent = EMBED ? "Deze tabel staat ook in de Werkbank; daar maak je er een Excel, dashboard of rapport van." : "";
+  $("#deel-note").textContent = EMBED ? "Deze tabel staat ook bij je gestructureerde data in ParseLab; daar kies je Excel, CSV, dashboard of rapport." : "";
 }
 
 /* ---------- delen met de schil ---------- */

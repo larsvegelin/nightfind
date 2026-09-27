@@ -12,18 +12,18 @@ ParseLab bestaat uit twee delen:
 
 | Deel | Wat het is | Waar het draait |
 |---|---|---|
-| **De website** (dashboard, ParsePDF, ParseBoard, docs) | gewone HTML-bestanden; alles gebeurt in je browser | overal: GitHub Pages, Webflow, een los bestand, of de ParseLab-server zelf |
+| **De website** (dashboard, de PDF-bron, het dashboard, docs) | gewone HTML-bestanden; alles gebeurt in je browser | overal: GitHub Pages, Webflow, een los bestand, of de ParseLab-server zelf |
 | **De ParseLab-server** (`server/server.js`) | een Node.js-programma met een echte browser (Chromium) erin. Die haalt de webpagina op, laat jou aanwijzen wat je wilt, leest de lijst uit, bladert door de pagina's en maakt er Excel of CSV van | op je computer, of op een server bij Railway, Render, Fly.io of een eigen machine |
 
-Documenten uitlezen (ParsePDF) en overzichten maken (ParseBoard) gebeuren helemaal in de browser. Daar is geen server voor nodig. **Websites uitlezen kan niet in de browser**: een browser mag geen andere websites ophalen namens jou (dat blokkeert elke browser, het heet *same-origin policy*), en een webshop met tien pagina's netjes doorbladeren met pauzes vraagt een programma dat blijft draaien. Daarom doet de server dat.
+Documenten uitlezen (de PDF-bron) en overzichten maken (het dashboard) gebeuren helemaal in de browser. Daar is geen server voor nodig. **Websites uitlezen kan niet in de browser**: een browser mag geen andere websites ophalen namens jou (dat blokkeert elke browser, het heet *same-origin policy*), en een webshop met tien pagina's netjes doorbladeren met pauzes vraagt een programma dat blijft draaien. Daarom doet de server dat.
 
-Toen je op GitHub Pages op *Ophalen* klikte, stuurde ParseScraper een verzoek naar `https://larsvegelin.github.io/nightfind/api/scrape/snapshot`. GitHub Pages is een statische host: die kan bestanden teruggeven, maar kan geen programma draaien. Een `POST`-verzoek naar een statische host levert *405 Method Not Allowed* op (soms *404 Not Found*). Dat is de 405 die je zag. Er was dus niets kapot; er stond alleen geen server op dat adres.
+Toen je op GitHub Pages op *Ophalen* klikte, stuurde de website-bron een verzoek naar `https://larsvegelin.github.io/nightfind/api/scrape/snapshot`. GitHub Pages is een statische host: die kan bestanden teruggeven, maar kan geen programma draaien. Een `POST`-verzoek naar een statische host levert *405 Method Not Allowed* op (soms *404 Not Found*). Dat is de 405 die je zag. Er was dus niets kapot; er stond alleen geen server op dat adres.
 
 Het dashboard wist tot nu toe niet dat de server ergens anders kon staan: het probeerde altijd hetzelfde adres als de website zelf. Dat is nu anders.
 
 ### Wat er veranderd is
 
-1. **Instelbaar serveradres.** Onder *Account → Serveradres* vul je het adres van jouw server in. Het dashboard geeft dat door aan ParseScraper, ParsePDF (AI-knoppen) en ParseBoard (AI-knop). Het adres blijft bewaard in de browser en gaat mee met je instellingen naar de server (`/api/store/settings`), zodat je het op een andere computer terugziet.
+1. **Instelbaar serveradres.** Onder *Account → Serveradres* vul je het adres van jouw server in. Het dashboard geeft dat door aan de website-bron, de PDF-bron (AI-knoppen) en het dashboard (AI-knop). Het adres blijft bewaard in de browser en gaat mee met je instellingen naar de server (`/api/store/settings`), zodat je het op een andere computer terugziet.
 2. **`?api=` in de adresbalk.** Open je het dashboard met `https://larsvegelin.github.io/nightfind/?api=https://jouw-server` dan wordt dat adres meteen gebruikt en bewaard. Handig om een collega een link te sturen.
 3. **De server staat verzoeken van andere websites toe (CORS).** Een browser laat een website alleen met een server op een ander adres praten als die server dat expliciet toestaat. De ParseLab-server doet dat nu; met `PARSELAB_ALLOW_ORIGIN` beperk je het tot jouw dashboard.
 4. **Duidelijke meldingen.** Op een statische host probeert het dashboard niet meer stilletjes een server die er niet is. Het zegt *Deze website heeft geen ParseLab-server* met een knop *Serveradres instellen*. Krijgt de tool toch een 404 of 405 terug, dan zegt hij nu op welk adres hij het probeerde en wat je moet doen, in plaats van *Er ging iets mis (405)*.
@@ -36,9 +36,9 @@ Het dashboard wist tot nu toe niet dat de server ergens anders kon staan: het pr
    jouw browser                                    ergens op internet (of op je pc)
  ┌──────────────────────────────┐                ┌────────────────────────────────┐
  │ dashboard (GitHub Pages)     │  https + CORS  │ ParseLab-server                 │
- │   ParseScraper ──────────────┼────────────────┼──▶ /api/scrape/snapshot         │
- │   ParsePDF  (AI-knoppen) ────┼────────────────┼──▶ /api/parsepdf/…              │
- │   ParseBoard (AI-knop) ──────┼────────────────┼──▶ /api/board/panelen           │
+ │   de website-bron ──────────────┼────────────────┼──▶ /api/scrape/snapshot         │
+ │   de PDF-bron  (AI-knoppen) ────┼────────────────┼──▶ /api/parsepdf/…              │
+ │   het dashboard (AI-knop) ──────┼────────────────┼──▶ /api/board/panelen           │
  │                              │                │   Chromium haalt de webpagina   │
  │ Account → Serveradres        │                │   robots.txt, 2 s per website   │
  │   https://jouw-server        │                │   Excel / CSV terug             │
@@ -51,7 +51,7 @@ Drie dingen moeten kloppen, en meer niet:
 2. **Het dashboard kent het adres** (Account → Serveradres, of `?api=`).
 3. **De server staat het dashboard toe** (standaard staat hij alles toe; met `PARSELAB_ALLOW_ORIGIN` maak je het strikter).
 
-Alles wat je in ParseScraper doet (adres invullen, aanwijzen, uitlezen, taken plannen, downloaden) gaat vanaf dan naar die server. ParsePDF en ParseBoard blijven in de browser werken; alleen hun AI-knoppen gebruiken de server, en alleen als daar een AI-sleutel op staat.
+Alles wat je in de website-bron doet (adres invullen, aanwijzen, uitlezen, taken plannen, downloaden) gaat vanaf dan naar die server. de PDF-bron en het dashboard blijven in de browser werken; alleen hun AI-knoppen gebruiken de server, en alleen als daar een AI-sleutel op staat.
 
 ---
 
@@ -79,7 +79,7 @@ Wil je het dashboard op `https://larsvegelin.github.io/nightfind/` gebruiken en 
 
 1. Start de server zoals bij A1.
 2. Open het dashboard op GitHub Pages, ga naar *Account → Serveradres* en vul in: `http://localhost:8080`. Klik *Bewaren*. Je ziet *Verbonden: de server antwoordt.*
-3. Ga naar ParseScraper. De hint is weg; *Ophalen* werkt.
+3. Ga naar de website-bron. De hint is weg; *Ophalen* werkt.
 
 Sluit je de terminal, dan stopt de server en zie je in het dashboard weer *De ParseLab-server op http://localhost:8080 antwoordt niet*. Start hem opnieuw en klik *Opnieuw proberen*.
 
@@ -105,7 +105,7 @@ De repo staat klaar voor Railway, Render en Fly.io (allemaal via de `Dockerfile`
 5. *Volumes → New Volume*, mount path `/app/server/data`. Zonder volume zijn je taken en runs weg bij elke nieuwe versie.
 6. *Settings → Networking → Generate Domain*. Je krijgt een adres als `https://parselab-production-1a2b.up.railway.app`.
 7. Wacht tot de deploy groen is. Controleer in je browser: `https://…up.railway.app/api/scrape/status` geeft JSON terug (met token: een 401 met een nette melding; dat is goed, de server leeft).
-8. Dashboard: *Account → Serveradres* → het Railway-adres → *Bewaren*. Ga naar ParseScraper; bij de eerste aanroep vraagt de tool één keer om de toegangscode (je `PARSELAB_API_TOKEN`).
+8. Dashboard: *Account → Serveradres* → het Railway-adres → *Bewaren*. Ga naar de website-bron; bij de eerste aanroep vraagt de tool één keer om de toegangscode (je `PARSELAB_API_TOKEN`).
 
 Elke push naar de branch die Railway volgt rolt automatisch uit. Kies bij *Settings → Source* de branch `main` (of de branch waar je aan werkt).
 
@@ -226,7 +226,7 @@ Open je `tools/parsescraper.html` los (zonder dashboard), dan kun je ook daar `?
 
 ### Wat er gebeurt na het bewaren
 
-Het dashboard stuurt het nieuwe adres naar elke open tool (`parselab:api`) en naar de instellingen (`parselab:settings` met `apiBase`). ParseScraper controleert dan meteen de nieuwe server (`/api/scrape/status`) en laadt je taken opnieuw. Je hoeft niets te herladen.
+Het dashboard stuurt het nieuwe adres naar elke open tool (`parselab:api`) en naar de instellingen (`parselab:settings` met `apiBase`). de website-bron controleert dan meteen de nieuwe server (`/api/scrape/status`) en laadt je taken opnieuw. Je hoeft niets te herladen.
 
 ---
 
@@ -236,7 +236,7 @@ De server heeft geen accounts. Wat hem beschermt zijn deze instellingen.
 
 | Variabele | Wat het doet | Advies |
 |---|---|---|
-| `PARSELAB_API_TOKEN` | Zet je dit, dan vraagt elke API-aanroep de kop `x-parselab-token`. ParseScraper vraagt er één keer om (bewaard in `sessionStorage`, dus per tabblad-sessie). | **Altijd zetten** zodra de server op internet staat. Anders kan iedereen die het adres raadt jouw server websites laten uitlezen. |
+| `PARSELAB_API_TOKEN` | Zet je dit, dan vraagt elke API-aanroep de kop `x-parselab-token`. de website-bron vraagt er één keer om (bewaard in `sessionStorage`, dus per tabblad-sessie). | **Altijd zetten** zodra de server op internet staat. Anders kan iedereen die het adres raadt jouw server websites laten uitlezen. |
 | `PARSELAB_ALLOW_ORIGIN` | Van welke websites de browser de API mag aanspreken (CORS). Komma-gescheiden lijst, bijvoorbeeld `https://larsvegelin.github.io,https://parselab.nl`. Standaard `*` (overal vandaan). | Zet hem op het adres van je dashboard. Met `*` werkt het ook, maar dan kan een willekeurige website vanuit de browser van een ingelogde gebruiker je server aanroepen (het token beschermt nog steeds; dit is een tweede slot). |
 | `PARSELAB_ALLOW_PRIVATE` | `1` staat toe dat de server privé-adressen ophaalt (`localhost`, `192.168.…`). Alleen voor de tests. | **Nooit zetten op een server op internet**; dan kan iemand je interne netwerk laten uitlezen. |
 | `PARSELAB_PROXIES` | Roterende proxies voor het ophalen. | Alleen als je die hebt. |
@@ -246,7 +246,7 @@ De server heeft geen accounts. Wat hem beschermt zijn deze instellingen.
 
 Wat de server sowieso doet, zonder instelling: alleen `http` en `https`; geen privé-adressen; `robots.txt` wordt gelezen en gerespecteerd (weigert een site het, dan krijg je een nette melding en kun je de extensie gebruiken); minstens 2 seconden tussen verzoeken naar dezelfde website; hoogstens 2 pagina's tegelijk; hoogstens 25 pagina's en 5.000 regels per ronde; een pagina van meer dan 6 MB wordt afgekapt. Deze grenzen zijn niet instelbaar; dat is met opzet.
 
-Wat naar de server gaat: het adres dat je uitleest, wat je aanwees (de regel), en het e-mailadres waarmee je in het dashboard bent ingelogd (`x-parselab-user`), zodat jouw taken van die van anderen gescheiden blijven. Er gaat niets van je documenten (ParsePDF) of bestanden (ParseBoard) naar de server, behalve als jij op een AI-knop klikt en *ja* zegt; dan gaat dat ene document.
+Wat naar de server gaat: het adres dat je uitleest, wat je aanwees (de regel), en het e-mailadres waarmee je in het dashboard bent ingelogd (`x-parselab-user`), zodat jouw taken van die van anderen gescheiden blijven. Er gaat niets van je documenten (de PDF-bron) of bestanden (het dashboard) naar de server, behalve als jij op een AI-knop klikt en *ja* zegt; dan gaat dat ene document.
 
 ---
 
@@ -269,7 +269,7 @@ curl -i -X OPTIONS -H "Origin: https://larsvegelin.github.io" \
 curl -i -H "Origin: https://larsvegelin.github.io" -H "x-parselab-token: …" https://parselab.jouwdomein.nl/api/scrape/status
 ```
 
-In het dashboard: *Account → Serveradres → Bewaren* → *Verbonden: de server antwoordt.* Daarna ParseScraper openen: de gele hint is weg, en *Ophalen* met bijvoorbeeld `https://books.toscrape.com` toont de pagina om in aan te wijzen.
+In het dashboard: *Account → Serveradres → Bewaren* → *Verbonden: de server antwoordt.* Daarna de website-bron openen: de gele hint is weg, en *Ophalen* met bijvoorbeeld `https://books.toscrape.com` toont de pagina om in aan te wijzen.
 
 In de browser zelf (F12 → Netwerk) zie je de aanroepen naar jouw serveradres gaan, niet meer naar `github.io/…/api/…`.
 
@@ -285,7 +285,7 @@ In de browser zelf (F12 → Netwerk) zie je de aanroepen naar jouw serveradres g
 | Console: *blocked by CORS policy* / *No 'Access-Control-Allow-Origin' header* | De server staat dit dashboard niet toe. | `PARSELAB_ALLOW_ORIGIN` bevat niet het exacte adres van het dashboard (schema en host, zonder pad, zonder slash), of er staat een oude serverversie zonder CORS. Zet `PARSELAB_ALLOW_ORIGIN=https://larsvegelin.github.io` en herstart. |
 | Console: *Mixed Content: The page at 'https://…' was loaded over HTTPS, but requested an insecure resource 'http://…'* | Het dashboard is https en het serveradres http. Browsers blokkeren dat (behalve `localhost`). | Geef de server https (Railway/Render/Fly doen dat zelf; bij een eigen server Caddy of nginx met certificaat) en vul `https://…` in. |
 | *De ParseLab-server vraagt een toegangscode* (venster) | Er staat een `PARSELAB_API_TOKEN` op de server. | De code invullen. Verkeerd ingevuld? Herlaad het tabblad; de tool vraagt opnieuw. |
-| *Geen toegang: de ParseLab-server vraagt een toegangscode* (401 bij *Bewaren* onder Account) | Het dashboard test alleen of de server leeft; een 401 telt als *leeft*. Zie je toch *Geen antwoord*, dan is het iets anders. | Niets; ParseScraper vraagt de code bij de eerste echte aanroep. |
+| *Geen toegang: de ParseLab-server vraagt een toegangscode* (401 bij *Bewaren* onder Account) | Het dashboard test alleen of de server leeft; een 401 telt als *leeft*. Zie je toch *Geen antwoord*, dan is het iets anders. | Niets; de website-bron vraagt de code bij de eerste echte aanroep. |
 | *Deze website vraagt in robots.txt om niet automatisch uitgelezen te worden* | De website verbiedt automatisch uitlezen. ParseLab respecteert dat. | Gebruik de extensie in je eigen browser als je de pagina zelf mag gebruiken. |
 | *Alleen openbare websites (http of https)* | Je gaf een privé-adres of een bestand op. | Openbaar adres gebruiken. Lokaal testen kan met `PARSELAB_ALLOW_PRIVATE=1` op je eigen computer, nooit op internet. |
 | Render: eerste aanroep duurt 30–60 s, daarna werkt alles | De gratis service sliep. | Betaald plan, of accepteren. |
@@ -297,7 +297,7 @@ In de browser zelf (F12 → Netwerk) zie je de aanroepen naar jouw serveradres g
 
 ## 9. Wanneer je toch de extensie gebruikt
 
-De server leest **openbare** websites: webshops, vacaturesites, registers, alles wat je zonder inloggen ziet. Voor pagina's waar je moet inloggen (een klantportaal, een intranet, een website die robots weigert maar die jij zelf mag gebruiken) gebruik je de ParseLab-extensie in je eigen browser. Die werkt met jouw sessie, en die gegevens verlaten je computer niet. Het dashboard ziet of de extensie er is en toont dat in de werkbank van ParseScraper. Installatie: *ParseForm → Toevoegen aan Chrome*, of de IT-route in dezelfde kaart.
+De server leest **openbare** websites: webshops, vacaturesites, registers, alles wat je zonder inloggen ziet. Voor pagina's waar je moet inloggen (een klantportaal, een intranet, een website die robots weigert maar die jij zelf mag gebruiken) gebruik je de ParseLab-extensie in je eigen browser. Die werkt met jouw sessie, en die gegevens verlaten je computer niet. Het dashboard ziet of de extensie er is en toont dat in de werkbank van de website-bron. Installatie: *formulier invullen → Toevoegen aan Chrome*, of de IT-route in dezelfde kaart.
 
 ---
 

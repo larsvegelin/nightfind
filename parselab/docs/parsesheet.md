@@ -1,8 +1,8 @@
-# ParseSheet — rommelige Excel netjes maken
+# de databestand-bron — rommelige Excel netjes maken
 
 `tools/parsesheet.html`. Een export uit een systeem is zelden een tabel: er staat een logo
 of een titel boven, er zitten lege regels tussen, de kopregel herhaalt zich per pagina,
-cellen zijn samengevoegd en bedragen staan als tekst. ParseSheet maakt daar één nette tabel
+cellen zijn samengevoegd en bedragen staan als tekst. de databestand-bron maakt daar één nette tabel
 van — in je eigen browser, het bestand gaat nergens heen.
 
 ## Stappen
@@ -37,9 +37,9 @@ pagina — dan wint de bovenste: de eerste regel die vrijwel net zo goed scoort 
 
 ## Typen
 
-Per kolom kijkt ParseSheet naar de gevulde waarden: is 80% of meer een datum, dan is het een
+Per kolom kijkt de databestand-bron naar de gevulde waarden: is 80% of meer een datum, dan is het een
 datumkolom; is 80% of meer een getal, dan een getalkolom; anders tekst. Dat type bepaalt hoe
-er wordt omgezet, hoe de kolom in het rapport meetelt (som, gemiddelde) en hoe ParseBoard
+er wordt omgezet, hoe de kolom in het rapport meetelt (som, gemiddelde) en hoe het dashboard
 hem oppakt.
 
 ## Techniek

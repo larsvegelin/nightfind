@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
  * Maakt ParseLab.html: één bestand met het dashboard en alle tools erin.
- * Dubbelklikken is genoeg; ParsePDF en ParseBoard werken volledig, ParseForm toont de extensie-uitleg.
+ * Dubbelklikken is genoeg; de PDF-bron en het dashboard werken volledig, formulier invullen toont de extensie-uitleg.
  * Websites uitlezen vraagt de ParseLab-server; het dashboard zegt dat erbij.
  *
  *   node build-eenbestand.mjs            → ParseLab.html naast dit script

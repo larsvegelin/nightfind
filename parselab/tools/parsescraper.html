@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>ParseScraper</title>
+<title>Data uit een website · ParseLab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
@@ -99,7 +99,7 @@
 <body>
 <div class="layout">
   <aside class="sidebar">
-    <div class="brand"><i>PS</i>ParseScraper</div>
+    <div class="brand"><i>WEB</i>ParseLab · data uit een website</div>
     <div class="nav-item active" data-page="url"><span class="n">1</span>Adres</div>
     <div class="nav-item" data-page="pick"><span class="n">2</span>Aanwijzen</div>
     <div class="nav-item" data-page="done"><span class="n">3</span>Klaar</div>
@@ -174,7 +174,7 @@
           <div class="field" style="max-width:220px"><label for="task-schedule">Hoe vaak</label><select id="task-schedule"><option value="nu">Alleen als ik het vraag</option><option value="uur">Elk uur</option><option value="dag">Elke dag</option><option value="week">Elke week</option></select></div>
           <div style="align-self:flex-end"><button class="btn btn-navy" id="task-save">Bewaren</button></div>
         </div>
-        <div class="note">Een bewaarde taak draait op de ParseLab-server, ook als je computer uit staat. Je vindt hem in de zijbalk onder ParseScraper.</div>
+        <div class="note">Een bewaarde taak draait op de ParseLab-server, ook als je computer uit staat. Je vindt hem in de zijbalk onder Website.</div>
         <div id="task-msg" hidden></div>
       </div>
       <div class="card" style="margin-top:24px" id="tasks-card" hidden>
@@ -187,7 +187,7 @@
 
 <script>
 "use strict";
-/* ParseScraper — Website uitlezen vanaf de ParseLab-server (server/server.js). Drie stappen: Adres → Aanwijzen → Klaar. */
+/* Data uit een website — uitlezen vanaf de ParseLab-server (server/server.js). Drie stappen: Adres → Aanwijzen → Klaar. */
 const $ = s => document.querySelector(s);
 // Waar draait de server? Meegegeven door het dashboard (?api=… of parselab:api), anders hetzelfde adres als deze pagina.
 (function(){ try { var q = new URLSearchParams(location.search).get("api"); if (q) window.PARSELAB_API_BASE = q.replace(/\/+$/, ""); } catch (e) {} })();
@@ -473,7 +473,7 @@ function renderRun() {
   post({ type:"parselab:dataset", tool:"scrape", bron:"scrape",
     naam: (state.currentTask && state.currentTask.name) || (state.snapshot && state.snapshot.title) || "Uitgelezen website",
     kolommen: cols, rijen: run.rows });
-  // Deze rijen kunnen door naar ParseBoard; het dashboard geeft ze daar af.
+  // Deze rijen kunnen door naar het dashboard; de schil geeft ze daar af.
   const naarBoard = $("#naar-board");
   if (naarBoard) naarBoard.onclick = () => post({ type:"parselab:handover", naar:"board", section:"1",
     naam: (state.currentTask && state.currentTask.name) || (state.snapshot && state.snapshot.title) || "Uitgelezen website",

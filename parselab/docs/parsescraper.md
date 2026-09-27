@@ -1,4 +1,4 @@
-# ParseScraper — per element, en de scraper zonder extensie
+# de website-bron — per element, en de scraper zonder extensie
 
 Basis: `tools/extension/` (`panel.js`, `background.js`, `manifest.json`, `mcp-server/`). Alles wat over invullen gaat staat in `parseform.md`; hier gaat het over uitlezen, exporteren en de vraag of dit vanuit het dashboard kan in plaats van als extensie.
 
@@ -40,8 +40,8 @@ Een groot deel van de scrapes uit de voorbeelden (webshop-prijzen, concurrentie-
 ### Voorstel: "Website uitlezen" in het dashboard
 1. **Plak een adres.** Eén veld: "Welke pagina wil je uitlezen?" Het dashboard haalt de pagina op en toont hem in de werkbank als een live voorbeeld (een gerenderde weergave uit de serverbrowser, geen iframe; iframes worden door de meeste sites geblokkeerd).
 2. **Klik één item aan.** Precies het klik-en-scrape-principe van de extensie, maar in het voorbeeld in het dashboard. De lijst wordt herkend; kolommen krijgen een naam.
-3. **Kies wanneer.** Nu, dagelijks, wekelijks. Hier zit de tweede grote winst: de extensie kan alleen scrapen als de browser van de gebruiker open staat. Vanuit ParseLab kan een scrape 's nachts draaien en staat het resultaat 's ochtends in ParseBoard.
-4. **Download of stuur door.** Naar Excel, of rechtstreeks als bron voor ParseBoard.
+3. **Kies wanneer.** Nu, dagelijks, wekelijks. Hier zit de tweede grote winst: de extensie kan alleen scrapen als de browser van de gebruiker open staat. Vanuit ParseLab kan een scrape 's nachts draaien en staat het resultaat 's ochtends in het dashboard.
+4. **Download of stuur door.** Naar Excel, of rechtstreeks als bron voor het dashboard.
 
 De extensie blijft bestaan, maar wordt de uitzondering: "Deze pagina vraagt om inloggen. Gebruik de ParseLab-extensie in je eigen browser →". Voor de meeste gebruikers is de eerste scrape dan een bestand uploaden en een adres plakken, meer niet.
 
@@ -51,7 +51,7 @@ De extensie blijft bestaan, maar wordt de uitzondering: "Deze pagina vraagt om i
 - Er gaat nooit een login of sessie van de gebruiker naar ParseLab, omdat ingelogde sites simpelweg niet in deze route zitten.
 
 ### Wat het simpeler maakt
-- Zelfde werkbank als ParsePDF: bestand of adres erin, aanwijzen, exporteren. Wie ParsePDF begrijpt, begrijpt dit.
+- Zelfde werkbank als de PDF-bron: bestand of adres erin, aanwijzen, exporteren. Wie de PDF-bron begrijpt, begrijpt dit.
 - Geen paneel dat over een vreemde website zweeft, geen sneltoets, geen "paneel blijft open op elke pagina".
 - Planning en geschiedenis staan op één plek, in het dashboard.
 

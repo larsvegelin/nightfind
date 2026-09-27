@@ -1,6 +1,6 @@
 # Tests
 
-`qa.mjs` doorloopt het hele dashboard met Playwright (86 controles): inloggen, overzicht, zoeken, account-instellingen, ParseScraper (adres → aanwijzen → element wisselen → volgende pagina → uitlezen → Excel/CSV → taak bewaren → hernoemen → verwijderen), Bestanden, ParsePDF (uploaden, sjabloon, Excel bewaren), ParseBoard (CSV → dashboard → opslaan), ParseForm-installatiepaneel, de AI-knoppen van ParseScraper en ParseBoard (toestemming vragen en de melding zonder sleutel), mobiel, uitloggen en het dashboard zonder server.
+`qa.mjs` doorloopt het hele dashboard met Playwright (86 controles): inloggen, overzicht, zoeken, account-instellingen, de website-bron (adres → aanwijzen → element wisselen → volgende pagina → uitlezen → Excel/CSV → taak bewaren → hernoemen → verwijderen), Bestanden, de PDF-bron (uploaden, sjabloon, Excel bewaren), het dashboard (CSV → dashboard → opslaan), formulier invullen-installatiepaneel, de AI-knoppen van de website-bron en het dashboard (toestemming vragen en de melding zonder sleutel), mobiel, uitloggen en het dashboard zonder server.
 
 Vooraf, in drie terminals:
 
@@ -14,11 +14,11 @@ Dan: `cd parselab/tests && node qa.mjs`. Resultaat staat in `qa-result.txt`, sch
 
 `styleguide.mjs` controleert het dashboard tegen `docs/DASHBOARD-styleguide.md`: palet, contrast, typografie, raster, knophoogte, focusring, laadtoestand en de drie breedtes. Vraagt dezelfde servers als `qa.mjs`.
 
-`webflow.mjs` test de vijf ParsePDF-embeds uit `parselab/webflow/`. Die test start zelf wat hij nodig heeft: hij bouwt met `webflow-proef.mjs` een proefpagina in `proef/` (namaak-Supabase, pdf.js uit `tools/parsepdf.html`, drie proef-PDF's), zet daar een server op 8123 bij, controleert ook de losse pagina uit `webflow/bouw-pagina.mjs` en sluit alles weer af. Los draaien: `node webflow.mjs`.
+`webflow.mjs` test de vijf de PDF-bron-embeds uit `parselab/webflow/`. Die test start zelf wat hij nodig heeft: hij bouwt met `webflow-proef.mjs` een proefpagina in `proef/` (namaak-Supabase, pdf.js uit `tools/parsepdf.html`, drie proef-PDF's), zet daar een server op 8123 bij, controleert ook de losse pagina uit `webflow/bouw-pagina.mjs` en sluit alles weer af. Los draaien: `node webflow.mjs`.
 
-`werkbank.mjs` loopt de hele werkstroom af: een rommelige Excel opschonen met ParseSheet, de
-tabel in de Werkbank zien verschijnen, Excel en CSV downloaden, het rapport maken als `.md` én
-`.html` (kolommen, kerncijfers en de som nagerekend) en de rijen doorgeven aan ParseBoard.
+`werkbank.mjs` loopt de hele werkstroom af: een rommelige Excel opschonen met de databestand-bron, de
+tabel bij je gestructureerde data zien verschijnen, Excel en CSV downloaden, het rapport maken als `.md` én
+`.html` (kolommen, kerncijfers en de som nagerekend) en de rijen doorgeven aan het dashboard.
 Vraagt de ParseLab-server op 8080. Los draaien: `node werkbank.mjs`.
 
 `extensie.mjs` laadt de browserextensie in een echte Chromium en controleert het openen: een klik op

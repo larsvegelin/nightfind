@@ -34,22 +34,24 @@ await step('login', async () => {
   await p.fill('#login-email', 'niet-een-mail'); await p.click('#login-form button[type=submit]'); await p.waitForTimeout(300);
   ok('ongeldig e-mailadres blijft op login', await p.locator('#login-form').count() === 1, await p.locator('#login-note').innerText().catch(()=>''));
   await p.fill('#login-email', 'sanne.de.vries@kantoor.nl'); await p.click('#login-form button[type=submit]'); await p.waitForTimeout(800);
-  ok('na login: overzicht', await p.locator('#login-form').count() === 0 && await p.locator('.launch').count() === 1, 'hash=' + await hash());
+  ok('na login: data-extractie', await p.locator('#login-form').count() === 0 && await p.locator('.launch').count() === 1, 'hash=' + await hash());
   ok('naam uit e-mail', /Sanne/.test(await p.locator('#user-name').innerText()), await p.locator('#user-name').innerText());
   await p.reload({ waitUntil:'load' }); await p.waitForTimeout(500);
   ok('sessie blijft na herladen', await p.locator('#login-form').count() === 0);
 });
 
-// ---------- 2. Overzicht ----------
-await step('overzicht', async () => {
+// ---------- 2. Startpagina: de ene interface ----------
+await step('start', async () => {
   const cards = await p.locator('.launch button[data-bench]').count();
-  ok('overzicht: 5 startkaarten', cards === 5, cards);
-  ok('overzicht: 5 visuals', await p.locator('.launch .lv').count() === 5);
-  ok('overzicht: lege projectstaat zonder nepdata', await p.locator('.proj-row').count() === 0 && await p.locator('.empty').count() >= 1);
-  const h = await p.locator('.overview-title').innerText(); ok('begroeting met naam', /Sanne/.test(h), h);
+  ok('start: 3 bronkaarten (PDF, website, databestand)', cards === 3, cards);
+  ok('start: 3 visuals', await p.locator('.launch .lv').count() === 3);
+  const stappen = await p.locator('#view .pld-caps').allInnerTexts();
+  ok('start: drie stappen bron → data → formaat', /stap 1/i.test(stappen.join(' ')) && /stap 2/i.test(stappen.join(' ')) && /stap 3/i.test(stappen.join(' ')), stappen.slice(0,4).join(' · '));
+  ok('start: lege datastaat zonder nepdata', await p.locator('.proj-row').count() === 0 && await p.locator('.empty').count() >= 1);
+  const h = await p.locator('.overview-title').innerText(); ok('kop: één tool met één naam', /Data-extractie/.test(h) && !/Parse(PDF|Scraper|Sheet|Board|Form)/.test(await p.locator('#view, #nav-tools').allInnerTexts().then(a=>a.join(' '))), h.replace(/\n/g,' '));
   const scrollW = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   ok('geen horizontale scroll (1440)', scrollW <= 0, scrollW);
-  await p.screenshot({ path:S+'/shots/qa-overview.png', fullPage:true });
+  await p.screenshot({ path:S+'/shots/qa-start.png', fullPage:true });
 });
 
 // ---------- 3. Sidebar / routing / help / zoeken / account ----------
@@ -77,7 +79,7 @@ await step('navigatie', async () => {
   await p.click('#user-btn'); await p.click('[data-modal="account"]'); await p.click('#set-ai'); await p.keyboard.press('Escape');
 });
 
-// ---------- 4. ParseScraper volledig ----------
+// ---------- 4. Website uitlezen ----------
 let taskId = null;
 await step('scraper', async () => {
   await p.goto(U + '#scrape/url'); await p.waitForTimeout(1500);
@@ -135,9 +137,9 @@ await step('scraper', async () => {
   const other = await (await fetch('http://127.0.0.1:8080/api/scrape/tasks', { headers:{ 'x-parselab-user':'iemand.anders@kantoor.nl' } })).json();
   ok('andere gebruiker ziet deze taak niet', !other.some(x => x.name === 'QA testshop'), other.length);
   ok('taak op server met planning en laatste run', !!tk && tk.schedule === 'dag' && !!tk.lastRunId, JSON.stringify(tk||{}).slice(0,160));
-  // De rijen doorgeven aan ParseBoard: de tools hangen aan elkaar.
+  // De rijen doorgeven aan het dashboard: de stappen hangen aan elkaar.
   await t.locator('#naar-board').click(); await p.waitForTimeout(2500);
-  ok('scraper → board: het dashboard schakelt naar ParseBoard', /board\//.test(await hash()), await hash());
+  ok('website → dashboard: de schil schakelt om', /board\//.test(await hash()), await hash());
   const bt = tool();
   ok('scraper → board: de rijen staan er en de stap is de kolommenstap',
     /Stap 2|stap 2/i.test(await bt.locator('#main').innerText().catch(() => '')) || /board\/2/.test(await hash()),
@@ -150,8 +152,8 @@ await step('scraper', async () => {
 
 // ---------- 5. Projecten: overzicht, openen, hernoemen, verwijderen ----------
 await step('projecten', async () => {
-  await p.click('.nav-item[data-go="overview"]'); await p.waitForTimeout(500);
-  ok('overzicht toont project met mini-visual', await p.locator('.proj-row').count() >= 1 && await p.locator('.proj-row svg, .proj-row .mini').count() >= 1);
+  await p.click('.nav-item[data-go="start"]'); await p.waitForTimeout(500);
+  ok('start toont opzet met mini-visual', await p.locator('.proj-row').count() >= 1 && await p.locator('.proj-row svg, .proj-row .mini').count() >= 1);
   await p.click('.proj-row [data-edit-project]'); await p.waitForTimeout(200);
   await p.fill('#ep-name', 'QA testshop (hernoemd)'); await p.click('#ep-save'); await p.waitForTimeout(300);
   ok('project hernoemd', await p.locator('.proj-row', { hasText:'hernoemd' }).count() === 1);
@@ -168,7 +170,7 @@ await step('projecten', async () => {
   await p.click('.nav-sub-item[data-new-project="scrape"]'); await p.fill('#np-name', 'Leeg project'); await p.click('#np-save'); await p.waitForTimeout(1200);
   await p.click('.nav-item[data-go="files"]'); await p.waitForTimeout(1200);
   ok('bestanden: serverbestanden (runs) zichtbaar', await p.locator('#files-list .files-row').count() >= 1, await p.locator('#files-list .files-row').count());
-  await p.click('.nav-item[data-go="overview"]'); await p.waitForTimeout(400);
+  await p.click('.nav-item[data-go="start"]'); await p.waitForTimeout(400);
   await p.click('.proj-row [data-edit-project]'); await p.click('#ep-delete'); await p.waitForTimeout(600);
   await p.goto(U + '#scrape/url'); await p.reload({ waitUntil:'load' }); await p.waitForTimeout(2500);
   ok('"Uit lijst halen" blijft na herladen', await p.locator('.nav-sub-item.proj[data-project]').count() === 0, await p.locator('.nav-sub-item.proj[data-project]').count());
@@ -183,7 +185,7 @@ await step('bestanden', async () => {
   ok('bestanden: bewaarde bestanden leeg met uitleg', /Nog geen|Downloads/.test(await p.locator('#files-kept').innerText()));
 });
 
-// ---------- 7. ParsePDF ----------
+// ---------- 7. Data uit een PDF ----------
 await step('parsepdf', async () => {
   await p.goto(U + '#pdf/upload'); await p.waitForTimeout(3500);
   const t = tool();
@@ -200,18 +202,18 @@ await step('parsepdf', async () => {
   ok('pdf: sjabloon bewaard als project', await p.locator('.nav-sub-item.proj', { hasText:'QA sjabloon' }).count() === 1);
   ok('pdf: geen welkomstscherm in dashboard', await t.locator('#fsOnboarding.open').count() === 0);
   await p.click('.nav-sub-item.proj[data-project="pdf:QA sjabloon"] ~ * , .nav-sub-item.proj', { hasText:'QA sjabloon' }).catch(()=>{});
-  await p.click('.nav-item[data-go="overview"]'); await p.waitForTimeout(400);
+  await p.click('.nav-item[data-go="start"]'); await p.waitForTimeout(400);
   await p.locator('.proj-row', { hasText:'QA sjabloon' }).locator('[data-edit-project]').click(); await p.fill('#ep-name', 'Facturen 2026'); await p.click('#ep-save'); await p.waitForTimeout(400);
   await p.goto(U + '#pdf/templates'); await p.waitForTimeout(3500);
   ok('pdf: hernoemd sjabloon ook in de tool', /Facturen 2026/.test(await tool().locator('#page-templates').innerText()) && await p.locator('.nav-sub-item.proj', { hasText:'Facturen 2026' }).count() === 1, (await tool().locator('#tplPageList').innerText()).replace(/\n/g,' ').slice(0,80));
   await p.click('.nav-sub-item[data-section="download"]'); await p.waitForTimeout(600);
   const dlb = t.locator('#page-download button', { hasText:/Excel|xlsx|Download/i }).first();
   if (await dlb.count()) { await dlb.click(); await p.waitForTimeout(1500); }
-  // Ook vanuit ParsePDF gaan de rijen door naar ParseBoard.
+  // Ook vanuit een PDF gaan de rijen door naar het dashboard.
   const naarBoard = t.locator('#toBoardBtn');
   if (await naarBoard.count() && !(await naarBoard.isDisabled())) {
     await naarBoard.click(); await p.waitForTimeout(2500);
-    ok('pdf → board: het dashboard schakelt naar ParseBoard', /board\//.test(await hash()), await hash());
+    ok('pdf → dashboard: de schil schakelt om', /board\//.test(await hash()), await hash());
     await p.goto(U + '#pdf/download'); await p.waitForTimeout(1500);
   } else ok('pdf → board: knop beschikbaar na uitlezen', false, 'knop uit');
 
@@ -220,10 +222,10 @@ await step('parsepdf', async () => {
   await p.screenshot({ path:S+'/shots/qa-files.png', fullPage:true });
 });
 
-// ---------- 8. ParseBoard ----------
+// ---------- 8. Dashboard ----------
 await step('uitleg per tool', async () => {
   // Elke tool heeft een rondleiding van vijf stappen in de schil zelf.
-  for (const [hash, naam] of [['#scrape/url', 'Website uitlezen'], ['#pdf/upload', 'ParsePDF'], ['#board/1', 'ParseBoard'], ['#form/install', 'ParseForm']]) {
+  for (const [hash, naam] of [['#scrape/url', 'website'], ['#pdf/upload', 'pdf'], ['#board/1', 'dashboard'], ['#form/install', 'formulier']]) {
     await p.goto(U + hash); await p.waitForTimeout(1200);
     const knop = p.locator('[data-tour]').first();
     if (!(await knop.count())) { ok('uitleg: knop bij ' + naam, false, 'geen knop'); continue; }
@@ -262,7 +264,7 @@ await step('parseboard', async () => {
   await p.screenshot({ path:S+'/shots/qa-board.png', fullPage:true });
 });
 
-// ---------- 9. ParseForm (extensie-paneel) ----------
+// ---------- 9. Formulier invullen (extensie-paneel) ----------
 await step('parseform', async () => {
   await p.goto(U + '#form/install'); await p.waitForTimeout(800);
   const v = await p.locator('#view').innerText();
@@ -276,17 +278,17 @@ function CONFIG_check() { return false; }
 
 // ---------- 10. Mobiel ----------
 await step('mobiel', async () => {
-  await p.setViewportSize({ width:390, height:844 }); await p.goto(U + '#overview'); await p.waitForTimeout(800);
+  await p.setViewportSize({ width:390, height:844 }); await p.goto(U + '#start'); await p.waitForTimeout(800);
   const sw = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   ok('mobiel: geen horizontale scroll', sw <= 0, sw);
-  ok('mobiel: startkaarten zichtbaar', await p.locator('.launch button[data-bench]').first().isVisible());
+  ok('mobiel: bronkaarten zichtbaar', await p.locator('.launch button[data-bench]').first().isVisible());
   ok('mobiel: zijbalk ingeklapt, menuknop zichtbaar', await p.locator('#menu-btn').isVisible() && !(await p.locator('#nav-tools').isVisible()));
   await p.click('#menu-btn'); await p.waitForTimeout(200);
   ok('mobiel: menu klapt uit', await p.locator('#nav-tools').isVisible());
   await p.click('.nav-item[data-go="files"]'); await p.waitForTimeout(400);
   ok('mobiel: menu sluit na keuze', !(await p.locator('#nav-tools').isVisible()) && (await hash()).startsWith('#files'));
   await p.click('#top-action'); await p.waitForTimeout(200);
-  ok('bestanden: "Nieuw project" toont keuze uit 5 tools', await p.locator('#modal [data-new-project]').count() === 5);
+  ok('bestanden: "Nieuwe opzet" toont keuze uit 5 stappen', await p.locator('#modal [data-new-project]').count() === 5);
   await p.keyboard.press('Escape');
   await p.screenshot({ path:S+'/shots/qa-mobile.png', fullPage:true });
   await p.setViewportSize({ width:1440, height:1000 });
@@ -304,7 +306,7 @@ await step('sync', async () => {
 
 // ---------- 11. Uitloggen ----------
 await step('uitloggen', async () => {
-  await p.goto(U + '#overview'); await p.waitForTimeout(500);
+  await p.goto(U + '#start'); await p.waitForTimeout(500);
   await p.click('#user-btn'); await p.click('#logout'); await p.waitForTimeout(400);
   ok('uitloggen → login', await p.locator('#login-form').count() === 1);
 });
@@ -316,13 +318,13 @@ await step('zonder server', async () => {
   await p.goto('http://127.0.0.1:8765/parselab/index.html#scrape/url'); await p.reload({ waitUntil:'load' }); await p.waitForTimeout(1800);
   ok('zonder server: hint met startinstructie', await p.locator('.server-hint').count() === 1 && /start\.bat|node server/.test(await p.locator('.server-hint').innerText()));
   await p.goto('http://127.0.0.1:8765/parselab/index.html#pdf/upload'); await p.waitForTimeout(3000);
-  ok('zonder server: ParsePDF werkt', await tool().locator('#page-upload.active').count() === 1);
+  ok('zonder server: PDF-extractie werkt', await tool().locator('#page-upload.active').count() === 1);
 });
 
 // ---------- 13. Serveradres: dashboard op een statische host, server ergens anders ----------
 await step('serveradres', async () => {
   const B = 'http://127.0.0.1:8765/parselab/index.html';
-  await p.goto(B + '#overview'); await p.waitForTimeout(500);
+  await p.goto(B + '#start'); await p.waitForTimeout(500);
   await p.click('#user-btn'); await p.click('[data-modal="account"]'); await p.waitForTimeout(200);
   ok('account: veld Serveradres', await p.locator('#set-api').count() === 1 && await p.locator('#set-api-save').count() === 1);
   await p.fill('#set-api', 'http://127.0.0.1:8079'); await p.click('#set-api-save'); await p.waitForTimeout(1500);
@@ -340,9 +342,9 @@ await step('serveradres', async () => {
   // De tool zelf praat nu met 8080 (andere oorsprong): de status-aanroep moet lukken dankzij CORS.
   const st = await tool().locator('body').evaluate(async () => { const r = await fetch((window.PARSELAB_API_BASE || '') + '/api/scrape/status'); return r.status + ' ' + (window.PARSELAB_API_BASE || ''); });
   ok('tool bereikt de server op het andere adres', /^200 http/.test(st), st);
-  await p.goto(B + '?api=http://127.0.0.1:8081#overview', { waitUntil:'load' }); await p.waitForTimeout(900);
+  await p.goto(B + '?api=http://127.0.0.1:8081#start', { waitUntil:'load' }); await p.waitForTimeout(900);
   ok('?api= in de adresbalk overschrijft de instelling', await p.evaluate(() => localStorage.getItem('parselab-api-base')) === 'http://127.0.0.1:8081');
-  await p.goto(B + '#overview'); await p.waitForTimeout(400);
+  await p.goto(B + '#start'); await p.waitForTimeout(400);
   await p.click('#user-btn'); await p.click('[data-modal="account"]'); await p.waitForTimeout(200);
   await p.fill('#set-api', ''); await p.click('#set-api-save'); await p.waitForTimeout(800);
   ok('leeg adres: terug naar zelfde oorsprong', /Leeg/.test(await p.locator('#set-api-msg').innerText()) && await p.evaluate(() => localStorage.getItem('parselab-api-base')) === '', await p.locator('#set-api-msg').innerText());

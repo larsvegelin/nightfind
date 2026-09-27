@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="ParsePDF - Upload meerdere PDF's, wijs aan wat je nodig hebt en download het als Excel. Alles blijft op jouw computer.">
+    <meta name="description" content="ParseLab - Data uit een PDF: upload meerdere PDF's, wijs aan wat je nodig hebt en download het als Excel. Alles blijft op jouw computer.">
     <meta name="robots" content="noindex">
 
-    <title>ParsePDF</title>
+    <title>Data uit een PDF · ParseLab</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%84%3C/text%3E%3C/svg%3E">
@@ -951,7 +951,7 @@
             .table-scroll { box-shadow: inset -14px 0 14px -14px rgba(11,11,11,.30), inset 14px 0 14px -14px rgba(11,11,11,.30); }
             .rule-head, .rule-body { grid-template-columns: 1fr; }
         }
-        /* === ParsePDF: vier stappen, aanwijzen, controleren === */
+        /* === Data uit een PDF: vier stappen, aanwijzen, controleren === */
         .nav-num {
             display: inline-flex; align-items: center; justify-content: center;
             width: 22px; height: 22px; border-radius: 50%; flex: none;
@@ -1059,7 +1059,7 @@
         <!-- Stap 1: Uploaden -->
         <div class="app-page active" id="page-upload">
             <h1 class="page-title">1 &middot; Uploaden</h1>
-            <p class="page-sub">Sleep je PDF&rsquo;s hierheen. ParsePDF leest ze uit op jouw computer &mdash; er wordt niets ge&uuml;pload.</p>
+            <p class="page-sub">Sleep je PDF&rsquo;s hierheen. ParseLab leest ze uit op jouw computer &mdash; er wordt niets ge&uuml;pload.</p>
             <button type="button" class="next-hint hidden" id="hintDocs"><span class="nh-text"></span><svg class="ico ico-sm nh-arrow" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
 
             <div class="tour-banner">
@@ -1089,7 +1089,7 @@
                     <input type="text" id="newLabelName" class="tmpl-input" placeholder="bijv. Offerte" style="width:150px;">
                     <button class="btn btn-small btn-ghost" id="addLabelBtn"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"></use></svg>Soort</button>
                 </div>
-                <p class="hint" id="labelHint">ParsePDF herkent de soort van elk document (factuur, bon, loonstrook, rapport). Klopt het niet? Pas de soort per document aan met het labelicoon. Klik op een soort om alleen die documenten te gebruiken.</p>
+                <p class="hint" id="labelHint">ParseLab herkent de soort van elk document (factuur, bon, loonstrook, rapport). Klopt het niet? Pas de soort per document aan met het labelicoon. Klik op een soort om alleen die documenten te gebruiken.</p>
                 <div class="progress" id="parseProgress"><i></i></div>
                 <div class="file-list" id="fileList"></div>
                 <div class="toolbar" style="margin-top:0.9rem;">
@@ -1170,12 +1170,12 @@
             <div class="define-primary" id="defineActions">
                 <div class="define-card primary">
                     <h3>Gebied selecteren</h3>
-                    <p>Teken een vak om de waarde in je PDF (&ldquo;hier staat het bedrag&rdquo;). ParsePDF leest datzelfde vak in alle documenten.</p>
+                    <p>Teken een vak om de waarde in je PDF (&ldquo;hier staat het bedrag&rdquo;). ParseLab leest datzelfde vak in alle documenten.</p>
                     <button class="btn" id="addRegionBtn"><svg class="ico" aria-hidden="true"><use href="#i-columns"></use></svg>Gebied selecteren</button>
                 </div>
                 <div class="define-card">
                     <h3>Waarde die je in de PDF ziet</h3>
-                    <p>Typ een waarde uit je document (bijv. een factuurnummer). ParsePDF zoekt hem op en leidt de kolom zelf af.</p>
+                    <p>Typ een waarde uit je document (bijv. een factuurnummer). ParseLab zoekt hem op en leidt de kolom zelf af.</p>
                     <div class="rule-body" style="margin-top:0;">
                         <div class="field" style="flex:1; min-width:160px;">
                             <label>Waarde</label>
@@ -1324,7 +1324,7 @@
             <details class="adv-details" id="autoDetails" style="margin-top:1.25rem;">
                 <summary>Dit voortaan automatisch doen</summary>
                 <div class="tool-section" style="margin-top:0.75rem;">
-                    <p class="hint" style="margin-top:0;">Elke keer dat je hier PDF&rsquo;s neerzet, gebruikt ParsePDF het gekozen sjabloon en start je download vanzelf. Dit werkt alleen zolang dit tabblad open staat.</p>
+                    <p class="hint" style="margin-top:0;">Elke keer dat je hier PDF&rsquo;s neerzet, gebruikt ParseLab het gekozen sjabloon en start je download vanzelf. Dit werkt alleen zolang dit tabblad open staat.</p>
                     <div class="rule-body" style="align-items:flex-end;">
                         <div class="field" style="min-width:220px;">
                             <label>Sjabloon</label>
@@ -1486,7 +1486,7 @@
 
 
     <footer class="site-footer">
-        ParsePDF — alles draait lokaal in je browser, je bestanden blijven op jouw computer.
+        ParseLab — alles draait lokaal in je browser, je bestanden blijven op jouw computer.
     </footer>
 
     <!-- pdf.js (Mozilla, Apache-2.0) — inline zodat dit bestand zelfstandig werkt -->
@@ -3784,7 +3784,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             markDownloaded();
         }
 
-        // Invullijst voor ParseForm: zelfde tabel als xlsx, en het dashboard gaat naar ParseForm
+        // Invullijst om formulieren mee te vullen: zelfde tabel als xlsx
         function sendToForm() {
             if (!results || !window.XLSX) return;
             var fileName = exportName('xlsx').replace(/\.xlsx$/, '') + '-invullijst.xlsx';
@@ -3795,10 +3795,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             markDownloaded();
             if (isEmbedded) {
                 postToParent({ type: 'parselab:open', view: 'form', section: 'install', payload: { fileName: fileName, rows: results.rows.length } });
-                setDlStatus('Invullijst gemaakt \u2014 ParseForm wordt geopend.');
+                setDlStatus('Invullijst gemaakt \u2014 formulier invullen wordt geopend.');
             } else {
                 showToast('Invullijst gedownload', 'download');
-                setDlStatus('Invullijst gedownload. Open ParseForm in het ParseLab-dashboard en kies dit bestand om een formulier in te vullen.');
+                setDlStatus('Invullijst gedownload. Kies in ParseLab "Formulier invullen" en dit bestand om een formulier te vullen.');
             }
         }
 
@@ -4622,7 +4622,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             { page: 'upload', sel: '#dropzone', title: '1 \u00b7 Uploaden',
               text: 'Sleep hier je PDF\u2019s naartoe of kies een map. Alles wordt op jouw computer verwerkt \u2014 deze bestanden blijven op jouw computer.' },
             { page: 'define', sel: '#defineActions', title: '2 \u00b7 Aanwijzen',
-              text: 'Teken een vak om de waarde die je nodig hebt, of typ een waarde die je in de PDF ziet. ParsePDF laat direct zien wat er in je documenten gevonden wordt.' },
+              text: 'Teken een vak om de waarde die je nodig hebt, of typ een waarde die je in de PDF ziet. ParseLab laat direct zien wat er in je documenten gevonden wordt.' },
             { page: 'download', sel: '#exportXlsxBtn', title: '3 \u00b7 Downloaden',
               text: 'Kijk de tabel na op stap 3 en download hier voor Excel \u2014 of vul er direct een formulier mee in.' }
         ];
@@ -4903,7 +4903,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 this.value = '';
             });
             $('toFormBtn').addEventListener('click', sendToForm);
-            // De uitgelezen tabel doorgeven aan ParseBoard; het dashboard levert hem daar af.
+            // De uitgelezen tabel doorgeven aan het dashboard; de schil levert hem daar af.
             var naarBoard = $('toBoardBtn');
             if (naarBoard) naarBoard.addEventListener('click', function () {
                 if (!results || !results.rows.length) return;

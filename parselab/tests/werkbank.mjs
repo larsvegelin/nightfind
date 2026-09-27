@@ -1,5 +1,5 @@
 /*
- * Test voor de Werkbank: de ene tool waarin alles samenkomt.
+ * Test voor de ene interface: data-extractie waarin alles samenkomt.
  * Bron (document, website, rommelige Excel) → nette tabel → uitvoer
  * (Excel, CSV, dashboard) → rapport als Markdown én als webpagina.
  * Draait tegen de ParseLab-server op 8080 (net als qa.mjs).
@@ -24,11 +24,11 @@ const fouten = [];
 p.on('pageerror', e => fouten.push('[pageerror] ' + e.message));
 p.on('console', m => { if (m.type() === 'error' && !/fonts|favicon|ERR_|status of (400|403|404|501)/.test(m.text())) fouten.push('[console] ' + m.text().slice(0, 160)); });
 
-// ---------- 1. ParseSheet als losse pagina: rommelige export wordt één nette tabel ----------
+// ---------- 1. De databestand-stap als losse pagina: rommelige export wordt één nette tabel ----------
 await p.goto(SHEET, { waitUntil: 'load' });
 await p.click('#voorbeeld');
 await p.waitForTimeout(300);
-ok('ParseSheet: kopregel herkend', await p.evaluate(() => +document.querySelector('#kopregel').value) === 3, 'regel ' + (await p.evaluate(() => +document.querySelector('#kopregel').value) + 1));
+ok('Databestand: kopregel herkend', await p.evaluate(() => +document.querySelector('#kopregel').value) === 3, 'regel ' + (await p.evaluate(() => +document.querySelector('#kopregel').value) + 1));
 await p.click('#naar-klaar');
 await p.waitForTimeout(400);
 const tabel = await p.evaluate(() => {
@@ -36,39 +36,39 @@ const tabel = await p.evaluate(() => {
   const rijen = [...document.querySelectorAll('#netjes tbody tr')].map(tr => [...tr.querySelectorAll('td')].map(td => td.textContent.trim()));
   return { kop, rijen };
 });
-ok('ParseSheet: de vier kolommen staan er', tabel.kop.join(',') === 'Relatie,Polis,Premie,Ingangsdatum', tabel.kop.join(','));
-ok('ParseSheet: vier regels met gegevens', tabel.rijen.length === 4, tabel.rijen.length + ' regels');
-ok('ParseSheet: herhaalde kopregel weg', !tabel.rijen.some(r => r[0] === 'Relatie'), JSON.stringify(tabel.rijen[2] || []));
-ok('ParseSheet: samengevoegde cel doorgevuld', tabel.rijen[1] && tabel.rijen[1][0] === 'Jansen BV', (tabel.rijen[1] || [])[0]);
-ok('ParseSheet: bedragen als getal', tabel.rijen[0] && tabel.rijen[0][2] === '1240,5', (tabel.rijen[0] || [])[2]);
-ok('ParseSheet: datums gelijkgetrokken', tabel.rijen.every(r => /^\d{2}-\d{2}-\d{4}$/.test(r[3])), tabel.rijen.map(r => r[3]).join(' · '));
+ok('Databestand: de vier kolommen staan er', tabel.kop.join(',') === 'Relatie,Polis,Premie,Ingangsdatum', tabel.kop.join(','));
+ok('Databestand: vier regels met gegevens', tabel.rijen.length === 4, tabel.rijen.length + ' regels');
+ok('Databestand: herhaalde kopregel weg', !tabel.rijen.some(r => r[0] === 'Relatie'), JSON.stringify(tabel.rijen[2] || []));
+ok('Databestand: samengevoegde cel doorgevuld', tabel.rijen[1] && tabel.rijen[1][0] === 'Jansen BV', (tabel.rijen[1] || [])[0]);
+ok('Databestand: bedragen als getal', tabel.rijen[0] && tabel.rijen[0][2] === '1240,5', (tabel.rijen[0] || [])[2]);
+ok('Databestand: datums gelijkgetrokken', tabel.rijen.every(r => /^\d{2}-\d{2}-\d{4}$/.test(r[3])), tabel.rijen.map(r => r[3]).join(' · '));
 const typen = await p.evaluate(() => [...document.querySelectorAll('#typen .type')].map(t => t.textContent.trim()));
-ok('ParseSheet: typen herkend', typen.some(t => /Premie · getal/.test(t)) && typen.some(t => /Ingangsdatum · datum/.test(t)), typen.join(' | '));
+ok('Databestand: typen herkend', typen.some(t => /Premie · getal/.test(t)) && typen.some(t => /Ingangsdatum · datum/.test(t)), typen.join(' | '));
 
 // Excel eruit halen moet een echt xlsx-bestand geven (zip met [Content_Types]).
 {
   const [down] = await Promise.all([p.waitForEvent('download', { timeout: 15000 }), p.click('#dl-xlsx')]);
   const pad = path.join(dl, 'sheet.xlsx'); await down.saveAs(pad);
   const kop = fs.readFileSync(pad).subarray(0, 2).toString('latin1');
-  ok('ParseSheet: Excel-download is een geldig bestand', kop === 'PK' && fs.statSync(pad).size > 500, down.suggestedFilename() + ' · ' + fs.statSync(pad).size + ' bytes');
+  ok('Databestand: Excel-download is een geldig bestand', kop === 'PK' && fs.statSync(pad).size > 500, down.suggestedFilename() + ' · ' + fs.statSync(pad).size + ' bytes');
 }
 
-// ---------- 2. De werkbank in het dashboard ----------
+// ---------- 2. De startpagina in de schil ----------
 await p.goto(U, { waitUntil: 'load' });
 await p.evaluate(() => { localStorage.clear(); });
 await p.reload({ waitUntil: 'load' });
 await p.fill('#login-email', 'sanne.de.vries@kantoor.nl');
 await p.click('#login-form button[type=submit]');
 await p.waitForTimeout(800);
-await p.goto(U + '#werk');
+await p.goto(U + '#start');
 await p.waitForTimeout(600);
-const bronnen = await p.evaluate(() => [...document.querySelectorAll('.werk-bron .lt')].map(e => e.textContent.trim()));
-ok('Werkbank: drie bronnen', bronnen.length === 3 && /Document/.test(bronnen[0]) && /Website/.test(bronnen[1]) && /Excel/.test(bronnen[2]), bronnen.join(' · '));
-ok('Werkbank: nog geen gegevens', await p.locator('.werk-set').count() === 0);
-ok('Werkbank: rapportknop staat uit zonder gegevens', await p.locator('#maak-rapport').isDisabled());
-ok('Werkbank staat in de navigatie', await p.locator('[data-go="werk"]').count() === 1);
+const bronnen = await p.evaluate(() => [...document.querySelectorAll('#view .launch .lt')].map(e => e.textContent.trim()));
+ok('Start: drie bronnen in één keuze', bronnen.length === 3 && /PDF/.test(bronnen[0]) && /website/i.test(bronnen[1]) && /Excel/.test(bronnen[2]), bronnen.join(' · '));
+ok('Start: nog geen data', await p.locator('.werk-set').count() === 0);
+ok('Start: rapportknop staat uit zonder data', await p.locator('#maak-rapport').isDisabled());
+ok('Data-extractie staat in de navigatie', await p.locator('[data-go="start"]').count() === 1);
 
-// ParseSheet binnen de schil: de tabel moet vanzelf in de werkbank komen.
+// De databestand-stap binnen de schil: de tabel moet vanzelf in de lijst komen.
 await p.goto(U + '#sheet/bron');
 await p.waitForTimeout(1200);
 const fr = p.frameLocator('iframe.bench-frame');
@@ -77,25 +77,25 @@ await p.waitForTimeout(400);
 await fr.locator('#naar-klaar').click();
 await p.waitForTimeout(600);
 const sets = await p.evaluate(() => JSON.parse(localStorage.getItem('parselab-datasets-v1') || '[]'));
-ok('Tool meldt zijn tabel aan de werkbank', sets.length === 1 && sets[0].rijen.length === 4, JSON.stringify((sets[0] || {}).kolommen || []));
+ok('De stap meldt zijn tabel aan de startpagina', sets.length === 1 && sets[0].rijen.length === 4, JSON.stringify((sets[0] || {}).kolommen || []));
 ok('De bron staat erbij', (sets[0] || {}).bron === 'sheet', (sets[0] || {}).bron);
 
-await p.goto(U + '#werk');
+await p.goto(U + '#start');
 await p.waitForTimeout(600);
-ok('Werkbank toont de tabel', await p.locator('.werk-set').count() === 1, await p.locator('.werk-set .pname').innerText().catch(() => ''));
-ok('Werkbank noemt herkomst en omvang', /ParseSheet/.test(await p.locator('.werk-set .mono-12').innerText()), await p.locator('.werk-set .mono-12').innerText());
+ok('Start toont de tabel', await p.locator('.werk-set').count() === 1, await p.locator('.werk-set .pname').innerText().catch(() => ''));
+ok('Start noemt herkomst en omvang', /Databestand/.test(await p.locator('.werk-set .mono-12').innerText()), await p.locator('.werk-set .mono-12').innerText());
 
 // Excel en CSV uit de werkbank zelf.
 {
   const [down] = await Promise.all([p.waitForEvent('download', { timeout: 15000 }), p.click('[data-xlsx]')]);
   const pad = path.join(dl, 'werk.xlsx'); await down.saveAs(pad);
-  ok('Werkbank: Excel-download', fs.readFileSync(pad).subarray(0, 2).toString('latin1') === 'PK', down.suggestedFilename());
+  ok('Start: Excel-download', fs.readFileSync(pad).subarray(0, 2).toString('latin1') === 'PK', down.suggestedFilename());
 }
 {
   const [down] = await Promise.all([p.waitForEvent('download', { timeout: 15000 }), p.click('[data-csv]')]);
   const pad = path.join(dl, 'werk.csv'); await down.saveAs(pad);
   const tekst = fs.readFileSync(pad, 'utf8');
-  ok('Werkbank: CSV met kopregel en vier regels', /Relatie;Polis;Premie;Ingangsdatum/.test(tekst) && tekst.trim().split('\n').length === 5, tekst.split('\n')[0]);
+  ok('Start: CSV met kopregel en vier regels', /Relatie;Polis;Premie;Ingangsdatum/.test(tekst) && tekst.trim().split('\n').length === 5, tekst.split('\n')[0]);
 }
 
 // ---------- 3. Rapport: Markdown én HTML met dezelfde inhoud ----------
@@ -112,18 +112,18 @@ ok('Werkbank noemt herkomst en omvang', /ParseSheet/.test(await p.locator('.werk
   ok('Rapport bevat de kolommen', /Relatie/.test(mdTekst) && /Ingangsdatum/.test(mdTekst));
   ok('Rapport bevat kerncijfers', /Kerncijfers/.test(mdTekst) && /Kerncijfers/.test(htmlTekst));
   ok('Rapport rekent de som uit', /4\.821,35|4821,35/.test(mdTekst), (mdTekst.match(/\| Premie \|[^\n]*/) || [''])[0]);
-  ok('Rapport: beide bestanden noemen dezelfde bron', /ParseSheet/.test(mdTekst) && /ParseSheet/.test(htmlTekst));
+  ok('Rapport: beide bestanden noemen dezelfde bron', /Databestand/.test(mdTekst) && /Databestand/.test(htmlTekst));
   ok('Rapport-HTML draait zonder losse bestanden', !/<script|src="http/.test(htmlTekst));
 }
 
 // ---------- 4. Doorgeven naar het dashboard ----------
 await p.click('[data-board]');
 await p.waitForTimeout(2500);
-ok('Naar dashboard opent ParseBoard', /#board/.test(await p.evaluate(() => location.hash)), await p.evaluate(() => location.hash));
+ok('Naar dashboard schakelt om', /#board/.test(await p.evaluate(() => location.hash)), await p.evaluate(() => location.hash));
 {
   const board = p.frameLocator('iframe.bench-frame');
   const tekst = await board.locator('body').innerText().catch(() => '');
-  ok('ParseBoard heeft de rijen ontvangen', /Relatie|Premie|Voorbeeld|kolom/i.test(tekst), tekst.replace(/\s+/g, ' ').slice(0, 120));
+  ok('Het dashboard heeft de rijen ontvangen', /Relatie|Premie|Voorbeeld|kolom/i.test(tekst), tekst.replace(/\s+/g, ' ').slice(0, 120));
 }
 
 ok('geen JS-fouten', fouten.length === 0, fouten.slice(0, 3).join(' || '));

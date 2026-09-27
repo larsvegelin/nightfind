@@ -32,10 +32,10 @@ jobs:
       - name: Stijlgids
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node styleguide.mjs
-      - name: Werkbank (bron → tabel → Excel, dashboard, rapport)
+      - name: Werkstroom (bron → gestructureerde data → Excel, dashboard, rapport)
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node werkbank.mjs
-      - name: Webflow-embeds van ParsePDF
+      - name: Webflow-embeds (losse marketingpagina)
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node webflow.mjs
       - name: Browserextensie

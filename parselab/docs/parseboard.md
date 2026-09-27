@@ -1,4 +1,4 @@
-# ParseBoard — per element
+# het dashboard — per element
 
 Basis: `tools/parseboard.html` (het "Paneel"): een wizard van zes stappen van CSV naar dashboard, volledig lokaal, opgeslagen onder `paneel-config`.
 
@@ -23,13 +23,13 @@ Basis: `tools/parseboard.html` (het "Paneel"): een wizard van zes stappen van CS
 - **Prioriteit:** 2
 
 ### Bron uit de suite
-- **Nu:** niet aanwezig; ParseBoard weet niets van ParsePDF of ParseScraper.
-- **Simpeler:** derde keuze in stap 1: "Gebruik een ParsePDF-sjabloon of een ParseScraper-taak als bron". Dan hoeft de gebruiker geen bestand heen en weer te slepen, en kan het dashboard zichzelf bijwerken, wat de pagina-spec belooft ("Rapportage die zich zelf bijwerkt").
+- **Nu:** niet aanwezig; het dashboard weet niets van de PDF-bron of de website-bron.
+- **Simpeler:** derde keuze in stap 1: "Gebruik een de PDF-bron-sjabloon of een de website-bron-taak als bron". Dan hoeft de gebruiker geen bestand heen en weer te slepen, en kan het dashboard zichzelf bijwerken, wat de pagina-spec belooft ("Rapportage die zich zelf bijwerkt").
 - **Prioriteit:** 1
 
 ### Opgeslagen dashboard ("Open mijn dashboard", "Verwijderen")
 - **Nu:** één opgeslagen configuratie in `localStorage`.
-- **Simpeler:** meerdere dashboards met een naam; die lijst staat dan ook in het ParseLab-dashboard onder ParseBoard.
+- **Simpeler:** meerdere dashboards met een naam; die lijst staat dan ook in het ParseLab-dashboard onder het dashboard.
 - **Veiliger:** de configuratie bevat kolomnamen en instellingen, geen data; de data komt uit het bestand dat de gebruiker opnieuw uploadt. Dat is een goede scheiding, houd die.
 - **Prioriteit:** 2
 
@@ -88,7 +88,7 @@ Basis: `tools/parseboard.html` (het "Paneel"): een wizard van zes stappen van CS
 
 ### Kop, tagline en voettekst ("Prototype · Alles gebeurt lokaal…")
 - **Nu:** verborgen in de werkbank via de embed-patch; los geopend zichtbaar.
-- **Simpeler:** naam overal "ParseBoard", tagline weg, de privacy-regel blijft maar verhuist naar stap 1 onder het sleepvlak.
+- **Simpeler:** naam overal "het dashboard", tagline weg, de privacy-regel blijft maar verhuist naar stap 1 onder het sleepvlak.
 - **Prioriteit:** 3
 
 ### Opslag in `localStorage` en de tellers in het dashboard
