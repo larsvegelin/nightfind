@@ -2,7 +2,7 @@
 
 Deze drieëntwintig bestanden zijn de embeds die op de Webflow-pagina `/tools/parsepdf-tool` staan. Ze horen bij het Webflow-dashboard met Supabase erachter, niet bij het dashboard in `parselab/index.html`. Beide versies van ParsePDF blijven bestaan: die in `tools/parsepdf.html` draait naast de ParseLab-server, deze draait naast Supabase.
 
-Plaatsing, wat de gebruiker ziet en wat er nog niet in zit staat in [`../docs/INTEGRATIE.md`](../docs/INTEGRATIE.md). Kort:
+Het volledige draaiboek voor de hele site — Supabase, alle pagina's, teksten, testen en foutzoeken — staat in [`../docs/WEBFLOW-SITE.md`](../docs/WEBFLOW-SITE.md). Alleen de plaatsing van de embeds: [`../docs/INTEGRATIE.md`](../docs/INTEGRATIE.md). Kort:
 
 | Bestand | Wat het doet |
 |---|---|
@@ -10,10 +10,15 @@ Plaatsing, wat de gebruiker ziet en wat er nog niet in zit staat in [`../docs/IN
 | `2-teksten.html` | Teksten in nl, en, de plus drie startsjablonen |
 | `3-teksten-voorstel.html` | Teksten voor doorkijken, voorstel en AI |
 | `3b-teksten-labels.html` | Teksten voor labels, selectie, OCR, mappen, eisen en de documentcontrole |
+| `3c-teksten-auto.html` | Teksten voor vergelijken, automatisch uitlezen, opties, omzetten, Excel en de doorzoekbare PDF |
 | `4-motor.html` | Uitleesmotor: pdf.js, cellen met x en y, regels toepassen, CSV |
 | `4b-ocr.html` | Tekstherkenning voor documenten zonder tekstlaag |
+| `4c-pdfmaken.html` | Van een scan een doorzoekbare PDF maken: de afbeelding met een onzichtbare tekstlaag |
 | `5-scherm.html` | Upload bovenaan, verbruiksmeter, mappen, Handmatig parsen, resultaattabel |
 | `5b-eisen.html` | Parsen op eisen: bij een woord, soort waarde, pagina, kolom; met een AI die een zin omzet in zo'n eis |
+| `5c-resultaat.html` | De resultaattabel, met download als CSV of Excel |
+| `5d-opties.html` | Opties (pagina's, tekstherkenning, uitvoer) en het omzetten van waarden per kolom |
+| `5e-excel.html` | Een Excel-bestand (.xlsx) maken zonder bibliotheek |
 | `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
 | `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
 | `8-voorstel.html` | Doorkijkscherm en het voorstel |
@@ -21,6 +26,8 @@ Plaatsing, wat de gebruiker ziet en wat er nog niet in zit staat in [`../docs/IN
 | `9b-uitleg.html` | "Hoe werkt ParsePDF?" in vijf stappen, met een voorbeeld dat je meteen kunt proberen |
 | `10-ai.html` | Uitlezen met AI: pakketcontrole, toestemming en tegoeden |
 | `11-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
+| `11b-groepen.html` | Documenten vergelijken en groeperen, sjablonen per groep, en de knop Lees uit die alles vanzelf doet |
+| `11c-auto.html` | Automatische regelkeuze: per veld wordt uitgeprobeerd wat in de hele groep werkt — structuur, woord, patroon of plek |
 | `12-verwerken.html` | Verwerking, limietbewaking, controle over alle documenten en opstarten |
 
 Wat het doorkijkscherm doet en hoe de herkenning werkt staat in [`../docs/PARSEPDF-DOORKIJKEN.md`](../docs/PARSEPDF-DOORKIJKEN.md).
@@ -41,7 +48,7 @@ Publiceer `parsepdf.js` op een vast adres (GitHub Pages doet dat al) en plaats i
 node parselab/webflow/bouw-pagina.mjs      # maakt parselab/ParsePDF.html
 ```
 
-`parselab/ParsePDF.html` is de vijf embeds achter elkaar in één pagina, met dezelfde Supabase erachter. Zet dat bestand op elke webhost en de tool werkt; handig als je nog geen Webflow-pagina wilt maken. Verander je iets in `webflow/`, bouw dan opnieuw, anders lopen de twee uit elkaar. De lancering zelf staat in [`../docs/LANCERING.md`](../docs/LANCERING.md).
+`parselab/ParsePDF.html` is alle embeds achter elkaar in één pagina, met dezelfde Supabase erachter. Zet dat bestand op elke webhost en de tool werkt; handig als je nog geen Webflow-pagina wilt maken. Verander je iets in `webflow/`, bouw dan opnieuw, anders lopen de twee uit elkaar. De lancering zelf staat in [`../docs/LANCERING.md`](../docs/LANCERING.md).
 
 ## Zelf uitproberen zonder Webflow
 
@@ -56,7 +63,7 @@ Met de adresregel stel je de namaak-Supabase in: `?ingelogd=0` (geen sessie), `?
 
 ## Testen
 
-`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 89 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm, het doorkijkscherm met voorstel en AI-toestemming, mappen met sjablonen die per document herkend worden, en de losse pagina uit `bouw-pagina.mjs`.
+`node parselab/tests/webflow.mjs` bouwt de proefpagina, start er zelf een server bij en loopt 117 controles af: doorsturen naar inloggen, verbruiksmeter, sjablonen, uitlezen van twee facturen, labels die `Totaal` niet met `Subtotaal` verwarren, opschonen tot bedrag en datum, regex met haakjesgroep, bestand zonder tekstlaag, CSV met puntkomma's en BOM, regels bewaren, limietbewaking, taalkeuze, het smalle scherm, het doorkijkscherm met voorstel en AI-toestemming, mappen met sjablonen die per document herkend worden, en de losse pagina uit `bouw-pagina.mjs`.
 
 ## Nog met de hand te doen in Webflow
 

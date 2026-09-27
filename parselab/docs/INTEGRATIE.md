@@ -1,4 +1,7 @@
-# de PDF-bron in het dashboard zetten
+# ParsePDF in het dashboard zetten
+
+> Het volledige draaiboek voor de hele site — Supabase, alle pagina's, teksten, testen en
+> foutzoeken — staat in [`WEBFLOW-SITE.md`](WEBFLOW-SITE.md). Dit stuk gaat alleen over de embeds.
 
 Drieëntwintig embeds op één nieuwe Webflow-pagina, of één embed via `dist/embed-loader.html`. Reken op twintig minuten.
 Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
@@ -13,17 +16,24 @@ Alles draait in de browser van de gebruiker; er wordt geen document verstuurd.
 | `2-teksten.html` | Teksten in nl, en, de plus drie startsjablonen |
 | `3-teksten-voorstel.html` | Teksten voor doorkijken, voorstel en AI |
 | `3b-teksten-labels.html` | Teksten voor labels, selectie, OCR, mappen, eisen en de documentcontrole |
+| `3c-teksten-auto.html` | Teksten voor vergelijken, automatisch uitlezen, opties, omzetten, Excel en de doorzoekbare PDF |
 | `4-motor.html` | Uitleesmotor: pdf.js, cellen met x en y, regels toepassen, CSV maken |
 | `4b-ocr.html` | Tekstherkenning voor documenten zonder tekstlaag |
+| `4c-pdfmaken.html` | Van een scan een doorzoekbare PDF maken: de afbeelding met een onzichtbare tekstlaag |
 | `5-scherm.html` | Schermopbouw: upload bovenaan, verbruiksmeter, mappen, Handmatig parsen, resultaattabel |
 | `5b-eisen.html` | Parsen op eisen: bij een woord, soort waarde, pagina, kolom; met een AI die een zin omzet in zo'n eis |
+| `5c-resultaat.html` | De resultaattabel, met download als CSV of Excel |
+| `5d-opties.html` | Opties (pagina's, tekstherkenning, uitvoer) en het omzetten van waarden per kolom |
+| `5e-excel.html` | Een Excel-bestand (.xlsx) maken zonder bibliotheek |
 | `6-structuur.html` | Cellen, kolommen en patronen: de basis van de herkenning |
 | `7-velden.html` | Velden voorstellen: kandidaatvormen, ontdubbelen, regeltabel |
 | `8-voorstel.html` | Doorkijkscherm met gearceerde velden en het voorstel |
 | `9-labels.html` | Labels per vlak, alles selecteren, goedkeuren en het OCR-aanbod |
-| `9b-uitleg.html` | "Hoe werkt de PDF-bron?" in vijf stappen, met een voorbeeld dat je meteen kunt proberen |
+| `9b-uitleg.html` | "Hoe werkt ParsePDF?" in vijf stappen, met een voorbeeld dat je meteen kunt proberen |
 | `10-ai.html` | Uitlezen met AI: pakketcontrole, toestemming en tegoeden |
 | `11-sjablonen.html` | Mappen met sjablonen en het herkennen van documenten |
+| `11b-groepen.html` | Documenten vergelijken en groeperen, sjablonen per groep, en de knop Lees uit die alles vanzelf doet |
+| `11c-auto.html` | Automatische regelkeuze: per veld wordt uitgeprobeerd wat in de hele groep werkt — structuur, woord, patroon of plek |
 | `12-verwerken.html` | Verwerking, limietbewaking, controle over alle documenten en opstarten |
 
 Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens. Splits je later iets bij, houd die grens aan.
@@ -32,10 +42,10 @@ Elk bestand blijft onder de embedlimiet van ongeveer 10.000 tekens. Splits je la
 
 ## 2. De pagina maken
 
-1. Webflow Designer → **Pages** → **+** → naam `de PDF-bron tool`, slug `parsepdf-tool`.
+1. Webflow Designer → **Pages** → **+** → naam `ParsePDF tool`, slug `parsepdf-tool`.
    Wil je hem onder het dashboard hangen, maak dan eerst een folder `tools` en kies die als parent; het pad wordt dan `/tools/parsepdf-tool`.
 2. Page settings → SEO → zet **Exclude from search results** aan. Dit is een pagina achter de login en hoort niet in Google.
-3. Titel: `de PDF-bron — ParseLab`. Beschrijving mag leeg blijven.
+3. Titel: `ParsePDF — ParseLab`. Beschrijving mag leeg blijven.
 
 ## 3. De opbouw plaatsen
 
@@ -49,23 +59,29 @@ Body
         └── Div · klasse: pl-container
             └── Div · klasse: pl-section pl-section-pb
                 ├── Div  · id: pl-parsepdf-root      ← leeg laten
-                ├── Embed 1-config-stijl
-                ├── Embed 2-teksten
-                ├── Embed 3-teksten-voorstel
-                ├── Embed 3b-teksten-labels
-                ├── Embed 3c-teksten-auto
-                ├── Embed 4-motor
-                ├── Embed 5-scherm
-                ├── Embed 5b-eisen
-                ├── Embed 5c-resultaat
-                ├── Embed 5d-opties
-                ├── Embed 5e-excel
-                ├── Embed 6-structuur
-                ├── Embed 7-velden
-                ├── Embed 8-voorstel
-                ├── Embed 9-ai
-                ├── Embed 10-sjablonen
-                └── Embed 11-verwerken
+                ├── Embed  1-config-stijl
+                ├── Embed  2-teksten
+                ├── Embed  3-teksten-voorstel
+                ├── Embed  3b-teksten-labels
+                ├── Embed  3c-teksten-auto
+                ├── Embed  4-motor
+                ├── Embed  4b-ocr
+                ├── Embed  4c-pdfmaken
+                ├── Embed  5-scherm
+                ├── Embed  5b-eisen
+                ├── Embed  5c-resultaat
+                ├── Embed  5d-opties
+                ├── Embed  5e-excel
+                ├── Embed  6-structuur
+                ├── Embed  7-velden
+                ├── Embed  8-voorstel
+                ├── Embed  9-labels
+                ├── Embed  9b-uitleg
+                ├── Embed  10-ai
+                ├── Embed  11-sjablonen
+                ├── Embed  11b-groepen
+                ├── Embed  11c-auto
+                └── Embed  12-verwerken
 ```
 
 De id `pl-parsepdf-root` moet exact zo geschreven zijn. Zonder die container doet de tool niets en verschijnt er een melding in de console.
@@ -74,7 +90,7 @@ De volgorde van de embeds is niet vrij. Embed 12 gebruikt wat 1 tot en met 11 kl
 
 ## 4. Koppelen aan het dashboard
 
-Zet op `/dashboard` de kaart van de PDF-bron om van "Binnenkort" naar een werkende knop, met een link naar de nieuwe pagina. Zeg het als je wilt dat ik dat in de dashboard-embed aanpas; dan haal ik meteen de "Binnenkort"-pill weg voor deze tool.
+Zet op `/dashboard` de kaart van ParsePDF om van "Binnenkort" naar een werkende knop, met een link naar de nieuwe pagina. Zeg het als je wilt dat ik dat in de dashboard-embed aanpas; dan haal ik meteen de "Binnenkort"-pill weg voor deze tool.
 
 ---
 

@@ -54,9 +54,9 @@ Per gebruiker: het dashboard stuurt het e-mailadres van wie is ingelogd mee (`x-
 | `tools/parseboard.html` | Formaat *dashboard*: tabel → overzicht met cijfers en grafieken, in zes stappen. |
 | `tools/parsesheet.html` | Bron *databestand*: een rommelige Excel- of CSV-export wordt één nette tabel. |
 | `tools/extension/` | Browserextensie voor formulier invullen en voor de bron *website* op ingelogde pagina's. `tools/parselab-extension.zip` is dezelfde extensie als download. |
-| `ParsePDF.html` | de PDF-bron als één losse pagina, gebouwd uit `webflow/` met `webflow/bouw-pagina.mjs`. Op elke webhost te zetten; werkt met de Supabase-login. |
-| `dist/` | de PDF-bron als één script (`parsepdf.js`) plus het laadblok voor Webflow, gebouwd met `webflow/bouw-bundel.mjs`. |
-| `webflow/` | De drieëntwintig embeds van de PDF-bron voor de Webflow-pagina met Supabase erachter (`webflow/README.md`, `docs/INTEGRATIE.md`). |
+| `ParsePDF.html` | ParsePDF als één losse pagina, gebouwd uit `webflow/` met `webflow/bouw-pagina.mjs`. Op elke webhost te zetten; werkt met de Supabase-login. |
+| `dist/` | ParsePDF als één script (`parsepdf.js`) plus het laadblok voor Webflow, gebouwd met `webflow/bouw-bundel.mjs`. |
+| `webflow/` | De drieëntwintig embeds van ParsePDF voor de Webflow-pagina met Supabase erachter. Het complete draaiboek voor die site staat in [`docs/WEBFLOW-SITE.md`](docs/WEBFLOW-SITE.md). |
 | `docs/` | Analyse per tool, status van toepassing en `verbeterpunten.md` (laatste testronde), plus `LANCERING.md` en `INTEGRATIE.md` voor het live zetten `PARSEPDF-VOLGENDE-VERSIE.md` voor de volgende versie van de PDF-bron `IMPLEMENTATIE.md` als startpunt, `PARSEPDF-DOORKIJKEN.md`, `PARSESCRAPER-VOLGENDE-VERSIE.md` en `DASHBOARD-VOLGENDE-VERSIE.md` voor de opbouw, vormgeving, AI-hulp en de volgende stappen per onderdeel, `SITE-UITLEG-PARSEPDF.md` als hulppagina voor bezoekers, `SCRAPEN-VANUIT-DASHBOARD.md` voor Website uitlezen vanaf een dashboard op GitHub Pages (server neerzetten, serveradres, CORS, fouten), en `WIJZIGINGEN.md` met alle wijzigingen per ronde. |
 | `tests/` | Playwright-testrun over het hele dashboard (`tests/README.md`). |
 
