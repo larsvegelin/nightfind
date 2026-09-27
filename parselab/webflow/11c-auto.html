@@ -1,0 +1,71 @@
+<!-- ParsePDF — embed 11c: automatische regelkeuze. Per veld wordt uitgeprobeerd wat in de hele groep werkt: structuur, woord, patroon of plek. -->
+<script>
+window.PLP_AUTO=(function(){
+var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST;
+var VOLGORDE=["structuur","woord","patroon","plek"];
+function esc(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+// Hoeveel documenten van de groep leveren met deze regel iets op?
+function dekking(leden,regel){
+  var g=0,mist=[];
+  leden.forEach(function(l){
+    var w=P.rij(l.doc,[regel]).velden.k0;
+    if(w)g++;else mist.push(l.doc.naam);
+  });
+  return {g:g,mist:mist};
+}
+// De kandidaten voor één veld, in de volgorde waarin we ze liever hebben.
+function kandidaten(naam,vondsten,filter){
+  var uit=[],gezien={};
+  vondsten.forEach(function(v){
+    var vr=v.vindregel||{};
+    if(vr.type&&vr.type!=="plek"&&!gezien["s:"+JSON.stringify(vr)]){
+      gezien["s:"+JSON.stringify(vr)]=1;
+      uit.push({strategie:"structuur",regel:{naam:naam,type:"cel",waarde:vr.label||vr.patroon||"",filter:filter,vindregel:vr}});
+    }
+  });
+  var label=(vondsten[0].vindregel&&vondsten[0].vindregel.label)||"";
+  if(label&&!ST.vind(label))uit.push({strategie:"woord",regel:{naam:naam,type:"label",waarde:label,filter:filter}});
+  var pat=null;vondsten.forEach(function(v){if(!pat){var f=ST.vind(v.waarde);if(f)pat=f.patroon;}});
+  if(pat){
+    var re=label?"(?:^|[^A-Za-z])"+esc(label)+"[\\s:\\-–]*("+pat.re+")":"("+pat.re+")";
+    uit.push({strategie:"patroon",regel:{naam:naam,type:"regex",waarde:re,filter:filter}});
+  }
+  vondsten.forEach(function(v){
+    if(!v.vak||uit.some(function(k){return k.strategie==="plek";}))return;
+    uit.push({strategie:"plek",regel:{naam:naam,type:"cel",waarde:"",filter:filter,vindregel:{type:"plek",pagina:v.vak.pagina,x:v.vak.x,y:v.vak.y}}});
+  });
+  return uit;
+}
+// Voor een groep documenten (elk {doc, analyse}) de regels die overal het meest opleveren.
+function regels(leden){
+  var perNaam={},namen=[];
+  leden.forEach(function(l){
+    (l.analyse.velden||[]).forEach(function(v){
+      if(v.score<0.7||!v.naam)return;
+      var k=v.naam.toLowerCase();
+      if(!perNaam[k]){perNaam[k]={naam:v.naam,vondsten:[],docs:{}};namen.push(k);}
+      if(perNaam[k].docs[l.doc.naam])return;
+      perNaam[k].docs[l.doc.naam]=1;perNaam[k].vondsten.push(v);
+    });
+  });
+  var uit=[],ontbreekt=[];
+  namen.forEach(function(k){
+    var veld=perNaam[k],filter=ST.filterVoor(veld.vondsten[0]),beste=null;
+    kandidaten(veld.naam,veld.vondsten,filter).forEach(function(kand){
+      var d=dekking(leden,kand.regel);
+      if(!beste||d.g>beste.g||(d.g===beste.g&&VOLGORDE.indexOf(kand.strategie)<VOLGORDE.indexOf(beste.strategie))){
+        beste={g:d.g,mist:d.mist,strategie:kand.strategie,regel:kand.regel};
+      }
+    });
+    if(!beste||!beste.g)return;
+    beste.regel.strategie=beste.strategie;beste.regel.dekking=beste.g;beste.regel.van=leden.length;
+    uit.push(beste.regel);
+    if(beste.g<leden.length)ontbreekt.push({naam:veld.naam,mist:beste.mist});
+  });
+  // Regeltabellen (één rij per artikelregel) blijven hier bewust buiten: die zet je aan
+  // in het doorkijkscherm, anders wordt elke factuur onverwacht vijf rijen.
+  return {regels:uit,ontbreekt:ontbreekt};
+}
+return {regels:regels,dekking:dekking};
+})();
+</script>

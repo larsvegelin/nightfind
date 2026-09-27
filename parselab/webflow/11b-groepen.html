@@ -1,0 +1,107 @@
+<!-- ParsePDF — embed 11b: documenten vergelijken en groeperen, sjablonen per groep, en de knop Lees uit die alles vanzelf doet. -->
+<script>
+window.PLP_GRP=(function(){
+var S=window.PLP_S,P=window.PLP,ST=window.PLP_ST,SJ=window.PLP_SJ;
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+var STRAT={structuur:"strStructure",woord:"strWord",patroon:"strPattern",plek:"strPlace"};
+
+// Elk document lezen (met OCR als dat nodig en toegestaan is), ontleden en een
+// vingerafdruk maken; dan bij elkaar zetten wat op elkaar lijkt.
+function vergelijk(stand){
+  var lijst=S.bestanden.slice(),leden=[],keten=Promise.resolve(),n=0;
+  lijst.forEach(function(f){
+    keten=keten.then(function(){return (P.leesOfOcr||P.lees)(f);}).then(function(doc){
+      var a=ST.analyse(doc);
+      leden.push({doc:doc,analyse:a,va:SJ.vingerafdruk(doc,a),bestand:f});
+      n++;if(stand)stand(n,lijst.length);
+    }).catch(function(){});
+  });
+  return keten.then(function(){
+    var groepen=[];
+    leden.forEach(function(l){
+      var g=null;
+      groepen.forEach(function(x){if(!g&&x.leden.some(function(y){return SJ.score(y.va,l.va)>=3;}))g=x;});
+      if(g)g.leden.push(l);else groepen.push({leden:[l]});
+    });
+    groepen.forEach(function(g,i){g.nr=i+1;g.auto=window.PLP_AUTO.regels(g.leden);});
+    S.groepen=groepen;return groepen;
+  });
+}
+
+function mapVoor(naam){
+  var d=SJ.lees(),m=d.mappen.filter(function(x){return x.naam===naam;})[0];
+  return m||SJ.nieuweMap(naam);
+}
+function sjabloonVan(g,mid){
+  var t=S.t,naam=t.grpTemplate.replace("{n}",g.nr).replace("{b}",g.leden[0].doc.naam);
+  return SJ.bewaarSjabloon(mid,{naam:naam,regels:g.auto.regels,vingerafdruk:g.leden[0].va,groep:g.nr});
+}
+
+// Wat er gevonden is, per groep: welke velden, in hoeveel documenten, met welke strategie.
+function groepKaart(g){
+  var t=S.t,k=el("div","pld-card plp-groep"),n=g.leden.length;
+  k.appendChild(el("p","pld-caps",t.grpTitle.replace("{n}",g.nr).replace("{d}",n)));
+  k.appendChild(el("p","plp-mono",g.leden.map(function(l){return l.doc.naam;}).join(" · ")));
+  if(!g.auto.regels.length)k.appendChild(el("p","pld-text",t.grpNothing));
+  g.auto.regels.forEach(function(r){
+    var rij=el("div","plp-file"),l=el("div");
+    l.appendChild(el("p","pld-text",r.naam));
+    var mis=g.auto.ontbreekt.filter(function(o){return o.naam===r.naam;})[0];
+    l.appendChild(el("p","plp-mono",(t[STRAT[r.strategie]]||r.strategie)+(mis?" · "+t.grpMissing.replace("{lijst}",mis.mist.join(", ")):"")));
+    var pil=el("span","pld-pill"+(r.dekking===n?" pld-pill--on":""),t.checkFound.replace("{g}",r.dekking).replace("{n}",n));
+    rij.appendChild(l);rij.appendChild(pil);k.appendChild(rij);
+  });
+  if(g.auto.ontbreekt.length)k.appendChild(el("p","pld-msg pld-msg--warn",t.grpWarn.replace("{n}",g.auto.ontbreekt.length)));
+  var rij2=el("div","pld-row"),maak=el("button","pld-btn pld-btn--sm",t.grpMake),gemeld=el("p","pld-text");
+  maak.type="button";
+  maak.addEventListener("click",function(){
+    var d=SJ.lees(),mid=d.actief||mapVoor(t.grpAutoFolder).id;
+    var sj=sjabloonVan(g,mid);SJ.kiesMap(mid);
+    gemeld.textContent=t.grpMade.replace("{naam}",sj.naam);
+  });
+  rij2.appendChild(maak);rij2.appendChild(gemeld);k.appendChild(rij2);
+  return k;
+}
+
+// Lees uit: vergelijken, per groep een sjabloon in de map Automatisch, uitlezen, en
+// downloaden in de gekozen vorm. Eén knop, geen vragen.
+function leesUit(knop,rij){
+  var t=S.t,U=window.PLP_UI;
+  if(!S.bestanden.length){U.meld(t.errNoFiles,"warn");return Promise.resolve();}
+  knop.disabled=true;knop.textContent=t.grpBusy;
+  var stand=el("p","pld-text");stand.setAttribute("role","status");rij.appendChild(stand);
+  return vergelijk(function(n,tot){stand.textContent=n+" / "+tot;}).then(function(groepen){
+    var m=mapVoor(t.grpAutoFolder);
+    m.sjablonen.slice().forEach(function(s){SJ.verwijderSjabloon(m.id,s.id);});
+    groepen.forEach(function(g){sjabloonVan(g,m.id);});
+    SJ.kiesMap(m.id);
+    U.teken();
+    var start=document.querySelector(".plp-start")||knop;
+    return window.PLP_RUN(start,rij);
+  }).then(function(){
+    if(S.rijen.length&&S.opties&&S.opties.direct&&window.PLP_RES)window.PLP_RES.download(S.opties.uitvoer);
+    var tekst=S.groepen.map(function(g){return t.grpTitle.replace("{n}",g.nr).replace("{d}",g.leden.length);}).join(" · ");
+    if(tekst)U.meld(t.grpDone.replace("{lijst}",tekst));
+  }).catch(function(e){console.error(e);U.meld(t.errLib,"warn");})
+  .then(function(){knop.disabled=false;knop.textContent=t.grpRead;});
+}
+
+function kaart(){
+  var t=S.t,k=el("div","pld-card");
+  k.appendChild(el("p","pld-text",t.grpHint));
+  var rij=el("div","pld-row");
+  var lees=el("button","pld-btn plp-leesuit",t.grpRead);lees.type="button";
+  lees.addEventListener("click",function(){leesUit(lees,rij);});
+  var verg=el("button","pld-btn pld-btn--ghost",t.grpCompare);verg.type="button";
+  verg.addEventListener("click",function(){
+    if(!S.bestanden.length){window.PLP_UI.meld(t.errNoFiles,"warn");return;}
+    verg.disabled=true;verg.textContent=t.grpBusy;
+    vergelijk().then(function(){window.PLP_UI.teken();}).catch(function(){verg.disabled=false;verg.textContent=t.grpCompare;});
+  });
+  rij.appendChild(lees);rij.appendChild(verg);k.appendChild(rij);
+  (S.groepen||[]).forEach(function(g){k.appendChild(groepKaart(g));});
+  return k;
+}
+return {kaart:kaart,vergelijk:vergelijk,leesUit:leesUit};
+})();
+</script>

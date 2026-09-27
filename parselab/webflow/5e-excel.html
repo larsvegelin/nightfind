@@ -1,0 +1,54 @@
+<!-- ParsePDF — embed 5e: een Excel-bestand (.xlsx) maken zonder bibliotheek. -->
+<script>
+window.PLP_XLSX=(function(){
+// Een .xlsx is een zip met wat XML erin. We bouwen die zip zelf, zonder compressie,
+// zodat er geen bibliotheek van buiten nodig is.
+var CRC=(function(){var t=[],c;for(var n=0;n<256;n++){c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function utf8(s){return new TextEncoder().encode(s);}
+function le(n,b){var u=new Uint8Array(b);for(var i=0;i<b;i++)u[i]=(n>>>(8*i))&0xFF;return u;}
+function samen(delen){var n=0;delen.forEach(function(d){n+=d.length;});var u=new Uint8Array(n),p=0;delen.forEach(function(d){u.set(d,p);p+=d.length;});return u;}
+function zip(bestanden){
+  var lokaal=[],centraal=[],plek=0;
+  bestanden.forEach(function(f){
+    var naam=utf8(f.naam),data=utf8(f.tekst),crc=crc32(data);
+    var kop=samen([le(0x04034b50,4),le(20,2),le(0,2),le(0,2),le(0,2),le(0x21,2),le(crc,4),le(data.length,4),le(data.length,4),le(naam.length,2),le(0,2),naam,data]);
+    centraal.push(samen([le(0x02014b50,4),le(20,2),le(20,2),le(0,2),le(0,2),le(0,2),le(0x21,2),le(crc,4),le(data.length,4),le(data.length,4),le(naam.length,2),le(0,2),le(0,2),le(0,2),le(0,2),le(0,4),le(plek,4),naam]));
+    lokaal.push(kop);plek+=kop.length;
+  });
+  var cd=samen(centraal);
+  var eind=samen([le(0x06054b50,4),le(0,2),le(0,2),le(bestanden.length,2),le(bestanden.length,2),le(cd.length,4),le(plek,4),le(0,2)]);
+  return new Blob([samen(lokaal.concat([cd,eind]))],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+function x(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");}
+function kol(n){var s="";n++;while(n>0){var r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26);}return s;}
+// Een getal met punt als decimaalteken wordt een echt getal in Excel; de rest blijft tekst.
+function cel(v,r,c){
+  var ref=kol(c)+(r+1),s=String(v==null?"":v);
+  if(/^-?\d+(\.\d+)?$/.test(s))return '<c r="'+ref+'"><v>'+s+'</v></c>';
+  return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+x(s)+'</t></is></c>';
+}
+function maak(regelset,rijen,kopBestand,kopPaginas){
+  var koppen=[kopBestand,kopPaginas].concat(regelset.map(function(r){return r.naam;}));
+  var xml=['<row r="1">'+koppen.map(function(h,i){return cel(h,0,i);}).join("")+'</row>'];
+  rijen.forEach(function(r,i){
+    var w=[r.naam,r.paginas].concat(regelset.map(function(x,j){return r.velden["k"+j];}));
+    xml.push('<row r="'+(i+2)+'">'+w.map(function(v,j){return cel(v,i+1,j);}).join("")+'</row>');
+  });
+  var blad='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+xml.join("")+'</sheetData></worksheet>';
+  return zip([
+    {naam:"[Content_Types].xml",tekst:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'},
+    {naam:"_rels/.rels",tekst:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {naam:"xl/workbook.xml",tekst:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="ParseLab" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+    {naam:"xl/_rels/workbook.xml.rels",tekst:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'},
+    {naam:"xl/worksheets/sheet1.xml",tekst:blad}
+  ]);
+}
+function bewaar(naam,blob){
+  var url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=naam;a.style.display="none";document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},0);
+}
+return {maak:maak,bewaar:bewaar,zip:zip};
+})();
+</script>

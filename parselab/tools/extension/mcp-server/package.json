@@ -1,0 +1,14 @@
+{
+  "name": "parselab-mcp",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP-server die de ParseLab-extensie aanstuurt (alleen voor IT-beheer): velden van de huidige ingelogde pagina ophalen en records automatisch invullen. Beveiligd met een gedeelde code (PARSELAB_MCP_TOKEN).",
+  "bin": { "parselab-mcp": "server.js" },
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  }
+}
