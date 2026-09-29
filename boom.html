@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NightFind - Interactieve groeiboom">
+    <title>NightFind - Groeiboom</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <style>
+        .tree-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-lg) var(--spacing-sm);
+            background: radial-gradient(circle at 50% 30%, rgba(124, 58, 237, 0.18), transparent 60%), var(--black);
+        }
+
+        .tree-section h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            margin-bottom: var(--spacing-xs);
+            text-align: center;
+        }
+
+        .tree-section .tree-intro {
+            color: #bbb;
+            text-align: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        /* Same aspect ratio as the Lottie composition (723 x 1120), so the
+           percentage positions of the growth points line up with the artwork. */
+        .tree-stage {
+            position: relative;
+            width: min(100%, 420px);
+            aspect-ratio: 723 / 1120;
+        }
+
+        .tree-animation {
+            position: absolute;
+            inset: 0;
+        }
+
+        .tree-error {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: var(--spacing-md);
+            color: #bbb;
+            border: 1px dashed var(--gray-medium);
+            border-radius: var(--radius);
+        }
+
+        .tree-stage.has-error .tree-error {
+            display: flex;
+        }
+
+        .grow-point {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 2px solid var(--white);
+            background: var(--purple);
+            color: var(--white);
+            font: 600 0.9rem 'Poppins', sans-serif;
+            cursor: pointer;
+            z-index: 2;
+            transition: var(--transition);
+        }
+
+        .grow-point::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 2px solid var(--purple);
+            animation: grow-pulse 1.8s ease-out infinite;
+        }
+
+        .grow-point:hover,
+        .grow-point:focus-visible,
+        .grow-point.is-active {
+            transform: translate(-50%, -50%) scale(1.15);
+            background: var(--indigo);
+            outline: none;
+        }
+
+        .grow-point.is-grown::after {
+            animation: none;
+            opacity: 0;
+        }
+
+        @keyframes grow-pulse {
+            from { transform: scale(0.8); opacity: 0.9; }
+            to { transform: scale(1.6); opacity: 0; }
+        }
+
+        .grow-label {
+            position: absolute;
+            top: 50%;
+            width: 200px;
+            padding: 0.75rem 1rem;
+            background: rgba(20, 20, 20, 0.92);
+            border: 1px solid var(--purple);
+            border-radius: 12px;
+            text-align: left;
+            font: 400 0.85rem/1.4 'Inter', sans-serif;
+            color: #ddd;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(-50%) scale(0.95);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .grow-label strong {
+            display: block;
+            color: var(--white);
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .grow-point[data-side="right"] .grow-label { left: calc(100% + 16px); }
+        .grow-point[data-side="left"] .grow-label { right: calc(100% + 16px); }
+
+        .grow-point:hover .grow-label,
+        .grow-point:focus-visible .grow-label,
+        .grow-point.is-active .grow-label {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
+
+        .tree-reset {
+            margin-top: var(--spacing-md);
+            background: transparent;
+            color: #bbb;
+            border: 1px solid var(--gray-medium);
+            border-radius: 999px;
+            padding: 0.5rem 1.25rem;
+            font: 500 0.9rem 'Inter', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tree-reset:hover {
+            color: var(--white);
+            border-color: var(--purple);
+        }
+
+        @media (max-width: 600px) {
+            .grow-label { width: 150px; font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+    <section class="tree-section">
+        <h1>Laat de boom groeien</h1>
+        <p class="tree-intro">Beweeg je muis over de groeipunten.</p>
+
+        <div class="tree-stage" id="treeStage">
+            <div class="tree-animation" id="treeAnimation"></div>
+            <div class="tree-error">De animatie kon niet geladen worden. Zet het bestand in assets/animations/tree-life-cycle.json.</div>
+
+            <!--
+                Growth points. data-frame is the animation frame the tree grows to.
+                The animation runs from a full tree (frame 0) to a seed (frame 1199),
+                so growing means playing it backwards. Positions are percentages of the
+                723 x 1120 composition.
+            -->
+            <button class="grow-point" style="left: 48%; top: 84%;" data-frame="720" data-side="right" aria-label="Groeipunt 1">
+                1
+                <span class="grow-label"><strong>Planten</strong>Een klein zaadje wordt een jong boompje.</span>
+            </button>
+            <button class="grow-point" style="left: 30%; top: 60%;" data-frame="360" data-side="left" aria-label="Groeipunt 2">
+                2
+                <span class="grow-label"><strong>Groeien</strong>De takken worden sterker en de kruin wordt voller.</span>
+            </button>
+            <button class="grow-point" style="left: 66%; top: 32%;" data-frame="0" data-side="right" aria-label="Groeipunt 3">
+                3
+                <span class="grow-label"><strong>Oogsten</strong>De boom staat in volle bloei en draagt vrucht.</span>
+            </button>
+        </div>
+
+        <button class="tree-reset" id="treeReset" type="button">Opnieuw planten</button>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script>
+        (function () {
+            const stage = document.getElementById('treeStage');
+            const points = Array.from(stage.querySelectorAll('.grow-point'));
+            const START_FRAME = 1199;
+            const FRAMES_PER_SECOND = 90; // a bit faster than the original 60fps
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            let anim = null;
+            let current = START_FRAME;
+            let target = START_FRAME;
+            let lastTime = null;
+            let rafId = null;
+
+            if (typeof lottie === 'undefined') {
+                stage.classList.add('has-error');
+                return;
+            }
+
+            anim = lottie.loadAnimation({
+                container: document.getElementById('treeAnimation'),
+                renderer: 'svg',
+                loop: false,
+                autoplay: false,
+                path: 'assets/animations/tree-life-cycle.json'
+            });
+
+            anim.addEventListener('DOMLoaded', function () {
+                anim.goToAndStop(current, true);
+            });
+            anim.addEventListener('data_failed', function () {
+                stage.classList.add('has-error');
+            });
+
+            function step(time) {
+                if (lastTime === null) lastTime = time;
+                const delta = (time - lastTime) / 1000 * FRAMES_PER_SECOND;
+                lastTime = time;
+
+                current = Math.max(target, current - delta);
+                anim.goToAndStop(current, true);
+
+                if (current > target) {
+                    rafId = requestAnimationFrame(step);
+                } else {
+                    rafId = null;
+                    lastTime = null;
+                }
+            }
+
+            function growTo(frame) {
+                // The tree only grows further; it never shrinks back on hover.
+                if (frame >= target) return;
+                target = frame;
+
+                if (reduceMotion) {
+                    current = target;
+                    anim.goToAndStop(current, true);
+                    return;
+                }
+                if (rafId === null) rafId = requestAnimationFrame(step);
+            }
+
+            function activate(point) {
+                const index = points.indexOf(point);
+                points.forEach(function (p, i) {
+                    p.classList.toggle('is-active', p === point);
+                    if (i <= index) p.classList.add('is-grown');
+                });
+                growTo(Number(point.dataset.frame));
+            }
+
+            points.forEach(function (point) {
+                point.addEventListener('mouseenter', function () { activate(point); });
+                point.addEventListener('focus', function () { activate(point); });
+                point.addEventListener('click', function () { activate(point); });
+                point.addEventListener('mouseleave', function () { point.classList.remove('is-active'); });
+                point.addEventListener('blur', function () { point.classList.remove('is-active'); });
+            });
+
+            document.getElementById('treeReset').addEventListener('click', function () {
+                if (rafId !== null) cancelAnimationFrame(rafId);
+                rafId = null;
+                lastTime = null;
+                current = target = START_FRAME;
+                anim.goToAndStop(current, true);
+                points.forEach(function (p) { p.classList.remove('is-active', 'is-grown'); });
+            });
+        })();
+    </script>
+</body>
+</html>
