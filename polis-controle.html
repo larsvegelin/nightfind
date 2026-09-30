@@ -113,7 +113,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 20</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 21</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -498,6 +498,27 @@
     var tSt=(tOud===tNw)?(tOud===""?"info":"ok"):"warn";
     c.push({label:"Polisteksten (Tekst 1-5)", oud:tOud||"—", nieuw:tNw||"—", status:tSt,
         note:tSt==="warn"?"Teksten overnemen — ter controle, geen fout":(tOud===""?"Geen polisteksten":""), wrap:true});
+    // 14. Dekkingen (kolommen 'Dekking ...'): altijd handmatig controleren voor
+    // oud én nieuw, dus altijd geel. Verzamelt alle dekking-kolommen (codes E1-E5
+    // en omschrijvingen), maar niet de provisiekolommen (Dekking+Wacht->...provisie).
+    function dekkingen(rec){
+      if(!cfg.header) return "";
+      var parts=[];
+      cfg.header.forEach(function(h,i){
+        var hn=norm(h);
+        if(hn.indexOf("dekking")!==-1 && hn.indexOf("provisie")===-1){
+          var v=String(rec.row[i]==null?"":rec.row[i]).trim();
+          if(v!=="") parts.push(v);
+        }
+      });
+      return parts.join(" · ").replace(/\s+/g," ").trim();
+    }
+    var heeftDekKolom = cfg.header && cfg.header.some(function(h){ var hn=norm(h); return hn.indexOf("dekking")!==-1 && hn.indexOf("provisie")===-1; });
+    if(heeftDekKolom){
+      var dekO=dekkingen(oud), dekN=dekkingen(nieuw);
+      c.push({label:"Dekkingen (oud en nieuw controleren)", oud:dekO||"—", nieuw:dekN||"—", status:"warn",
+          note:"Dekkingen altijd handmatig controleren — ter controle, geen fout", wrap:true});
+    }
     return c;
   }
 
@@ -539,6 +560,7 @@
     var looksHeader=header.join(" ").toLowerCase().indexOf("polis")!==-1;
     if(!looksHeader) body=rows;
     var map=mapColumns(looksHeader?header:header.map(function(){return "";}), p.cols);
+    cfg.header = looksHeader ? header : null; // koptekst voor o.a. de dekking-controle
     var records=body.map(function(r,i){ return { row:r, map:map, line:i+(looksHeader?2:1), kind:classify(r,map,cfg) }; });
     // Ontdubbel identieke regels: hetzelfde polisnummer bij dezelfde soort is
     // één polis (dubbele exportregel), geen tweede AVB. Alleen verschillende
