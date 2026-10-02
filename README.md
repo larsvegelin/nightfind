@@ -215,3 +215,15 @@ For issues or questions:
 ---
 
 **Ready to deploy?** Follow the deployment steps above and your NightFind website will be live! 🚀
+
+## 💰 Budget tracker (`budget.html`)
+
+Persoonlijke tool om inkomsten en uitgaven bij te houden, gekoppeld aan Supabase.
+
+- **Overzicht per dag, maand en jaar** – totalen (inkomsten, uitgaven, saldo), grafiek per dag/maand en verdeling per categorie
+- **Categorieën** – toevoegen, hernoemen, kleur kiezen en verwijderen (transacties blijven bewaard als "Zonder categorie"); bij de eerste login worden standaardcategorieën aangemaakt
+- **Transacties** – toevoegen, bewerken, verwijderen en filteren op categorie
+- **Opslag** – alles staat in Supabase (`budget_categories`, `budget_transactions`) en is per gebruiker afgeschermd met Row Level Security; inloggen gaat via Supabase Auth (e-mail + wachtwoord)
+
+Schema: `supabase/migrations/20261002_budget_tracker.sql` (al toegepast op het `nightvibe-production` project).
+Bestanden: `budget.html`, `assets/css/budget.css`, `assets/js/budget.js`.
