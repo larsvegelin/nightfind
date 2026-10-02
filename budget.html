@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Budget - NightFind</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <link rel="stylesheet" href="assets/css/budget.css">
+</head>
+<body>
+    <header class="topbar">
+        <a href="index.html" class="brand">
+            <img src="assets/logo.svg" alt="">
+            <span>Budget</span>
+        </a>
+        <div class="topbar-user" id="userBar" hidden>
+            <span id="userEmail"></span>
+            <button class="btn btn-ghost" id="logoutBtn">Uitloggen</button>
+        </div>
+    </header>
+
+    <!-- Inloggen / registreren -->
+    <main class="auth" id="authView" hidden>
+        <form class="card auth-card" id="authForm">
+            <h1>Budget bijhouden</h1>
+            <p class="muted">Log in om je inkomsten en uitgaven te bekijken. Je gegevens worden veilig opgeslagen in Supabase.</p>
+            <label>E-mail
+                <input type="email" id="authEmail" required autocomplete="email">
+            </label>
+            <label>Wachtwoord
+                <input type="password" id="authPassword" required minlength="6" autocomplete="current-password">
+            </label>
+            <div class="auth-actions">
+                <button type="submit" class="btn btn-primary" data-mode="login">Inloggen</button>
+                <button type="submit" class="btn btn-ghost" data-mode="signup">Account maken</button>
+            </div>
+            <p class="form-msg" id="authMsg" role="status"></p>
+        </form>
+    </main>
+
+    <!-- Dashboard -->
+    <main class="app" id="appView" hidden>
+        <section class="toolbar">
+            <div class="segmented" role="tablist" aria-label="Periode">
+                <button role="tab" data-period="day">Dag</button>
+                <button role="tab" data-period="month" class="active">Maand</button>
+                <button role="tab" data-period="year">Jaar</button>
+            </div>
+            <div class="period-nav">
+                <button class="btn btn-icon" id="prevBtn" aria-label="Vorige periode">‹</button>
+                <span class="period-label" id="periodLabel"></span>
+                <button class="btn btn-icon" id="nextBtn" aria-label="Volgende periode">›</button>
+                <button class="btn btn-ghost" id="todayBtn">Vandaag</button>
+            </div>
+            <button class="btn btn-primary" id="addTxBtn">+ Transactie</button>
+        </section>
+
+        <section class="kpis">
+            <div class="card kpi">
+                <span class="kpi-label"><i class="dot dot-income"></i>Inkomsten</span>
+                <span class="kpi-value" id="kpiIncome">€ 0,00</span>
+            </div>
+            <div class="card kpi">
+                <span class="kpi-label"><i class="dot dot-expense"></i>Uitgaven</span>
+                <span class="kpi-value" id="kpiExpense">€ 0,00</span>
+            </div>
+            <div class="card kpi">
+                <span class="kpi-label">Saldo</span>
+                <span class="kpi-value" id="kpiBalance">€ 0,00</span>
+            </div>
+        </section>
+
+        <section class="card chart-card" id="chartCard">
+            <div class="card-head">
+                <h2 id="chartTitle">Per dag</h2>
+                <div class="legend">
+                    <span><i class="dot dot-income"></i>Inkomsten</span>
+                    <span><i class="dot dot-expense"></i>Uitgaven</span>
+                </div>
+            </div>
+            <div class="chart" id="chart"></div>
+            <div class="tooltip" id="tooltip" hidden></div>
+        </section>
+
+        <section class="grid-2">
+            <div class="card">
+                <div class="card-head"><h2>Uitgaven per categorie</h2></div>
+                <div class="breakdown" id="expenseBreakdown"></div>
+            </div>
+            <div class="card">
+                <div class="card-head"><h2>Inkomsten per categorie</h2></div>
+                <div class="breakdown" id="incomeBreakdown"></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head">
+                <h2>Transacties</h2>
+                <select id="filterCategory" aria-label="Filter op categorie">
+                    <option value="">Alle categorieën</option>
+                </select>
+            </div>
+            <ul class="tx-list" id="txList"></ul>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>Categorieën</h2></div>
+            <form class="cat-form" id="catForm">
+                <input type="text" id="catName" placeholder="Nieuwe categorie" maxlength="50" required>
+                <select id="catType">
+                    <option value="expense">Uitgave</option>
+                    <option value="income">Inkomst</option>
+                </select>
+                <input type="color" id="catColor" value="#7C3AED" aria-label="Kleur">
+                <button class="btn btn-primary" type="submit">Toevoegen</button>
+            </form>
+            <div class="grid-2">
+                <div>
+                    <h3>Uitgaven</h3>
+                    <ul class="cat-list" id="expenseCats"></ul>
+                </div>
+                <div>
+                    <h3>Inkomsten</h3>
+                    <ul class="cat-list" id="incomeCats"></ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Transactie toevoegen / bewerken -->
+    <dialog class="dialog" id="txDialog">
+        <form id="txForm" method="dialog">
+            <h2 id="txDialogTitle">Nieuwe transactie</h2>
+            <div class="segmented type-toggle">
+                <button type="button" data-type="expense" class="active">Uitgave</button>
+                <button type="button" data-type="income">Inkomst</button>
+            </div>
+            <label>Bedrag (€)
+                <input type="text" inputmode="decimal" id="txAmount" placeholder="0,00" required>
+            </label>
+            <label>Datum
+                <input type="date" id="txDate" required>
+            </label>
+            <label>Categorie
+                <select id="txCategory"></select>
+            </label>
+            <label>Omschrijving
+                <input type="text" id="txDescription" maxlength="200" placeholder="Optioneel">
+            </label>
+            <p class="form-msg" id="txMsg" role="status"></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-ghost" id="txCancel">Annuleren</button>
+                <button type="submit" class="btn btn-primary" value="save">Opslaan</button>
+            </div>
+        </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" hidden></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/budget.js"></script>
+</body>
+</html>
