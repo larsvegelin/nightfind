@@ -46,6 +46,7 @@
                 <button role="tab" data-period="day">Dag</button>
                 <button role="tab" data-period="month" class="active">Maand</button>
                 <button role="tab" data-period="year">Jaar</button>
+                <button role="tab" data-period="all">Alles</button>
             </div>
             <div class="period-nav">
                 <button class="btn btn-icon" id="prevBtn" aria-label="Vorige periode">‹</button>
@@ -56,18 +57,35 @@
             <button class="btn btn-primary" id="addTxBtn">+ Transactie</button>
         </section>
 
+        <section class="group-bar">
+            <label class="group-select">Groep
+                <select id="groupSelect" aria-label="Bekijk een groep">
+                    <option value="">Alles</option>
+                </select>
+            </label>
+            <div class="group-banner" id="groupBanner" hidden>
+                <i class="dot" id="groupBannerDot"></i>
+                <span>Je bekijkt alleen <strong id="groupBannerName"></strong></span>
+                <button class="btn btn-ghost" id="groupClear">Toon alles</button>
+            </div>
+        </section>
+
         <section class="kpis">
-            <div class="card kpi">
+            <div class="card kpi" id="kpiIncomeCard">
                 <span class="kpi-label"><i class="dot dot-income"></i>Inkomsten</span>
                 <span class="kpi-value" id="kpiIncome">€ 0,00</span>
             </div>
-            <div class="card kpi">
+            <div class="card kpi" id="kpiExpenseCard">
                 <span class="kpi-label"><i class="dot dot-expense"></i>Uitgaven</span>
                 <span class="kpi-value" id="kpiExpense">€ 0,00</span>
             </div>
-            <div class="card kpi">
+            <div class="card kpi" id="kpiBalanceCard">
                 <span class="kpi-label">Saldo</span>
                 <span class="kpi-value" id="kpiBalance">€ 0,00</span>
+            </div>
+            <div class="card kpi">
+                <span class="kpi-label">Transacties</span>
+                <span class="kpi-value" id="kpiCount">0</span>
             </div>
         </section>
 
@@ -75,8 +93,8 @@
             <div class="card-head">
                 <h2 id="chartTitle">Per dag</h2>
                 <div class="legend">
-                    <span><i class="dot dot-income"></i>Inkomsten</span>
-                    <span><i class="dot dot-expense"></i>Uitgaven</span>
+                    <span id="legendIncome"><i class="dot dot-income"></i>Inkomsten</span>
+                    <span id="legendExpense"><i class="dot dot-expense"></i>Uitgaven</span>
                 </div>
             </div>
             <div class="chart" id="chart"></div>
@@ -84,12 +102,12 @@
         </section>
 
         <section class="grid-2">
-            <div class="card">
-                <div class="card-head"><h2>Uitgaven per categorie</h2></div>
+            <div class="card" id="expenseBreakdownCard">
+                <div class="card-head"><h2>Uitgaven per categorie</h2><span class="hint">Klik voor details</span></div>
                 <div class="breakdown" id="expenseBreakdown"></div>
             </div>
-            <div class="card">
-                <div class="card-head"><h2>Inkomsten per categorie</h2></div>
+            <div class="card" id="incomeBreakdownCard">
+                <div class="card-head"><h2>Inkomsten per categorie</h2><span class="hint">Klik voor details</span></div>
                 <div class="breakdown" id="incomeBreakdown"></div>
             </div>
         </section>
@@ -97,9 +115,6 @@
         <section class="card">
             <div class="card-head">
                 <h2>Transacties</h2>
-                <select id="filterCategory" aria-label="Filter op categorie">
-                    <option value="">Alle categorieën</option>
-                </select>
             </div>
             <ul class="tx-list" id="txList"></ul>
         </section>

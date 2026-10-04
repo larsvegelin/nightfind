@@ -10,6 +10,10 @@ const DEFAULT_CATEGORIES = [
     { name: 'Vervoer', type: 'expense', color: '#c98500' },
     { name: 'Uitgaan', type: 'expense', color: '#9085e9' },
     { name: 'Abonnementen', type: 'expense', color: '#d55181' },
+    { name: 'Terras', type: 'expense', color: '#e66767' },
+    { name: 'Voetbal', type: 'expense', color: '#2fb5a0' },
+    { name: 'Kleding', type: 'expense', color: '#b07ce8' },
+    { name: 'Amusement', type: 'expense', color: '#e8c547' },
     { name: 'Overig', type: 'expense', color: '#8a8a85' },
     { name: 'Salaris', type: 'income', color: '#199e70' },
     { name: 'Overig', type: 'income', color: '#008300' }
@@ -24,7 +28,8 @@ const state = {
     anchor: new Date(),
     categories: [],
     transactions: [],
-    filterCategory: '',
+    // '' = alles, 'income' / 'expense' = alle inkomsten/uitgaven, 'none' = zonder categorie, anders categorie-id
+    group: '',
     editingId: null,
     txType: 'expense',
     authReady: false
@@ -53,6 +58,7 @@ function fromISO(s) {
 
 function periodRange() {
     const a = state.anchor;
+    if (state.period === 'all') return null;
     if (state.period === 'day') {
         return { start: toISO(a), end: toISO(a) };
     }
@@ -67,6 +73,7 @@ function periodRange() {
 
 function periodLabel() {
     const a = state.anchor;
+    if (state.period === 'all') return 'Alle tijd';
     if (state.period === 'day') {
         return a.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
     }
@@ -77,6 +84,7 @@ function periodLabel() {
 }
 
 function shiftPeriod(dir) {
+    if (state.period === 'all') return;
     const a = state.anchor;
     if (state.period === 'day') state.anchor = new Date(a.getFullYear(), a.getMonth(), a.getDate() + dir);
     else if (state.period === 'month') state.anchor = new Date(a.getFullYear(), a.getMonth() + dir, 1);
@@ -172,12 +180,13 @@ async function loadCategories() {
 
 async function loadTransactions() {
     $('periodLabel').textContent = periodLabel();
-    const { start, end } = periodRange();
-    const { data, error } = await db
-        .from('budget_transactions')
-        .select('*')
-        .gte('date', start)
-        .lte('date', end)
+    const isAll = state.period === 'all';
+    ['prevBtn', 'nextBtn', 'todayBtn'].forEach((id) => { $(id).disabled = isAll; });
+
+    let query = db.from('budget_transactions').select('*');
+    const range = periodRange();
+    if (range) query = query.gte('date', range.start).lte('date', range.end);
+    const { data, error } = await query
         .order('date', { ascending: false })
         .order('created_at', { ascending: false });
     if (error) return toast('Transacties laden mislukt: ' + error.message, true);
@@ -185,9 +194,43 @@ async function loadTransactions() {
     renderDashboard();
 }
 
+// ---------- Groepen (filter op categorie of type) ----------
+function matchesGroup(t) {
+    const g = state.group;
+    if (!g) return true;
+    if (g === 'income' || g === 'expense') return t.type === g;
+    if (g === 'none') return !t.category_id;
+    return t.category_id === g;
+}
+
+function visibleTransactions() {
+    return state.transactions.filter(matchesGroup);
+}
+
+// Welk type een groep bevat (null = beide)
+function groupType() {
+    const g = state.group;
+    if (g === 'income' || g === 'expense') return g;
+    return categoryById(g)?.type ?? null;
+}
+
+function groupLabel() {
+    const g = state.group;
+    if (g === 'income') return 'Alle inkomsten';
+    if (g === 'expense') return 'Alle uitgaven';
+    if (g === 'none') return 'Zonder categorie';
+    return categoryById(g)?.name ?? '';
+}
+
+function setGroup(group) {
+    state.group = group;
+    $('groupSelect').value = group;
+    renderDashboard();
+}
+
 // ---------- Render: dashboard ----------
 function renderDashboard() {
-    const tx = state.transactions;
+    const tx = visibleTransactions();
     const income = tx.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = tx.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     const balance = income - expense;
@@ -195,6 +238,24 @@ function renderDashboard() {
     $('kpiIncome').textContent = fmt(income);
     $('kpiExpense').textContent = fmt(expense);
     $('kpiBalance').textContent = (balance > 0 ? '+' : '') + fmt(balance);
+
+    const type = groupType();
+    $('kpiIncomeCard').hidden = type === 'expense';
+    $('kpiExpenseCard').hidden = type === 'income';
+    $('kpiBalanceCard').hidden = !!type;
+    $('kpiCount').textContent = String(tx.length);
+    $('legendIncome').hidden = type === 'expense';
+    $('legendExpense').hidden = type === 'income';
+    $('expenseBreakdownCard').hidden = type === 'income';
+    $('incomeBreakdownCard').hidden = type === 'expense';
+
+    const banner = $('groupBanner');
+    banner.hidden = !state.group;
+    if (state.group) {
+        const cat = categoryById(state.group);
+        $('groupBannerDot').style.background = cat?.color || (state.group === 'income' ? 'var(--income)' : state.group === 'expense' ? 'var(--expense)' : UNCATEGORIZED_COLOR);
+        $('groupBannerName').textContent = groupLabel();
+    }
 
     renderChart();
     renderBreakdown('expense', $('expenseBreakdown'));
@@ -204,6 +265,7 @@ function renderDashboard() {
 
 function buildBuckets() {
     const a = state.anchor;
+    if (state.period === 'all') return buildAllTimeBuckets();
     if (state.period === 'month') {
         const days = new Date(a.getFullYear(), a.getMonth() + 1, 0).getDate();
         return Array.from({ length: days }, (_, i) => {
@@ -227,6 +289,32 @@ function buildBuckets() {
     return null;
 }
 
+// Alle tijd: per maand, of per jaar als het meer dan 2 jaar beslaat
+function buildAllTimeBuckets() {
+    const dates = visibleTransactions().map((t) => t.date).sort();
+    if (dates.length === 0) return [];
+    const first = fromISO(dates[0]);
+    const last = fromISO(dates[dates.length - 1]);
+    const months = (last.getFullYear() - first.getFullYear()) * 12 + last.getMonth() - first.getMonth() + 1;
+
+    if (months > 24) {
+        const years = [];
+        for (let y = first.getFullYear(); y <= last.getFullYear(); y++) {
+            years.push({ key: String(y), axis: String(y), title: String(y), income: 0, expense: 0 });
+        }
+        return years;
+    }
+    return Array.from({ length: months }, (_, i) => {
+        const d = new Date(first.getFullYear(), first.getMonth() + i, 1);
+        return {
+            key: toISO(d).slice(0, 7),
+            axis: `${MONTHS_SHORT[d.getMonth()]}${d.getMonth() === 0 || i === 0 ? ' ' + String(d.getFullYear()).slice(2) : ''}`,
+            title: d.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }),
+            income: 0, expense: 0
+        };
+    });
+}
+
 // Ronde stapgrootte zodat de as 4 nette intervallen krijgt
 function niceStep(max) {
     const raw = Math.max(max, 1) / 4;
@@ -240,11 +328,11 @@ function renderChart() {
     const buckets = buildBuckets();
     if (!buckets) { card.hidden = true; return; }
     card.hidden = false;
-    $('chartTitle').textContent = state.period === 'month' ? 'Per dag' : 'Per maand';
+    const keyLen = buckets[0]?.key.length ?? 7;
+    $('chartTitle').textContent = keyLen === 10 ? 'Per dag' : keyLen === 4 ? 'Per jaar' : 'Per maand';
 
-    const keyLen = state.period === 'month' ? 10 : 7;
     const byKey = new Map(buckets.map((b) => [b.key, b]));
-    for (const t of state.transactions) {
+    for (const t of visibleTransactions()) {
         const b = byKey.get(t.date.slice(0, keyLen));
         if (b) b[t.type] += t.amount;
     }
@@ -283,7 +371,8 @@ function renderChart() {
         return `M${x},${base}V${top + rr}Q${x},${top} ${x + rr},${top}H${x + barW - rr}Q${x + barW},${top} ${x + barW},${top + rr}V${base}Z`;
     };
 
-    const labelEvery = state.period === 'month' ? (W < 500 ? 5 : 2) : 1;
+    // Toon zoveel aslabels als er passen (ongeveer één per 40px)
+    const labelEvery = Math.max(1, Math.ceil(buckets.length / Math.max(1, Math.floor(iw / 40))));
 
     let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Inkomsten en uitgaven ${escapeHtml(periodLabel())}">`;
     for (const t of ticks) {
@@ -296,7 +385,7 @@ function renderChart() {
         const x2 = cx + gap / 2;
         svg += `<path class="bar-income" d="${barPath(x1, b.income)}"/>`;
         svg += `<path class="bar-expense" d="${barPath(x2, b.expense)}"/>`;
-        if (i % labelEvery === 0 || state.period === 'year') {
+        if (i % labelEvery === 0) {
             svg += `<text class="axis-text" x="${cx}" y="${H - 6}" text-anchor="middle">${b.axis}</text>`;
         }
         svg += `<rect class="hit" data-i="${i}" x="${pad.left + slot * i}" y="${pad.top}" width="${slot}" height="${ih}"/>`;
@@ -328,7 +417,7 @@ function renderChart() {
 
 function renderBreakdown(type, el) {
     const totals = new Map();
-    for (const t of state.transactions) {
+    for (const t of visibleTransactions()) {
         if (t.type !== type) continue;
         const key = t.category_id || '';
         totals.set(key, (totals.get(key) || 0) + t.amount);
@@ -346,21 +435,19 @@ function renderBreakdown(type, el) {
         const color = cat?.color || UNCATEGORIZED_COLOR;
         const name = cat?.name || 'Zonder categorie';
         const pct = Math.round((amount / total) * 100);
-        return `<div class="bd-row">
+        return `<button type="button" class="bd-row" data-group="${id || 'none'}" title="Alleen ${escapeHtml(name)} bekijken">
             <div class="bd-top">
                 <span class="bd-name"><i class="dot" style="background:${color}"></i><span>${escapeHtml(name)}</span></span>
                 <span class="bd-amount">${fmt(amount)} · ${pct}%</span>
             </div>
             <div class="bd-track"><div class="bd-fill" style="width:${(amount / max) * 100}%;background:${color}"></div></div>
-        </div>`;
+        </button>`;
     }).join('');
 }
 
 function renderTransactions() {
     const list = $('txList');
-    const rows = state.filterCategory
-        ? state.transactions.filter((t) => (state.filterCategory === 'none' ? !t.category_id : t.category_id === state.filterCategory))
-        : state.transactions;
+    const rows = visibleTransactions();
 
     if (rows.length === 0) {
         list.innerHTML = '<li class="empty">Geen transacties gevonden. Voeg er een toe met “+ Transactie”.</li>';
@@ -371,9 +458,11 @@ function renderTransactions() {
         const cat = categoryById(t.category_id);
         const sign = t.type === 'income' ? '+' : '−';
         const d = fromISO(t.date);
-        const dateText = state.period === 'year'
-            ? d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
-            : d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' });
+        const dateText = state.period === 'all'
+            ? d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: '2-digit' })
+            : state.period === 'year'
+                ? d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+                : d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' });
         return `<li class="tx">
             <span class="tx-date">${dateText}</span>
             <div class="tx-main">
@@ -397,20 +486,28 @@ function renderCategories() {
         return cats.map((c) => `<li>
             <input type="color" value="${c.color}" data-color="${c.id}" aria-label="Kleur van ${escapeHtml(c.name)}">
             <span class="name">${escapeHtml(c.name)}</span>
-            <button data-rename="${c.id}">Hernoemen</button>
-            <button data-delcat="${c.id}">Verwijderen</button>
+            <span class="cat-actions">
+                <button data-group="${c.id}">Bekijken</button>
+                <button data-rename="${c.id}">Hernoemen</button>
+                <button data-delcat="${c.id}">Verwijderen</button>
+            </span>
         </li>`).join('');
     };
     $('expenseCats').innerHTML = render('expense');
     $('incomeCats').innerHTML = render('income');
 
-    const filter = $('filterCategory');
-    const current = filter.value;
-    filter.innerHTML = '<option value="">Alle categorieën</option>'
-        + state.categories.map((c) => `<option value="${c.id}">${escapeHtml(c.name)} (${c.type === 'income' ? 'inkomst' : 'uitgave'})</option>`).join('')
-        + '<option value="none">Zonder categorie</option>';
-    filter.value = current;
-    if (filter.value !== current) state.filterCategory = '';
+    const options = (type) => state.categories
+        .filter((c) => c.type === type)
+        .map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    const select = $('groupSelect');
+    select.innerHTML = `<option value="">Alles</option>
+        <option value="income">Alle inkomsten</option>
+        <option value="expense">Alle uitgaven</option>
+        <optgroup label="Uitgaven per categorie">${options('expense')}</optgroup>
+        <optgroup label="Inkomsten per categorie">${options('income')}</optgroup>
+        <option value="none">Zonder categorie</option>`;
+    select.value = state.group;
+    if (select.value !== state.group) state.group = '';
 }
 
 $('catForm').addEventListener('submit', async (e) => {
@@ -443,6 +540,12 @@ document.addEventListener('change', async (e) => {
 
 document.addEventListener('click', async (e) => {
     const t = e.target;
+    const groupBtn = t.closest('[data-group]');
+    if (groupBtn) {
+        setGroup(groupBtn.dataset.group);
+        $('appView').scrollIntoView({ behavior: 'smooth' });
+        return;
+    }
     if (t.dataset.rename) {
         const cat = categoryById(t.dataset.rename);
         const name = prompt('Nieuwe naam', cat.name)?.trim();
@@ -458,6 +561,7 @@ document.addEventListener('click', async (e) => {
         const { error } = await db.from('budget_categories').delete().eq('id', cat.id);
         if (error) return toast('Verwijderen mislukt: ' + error.message, true);
         state.categories = state.categories.filter((c) => c.id !== cat.id);
+        if (state.group === cat.id) state.group = '';
         state.transactions.forEach((tx) => { if (tx.category_id === cat.id) tx.category_id = null; });
         renderCategories();
         renderDashboard();
@@ -490,7 +594,13 @@ function openTxDialog(tx) {
     $('txAmount').value = tx ? String(tx.amount.toFixed(2)).replace('.', ',') : '';
     $('txDate').value = tx?.date || (state.period === 'day' ? toISO(state.anchor) : toISO(new Date()));
     $('txDescription').value = tx?.description || '';
-    setTxType(tx?.type || state.txType, tx ? (tx.category_id || '') : undefined);
+    if (tx) {
+        setTxType(tx.type, tx.category_id || '');
+    } else {
+        // Nieuwe transactie vanuit een groep: die categorie/type alvast kiezen
+        const groupCat = categoryById(state.group);
+        setTxType(groupType() || state.txType, groupCat ? groupCat.id : state.group === 'none' ? '' : undefined);
+    }
     $('txDialog').showModal();
     $('txAmount').focus();
 }
@@ -558,7 +668,8 @@ document.querySelectorAll('[data-period]').forEach((btn) => {
 $('prevBtn').addEventListener('click', () => shiftPeriod(-1));
 $('nextBtn').addEventListener('click', () => shiftPeriod(1));
 $('todayBtn').addEventListener('click', () => { state.anchor = new Date(); loadTransactions(); });
-$('filterCategory').addEventListener('change', (e) => { state.filterCategory = e.target.value; renderTransactions(); });
+$('groupSelect').addEventListener('change', (e) => setGroup(e.target.value));
+$('groupClear').addEventListener('click', () => setGroup(''));
 
 let resizeTimer;
 window.addEventListener('resize', () => {

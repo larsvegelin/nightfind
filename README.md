@@ -220,8 +220,9 @@ For issues or questions:
 
 Persoonlijke tool om inkomsten en uitgaven bij te houden, gekoppeld aan Supabase.
 
-- **Overzicht per dag, maand en jaar** – totalen (inkomsten, uitgaven, saldo), grafiek per dag/maand en verdeling per categorie
-- **Categorieën** – toevoegen, hernoemen, kleur kiezen en verwijderen (transacties blijven bewaard als "Zonder categorie"); bij de eerste login worden standaardcategorieën aangemaakt
+- **Overzicht per dag, maand, jaar en alle tijd** – totalen (inkomsten, uitgaven, saldo, aantal), grafiek en verdeling per categorie
+- **Per groep bekijken** – kies bovenaan een groep (alle inkomsten, alle uitgaven, één categorie of zonder categorie) of klik op een categorie; het hele overzicht toont dan alleen die groep
+- **Categorieën** – toevoegen, hernoemen, kleur kiezen en verwijderen (transacties blijven bewaard als "Zonder categorie"); bij de eerste login worden standaardcategorieën aangemaakt (o.a. Boodschappen, Wonen, Terras, Voetbal, Kleding, Amusement, Salaris)
 - **Transacties** – toevoegen, bewerken, verwijderen en filteren op categorie
 - **Opslag** – alles staat in Supabase (`budget_categories`, `budget_transactions`) en is per gebruiker afgeschermd met Row Level Security; inloggen gaat via Supabase Auth (e-mail + wachtwoord)
 
