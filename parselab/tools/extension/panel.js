@@ -314,6 +314,43 @@
         }
         return el;
     }
+    // De naam van een knop. In een design system van webcomponenten (Lit/ASR) staat de
+    // echte <button> in een shadow root en komt de tekst via een <slot> uit de LIGHT DOM
+    // van de host. textContent van die <button> is dus leeg — daarom klimmen we over de
+    // shadow-grenzen omhoog en nemen we het eerste bruikbare label dat we tegenkomen.
+    function knopNaam(el) {
+        if (!el) return '';
+        const kand = [];
+        const voeg = v => { const s = cleanCol(v); if (s && s.length <= 60) kand.push(s); };
+        voeg(el.getAttribute && el.getAttribute('aria-label'));
+        voeg(txt(el));
+        voeg(el.value);
+        voeg(el.getAttribute && el.getAttribute('title'));
+        let h = el;
+        for (let n = 0; n < 5; n++) {
+            const r = h.getRootNode && h.getRootNode();
+            h = r && r.host; if (!h) break;
+            voeg(h.getAttribute && h.getAttribute('aria-label'));
+            voeg(txt(h));
+            voeg(h.getAttribute && h.getAttribute('label'));
+            voeg(h.getAttribute && h.getAttribute('title'));
+        }
+        // Een naam als "button" of "knop" zegt niets; dan liever de volgende kandidaat.
+        return kand.find(x => !/^(button|knop|a|span|div)$/i.test(x)) || '';
+    }
+    // data-testid van de knop zelf of van de dichtstbijzijnde host erboven — in deze
+    // design systems is dat vaak het enige wat twee identiek uitziende knoppen onderscheidt.
+    function knopTestId(el) {
+        let h = el;
+        for (let n = 0; n < 6 && h; n++) {
+            const v = h.getAttribute && (h.getAttribute('data-testid') || h.getAttribute('data-test-id'));
+            if (v) return String(v);
+            if (h.id && !looksGenerated(h.id)) return '#' + h.id;
+            const r = h.getRootNode && h.getRootNode();
+            h = (r && r.host) || h.parentElement;
+        }
+        return '';
+    }
     function isBlazor(el) { try { return el.getAttributeNames().some(a => a.indexOf('_bl_') === 0); } catch (e) { return false; } }
     function isMudInput(el) { return el.tagName === 'INPUT' && /(^|\s)mud-input/.test(el.className || ''); }
     // Gemaskeerde/framework-velden (o.a. MudBlazor MudMask/MudDatePicker) lezen het
@@ -776,6 +813,8 @@
             cls: stableClasses(el).slice(0, 6),
             ph: attrOf(el, 'placeholder'),
             path: structSelector(el),
+            lab: knopNaam(el),
+            tid: knopTestId(el),
             html: (el.outerHTML || '').replace(/\s+/g, ' ').slice(0, 500)
         };
     }
@@ -798,6 +837,9 @@
             const cls = stableClasses(el); s += Math.min((fp.cls || []).filter(c => cls.includes(c)).length, 4);
             if (fp.ph && attrOf(el, 'placeholder') === fp.ph) s += 2;
             if (fp.path && structSelector(el) === fp.path) s += 5;
+            // Label en data-testid onderscheiden knoppen die er verder identiek uitzien.
+            if (fp.tid && knopTestId(el) === fp.tid) s += 4;
+            if (fp.lab && knopNaam(el) === fp.lab) s += 4;
             const tot = s + htmlSim(fp.html, el.outerHTML) * 3;
             if (tot > bs) { bs = tot; bstruct = s; best = el; }
         });
@@ -1073,13 +1115,40 @@
         }
         return false;
     }
+    // Staat er een MODAAL venster open (<dialog>.showModal(), wat bv. asr-sheet doet)?
+    // Dan maakt de browser alles buiten die dialog "inert": je ziet ons paneel nog wel,
+    // maar geen enkele knop erin reageert nog op een muisklik. Ook de top-layer (popover)
+    // helpt daar niet tegen — alleen staan binnen de dialog zelf helpt.
+    function openModaal() {
+        let ds = [];
+        try { ds = diepAlles(doc, 'dialog[open]'); } catch (e) { return null; }
+        for (let i = ds.length - 1; i >= 0; i--) {
+            const d = ds[i];
+            if (vanOnsZelf(d) || d.contains(host)) continue;
+            try { if (d.matches(':modal')) return d; } catch (e) {}
+        }
+        return null;
+    }
+    // Verhuis het paneel (popover-modus even uit, want verplaatsen sluit een popover).
+    function verhuis(naar) {
+        if (!naar || host.parentNode === naar) return;
+        const stondOpen = usingPopover && host.matches && (() => { try { return host.matches(':popover-open'); } catch (e) { return false; } })();
+        try { if (stondOpen) host.hidePopover(); } catch (e) {}
+        try { naar.appendChild(host); } catch (e) { return; }
+        if (usingPopover) { try { host.showPopover(); } catch (e) { showTop(); } }
+    }
     function keepOnTop() {
         const b = doc.body; if (!b || !host.parentNode) return;
         if (host.style.zIndex !== '2147483647') host.style.zIndex = '2147483647';
+        const a = root.activeElement; if (a && a.tagName && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+        // Modaal open → in de dialog gaan staan, zodat het paneel klikbaar blijft.
+        // Modaal weer dicht → terug naar de body.
+        const modaal = openModaal();
+        if (modaal) { verhuis(modaal); return; }
+        if (host.parentNode !== b) { verhuis(b); return; }
         // Popover-modus: het paneel zit in de browser-top-layer → altijd bovenop, geen DOM-verhuizing
         // nodig. We houden 'm alleen open als de pagina hem zou hebben gesloten.
         if (usingPopover) { if (host.showPopover && !host.matches(':popover-open')) { try { host.showPopover(); } catch (e) { showTop(); } } return; }
-        const a = root.activeElement; if (a && a.tagName && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
         if (b.lastElementChild !== host && raiseNeeded()) { try { b.appendChild(host); } catch (e) {} }
     }
     const topObs = new MutationObserver(() => { clearTimeout(topT); topT = setTimeout(keepOnTop, 60); });
@@ -1232,7 +1301,8 @@
     }
     function addClickStep(el) {
         const btn = (el.closest && el.closest(BTN_SEL)) || el;
-        addStep({ type: 'click', name: (txt(btn) || btn.value || btn.tagName.toLowerCase()).slice(0, 24) || 'knop', selector: stableSel(btn), fp: fingerprint(btn), detail: (txt(btn) || btn.value || 'knop').slice(0, 40) });
+        const naam = knopNaam(btn) || btn.tagName.toLowerCase();
+        addStep({ type: 'click', name: naam.slice(0, 24) || 'knop', selector: stableSel(btn), fp: fingerprint(btn), detail: naam.slice(0, 40) || 'knop' });
     }
     function addWaitStep() { addStep({ type: 'wait', mode: 'smart', ms: 8000, name: 'Wachten tot de pagina klaar is' }); }
     function addElementScrape(el, nm) {
@@ -1472,7 +1542,11 @@
     function repickStep(s) {
         const hint = s.type === 'click' ? 'Klik op de knop die ingedrukt moet worden' : (s.type === 'fill' ? 'Klik op het formulier' : 'Klik op het veld dat bij “' + stepLabel(s) + '” hoort');
         beginPick(el => {
-            if (s.type === 'click') { const btn = (el.closest && el.closest(BTN_SEL)) || el; s.selector = stableSel(btn); s.fp = fingerprint(btn); }
+            if (s.type === 'click') {
+                const btn = (el.closest && el.closest(BTN_SEL)) || el;
+                s.selector = stableSel(btn); s.fp = fingerprint(btn);
+                const naam = knopNaam(btn); if (naam) { s.name = naam.slice(0, 24); s.detail = naam.slice(0, 40); }
+            }
             else if (s.type === 'fill') { const form = el.closest('form') || el; s.selector = cssPath(form); s.colmap = buildColumnMap(readFormFieldsIn(form)); updateFillDetail(s); }
             else if (s.type === 'setval' || s.type === 'select' || s.type === 'type') { const f = resolveField(el); s.selector = stableSel(f); s.fp = fingerprint(f); }
             else { s.selector = cssPath(el); s.fp = fingerprint(el); }

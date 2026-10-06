@@ -6,7 +6,35 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 23)
+## Wat er het laatst veranderde (ronde 24)
+
+**Vraag:** "kan op dit moment niet op buttons drukken, fix dat", met de HTML van een ASR-pagina: een design system van webcomponenten (Lit) waarin elke knop in zijn eigen shadow root zit en de pagina een `asr-sheet` met een `<dialog>` gebruikt.
+
+### Wat er misging: een modaal venster zette het hele paneel stil
+
+`asr-sheet` opent zijn venster met `<dialog>.showModal()`. De browser maakt dan **alles buiten die dialog "inert"**: je ziet ParseLab nog wel staan, maar geen enkele knop in het paneel reageert nog op een muisklik. De top-layer (popover) helpt daar niet tegen — alleen binnen de dialog staan helpt.
+
+Opgelost in `keepOnTop()`: staat er een modaal venster open (ook als de `<dialog>` in een webcomponent zit), dan verhuist het paneel *in* die dialog; gaat het venster weer dicht, dan verhuist het terug naar de body. In popover-modus wordt de popover rond de verhuizing netjes gesloten en weer geopend, want verplaatsen sluit een popover.
+
+### En: elke knop heette "knop"
+
+In zo'n design system staat de echte `<button>` in een shadow root en komt de tekst via een `<slot>` uit de **light DOM van de host**. `textContent` van die button is dus leeg, en elke klikstap heette daardoor *button* of *knop* — bij tien knoppen op een pagina niet te onderscheiden, en de vingerafdruk had niets om ze mee uit elkaar te houden.
+
+- Nieuw `knopNaam()`: klimt over de shadow-grenzen omhoog en pakt het eerste bruikbare label — `aria-label` van de knop, eigen tekst, dan de tekst, `label`, `aria-label` of `title` van de host(s) erboven. Een naam als "button" of "knop" wordt overgeslagen.
+- Nieuw `knopTestId()`: `data-testid` van de knop of van de dichtstbijzijnde host, anders een niet-gegenereerd id. In deze design systems is dat vaak het enige verschil tussen twee identiek uitziende knoppen.
+- Beide gaan mee in de vingerafdruk en scoren mee bij het terugvinden — als extra signaal, niet als eis, zodat het structurele terugvinden blijft werken zoals het was.
+
+### Tests
+
+Nieuw: `tests/extensie-knoppen.mjs` (13 controles) bouwt zo'n design system na — knoppen met hun tekst achter een `<slot>`, een filterknop die vijf shadow roots diep zit tussen knoppen met exact dezelfde klassen en interne HTML, en een modaal `<dialog>`. Het modaal-scenario wordt met een **echte muisklik** getest, want `el.click()` negeert inert en zou de fout niet zien. Op de oude code faalt die 3 van de 13; nu 13/13. Toegevoegd aan de CI.
+
+Tellers: extensie 9/9, aanwijzen 10/10, schaduw 11/11, velden 13/13, zoekveld 10/10, knoppen 13/13.
+
+De extensie als download is opnieuw gebouwd: `tools/parselab-extension.zip`, versie **1.21.0**.
+
+---
+
+## Ronde 23
 
 **Vraag:** "geef laatste versie van de in-browser scraper, en fix dat we invoervelden kunnen ophalen en vullen — werkt nu niet, vult de invoervelden niet vanuit de csv", met de HTML van een zoekveld:
 `<input data-testid="input" aria-describedby="error description" id="id-4724c70a-…" class="asr-text-md" type="search" inputmode="search" role="combobox" aria-haspopup="listbox" aria-autocomplete="list" aria-controls="results-listbox">`

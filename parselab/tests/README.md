@@ -45,6 +45,13 @@ staat, en een suggestielijst die pas verschijnt na drie getypte tekens. De test 
 velden ophalen (de kolom moet naar het label heten), invulstap maken, een invullijst met één kolom
 uploaden, draaien, en dan moet de suggestie gekozen zijn. Los draaien: `node extensie-zoekveld.mjs`.
 
+`extensie-knoppen.mjs` controleert knoppen in een design system van webcomponenten
+(Lit/ASR-stijl): de echte `<button>` zit in een shadow root en de tekst komt via een `<slot>` uit de
+light DOM van de host. Getest wordt dat een aangewezen knop een stap met een bruikbare naam geeft
+(niet "button"), dat een knop die vijf shadow roots diep zit wordt ingedrukt en niet een van de
+knoppen die er identiek uitzien, en dat het paneel klikbaar blijft als de pagina een modaal
+`<dialog>` opent — dat maakt alles buiten de dialog inert. Los draaien: `node extensie-knoppen.mjs`.
+
 `extensie-velden.mjs` controleert de knop *Velden ophalen*: welke invulvelden ziet ParseLab op de
 pagina, wat komt er niet in (verborgen velden), wordt er een invulstap van gemaakt, en vult de taak
 met een geüploade lijst van twee regels beide regels in. Los draaien: `node extensie-velden.mjs`.
