@@ -6,7 +6,37 @@ Alles staat op de branch `claude/parselab-dashboard-t6irh2` (pull request #1 in 
 
 ---
 
-## Wat er het laatst veranderde (ronde 22)
+## Wat er het laatst veranderde (ronde 23)
+
+**Vraag:** "geef laatste versie van de in-browser scraper, en fix dat we invoervelden kunnen ophalen en vullen — werkt nu niet, vult de invoervelden niet vanuit de csv", met de HTML van een zoekveld:
+`<input data-testid="input" aria-describedby="error description" id="id-4724c70a-…" class="asr-text-md" type="search" inputmode="search" role="combobox" aria-haspopup="listbox" aria-autocomplete="list" aria-controls="results-listbox">`
+
+### Wat er misging
+
+Dat veld is een **zoekveld met suggesties** (typeahead): de lijst met treffers komt pas nadát je hebt getypt. De extensie zag `role="combobox"` en behandelde het als een nep-keuzelijst: aanklikken en wachten tot er opties verschijnen. Zonder typen komen die er nooit, dus de dropdown bleef leeg en het veld bleef leeg — in de log: *"0 gevuld, niet gevonden: Zoek een klant"*.
+
+Daar kwam bij dat het veld geen `name` heeft, een willekeurig id (`id-4724c70a-…`) en een label dat er los boven staat. De kolom heette daardoor `veld1` in plaats van *Zoek een klant*, en de kolomnaam uit de CSV vond het veld niet terug.
+
+### De oplossing (`tools/extension/panel.js`)
+
+- **Zoekveld met suggesties apart behandeld** (`isTypeahead`): niet readonly, en `aria-autocomplete=list/both/inline`, `role=combobox`, `type=search` of `inputmode=search`. Zo'n veld wordt nu *getypt* — teken voor teken, met echte `beforeinput`/`input`-events, zodat React, Vue en Blazor de suggesties ophalen. Daarna wachten we tot ~3 seconden op de lijst, kiezen de passende suggestie (exact → hoofdletterongevoelig → bevat → bij precies één treffer die ene) en klikken hem aan; reageert de lijst alleen op toetsen, dan volgt Enter. Komt er geen lijst, dan blijft de getypte tekst staan — voor een zoekveld het juiste eindresultaat, geen fout.
+- **Suggesties worden gezocht waar ze staan**: eerst het element waar `aria-controls`/`aria-owns` naar wijst, anders de hele pagina, ook binnen webcomponenten.
+- **Readonly comboboxen** (MudBlazor en andere nep-selects) houden het oude gedrag: openklikken en kiezen.
+- **Labels beter herkend** (`fieldLabel`): nu ook `aria-labelledby`, een `<label>`/`<legend>` dat vóór het veld staat zonder `for`, het label van het veldblok, `title`, en als laatste een korte tekst ervoor. `aria-describedby` wordt bewust *niet* als label gebruikt — daar staat de foutmelding in.
+- **Kolomnaam → veld terugvinden** (`findFieldIn`) loopt nu dezelfde weg terug: eerst `name`, dan id, dan het *label van het veld zelf* (exact, daarna gedeeltelijk), dan een `<label>` met die tekst, en pas als laatste placeholder/aria-label/naam/id. Het zoekt bovendien mee in webcomponenten; dat deed het eerder niet.
+- **Willekeurige id's overleven een herlaadactie**: een veld met een gegenereerd id krijgt geen `#id` als selector meer, maar een structuurpad plus een vingerafdruk. Alle plekken die een veld bij een kolom zoeken gaan via één functie (`colEl`), die achtereenvolgens selector, vingerafdruk, naam en label probeert.
+
+### Tests
+
+Nieuw: `tests/extensie-zoekveld.mjs` (10 controles) bouwt exact dit veld na — willekeurig id, los label, suggesties die pas na drie getypte tekens verschijnen — en loopt de hele weg af: velden ophalen, de kolom krijgt de naam *Zoek een klant*, invulstap maken, de invullijst met één kolom en één regel uploaden, draaien, en dan moet de suggestie gekozen zijn. Deze test faalt op de oude code (7/10) en is nu groen (10/10). Toegevoegd aan de CI.
+
+Tellers: extensie 9/9, extensie-aanwijzen 10/10, extensie-schaduw 11/11, extensie-velden 13/13, extensie-zoekveld 10/10.
+
+De extensie als download is opnieuw gebouwd: `tools/parselab-extension.zip`, versie **1.20.0**.
+
+---
+
+## Ronde 22
 
 **Vraag:** "noem het niet allemaal verschillende namen meer, maak 1 interface waaruit je kan kiezen uit extract data from a pdf, external website, a excel / or other data file, en dan maakt die tool dat gestructureerd en kan parsen en kan verwerken naar een dashboard … pas gehele flow en html aan naar dit."
 

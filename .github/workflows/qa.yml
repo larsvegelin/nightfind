@@ -47,6 +47,9 @@ jobs:
       - name: Browserextensie — velden in webcomponenten
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node extensie-schaduw.mjs
+      - name: Browserextensie — zoekveld met suggesties
+        working-directory: parselab/tests
+        run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node extensie-zoekveld.mjs
       - name: Browserextensie — velden ophalen
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node extensie-velden.mjs

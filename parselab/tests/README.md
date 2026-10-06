@@ -39,6 +39,12 @@ buitenkant op en `document.querySelector` kijkt er niet in. De test bouwt het ve
 controleert dat het kader op het veld zelf ligt, dat *Invullen* een stap oplevert met het label uit
 de component, en dat de stap het veld later terugvindt. Los draaien: `node extensie-schaduw.mjs`.
 
+`extensie-zoekveld.mjs` controleert een zoekveld met suggesties (typeahead-combobox) zoals portalen
+die gebruiken: `type="search"` met `role="combobox"`, een willekeurig id, een label dat er los boven
+staat, en een suggestielijst die pas verschijnt na drie getypte tekens. De test loopt de hele weg af:
+velden ophalen (de kolom moet naar het label heten), invulstap maken, een invullijst met één kolom
+uploaden, draaien, en dan moet de suggestie gekozen zijn. Los draaien: `node extensie-zoekveld.mjs`.
+
 `extensie-velden.mjs` controleert de knop *Velden ophalen*: welke invulvelden ziet ParseLab op de
 pagina, wat komt er niet in (verborgen velden), wordt er een invulstap van gemaakt, en vult de taak
 met een geüploade lijst van twee regels beide regels in. Los draaien: `node extensie-velden.mjs`.

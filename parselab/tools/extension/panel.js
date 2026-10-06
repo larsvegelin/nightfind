@@ -205,12 +205,82 @@
             || /listbox|menu|dialog/.test(el.getAttribute('aria-haspopup') || '')
             || ((el.readOnly || el.hasAttribute('readonly')) && /select|dropdown|combobox/i.test(cls));
     }
+    // Zoekveld met suggesties (typeahead): de lijst komt PAS nadat je hebt getypt.
+    // Zo'n veld alleen aanklikken levert niets op — daarom typen we eerst de waarde
+    // en kiezen we daarna de suggestie. Een readonly combobox is géén typeahead.
+    function isTypeahead(el) {
+        if (!el || el.tagName !== 'INPUT') return false;
+        if (el.readOnly || el.hasAttribute('readonly') || el.disabled) return false;
+        const aa = String(el.getAttribute('aria-autocomplete') || '').toLowerCase();
+        if (aa === 'list' || aa === 'both' || aa === 'inline') return true;
+        if (el.getAttribute('role') === 'combobox') return true;
+        return el.type === 'search' || String(el.getAttribute('inputmode') || '') === 'search';
+    }
+    // Waar staan de suggesties? Eerst het element waar aria-controls/aria-owns naar wijst,
+    // anders de hele pagina (ook in webcomponenten).
+    function suggestieBak(el) {
+        const ids = String((el.getAttribute('aria-controls') || '') + ' ' + (el.getAttribute('aria-owns') || '')).trim();
+        for (const id of ids.split(/\s+/).filter(Boolean)) {
+            try {
+                const r = (el.getRootNode && el.getRootNode()) || doc;
+                const n = ((r && r.getElementById) ? r : doc).getElementById(id);
+                if (n) return n;
+            } catch (e) {}
+        }
+        return null;
+    }
+    const OPTIE_SEL = '[role="option"], .mud-list-item, .mud-select-item, li[role="menuitem"], [data-testid="option"], [class*="option"]';
+    function zichtbareOpties(el) {
+        const bak = suggestieBak(el);
+        const lijst = bak ? diepAlles(bak, OPTIE_SEL) : diepAlles(doc, OPTIE_SEL);
+        return lijst.filter(o => !vanOnsZelf(o) && o.getClientRects().length);
+    }
+    // Welke suggestie past bij de waarde? exact → hoofdletterongevoelig → bevat.
+    // Niets gevonden maar er is precies één suggestie? Dan die, want een zoekveld met
+    // één treffer bedoelt die treffer (bv. een klantnummer dat de naam oplevert).
+    function besteOptie(opts, s) {
+        const sl = s.toLowerCase();
+        const otxt = o => (o.textContent || '').replace(/\s+/g, ' ').trim();
+        return opts.find(o => otxt(o) === s)
+            || opts.find(o => otxt(o).toLowerCase() === sl)
+            || opts.find(o => otxt(o).toLowerCase().includes(sl))
+            || (opts.length === 1 ? opts[0] : null);
+    }
+    function klikReeks(t) {
+        ['pointerdown', 'mousedown', 'mouseup', 'click'].forEach(n => t.dispatchEvent(new MouseEvent(n, { bubbles: true, cancelable: true, view: window })));
+    }
+    // Vul een zoekveld met suggesties: typen → wachten op de lijst → de suggestie kiezen.
+    // Komt er geen lijst, dan blijft de getypte tekst staan; dat is voor een zoekveld
+    // het juiste eindresultaat en geen fout.
+    async function fillTypeahead(el, value) {
+        const s = String(value == null ? '' : value).trim();
+        if (!s) { await typeInto(el, ''); return true; }
+        await typeInto(el, s, { blur: false });   // echt typen, anders haalt de pagina geen suggesties op
+        for (let i = 0; i < 20; i++) {           // tot ~3 s wachten; suggesties komen van de server
+            await sleep(150);
+            const opts = zichtbareOpties(el);
+            if (!opts.length) continue;
+            const m = besteOptie(opts, s);
+            if (!m) continue;
+            try { m.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+            m.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+            klikReeks(m);
+            await sleep(180);
+            // Sommige lijsten reageren alleen op toetsen: dan Enter op de gemarkeerde optie.
+            if (zichtbareOpties(el).length) {
+                ['keydown', 'keyup'].forEach(n => el.dispatchEvent(new KeyboardEvent(n, { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true, cancelable: true })));
+                await sleep(150);
+            }
+            return true;
+        }
+        return String(el.value || '').trim() !== '';
+    }
     // Open de dropdown, kies de optie die bij de waarde past (exact → hoofdletter-
     // ongevoelig → bevat), en sluit. Werkt voor MudBlazor en ARIA-listboxen.
     async function pickFromPopup(el, value) {
         const s = String(value == null ? '' : value).trim(), sl = s.toLowerCase();
         if (!s) return true;
-        const clickSeq = t => ['pointerdown', 'mousedown', 'mouseup', 'click'].forEach(n => t.dispatchEvent(new MouseEvent(n, { bubbles: true, cancelable: true, view: window })));
+        const clickSeq = klikReeks;
         el.focus(); clickSeq(el);
         for (let i = 0; i < 8; i++) {   // wacht tot de opties verschijnen
             await sleep(90);
@@ -252,7 +322,8 @@
     // en laat beforeinput/input vuren, precies wat MudMask verwerkt. Bij een datum-/getalmasker
     // typen we alleen de cijfers (het masker zet zelf de streepjes). Werkt insertText niet
     // (oude browser), dan valt hij terug op el.value + input/change.
-    async function typeInto(el, text) {
+    async function typeInto(el, text, opt) {
+        const blurNa = !(opt && opt.blur === false);   // bij een suggestielijst juist NIET blurren
         const full = String(text == null ? '' : text);
         // Volledige waarde teken voor teken typen: een masker absorbeert zelf de
         // scheidingstekens, een gewoon veld houdt ze — dus geen aannames nodig.
@@ -274,15 +345,18 @@
             await sleep(15);
         }
         // Kwam er niets in? → hele waarde in één keer (laatste redmiddel).
-        if ((el.value || '').replace(/\s/g, '') === '') { setNativeValue(el, full); fire(el, ['input']); }
+        if ((el.value || '').replace(/\s/g, '') === '' && full !== '') { setNativeValue(el, full); fire(el, ['input']); }
         fire(el, ['change']);
-        el.dispatchEvent(new Event('blur', { bubbles: true }));
-        el.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+        if (blurNa) {
+            el.dispatchEvent(new Event('blur', { bubbles: true }));
+            el.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+        }
         return true;
     }
     async function fillElement(el, value) {
         if (!el) return false;
         if (el.isContentEditable) { el.textContent = String(value); fire(el, ['input']); return true; }
+        if (isTypeahead(el)) return await fillTypeahead(el, value);
         if (isPopupSelect(el)) return await pickFromPopup(el, value);
         const tag = el.tagName;
         if (tag === 'SELECT') {
@@ -323,18 +397,34 @@
     }
     // Attribuutwaarde veilig in dubbele quotes (voor name met $, punten, spaties enz.)
     function attrSel(name) { return '[name="' + String(name).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]'; }
+    // Zoek het veld dat bij een kolomnaam hoort. Belangrijk: dit is de omgekeerde weg van
+    // fieldLabel() — wat "Velden ophalen" als kolomnaam opschrijft, moet hier terug te
+    // vinden zijn. Daarom vergelijken we óók op het label van het veld zelf, en zoeken we
+    // mee in webcomponenten (diepAlles), niet alleen in de gewone DOM.
     function findFieldIn(scope, key) {
-        let el = scope.querySelector(attrSel(key)); if (el) return el;
+        scope = scope || doc;
+        const low = cleanCol(key).toLowerCase();
+        if (!low) return null;
+        let el = null;
+        try { el = scope.querySelector(attrSel(key)) || diepZoek(scope, attrSel(key)); if (el) return el; } catch (e) {}
         try { el = scope.querySelector('#' + CSS.escape(key)); if (el) return el; } catch (e) {}
-        const low = key.toLowerCase();
-        for (const lab of scope.querySelectorAll('label')) {
-            if (lab.textContent.toLowerCase().includes(low)) {
-                const f = lab.getAttribute('for'); if (f && doc.getElementById(f)) return doc.getElementById(f);
+        const velden = diepAlles(scope, 'input:not([type=hidden]),select,textarea').filter(c => !vanOnsZelf(c));
+        // 1. het label van het veld is exact de kolomnaam
+        for (const c of velden) { if (cleanCol(fieldLabel(c)).toLowerCase() === low) return c; }
+        // 2. een <label> waarvan de tekst de kolomnaam bevat
+        for (const lab of diepAlles(scope, 'label')) {
+            if (vanOnsZelf(lab)) continue;
+            if ((lab.textContent || '').toLowerCase().includes(low)) {
+                const f = lab.getAttribute('for');
+                if (f) { try { const r = (lab.getRootNode && lab.getRootNode()) || doc; const t = ((r && r.getElementById) ? r : doc).getElementById(f); if (t) return t; } catch (e) {} }
                 const ins = lab.querySelector('input,textarea,select'); if (ins) return ins;
             }
         }
-        for (const c of scope.querySelectorAll('input,textarea,select')) {
-            const hay = ((c.placeholder || '') + ' ' + (c.getAttribute('aria-label') || '') + ' ' + (c.name || '') + ' ' + (c.id || '')).toLowerCase();
+        // 3. het label van het veld bevat de kolomnaam
+        for (const c of velden) { const l = cleanCol(fieldLabel(c)).toLowerCase(); if (l && l.includes(low)) return c; }
+        // 4. laatste redmiddel: placeholder, aria-label, naam of id bevat de kolomnaam
+        for (const c of velden) {
+            const hay = ((c.placeholder || '') + ' ' + (c.getAttribute('aria-label') || '') + ' ' + (c.getAttribute('title') || '') + ' ' + (c.name || '') + ' ' + (c.id || '')).toLowerCase();
             if (hay.includes(low)) return c;
         }
         return null;
@@ -552,16 +642,51 @@
     }
 
     // ============================================ formulier lezen / CSV
-    // Leesbaar label van een veld: echte <label for>, omringende <label>, MudBlazor
-    // .mud-input-label, dan aria-label/placeholder.
+    // Tekst van de elementen waar een attribuut met id's naar wijst (aria-labelledby).
+    // Let op: aria-describedby gebruiken we NIET als label — daar staat de foutmelding in.
+    function labelUitIds(el, attr) {
+        const ids = String((el.getAttribute && el.getAttribute(attr)) || '').trim();
+        if (!ids) return '';
+        const r = (el.getRootNode && el.getRootNode()) || doc;
+        const zoek = (r && r.getElementById) ? r : doc;
+        return ids.split(/\s+/).map(id => { try { const n = zoek.getElementById(id); return n ? txt(n) : ''; } catch (e) { return ''; } })
+            .filter(Boolean).join(' ').trim();
+    }
+    // Label dat vóór het veld staat zonder for-koppeling (veel React-formulieren doen dit).
+    // strikt = alleen een echt <label>/<legend>; anders ook een korte tekstregel ervoor.
+    function labelVoorVeld(el, strikt) {
+        let node = el;
+        for (let omhoog = 0; omhoog < 3 && node; omhoog++) {
+            let zus = node.previousElementSibling;
+            for (let n = 0; n < 3 && zus; n++) {
+                if (!/^(SCRIPT|STYLE|INPUT|SELECT|TEXTAREA|BUTTON)$/.test(zus.tagName)) {
+                    const lab = (zus.matches && zus.matches('label,legend')) ? zus : (zus.querySelector && zus.querySelector('label,legend'));
+                    const bron = lab || (strikt ? null : zus);
+                    const s = bron ? cleanCol(txt(bron)) : '';
+                    if (s && s.length <= 60) return s;
+                }
+                zus = zus.previousElementSibling;
+            }
+            node = node.parentElement;
+        }
+        return '';
+    }
+    // Leesbaar label van een veld. In deze volgorde, want zo is de kans op de naam die de
+    // gebruiker op het scherm ziet het grootst: <label for> → aria-labelledby → omhullend
+    // <label> → label in het veldblok → een <label> dat ervoor staat → aria-label →
+    // placeholder → title → een korte tekst die ervoor staat.
     function fieldLabel(el) {
         try { if (el.id) { const r = (el.getRootNode && el.getRootNode()) || doc; const l = (r.querySelector ? r : doc).querySelector('label[for="' + CSS.escape(el.id) + '"]'); if (l && txt(l)) return txt(l); } } catch (e) {}
+        const viaIds = labelUitIds(el, 'aria-labelledby'); if (viaIds) return viaIds;
         // Omhullend <label>: alleen de labeltekst, niet de tekst van het veld/de opties erin.
         const wrap = el.closest && el.closest('label');
         if (wrap) { try { const c = wrap.cloneNode(true); c.querySelectorAll('input,select,textarea,button,option').forEach(x => x.remove()); const s = txt(c); if (s) return s; } catch (e) { if (txt(wrap)) return txt(wrap); } }
-        const ctrl = el.closest && el.closest('.mud-input-control, .mud-form-control, .mud-input-control-input-container, .field, .form-group');
-        if (ctrl) { const ml = ctrl.querySelector('.mud-input-label, label, .mud-form-control-label'); if (ml && txt(ml)) return txt(ml); }
-        return (el.getAttribute && (el.getAttribute('aria-label') || el.placeholder)) || '';
+        const ctrl = el.closest && el.closest('.mud-input-control, .mud-form-control, .mud-input-control-input-container, .field, .form-group, .asr-form-field, [class*="form-field"], [class*="formfield"]');
+        if (ctrl) { const ml = ctrl.querySelector('.mud-input-label, label, legend, .mud-form-control-label'); if (ml && txt(ml)) return txt(ml); }
+        const ervoor = labelVoorVeld(el, true); if (ervoor) return ervoor;
+        const attr = (el.getAttribute && (el.getAttribute('aria-label') || el.placeholder || el.getAttribute('title'))) || '';
+        if (attr) return attr;
+        return labelVoorVeld(el, false);
     }
     function readFormFieldsIn(scope) {
         const fields = [], seen = new Set();
@@ -573,10 +698,12 @@
             const key = el.name || el.id || cssPath(el); if (!key || seen.has(key)) return; seen.add(key);
             const label = fieldLabel(el);
             // In een webcomponent helpt "#id" niet: dan een pad dat de grens oversteekt.
+            // Een willekeurig id (React/MudBlazor geven elke pagina-load een nieuw id) is
+            // als selector waardeloos; dan liever een structuurpad plus een vingerafdruk.
             const selector = inSchaduw(el) ? cssPath(el)
-                : el.id ? '#' + CSS.escape(el.id)
+                : (el.id && !looksGenerated(el.id)) ? '#' + CSS.escape(el.id)
                 : el.name ? el.tagName.toLowerCase() + attrSel(el.name) : cssPath(el);
-            fields.push({ key, label, type: (el.type || el.tagName.toLowerCase()), selector });
+            fields.push({ key, label, type: (el.type || el.tagName.toLowerCase()), selector, fp: fingerprint(el) });
         });
         return fields;
     }
@@ -593,8 +720,19 @@
             let col = base, i = 2;
             while (taken.has(col.toLowerCase())) col = base + ' ' + (i++);
             taken.add(col.toLowerCase());
-            return { col, selector: f.selector, key: f.key, label: f.label, type: f.type, on: true };
+            return { col, selector: f.selector, fp: f.fp, key: f.key, label: f.label, type: f.type, on: true };
         });
+    }
+    // Het element van een kolom: eerst de selector, anders de vingerafdruk (voor velden
+    // waarvan het id per pagina-load verandert), anders op naam/label zoeken.
+    function colEl(m, scope) {
+        scope = scope || doc;
+        let el = null;
+        try { el = m.selector ? (qs(m.selector, scope) || qs(m.selector, doc)) : null; } catch (e) {}
+        if (!el && m.fp) el = findByFingerprint(m.fp, scope) || findByFingerprint(m.fp, doc);
+        if (!el && m.key) { try { el = qs(attrSel(m.key), scope) || diepZoek(scope, attrSel(m.key)); } catch (e) {} }
+        if (!el) el = findFieldIn(scope, m.col) || (m.label ? findFieldIn(scope, m.label) : null);
+        return el;
     }
     function enabledCols(s) { return (s.colmap || []).filter(m => m.on !== false); }
     function updateFillDetail(s) { const en = enabledCols(s), tot = (s.colmap || []).length; s.detail = en.length + '/' + tot + ' velden: ' + en.map(m => m.col).join(', '); }
@@ -887,8 +1025,8 @@
             const c = col.trim();
             let m = (colmap || []).find(x => x.col.toLowerCase() === c.toLowerCase())
                 || (colmap || []).find(x => (x.label || '').toLowerCase() === c.toLowerCase() || (x.key || '').toLowerCase() === c.toLowerCase());
-            let el = m ? (qs(m.selector, scope) || qs(m.selector, doc)) : null;
-            if (!el) el = findFieldIn(scope, c);
+            let el = m ? colEl(m, scope) : null;
+            if (!el) el = findFieldIn(scope, c) || findFieldIn(doc, c);
             const value = resolveValue(row[col], ctx);
             if (el && await fillElement(el, value)) rep.filled.push(c); else rep.missed.push(c);
         }
@@ -1417,12 +1555,12 @@
         } catch (e) { return true; }
     }
     function scanPaginaVelden() {
-        const velden = readFormFieldsIn(doc).filter(f => { const el = qs(f.selector, doc); return el ? zichtbaarVeld(el) : false; });
+        const velden = readFormFieldsIn(doc).filter(f => { const el = colEl(f, doc); return el ? zichtbaarVeld(el) : false; });
         const colmap = buildColumnMap(velden);
         // Staan ze allemaal in hetzelfde formulier, dan koppelen we de stap daaraan.
         let formSel = '';
         try {
-            const els = colmap.map(m => qs(m.selector, doc)).filter(Boolean);
+            const els = colmap.map(m => colEl(m, doc)).filter(Boolean);
             const forms = els.map(e => (e.closest && e.closest('form')) || null);
             if (els.length && forms[0] && forms.every(f => f === forms[0])) formSel = cssPath(forms[0]);
         } catch (e) {}
@@ -1448,7 +1586,7 @@
         const gekozen = () => r.colmap.filter((m, i) => { const c = box.querySelector('[data-veld="' + i + '"]'); return c && c.checked; });
         box.querySelectorAll('[data-veldtoon]').forEach(b => b.onclick = (e) => {
             e.preventDefault();
-            const m = r.colmap[+b.dataset.veldtoon], el = qs(m.selector, doc);
+            const m = r.colmap[+b.dataset.veldtoon], el = colEl(m, doc);
             if (el) highlightEl(el); else flash(b, '✗ niet gevonden');
         });
         $('#velden-stap').onclick = function () {
@@ -2429,7 +2567,7 @@
         let root = doc; try { root = scopeSel ? (doc.querySelector(scopeSel) || doc) : (doc.querySelector('form') || doc); } catch (e) {}
         const cm = buildColumnMap(readFormFieldsIn(root));
         return cm.map(m => {
-            let el = null; try { el = qs(m.selector, doc); } catch (e) {}
+            const el = colEl(m, doc);
             return { column: m.col, label: m.label || '', name: m.key || '', selector: m.selector, type: (el && (el.type || el.tagName.toLowerCase())) || '', options: (el && el.tagName === 'SELECT') ? Array.from(el.options).map(o => o.value || txt(o)) : undefined, fp: el ? fingerprint(el) : null };
         });
     }
