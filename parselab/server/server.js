@@ -93,6 +93,49 @@ async function checkUrl(raw) {
   return u;
 }
 
+/* ---------------- een databestand van een open link halen ----------------
+ * Het dashboard mag vanuit de browser vaak niet zelf bij een Google Sheet of een
+ * SharePoint-link (die sturen geen CORS-kop mee). Daarom haalt de server het op en
+ * geeft hij de inhoud door. Alleen GET, alleen tekstachtige bestanden, met een limiet
+ * en dezelfde adrescontrole als de scraper (geen interne adressen).
+ */
+const DATA_MAX = 8 * 1024 * 1024;        // 8 MB is ruim voor een CSV met tienduizenden regels
+// Let op: niet "text/" in het algemeen — dan glipt text/html erdoor, en dat is juist
+// het geval dat we willen uitleggen (een deel-link geeft de viewer, niet het bestand).
+const DATA_TYPES = /^(text\/(csv|plain|tab-separated-values)|application\/(json|csv|vnd\.ms-excel|x-ndjson))/i;
+async function haalDatabestand(raw) {
+  const u = await checkUrl(raw);
+  const lib = u.protocol === "https:" ? https : http;
+  return await new Promise((resolve, reject) => {
+    const req = lib.get(u, { headers: { "user-agent": UA, accept: "text/csv,text/plain,application/json;q=0.9,*/*;q=0.5" }, timeout: 20000 }, r => {
+      // Google en SharePoint sturen je door naar het echte bestand; die stap volgen we.
+      if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+        r.resume();
+        let volgende; try { volgende = new URL(r.headers.location, u).toString(); } catch (e) { return reject(httpError(502, "De link stuurt door naar een adres dat ParseLab niet begrijpt.")); }
+        return haalDatabestand(volgende).then(resolve, reject);
+      }
+      if (r.statusCode === 401 || r.statusCode === 403) { r.resume(); return reject(httpError(403, "Dit bestand staat niet open. Zet de link op \"iedereen met de link\" of publiceer het blad naar het web.")); }
+      if (r.statusCode >= 400) { r.resume(); return reject(httpError(502, "De link gaf foutcode " + r.statusCode + ". Controleer of het adres nog klopt.")); }
+      const type = String(r.headers["content-type"] || "");
+      if (type && !DATA_TYPES.test(type)) {
+        r.resume();
+        return reject(httpError(415, /html/i.test(type)
+          ? "Dit adres geeft een webpagina terug, geen databestand. Bij Google Sheets: Bestand → Delen → Publiceren op het web → CSV. Bij SharePoint of OneDrive: zet ?download=1 achter de link."
+          : "Dit bestandstype kan ParseLab niet als tabel lezen (" + type.split(";")[0] + ")."));
+      }
+      let body = "", te_groot = false;
+      r.setEncoding("utf8");
+      r.on("data", d => { if (body.length + d.length > DATA_MAX) { te_groot = true; r.destroy(); return; } body += d; });
+      r.on("end", () => te_groot
+        ? reject(httpError(413, "Dit bestand is groter dan 8 MB. Maak een kleinere selectie of een samenvattend blad."))
+        : resolve({ ok: true, url: u.toString(), type: type.split(";")[0] || "", bytes: body.length, inhoud: body }));
+      r.on("error", e => reject(httpError(502, "Het ophalen ging mis: " + e.message)));
+    });
+    req.on("timeout", () => { req.destroy(); reject(httpError(504, "Het ophalen duurde te lang (20 s).")); });
+    req.on("error", e => reject(httpError(502, "Het ophalen ging mis: " + e.message)));
+  });
+}
+
 /* ---------------- robots.txt en snelheid per host ---------------- */
 const robotsCache = new Map();
 function fetchText(u, proxy) {
@@ -535,6 +578,7 @@ const server = http.createServer(async (req, res) => {
     const mine = tid => { const t = readTasks().find(x => x.id === tid); if (!t) throw httpError(404, "Taak niet gevonden"); if (t.owner && owner && t.owner !== owner) throw httpError(403, "Deze taak is van iemand anders."); return t; };
     if (u.pathname === "/api/scrape/kolommen") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemKolommen(await readBody(req), req)); }
     if (u.pathname === "/api/board/panelen") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemPanelen(await readBody(req), req)); }
+    if (u.pathname === "/api/data/haal") { if (req.method !== "GET") throw httpError(405, "Alleen GET"); return send(res, 200, await haalDatabestand(u.searchParams.get("url"))); }
     if (u.pathname === "/api/parsepdf/velden") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemVelden(await readBody(req), req)); }
     if (u.pathname === "/api/parsepdf/regel") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await noemRegel(await readBody(req), req)); }
     if (u.pathname === "/api/parsepdf/detect") { if (req.method !== "POST") throw httpError(405, "Alleen POST"); return send(res, 200, await detectFields(await readBody(req))); }

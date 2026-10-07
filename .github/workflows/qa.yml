@@ -29,6 +29,9 @@ jobs:
       - name: Testrun
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node qa.mjs
+      - name: Live data in de dashboardmaker
+        working-directory: parselab/tests
+        run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node board-live.mjs
       - name: Stijlgids
         working-directory: parselab/tests
         run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node styleguide.mjs

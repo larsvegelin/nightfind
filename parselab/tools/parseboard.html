@@ -458,8 +458,10 @@ const STEPS = ["Databron", "Typen", "Metrieken", "Onderdelen", "Weergave", "Dash
 const state = {
   step: 1,
   currentId: null,        // id van het opgeslagen overzicht waaruit deze indeling komt (null = nieuw)
-  source: null,           // 'own' | 'fake'
+  source: null,           // 'own' | 'fake' | 'live'
   fileName: null,
+  live: null,             // {url, interval} — online bestand dat zich blijft verversen
+  liveAt: null,           // tijdstip van de laatste keer ophalen
   rawRows: null,
   columns: [],            // {name, role}
   theme: "auto",
@@ -1008,7 +1010,7 @@ function renderStep1(){
   </div>` : "";
   return `
   <h1 class="display">Waar bouwen we je dashboard mee?</h1>
-  <p class="sub">Kies je startpunt: je eigen CSV-bestand, of fictieve data om eerst te verkennen. In beide gevallen blijft alles lokaal in je browser.</p>
+  <p class="sub">Kies je startpunt: je eigen CSV-bestand, een live online bestand dat zich blijft verversen, of fictieve data om eerst te verkennen. Je data wordt in je eigen browser verwerkt.</p>
   <div class="howto" aria-label="Zo werkt het">
     <span class="hstep"><b>1</b> Databron kiezen</span>
     <span class="hstep"><b>2</b> Typen controleren</span>
@@ -1029,6 +1031,33 @@ function renderStep1(){
         <span class="hint">.csv of .tsv · puntkomma, komma of tab</span>
       </div>
       <p class="hint" id="fileError" role="alert"></p>
+    </div>
+    <div class="card mode">
+      <span class="eyebrow">Live data</span>
+      <h2>Koppel een online bestand</h2>
+      <p class="hint">Plak een link naar een CSV, een JSON of een Google Sheet. Het dashboard haalt de cijfers daar op en kan ze op een vast ritme verversen — dan loopt je dashboard mee met de bron.</p>
+      <label class="lbl" for="liveurl">Link naar het bestand</label>
+      <input type="url" id="liveurl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" spellcheck="false" autocomplete="off">
+      <label class="lbl" for="liveiv" style="margin-top:10px">Verversen</label>
+      <select id="liveiv">
+        <option value="0">Alleen nu ophalen</option>
+        <option value="60">Elke minuut</option>
+        <option value="300" selected>Elke 5 minuten</option>
+        <option value="900">Elk kwartier</option>
+        <option value="3600">Elk uur</option>
+      </select>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="primary" id="liveBtn">Ophalen en verder</button>
+      </div>
+      <details style="margin-top:10px">
+        <summary class="hint" style="cursor:pointer">Hoe kom ik aan zo'n link?</summary>
+        <ul class="hint" style="margin:8px 0 0 18px; padding:0">
+          <li><strong>Google Sheets:</strong> Bestand → Delen → Publiceren op het web → <em>Komma-gescheiden waarden (.csv)</em>. Een gewone /edit-link mag ook; die zetten we zelf om.</li>
+          <li><strong>SharePoint of OneDrive:</strong> Delen → Koppeling kopiëren (iedereen met de link), en zet <code>?download=1</code> achter de link.</li>
+          <li><strong>Iets anders:</strong> elk https-adres dat een CSV of JSON teruggeeft werkt, ook van je eigen systeem.</li>
+        </ul>
+      </details>
+      <p class="hint" id="liveError" role="alert"></p>
     </div>
     <div class="card mode">
       <span class="eyebrow">Fictieve data</span>
@@ -1077,6 +1106,99 @@ function bindStep1(){
     const cfg = readConfig(b.dataset.del); if (!cfg) return;
     deleteConfig(cfg.id); render(); showToast(`"${cfg.name || "Overzicht"}" verwijderd.`);
   }));
+
+  /* ---------- live data: een open link naar een CSV of JSON ---------- */
+  // Deel- en bewerklinks wijzen naar een webpagina, niet naar het bestand. Die zetten we
+  // om naar de link die de data zelf teruggeeft; de rest laten we staan.
+  const directeLink = (raw) => {
+    const u = String(raw || "").trim();
+    if (!u) return "";
+    let m = u.match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (m) {
+      if (/\/pub(html)?\b/.test(u)) return u.replace(/\/pubhtml.*$/, "/pub?output=csv").replace(/output=html/, "output=csv");
+      const gid = (u.match(/[#&?]gid=(\d+)/) || [])[1];
+      return "https://docs.google.com/spreadsheets/d/" + m[1] + "/export?format=csv" + (gid ? "&gid=" + gid : "");
+    }
+    m = u.match(/^https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (m) return "https://drive.google.com/uc?export=download&id=" + m[1];
+    // SharePoint en OneDrive geven met ?download=1 het bestand in plaats van de viewer.
+    if (/sharepoint\.com|1drv\.ms|onedrive\.live\.com/.test(u) && !/[?&]download=1/.test(u)) {
+      return u + (u.indexOf("?") < 0 ? "?" : "&") + "download=1";
+    }
+    return u;
+  };
+  // Eerst rechtstreeks uit de browser; lukt dat niet (de bron stuurt geen CORS-kop mee),
+  // dan via de ParseLab-server, die het bestand voor ons ophaalt.
+  const haalLive = async (url) => {
+    const direct = directeLink(url);
+    try {
+      const r = await fetch(direct, { redirect: "follow" });
+      if (r.ok) {
+        const t = await r.text();
+        if (!/^\s*<(!doctype|html)/i.test(t)) return t;
+      }
+    } catch (e) { /* valt hieronder terug op de server */ }
+    let basis = window.PARSELAB_API_BASE || "";
+    try { const q = new URLSearchParams(location.search).get("api"); if (q && !basis) basis = q.replace(/\/+$/, ""); } catch (e) {}
+    const r2 = await fetch(basis + "/api/data/haal?url=" + encodeURIComponent(direct));
+    const j = await r2.json().catch(() => null);
+    if (!r2.ok) throw new Error((j && (j.error || j.message)) || "De server kon het bestand niet ophalen.");
+    return String((j && j.inhoud) || "");
+  };
+  // CSV of JSON naar kolomnamen plus rijen.
+  const leesTabel = (tekst) => {
+    const t = String(tekst || "").trim();
+    if (t.startsWith("[") || t.startsWith("{")) {
+      let j = null; try { j = JSON.parse(t); } catch (e) { return null; }
+      const arr = Array.isArray(j) ? j : (Array.isArray(j && j.data) ? j.data : (Array.isArray(j && j.rows) ? j.rows : (Array.isArray(j && j.value) ? j.value : null)));
+      if (!arr || !arr.length || typeof arr[0] !== "object") return null;
+      const names = Object.keys(arr[0]);
+      return { names, rows: arr.map(o => names.map(n => (o[n] == null ? "" : String(o[n])))) };
+    }
+    return parseCsv(t);
+  };
+  let liveTimer = null;
+  const startLiveVerversen = () => {
+    if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+    const iv = state.live && +state.live.interval;
+    if (!iv) return;
+    liveTimer = setInterval(async () => {
+      try {
+        const parsed = leesTabel(await haalLive(state.live.url));
+        if (!parsed || !parsed.rows.length) return;
+        state.rawRows = parsed.rows; state.liveAt = Date.now();
+        // Kolommen die erbij zijn gekomen krijgen een type; de indeling blijft staan.
+        parsed.names.forEach(n => { if (!state.columns.some(c => c.name === n)) state.columns.push({ name: n, role: guessRole(n) }); });
+        if (state.step === 6) render();
+      } catch (e) { /* stil: de volgende ronde proberen we het weer */ }
+    }, iv * 1000);
+  };
+  window.__plStartLive = startLiveVerversen;
+
+  const liveBtn = $("#liveBtn");
+  if (liveBtn) liveBtn.addEventListener("click", async () => {
+    const url = $("#liveurl").value.trim();
+    const fout = $("#liveError");
+    fout.textContent = "";
+    if (!/^https?:\/\//i.test(url)) { fout.textContent = "Plak een volledige link die begint met https://"; return; }
+    const oud = liveBtn.textContent; liveBtn.disabled = true; liveBtn.textContent = "Bezig met ophalen…";
+    try {
+      const parsed = leesTabel(await haalLive(url));
+      if (!parsed || parsed.names.length < 2) throw new Error("Dit bestand kon niet als tabel gelezen worden. Bij een Google Sheet: Bestand → Delen → Publiceren op het web → CSV.");
+      if (!parsed.rows.length) throw new Error("Dit bestand heeft alleen een kopregel en nog geen gegevens.");
+      state.source = "live";
+      state.fileName = url.replace(/^https?:\/\//, "").slice(0, 60);
+      state.live = { url, interval: +$("#liveiv").value || 0 };
+      state.liveAt = Date.now();
+      state.rawRows = parsed.rows;
+      state.columns = parsed.names.map(name => ({ name, role: guessRole(name) }));
+      resetForNewColumns();
+      startLiveVerversen();
+      goto(2);
+    } catch (e) {
+      fout.textContent = String((e && e.message) || e);
+    } finally { liveBtn.disabled = false; liveBtn.textContent = oud; }
+  });
 
   const dz = $("#dropzone");
   const handleFile = (f) => {

@@ -45,6 +45,13 @@ staat, en een suggestielijst die pas verschijnt na drie getypte tekens. De test 
 velden ophalen (de kolom moet naar het label heten), invulstap maken, een invullijst met één kolom
 uploaden, draaien, en dan moet de suggestie gekozen zijn. Los draaien: `node extensie-zoekveld.mjs`.
 
+`board-live.mjs` controleert de live-datakoppeling van de dashboardmaker langs beide wegen: een
+bron die CORS toestaat haalt de browser zelf op, een bron die dat niet doet (zoals Google Sheets en
+SharePoint) gaat via `/api/data/haal` op de server. Verder: een onvolledige link en een link die een
+webpagina teruggeeft moeten uitleg geven, en het serverdeel moet een webpagina weigeren met
+foutcode 415. Vraagt een draaiende server met `PARSELAB_ALLOW_PRIVATE=1`. Het verversen op een
+interval zit niet in de test (de kortste stand is een minuut). Los draaien: `node board-live.mjs`.
+
 `extensie-balk.mjs` controleert de schermindeling van het paneel: een balk tegen de rechterrand
 over de volle schermhoogte, de pagina die ernaast opschuift (en haar volle breedte terugkrijgt als
 het paneel weg is), het werkgedeelte dat de hoogte vult, en de breedte die je aan de greep kunt
