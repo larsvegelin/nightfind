@@ -1,0 +1,161 @@
+<!-- ParsePDF — embed 12 van 12: verwerking en opstarten. Plaats als laatste. -->
+<script>
+(function(){
+var CFG=window.PARSELAB,P=window.PLP,T=window.PLP_T,S=window.PLP_S,U=window.PLP_UI;
+if(!CFG||!CFG.client||!P||!T||!S||!U){console.error("ParsePDF: onderdelen ontbreken");return;}
+var sb=CFG.client;
+
+window.PLP_RUN=function(knop,rij){
+var t=S.t;
+if(!S.bestanden.length){U.meld(t.errNoFiles,"warn");return;}
+var SJ=window.PLP_SJ,d=SJ?SJ.lees():{mappen:[]},mapId=d.actief;
+var mp=mapId&&SJ?SJ.map(mapId):null;
+var perMap=!!(mp&&mp.sjablonen.length);   // sjablonen uit de map, of de regels hieronder
+var actief=S.regels.filter(bruikbaar);
+if(!perMap&&!actief.length){U.meld(t.errNoRules,"warn");return;}
+knop.disabled=true;knop.textContent=t.counting;
+var stand=U.el("p","pld-text");stand.setAttribute("role","status");rij.appendChild(stand);
+var lijst=S.bestanden.slice(),totaal=0,fouten=[],keten=Promise.resolve();
+lijst.forEach(function(f){
+keten=keten.then(function(){return P.tel(f);})
+.then(function(n){totaal+=n;})
+.catch(function(){fouten.push(f.name+" "+t.errRead);});});
+return keten.then(function(){
+if(!totaal){herstel(knop);U.meld(fouten.join(" ")||t.errLib,"warn");return null;}
+var over=U.over();
+if(totaal>over){herstel(knop);S.root.insertBefore(U.limietKaart(totaal,over),S.root.firstChild);
+window.scrollTo({top:0,behavior:"smooth"});return null;}
+return sb.rpc("record_usage",{p_tool:"parsepdf",p_pages:totaal}).then(function(r){
+if(r.error)throw new Error("usage");
+knop.textContent=t.reading;
+var uit=[],kolommen=[],geteld={},onbekend=0,n=0,k2=Promise.resolve();
+lijst.forEach(function(f){
+k2=k2.then(function(){return (P.leesOfOcr||P.lees)(f);})
+.then(function(doc){
+var regels=actief,naam=null;
+if(perMap){
+  var c=SJ.controle?SJ.controle(mapId,doc,window.PLP_ST.analyse(doc)):null;
+  var keus=c&&c.sjabloon?{sjabloon:c.sjabloon}:SJ.kies(mapId,doc,window.PLP_ST.analyse(doc));
+  if(keus&&keus.sjabloon){
+    regels=keus.sjabloon.regels.filter(bruikbaar);naam=keus.sjabloon.naam;
+    SJ.telGebruik(mapId,keus.sjabloon.id);geteld[naam]=(geteld[naam]||0)+1;
+    // Zelfde afzender, andere indeling: het sjabloon past wel maar de velden niet.
+    if(c&&c.anders)fouten.push(f.name+" "+t.matchMaybe.replace("{naam}",naam).replace("{g}",c.gevonden).replace("{t}",c.totaal));
+  }
+  else {regels=[];onbekend++;}
+}
+regels.forEach(function(x){if(kolommen.indexOf(x.naam)<0)kolommen.push(x.naam);});
+var r2=P.rij(doc,regels);
+if(r2.leeg)fouten.push(f.name+" "+t.scanned);else if(doc.ocr)fouten.push(f.name+" "+t.scannedAuto);
+perRegel(doc,r2,regels).forEach(function(rr){
+  var op={};regels.forEach(function(x,i){op[x.naam]=rr.velden["k"+i];});
+  uit.push({naam:rr.naam,paginas:rr.paginas,sjabloon:naam,opNaam:op,leeg:rr.leeg});
+});
+n++;stand.textContent=n+" / "+lijst.length;})
+.catch(function(){fouten.push(f.name+" "+t.errRead);});});
+return k2.then(function(){
+if(perMap)kolommen.unshift(t.colTemplate);
+// De kolommen van de uitvoer staan los van de veldregels in het scherm: bij een map
+// verschillen ze per document, en je regels moeten na afloop blijven staan.
+S.kolommen=kolommen.map(function(naam){return {naam:naam,filter:"geen"};});
+S.rijen=uit.map(function(r){
+  var velden={};
+  kolommen.forEach(function(naam,i){
+    velden["k"+i]=naam===t.colTemplate&&perMap?(r.sjabloon||t.unknown):(r.opNaam[naam]||"");
+  });
+  return {naam:r.naam,paginas:r.paginas,velden:velden,leeg:r.leeg};
+});
+if(S.verbruik)S.verbruik.used=Number(S.verbruik.used||0)+totaal;
+S.bestanden=[];U.teken();
+var uitleg=[];
+if(perMap){
+  var namen=Object.keys(geteld).map(function(k){return geteld[k]+" \u00D7 "+k;});
+  if(namen.length)uitleg.push(t.recognised.replace("{lijst}",namen.join(" \u00B7 ")));
+  if(onbekend===1)uitleg.push(t.oneUnknown);
+  else if(onbekend>1)uitleg.push(t.manyUnknown.replace("{n}",onbekend));
+}
+if(uitleg.length)U.meld(uitleg.join(" "));
+if(fouten.length)U.meld(fouten.join(" "),"warn");});});
+}).catch(function(e){
+console.error(e);herstel(knop);
+U.meld(e&&e.message==="usage"?t.errUsage:t.errLib,"warn");});
+};
+
+// Controle over alle geladen documenten: welke regel vindt in welk document iets?
+// Leest lokaal en telt geen pagina's van je tegoed.
+window.PLP_CHECK=(function(){
+function knop(){var b=U.el("button","pld-btn pld-btn--ghost pld-btn--sm",S.t.checkAll);b.type="button";b.addEventListener("click",function(){run(false,b);});return b;}
+function run(stil,b){
+  var t=S.t,regels=S.regels.filter(bruikbaar),lijst=S.bestanden.slice();
+  if(stil&&lijst.length<2)return;
+  if(!lijst.length||!regels.length){if(!stil)U.meld(lijst.length?t.errNoRules:t.errNoFiles,"warn");return;}
+  if(b){b.disabled=true;b.textContent=t.checking;}
+  var tel=regels.map(function(){return {n:0,mist:[]};}),k=Promise.resolve();
+  lijst.forEach(function(f){
+    k=k.then(function(){return P.lees(f);})
+    .then(function(doc){var r=P.rij(doc,regels);regels.forEach(function(x,i){if(r.velden["k"+i])tel[i].n++;else tel[i].mist.push(f.name);});})
+    .catch(function(){regels.forEach(function(x,i){tel[i].mist.push(f.name);});});});
+  return k.then(function(){if(b){b.disabled=false;b.textContent=t.checkAll;}toon(regels,tel,lijst.length);});
+}
+function toon(regels,tel,n){
+  var t=S.t,oud=document.querySelector(".plp-check");if(oud)oud.remove();
+  var k=U.el("div","pld-card plp-check"),alles=tel.every(function(x){return x.n===n;});
+  k.appendChild(U.el("p","pld-text",(alles?t.checkAllOk:t.checkSome).replace("{n}",n)));
+  regels.forEach(function(r,i){
+    var rij=U.el("div","plp-file"),l=U.el("div");
+    l.appendChild(U.el("p","pld-text",r.naam));
+    if(tel[i].mist.length)l.appendChild(U.el("p","plp-mono",t.checkMissing+" "+tel[i].mist.join(", ")));
+    var pil=U.el("span","pld-pill"+(tel[i].n===n?" pld-pill--on":""),t.checkFound.replace("{g}",tel[i].n).replace("{n}",n));
+    rij.appendChild(l);rij.appendChild(pil);k.appendChild(rij);});
+  var koppen=S.root.querySelectorAll(".pld-sect"),laatste=koppen[koppen.length-1];
+  if(laatste)S.root.insertBefore(k,laatste);else S.root.appendChild(k);
+  k.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+return {knop:knop,run:run};
+})();
+
+function bruikbaar(r){return r.naam&&(r.type==="bestand"||r.type==="cel"||r.type==="eis"||r.type==="tabelkolom"||r.waarde);}
+
+// Staan er tabelkolommen in het sjabloon, dan wordt elke regel uit de tabel een rij,
+// met de kopvelden van het document erbij herhaald.
+function perRegel(doc,basis,actief){
+  var kolommen=actief.filter(function(r){return r.type==="tabelkolom";});
+  if(!kolommen.length||!window.PLP_ST)return [basis];
+  var tab=window.PLP_ST.analyse(doc).tabel;
+  if(!tab||!tab.rijen.length)return [basis];
+  return tab.rijen.map(function(rij){
+    var velden={};
+    Object.keys(basis.velden).forEach(function(k){velden[k]=basis.velden[k];});
+    actief.forEach(function(r,i){if(r.type==="tabelkolom")velden["k"+i]=rij[r.kolom]||"";});
+    return {naam:basis.naam,paginas:basis.paginas,velden:velden,leeg:basis.leeg};
+  });
+}
+
+function herstel(knop){knop.disabled=false;knop.textContent=S.t.start;}
+
+function start(){
+var root=document.getElementById("pl-parsepdf-root");
+if(!root)return;
+S.root=root;S.t=T.nl;
+root.innerHTML="";
+var laden=document.createElement("p");laden.className="pld-text";laden.textContent=T.nl.loading;
+root.appendChild(laden);
+sb.auth.getSession().then(function(r){
+if(!r.data.session){window.location.replace(CFG.loginPath);return;}
+return Promise.all([
+sb.from("profiles").select("locale").eq("id",r.data.session.user.id).maybeSingle(),
+sb.rpc("usage_summary")
+]).then(function(res){
+var p=(res[0]&&res[0].data)||{};
+S.taal=T[p.locale]?p.locale:"nl";S.t=T[S.taal];
+document.documentElement.lang=S.taal;
+var u=res[1]&&res[1].data;if(Array.isArray(u))u=u[0];
+S.verbruik=u||null;S.regels=U.laadRegels();U.teken();});
+}).catch(function(e){
+console.error(e);root.innerHTML="";
+var p=document.createElement("p");p.className="pld-msg pld-msg--warn";
+p.textContent=S.t.err||S.t.errRead;root.appendChild(p);});
+}
+document.readyState!=="loading"?start():document.addEventListener("DOMContentLoaded",start);
+})();
+</script>

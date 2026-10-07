@@ -1,0 +1,133 @@
+<!-- ParsePDF — embed 5d: opties (pagina's, OCR, uitvoer) en het omzetten van waarden per kolom. -->
+<script>
+window.PLP_OPT=(function(){
+var S=window.PLP_S,SLEUTEL="pl_parsepdf_opties";
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+function lees(){
+  var o={paginas:"",ocrTaal:"nld+eng",ocrAuto:true,uitvoer:"csv",direct:false,omzet:{}};
+  try{var b=JSON.parse(localStorage.getItem(SLEUTEL)||"null");if(b)Object.keys(b).forEach(function(k){o[k]=b[k];});}catch(e){}
+  return o;
+}
+S.opties=lees();
+function bewaar(){try{localStorage.setItem(SLEUTEL,JSON.stringify(S.opties));}catch(e){}}
+
+// Pagina's kiezen: "1-2,5", "even", "oneven", "eerste 3", "laatste", "-laatste" (alles behalve
+// de laatste), "niet 4". Insluiten gaat voor, uitsluiten haalt daar weer van af. Leeg = alles.
+var PW={eerste:"eerste",first:"eerste",erste:"eerste",laatste:"laatste",last:"laatste",letzte:"laatste",
+        even:"even",gerade:"even",oneven:"oneven",odd:"oneven",ungerade:"oneven"};
+function paginaSet(n){
+  var s=String(S.opties.paginas||"").trim().toLowerCase();if(!s||!n)return null;
+  var in_={},uit={},insl=false;
+  function zet(doel,i){if(i>=0&&i<n)doel[i]=true;}
+  function deel(d,doel){
+    var w=d.replace(/\s+/g," ").trim(),m;
+    if(!w)return false;
+    if((m=w.match(/^(\d+)(?:-(\d+))?$/))){var lo=+m[1],hi=+(m[2]||m[1]);for(var i=Math.min(lo,hi);i<=Math.max(lo,hi);i++)zet(doel,i-1);return true;}
+    var k=w.split(" "),soort=PW[k[0]],tal=Number(k[1]||1);
+    if(soort==="eerste"){for(var a=0;a<tal;a++)zet(doel,a);return true;}
+    if(soort==="laatste"){for(var b=0;b<tal;b++)zet(doel,n-1-b);return true;}
+    if(soort==="even"||soort==="oneven"){for(var c=0;c<n;c++)if((c+1)%2===(soort==="even"?0:1))zet(doel,c);return true;}
+    return false;
+  }
+  s.split(/[,;]+/).forEach(function(d){
+    d=d.trim();var m=d.match(/^(?:-|!|niet |not |nicht )\s*(.*)$/);
+    if(m)deel(m[1],uit);else if(deel(d,in_))insl=true;
+  });
+  var set={},ok=false;
+  for(var i=0;i<n;i++){if((insl?in_[i]:true)&&!uit[i]){set[i]=true;ok=true;}}
+  return ok?set:null;
+}
+
+var MAAND=["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
+function datum(v,vorm){
+  var d,m,y,t=v.match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+  if(t){d=+t[1];m=+t[2];y=+t[3];}
+  else{
+    t=v.match(/(\d{1,2})\s+([a-z]{3,})\.?\s+(\d{4})/i);
+    if(!t)return v;
+    d=+t[1];y=+t[3];m=-1;
+    MAAND.forEach(function(n,i){if(n.indexOf(t[2].toLowerCase().slice(0,3))===0)m=i+1;});
+    if(m<0)return v;
+  }
+  if(y<100)y+=2000;
+  function p(n){return (n<10?"0":"")+n;}
+  if(vorm==="jjjj-mm-dd")return y+"-"+p(m)+"-"+p(d);
+  if(vorm==="dd/mm/jjjj")return p(d)+"/"+p(m)+"/"+y;
+  if(vorm==="d maand jjjj")return d+" "+(MAAND[m-1]||m)+" "+y;
+  return p(d)+"-"+p(m)+"-"+y;
+}
+function getal(v){
+  var s=v.replace(/[€\s]/g,""),m=s.match(/-?\d{1,3}(?:\.\d{3})+(?:,\d+)?|-?\d+,\d+|-?\d+(?:\.\d+)?/);
+  if(!m)return v;s=m[0];
+  if(s.indexOf(",")>=0)s=s.replace(/\./g,"").replace(",",".");
+  else if(/\.\d{3}$/.test(s))s=s.replace(/\./g,"");
+  return s;
+}
+// Per kolom kun je zeggen wat er met de waarde moet gebeuren: een andere datumvorm,
+// een getal met punt, hoofdletters, een afkorting die een heel woord wordt, of een
+// standaard als er niets gevonden is.
+function zet(naam,waarde){
+  var o=S.opties.omzet&&S.opties.omzet[naam];
+  var v=String(waarde==null?"":waarde).trim();
+  if(!o)return v;
+  if(!v)return o.standaard||"";
+  if(o.vervang){
+    String(o.vervang).split(/[;\n]/).forEach(function(paar){
+      var i=paar.indexOf("=");if(i<1)return;
+      var van=paar.slice(0,i).trim(),naar=paar.slice(i+1).trim();
+      if(!van)return;
+      if(v.toLowerCase()===van.toLowerCase()){v=naar;return;}
+      var re=new RegExp("(^|[^\\p{L}\\d])"+van.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?=$|[^\\p{L}\\d])","giu");
+      v=v.replace(re,function(a,b){return b+naar;});
+    });
+  }
+  if(o.soort&&o.soort.indexOf("datum:")===0)v=datum(v,o.soort.slice(6));
+  else if(o.soort==="getal")v=getal(v);
+  else if(o.soort==="hoofd")v=v.toUpperCase();
+  else if(o.soort==="klein")v=v.toLowerCase();
+  return v;
+}
+
+function veld(l,i){var w=el("div");w.appendChild(el("label","pld-lbl",l));w.appendChild(i);return w;}
+function keuze(lijst,waarde){var s=el("select","pld-sel");lijst.forEach(function(o){var op=el("option","",o[1]);op.value=o[0];if(o[0]===waarde)op.selected=true;s.appendChild(op);});return s;}
+function kaart(){
+  var t=S.t,o=S.opties,k=el("div","pld-card");
+  k.appendChild(el("p","pld-text",t.optHint));
+  var rij=el("div","plp-rule");
+  var pag=el("input","pld-in");pag.value=o.paginas||"";pag.placeholder=t.optPagesPh;
+  pag.addEventListener("input",function(){o.paginas=pag.value;bewaar();});
+  var taal=keuze([["nld+eng","Nederlands + Engels"],["nld","Nederlands"],["eng","English"],["deu","Deutsch"],["deu+eng","Deutsch + English"]],o.ocrTaal);
+  taal.addEventListener("change",function(){o.ocrTaal=taal.value;bewaar();});
+  var auto=keuze([["1",t.optOcrAuto],["0",t.optOcrAsk]],o.ocrAuto?"1":"0");
+  auto.addEventListener("change",function(){o.ocrAuto=auto.value==="1";bewaar();});
+  var uit=keuze([["csv","CSV"],["xlsx","Excel (.xlsx)"]],o.uitvoer);
+  uit.addEventListener("change",function(){o.uitvoer=uit.value;bewaar();});
+  var direct=keuze([["0",t.optShow],["1",t.optDirect]],o.direct?"1":"0");
+  direct.addEventListener("change",function(){o.direct=direct.value==="1";bewaar();});
+  rij.appendChild(veld(t.optPages,pag));rij.appendChild(veld(t.optOcrLang,taal));rij.appendChild(veld("OCR",auto));
+  rij.appendChild(veld(t.optOut,uit));rij.appendChild(veld(t.optAfter,direct));
+  k.appendChild(rij);
+  // Omzetten per kolom: de kolommen van het laatste resultaat, anders die van de regels.
+  var kol=[];(S.regels||[]).concat(S.kolommen||[]).forEach(function(r){if(r.naam&&kol.indexOf(r.naam)<0)kol.push(r.naam);});
+  if(kol.length){
+    k.appendChild(el("p","pld-caps",t.optConvert));
+    k.appendChild(el("p","pld-text",t.optConvertHint));
+    o.omzet=o.omzet||{};
+    kol.forEach(function(naam){
+      var c=o.omzet[naam]||(o.omzet[naam]={soort:"",vervang:"",standaard:""}),r=el("div","plp-rule");
+      var soort=keuze([["",t.xNone],["datum:dd-mm-jjjj",t.xDate+" dd-mm-jjjj"],["datum:jjjj-mm-dd",t.xDate+" jjjj-mm-dd"],["datum:dd/mm/jjjj",t.xDate+" dd/mm/jjjj"],["datum:d maand jjjj",t.xDate+" 1 maart 2026"],["getal",t.optNumber],["hoofd",t.optUpper],["klein",t.optLower]],c.soort);
+      soort.addEventListener("change",function(){c.soort=soort.value;bewaar();});
+      var ver=el("input","pld-in");ver.value=c.vervang||"";ver.placeholder=t.optReplacePh;
+      ver.addEventListener("input",function(){c.vervang=ver.value;bewaar();});
+      var std=el("input","pld-in");std.value=c.standaard||"";std.placeholder=t.optDefaultPh;
+      std.addEventListener("input",function(){c.standaard=std.value;bewaar();});
+      r.appendChild(veld(t.fname,el("p","pld-text",naam)));r.appendChild(veld(t.optKind,soort));
+      r.appendChild(veld(t.optReplace,ver));r.appendChild(veld(t.optDefault,std));
+      k.appendChild(r);
+    });
+  }
+  return k;
+}
+return {kaart:kaart,zet:zet,paginaSet:paginaSet,bewaar:bewaar,datum:datum,getal:getal};
+})();
+</script>

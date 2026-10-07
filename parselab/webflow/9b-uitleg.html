@@ -1,0 +1,69 @@
+<!-- ParsePDF — embed 9b van 12: de uitleg "Hoe werkt ParsePDF?" in vijf stappen, met een voorbeeld om te proberen. -->
+<script>
+window.PLP_TOUR=(function(){
+var S=window.PLP_S;
+var STAPPEN={
+nl:[["Kies je documenten","Sleep je PDF's in het vlak of klik op Bestanden kiezen. Alleen PDF, tot 25 MB per bestand en 100 stuks per keer. Het eerste document gaat meteen open zodat je ziet wat erin staat."],
+["Kijk wat erin staat","Je document wordt getekend en alles wat de tool kan uitlezen is gearceerd: blauw is een waarde, goud het label waaraan hij hem herkende. Zweef erover voor de naam, klik erop om het veld een eigen naam te geven of het weg te laten."],
+["Vink aan wat je wilt","Rechts staat dezelfde lijst met vinkjes. Met Alles selecteren of Niets selecteren ga je snel. Mist er iets? Toon alle tekst zet elk stukje tekst in de lijst, plus de gegevens van het bestand zelf."],
+["Bewaar het als sjabloon","Geef je keuze een naam en zet hem in een map, bijvoorbeeld Facturen. Bij de volgende stapel herkent de tool zelf welk sjabloon bij welk document hoort, ook als je documenten van verschillende leveranciers door elkaar sleept."],
+["Uitlezen en downloaden","Klik op Uitlezen starten. Je krijgt een tabel met alle kolommen en een knop om te downloaden als CSV; Nederlandse Excel zet die meteen goed. Een scan zonder tekstlaag? Laat eerst de tekst herkennen."]],
+en:[["Choose your documents","Drag your PDFs into the box or click Choose files. PDF only, up to 25 MB per file and 100 at a time. The first document opens right away so you see what is in it."],
+["See what is in it","Your document is drawn and everything the tool can read is highlighted: blue is a value, gold the label it recognised it by. Hover for the name, click to give the field your own name or leave it out."],
+["Tick what you want","The same list sits on the right with checkboxes. Select all and Select none move fast. Missing something? Show all text puts every piece of text in the list, plus the details of the file itself."],
+["Save it as a template","Name your choice and put it in a folder, for example Invoices. Next time the tool picks the matching template per document itself, even with suppliers mixed in one batch."],
+["Extract and download","Click Start extraction. You get one table with all columns and a download button for CSV. A scan without a text layer? Run text recognition first."]],
+de:[["Dokumente waehlen","Ziehe deine PDFs in das Feld oder klicke auf Dateien waehlen. Nur PDF, bis 25 MB pro Datei und 100 auf einmal. Das erste Dokument oeffnet sich sofort."],
+["Sieh nach, was drinsteht","Dein Dokument wird gezeichnet und alles Lesbare hervorgehoben: blau ist ein Wert, gold das Label. Fahre darueber fuer den Namen, klicke, um selbst zu benennen oder wegzulassen."],
+["Hake an, was du willst","Rechts steht dieselbe Liste mit Haken. Alles auswaehlen und Nichts auswaehlen gehen schnell. Fehlt etwas? Allen Text zeigen bringt jedes Textstueck in die Liste."],
+["Als Vorlage speichern","Gib deiner Auswahl einen Namen und lege sie in einen Ordner. Beim naechsten Stapel waehlt das Werkzeug die passende Vorlage pro Dokument selbst."],
+["Auslesen und herunterladen","Klicke auf Auslesen starten. Du bekommst eine Tabelle mit allen Spalten und einen Download als CSV."]]};
+var TITEL={nl:"Hoe werkt ParsePDF?",en:"How does ParsePDF work?",de:"Wie funktioniert ParsePDF?"};
+var PROBEER={nl:"Probeer het met een voorbeeld",en:"Try it with a sample",de:"Mit einem Beispiel ausprobieren"};
+// Een klein voorbeeld-document (één pagina, verzonnen gegevens) zodat de uitleg meteen iets laat zien.
+var VOORBEELD="JVBERi0xLjQKMSAwIG9iaiA8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PiBlbmRvYmoKMiAwIG9iaiA8PC9UeXBlL1BhZ2VzL0tpZHNbNCAwIFJdL0NvdW50IDE+PiBlbmRvYmoKMyAwIG9iaiA8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2EvRW5jb2RpbmcvV2luQW5zaUVuY29kaW5nPj4gZW5kb2JqCjQgMCBvYmogPDwvVHlwZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgNTk1IDg0Ml0vUmVzb3VyY2VzPDwvRm9udDw8L0YxIDMgMCBSPj4+Pi9Db250ZW50cyA1IDAgUj4+IGVuZG9iago1IDAgb2JqIDw8L0xlbmd0aCAyNTk+PiBzdHJlYW0KQlQgL0YxIDExIFRmIDY0IDc3MCBUZCAxOSBUTAooVm9vcmJlZWxkIEIuVi4pIFRqIFQqCihGYWN0dXVyKSBUaiBUKgooRmFjdHV1cm51bW1lcjogMjAyNi0wMDQyKSBUaiBUKgooRmFjdHV1cmRhdHVtOiAxNS0wMy0yMDI2KSBUaiBUKgooS2xhbnRudW1tZXI6IEtMLTEwMDEpIFRqIFQqCihFLW1haWw6IGluZm9Adm9vcmJlZWxkLm5sKSBUaiBUKgooVG90YWFsIFwyMDAgMTIxLDAwKSBUaiBUKgooSUJBTiBOTDkxQUJOQTA0MTcxNjQzMDApIFRqIFQqCkVUCmVuZHN0cmVhbSBlbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTQgMDAwMDAgbiAKMDAwMDAwMDEwNSAwMDAwMCBuIAowMDAwMDAwMTkzIDAwMDAwIG4gCjAwMDAwMDAzMDUgMDAwMDAgbiAKdHJhaWxlciA8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgo2MTIKJSVFT0YK";
+function voorbeeld(){
+  var bin=atob(VOORBEELD),bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  var f=new File([bytes],"voorbeeld-factuur.pdf",{type:"application/pdf"});
+  S.bestanden.push(f);window.PLP_UI.teken();
+  if(window.PLP_V)window.PLP_V.open(S.bestanden,S.bestanden.length-1);
+}
+var WOORDEN={nl:["Volgende","Klaar","Stap {i} van {n}","Vorige"],en:["Next","Done","Step {i} of {n}","Back"],de:["Weiter","Fertig","Schritt {i} von {n}","Zurueck"]};
+function el(a,b,c){var n=document.createElement(a);if(b)n.className=b;if(c!=null)n.textContent=c;return n;}
+function taal(){return STAPPEN[S.taal]?S.taal:"nl";}
+
+function toon(){
+  var stappen=STAPPEN[taal()],woorden=WOORDEN[taal()],i=0;
+  var laag=el("div","plp-modal"),blad=el("div","plp-modal-blad");
+  laag.appendChild(blad);document.body.appendChild(laag);
+  function weg(){laag.remove();document.removeEventListener("keydown",toets);}
+  function toets(e){if(e.key==="Escape")weg();}
+  document.addEventListener("keydown",toets);
+  laag.addEventListener("click",function(e){if(e.target===laag)weg();});
+  function teken(){
+    blad.innerHTML="";
+    blad.appendChild(el("p","pld-caps",woorden[2].replace("{i}",i+1).replace("{n}",stappen.length)));
+    blad.appendChild(el("h2","pld-num",stappen[i][0]));
+    blad.appendChild(el("p","pld-text",stappen[i][1]));
+    var balk=el("div","pld-bar"),vul=el("span");
+    vul.style.width=Math.round((i+1)/stappen.length*100)+"%";balk.appendChild(vul);
+    blad.appendChild(balk);
+    var rij=el("div","pld-row");
+    if(i>0){
+      var terug=el("button","pld-btn pld-btn--ghost",woorden[3]);terug.type="button";
+      terug.addEventListener("click",function(){i--;teken();});
+      rij.appendChild(terug);
+    }
+    var door=el("button","pld-btn",i<stappen.length-1?woorden[0]:woorden[1]);door.type="button";
+    door.addEventListener("click",function(){if(i<stappen.length-1){i++;teken();}else weg();});
+    var proef=el("button","pld-btn pld-btn--ghost",PROBEER[taal()]);proef.type="button";
+    proef.addEventListener("click",function(){weg();voorbeeld();});
+    rij.appendChild(door);rij.appendChild(proef);blad.appendChild(rij);
+    door.focus();
+  }
+  teken();
+}
+return {toon:toon,voorbeeld:voorbeeld,titel:function(){return TITEL[taal()];}};
+})();
+</script>
