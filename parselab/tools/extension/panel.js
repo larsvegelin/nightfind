@@ -1081,7 +1081,33 @@
         window.__WT_PANEL__ = true;
     const host = doc.createElement('div');
     host.id = 'wt-scraper-host';
-    host.style.cssText = 'position:fixed;inset:auto;top:16px;right:16px;left:auto;bottom:auto;margin:0;padding:0;border:0;background:transparent;z-index:2147483647;width:384px;max-width:calc(100vw - 24px);';
+    // Het paneel is een balk tegen de rand over de VOLLE schermhoogte. De pagina schuift
+    // ernaast op (zie duwPagina), zodat je de pagina en het menu tegelijk ziet.
+    const RAIL_MIN = 320, RAIL_MAX = 900, RAIL_STD = 420;
+    let railBreedte = RAIL_STD, railKant = 'right';
+    function zetRail() {
+        const w = Math.max(RAIL_MIN, Math.min(RAIL_MAX, railBreedte));
+        host.style.cssText = 'position:fixed;top:0;bottom:0;height:100vh;' +
+            (railKant === 'left' ? 'left:0;right:auto;' : 'right:0;left:auto;') +
+            'margin:0;padding:0;border:0;background:transparent;z-index:2147483647;' +
+            'width:' + w + 'px;max-width:100vw;';
+        duwPagina(w);
+    }
+    // De pagina een stukje opzij zetten zodat het paneel niets bedekt. We bewaren wat er
+    // stond, zodat we het bij sluiten precies terugzetten.
+    let margeVoor = null;
+    function duwPagina(w) {
+        const de = doc.documentElement; if (!de) return;
+        if (margeVoor === null) margeVoor = { l: de.style.marginLeft || '', r: de.style.marginRight || '', t: de.style.transition || '' };
+        if (host.style.display === 'none') { de.style.marginLeft = margeVoor.l; de.style.marginRight = margeVoor.r; return; }
+        de.style.marginRight = railKant === 'right' ? w + 'px' : margeVoor.r;
+        de.style.marginLeft = railKant === 'left' ? w + 'px' : margeVoor.l;
+    }
+    function herstelPagina() {
+        const de = doc.documentElement; if (!de || margeVoor === null) return;
+        de.style.marginLeft = margeVoor.l; de.style.marginRight = margeVoor.r; de.style.transition = margeVoor.t;
+    }
+    zetRail();
     (doc.body || doc.documentElement).appendChild(host);
     window.__wtHost = host;
     // Top layer: zet het paneel via de Popover-API in de browser-top-layer. Dat staat boven
@@ -1168,7 +1194,10 @@
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function flash(btn, t) { const o = btn.textContent; btn.textContent = t; setTimeout(() => btn.textContent = o, 1200); }
 
-    window.__WT_TOGGLE__ = () => { host.style.display = host.style.display === 'none' ? 'block' : 'none'; };
+    window.__WT_TOGGLE__ = () => {
+        host.style.display = host.style.display === 'none' ? 'block' : 'none';
+        if (host.style.display === 'none') herstelPagina(); else zetRail();
+    };
     $('#wt-close').onclick = () => cleanup(true);
     $('#wt-min').onclick = () => { $('.wt-body').classList.toggle('wt-hidden'); };
 
@@ -2139,18 +2168,24 @@
 
     // ---- Instellingen: thema, kant, taal, cookiemeldingen, map ----
     function applyTheme(dark) { root.querySelector('.wt-card').classList.toggle('wt-dark', !!dark); }
-    function applySide(left) { host.style.left = left ? '16px' : 'auto'; host.style.right = left ? 'auto' : '16px'; }
+    function applySide(left) {
+        railKant = left ? 'left' : 'right';
+        const c = root.querySelector('.wt-card'); if (c) c.classList.toggle('wt-left', !!left);
+        zetRail();
+    }
     (function initPrefs() {
         try {
-            chrome.storage.local.get(['wt-dark', 'wt-side', 'pl-cookies', 'pl-folder'], r => {
-                applyTheme(r && r['wt-dark']); applySide(r && r['wt-side'] === 'left');
+            chrome.storage.local.get(['wt-dark', 'wt-side', 'wt-rail', 'pl-cookies', 'pl-folder'], r => {
+                applyTheme(r && r['wt-dark']);
+                if (r && +r['wt-rail']) railBreedte = +r['wt-rail'];
+                applySide(r && r['wt-side'] === 'left');
                 if ($('#flow-cookies')) $('#flow-cookies').checked = !(r && r['pl-cookies'] === false);
                 if (r && r['pl-folder'] && $('#flow-folder') && !$('#flow-folder').dataset.set) { $('#flow-folder').value = r['pl-folder']; syncFolder(); }
             });
         } catch (e) {}
     })();
     $('#flow-theme').onclick = () => { const c = root.querySelector('.wt-card'); const dark = !c.classList.contains('wt-dark'); applyTheme(dark); try { chrome.storage.local.set({ 'wt-dark': dark }); } catch (e) {} };
-    $('#flow-side').onclick = () => { const left = host.style.left !== '16px'; applySide(left); try { chrome.storage.local.set({ 'wt-side': left ? 'left' : 'right' }); } catch (e) {} };
+    $('#flow-side').onclick = () => { const left = railKant !== 'left'; applySide(left); try { chrome.storage.local.set({ 'wt-side': left ? 'left' : 'right' }); } catch (e) {} };
     if ($('#flow-cookies')) $('#flow-cookies').onchange = function () { try { chrome.storage.local.set({ 'pl-cookies': this.checked }); } catch (e) {} };
     // "Gevorderd" open → extra velden bij stappen tonen; logboek verversen.
     if ($('#wt-adv')) $('#wt-adv').addEventListener('toggle', function () { ADV = this.open; renderSteps(); if (ADV) renderLogbook(); });
@@ -2309,18 +2344,29 @@
     }
     renderFlow();
 
-    // slepen
+    // Breedte van de balk slepen aan de binnenrand (de greep zit in .wt-card).
     (function () {
-        const head = $('.wt-head'); let sx, sy, ox, oy, drag = false;
-        head.addEventListener('mousedown', e => { if (e.target.closest('button')) return; drag = true; sx = e.clientX; sy = e.clientY; const r = host.getBoundingClientRect(); ox = r.left; oy = r.top; e.preventDefault(); });
-        doc.addEventListener('mousemove', e => { if (!drag) return; host.style.left = (ox + e.clientX - sx) + 'px'; host.style.top = (oy + e.clientY - sy) + 'px'; host.style.right = 'auto'; });
-        doc.addEventListener('mouseup', () => drag = false);
+        const greep = $('.wt-grip'); if (!greep) return;
+        let sx = 0, sw = 0, bezig = false;
+        greep.addEventListener('mousedown', e => { bezig = true; sx = e.clientX; sw = host.getBoundingClientRect().width; e.preventDefault(); });
+        doc.addEventListener('mousemove', e => {
+            if (!bezig) return;
+            const delta = railKant === 'left' ? (e.clientX - sx) : (sx - e.clientX);
+            railBreedte = Math.max(RAIL_MIN, Math.min(RAIL_MAX, sw + delta));
+            zetRail();
+        });
+        doc.addEventListener('mouseup', () => {
+            if (!bezig) return; bezig = false;
+            try { chrome.storage.local.set({ 'wt-rail': railBreedte }); } catch (e) {}
+        });
+        // Dubbelklik op de greep: terug naar de standaardbreedte.
+        greep.addEventListener('dblclick', () => { railBreedte = RAIL_STD; zetRail(); try { chrome.storage.local.set({ 'wt-rail': railBreedte }); } catch (e) {} });
     })();
 
     // Sluiten (✕): paneel weg, koppeling uit, en de sitetoegang weer vrijgeven.
     function cleanup(byUser) {
         try { topObs.disconnect(); } catch (e) {} clearInterval(topIv); clearTimeout(topT);
-        endPick(); overlay.remove(); host.remove();
+        endPick(); overlay.remove(); herstelPagina(); host.remove();
         window.__WT_PANEL__ = false; window.__WT_TOGGLE__ = null; window.__wtHost = null; window.__wtCleanup = null;
         window.__WT_BOOTED__ = false;
         if (byUser) window.__wtClosedByUser = true;   // geen hoekknop tonen na een bewuste ✕
@@ -2343,16 +2389,22 @@
     --shadow-hover:0 2px 6px rgba(11,11,11,.05), 0 18px 40px -20px rgba(11,11,11,.22);
     --ease:cubic-bezier(.2,.7,.3,1); --transition:.18s;
     --font-display:'Bricolage Grotesque', "Segoe UI", system-ui, -apple-system, sans-serif;   /* geen web-fetch: alleen als de letter lokaal aanwezig is, anders systeem */
-    background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:var(--radius);
+    background:var(--surface); color:var(--ink); border:0; border-radius:0;
     box-shadow:var(--shadow-hover); overflow:hidden; font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+    /* Balk tegen de rand: volle hoogte, kop vast, inhoud schuift. */
+    height:100vh; display:flex; flex-direction:column;
   }
   .wt-card * { box-sizing:border-box; }
-  .wt-head { display:flex; align-items:center; gap:8px; padding:12px 14px; background:var(--surface); border-bottom:1px solid var(--grid); cursor:move; user-select:none; }
+  /* Greep om de balk breder/smaller te slepen; dubbelklik = standaardbreedte. */
+  .wt-grip { position:absolute; top:0; bottom:0; width:6px; cursor:col-resize; z-index:3; background:transparent; }
+  .wt-grip:hover, .wt-grip:active { background:color-mix(in srgb, var(--accent) 35%, transparent); }
+  .wt-card.wt-left .wt-grip { right:0; } .wt-card:not(.wt-left) .wt-grip { left:0; }
+  .wt-head { display:flex; align-items:center; gap:8px; padding:12px 14px; background:var(--surface); border-bottom:1px solid var(--grid); user-select:none; flex:0 0 auto; }
   .wt-head .brand { width:24px; height:24px; border-radius:8px; background:var(--accent); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:650; font-size:13px; }
   .wt-head b { font-family:var(--font-display); font-weight:650; font-size:15px; letter-spacing:-.01em; } .wt-head .sp { flex:1; }
   .wt-ico { background:none; border:0; cursor:pointer; color:var(--muted); padding:5px; border-radius:8px; display:inline-flex; transition:background var(--transition) var(--ease), color var(--transition) var(--ease); }
   .wt-ico:hover { background:color-mix(in srgb, var(--ink) 5%, var(--surface)); color:var(--ink); }
-  .wt-body { padding:16px; display:flex; flex-direction:column; gap:12px; max-height:76vh; overflow:auto; background:var(--page); }
+  .wt-body { padding:16px; display:flex; flex-direction:column; gap:12px; flex:1 1 auto; min-height:0; overflow:auto; background:var(--page); }
   .wt-hidden { display:none !important; }
   .wt-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
   /* knoppen: één accent (primary/run), rest secundair (rand) of ghost (kaal) */
@@ -2494,6 +2546,7 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></symbol>
 </defs></svg>
 <div class="wt-card">
+<div class="wt-grip" title="Sleep om de balk breder of smaller te maken · dubbelklik voor de standaardbreedte"></div>
   <div class="wt-head"><span class="brand">P</span><b>ParseLab</b><span class="sp"></span>
     <button class="wt-ico" id="wt-min" title="Inklappen">` + IC('min') + `</button>
     <button class="wt-ico" id="wt-close" title="Sluiten">` + IC('x') + `</button>

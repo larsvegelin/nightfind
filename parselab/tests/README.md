@@ -45,6 +45,11 @@ staat, en een suggestielijst die pas verschijnt na drie getypte tekens. De test 
 velden ophalen (de kolom moet naar het label heten), invulstap maken, een invullijst met één kolom
 uploaden, draaien, en dan moet de suggestie gekozen zijn. Los draaien: `node extensie-zoekveld.mjs`.
 
+`extensie-balk.mjs` controleert de schermindeling van het paneel: een balk tegen de rechterrand
+over de volle schermhoogte, de pagina die ernaast opschuift (en haar volle breedte terugkrijgt als
+het paneel weg is), het werkgedeelte dat de hoogte vult, en de breedte die je aan de greep kunt
+slepen. Los draaien: `node extensie-balk.mjs`.
+
 `extensie-knoppen.mjs` controleert knoppen in een design system van webcomponenten
 (Lit/ASR-stijl): de echte `<button>` zit in een shadow root en de tekst komt via een `<slot>` uit de
 light DOM van de host. Getest wordt dat een aangewezen knop een stap met een bruikbare naam geeft
