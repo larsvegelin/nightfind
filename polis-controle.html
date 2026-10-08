@@ -104,6 +104,11 @@
   .banner.info{background:var(--dwa-goud-60);border-color:var(--dwa-goud)}
   .banner.fail{background:var(--fail-soft);border-color:var(--fail);color:var(--fail-tekst,#96302f)}
   .banner.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+  .dekkingregel{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;background:var(--warn-soft);border:1px solid var(--dwa-goud);border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:.92rem}
+  .dekkingregel .lbl{font-weight:800;color:var(--dwa-groen);margin-right:4px}
+  .dekkingregel .d-nieuw{font-weight:700}
+  .dekkingregel .pijl-r{color:var(--ink-2)}
+  .dekkingregel.leeg{color:var(--warn)}
   .banner.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
   .empty{color:var(--ink-2)}
   code{font-family:var(--mono);font-size:.9em}
@@ -113,7 +118,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 21</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 22</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -262,6 +267,14 @@
     "8\t3602\t\tP300\tDe Waerdse Assuradeuren B.V.\t6500\tAansprakelijkheid bedrijf\t\t800743121\t47\t1-1-2027\t15-8-2011\t1-1-2027\t1-1-2027\t\t1\t\t35,86\t\tJ\t0\t48994\t0\t\t\t\t\t\t\t500\t0\tJ\t2027\t25\t\t\t\tIn tegenstelling tot hetgeen is bepaald in clausule N850\tmet betrekking tot uitbesteed werk is dit meeverzekerd op de\tpolis.\t\t\t\t\t2500000\t25",
     "8\t3602\t\tN200\tNationale-Nederlanden Schadeverz My\t6503\tAansprakelijkheid Bedrijven\t#0376\t801058468\t2\t1-1-2027\t1-1-2027\t1-1-2027\t1-1-2027\t\t1\t\t35,86\t800743121\tJ\t1\t48994\t0\tN\tN\tN\tN\tN\tN\t500\t2500000\tJ\t2028\t23\tPRO23\tW740\t800743121\t\t\t\t\t\t\tO2602\t0\t23"
   ].join("\n");
+  // Voorbeeld uitbreiden met de dekkingkolom (rijen eerst aanvullen tot de koplengte).
+  function metDekking(text,waarden){
+    var L=text.split("\n"), n=L[0].split("\t").length;
+    L[0]+="\tDekking+WachtOms->Dekking";
+    for(var i=1;i<L.length;i++){ var c=L[i].split("\t"); while(c.length<n) c.push(""); c.length=n; c.push(waarden[i-1]||""); L[i]=c.join("\t"); }
+    return L.join("\n");
+  }
+  SAMPLE_AVB = metDekking(SAMPLE_AVB,["Bedrijfsaansprakelijkheid","AVB standaard","Bedrijfsaansprakelijkheid"]);
   var SAMPLES = { avb: SAMPLE_AVB };
 
   /* ================= Helpers ================= */
@@ -318,6 +331,21 @@
   }
   function jn(v){ var s=String(v==null?"":v).trim().toUpperCase(); if(s==="JA") return "J"; if(s==="NEE"||s==="NEEN") return "N"; return s; }
   function stripZeros(v){ return String(v==null?"":v).trim().replace(/^0+(?=\d)/,""); }
+  // Dekking-kolommen: elke kop met 'dekking', behalve de provisiekolommen
+  // (Dekking+Wacht->Incassoprovisie / Agent 1 provisie). Werkt voor alle
+  // producten, ongeacht waar de kolom in de export staat.
+  function isDekKop(h){ var hn=norm(h); return hn.indexOf("dekking")!==-1 && hn.indexOf("provisie")===-1; }
+  function heeftDekKolom(header){ return !!header && header.some(isDekKop); }
+  function dekkingVan(rec,header){
+    if(!rec||!header) return "";
+    var parts=[];
+    header.forEach(function(h,i){
+      if(!isDekKop(h)) return;
+      var v=String(rec.row[i]==null?"":rec.row[i]).trim();
+      if(v!=="") parts.push(v);
+    });
+    return parts.join(" · ").replace(/\s+/g," ").trim();
+  }
 
   /* ================= AVB-controles ================= */
   function buildAvbChecks(oud, nieuw, cfg){
@@ -498,26 +526,16 @@
     var tSt=(tOud===tNw)?(tOud===""?"info":"ok"):"warn";
     c.push({label:"Polisteksten (Tekst 1-5)", oud:tOud||"—", nieuw:tNw||"—", status:tSt,
         note:tSt==="warn"?"Teksten overnemen — ter controle, geen fout":(tOud===""?"Geen polisteksten":""), wrap:true});
-    // 14. Dekkingen (kolommen 'Dekking ...'): altijd handmatig controleren voor
-    // oud én nieuw, dus altijd geel. Verzamelt alle dekking-kolommen (codes E1-E5
-    // en omschrijvingen), maar niet de provisiekolommen (Dekking+Wacht->...provisie).
-    function dekkingen(rec){
-      if(!cfg.header) return "";
-      var parts=[];
-      cfg.header.forEach(function(h,i){
-        var hn=norm(h);
-        if(hn.indexOf("dekking")!==-1 && hn.indexOf("provisie")===-1){
-          var v=String(rec.row[i]==null?"":rec.row[i]).trim();
-          if(v!=="") parts.push(v);
-        }
-      });
-      return parts.join(" · ").replace(/\s+/g," ").trim();
-    }
-    var heeftDekKolom = cfg.header && cfg.header.some(function(h){ var hn=norm(h); return hn.indexOf("dekking")!==-1 && hn.indexOf("provisie")===-1; });
-    if(heeftDekKolom){
-      var dekO=dekkingen(oud), dekN=dekkingen(nieuw);
+    // 14. Dekkingen: voor elk product altijd handmatig controleren (oud én nieuw),
+    // dus altijd geel. Ontbreekt de dekkingkolom in de export, dan ook geel met
+    // de melding dat de kolom aan de selectie moet worden toegevoegd.
+    if(heeftDekKolom(cfg.header)){
+      var dekO=dekkingVan(oud,cfg.header), dekN=dekkingVan(nieuw,cfg.header);
       c.push({label:"Dekkingen (oud en nieuw controleren)", oud:dekO||"—", nieuw:dekN||"—", status:"warn",
           note:"Dekkingen altijd handmatig controleren — ter controle, geen fout", wrap:true});
+    } else {
+      c.push({label:"Dekkingen (oud en nieuw controleren)", oud:"—", nieuw:"—", status:"warn",
+          note:"Kolom 'Dekking' ontbreekt in deze export — voeg hem toe aan de selectie"});
     }
     return c;
   }
@@ -623,9 +641,10 @@
     $("rowinfo").textContent=(s.text&&s.text.trim())?("("+s.text.split(/\r?\n/).filter(function(l){return l.trim();}).length+" regels)"):"";
     $("export").disabled=!s.results||!!s.results.error;
     if($("selectiehint")){
-      $("selectiehint").innerHTML = p.selectie
+      $("selectiehint").innerHTML = (p.selectie
         ? ('Upload de export van <strong>'+esc(p.naam)+'</strong> &middot; selectie <code>'+esc(p.selectie)+'</code>')
-        : ('Upload de export van <strong>'+esc(p.naam)+'</strong>');
+        : ('Upload de export van <strong>'+esc(p.naam)+'</strong>'))+
+        ' &middot; inclusief kolom <code>Dekking</code>';
     }
   }
 
@@ -757,6 +776,14 @@
       '<span class="naam">'+esc(klantNaam(r))+'</span>'+
       '<span class="sub">'+(o?esc(txt(o.row,o.map,"polisnr"))+' &rarr; ':'')+esc(txt(n.row,n.map,"polisnr"))+' &middot; '+esc(dash(txt(n.row,n.map,"brancheoms")))+'</span>'+
       '<span class="badge '+r.status+'">'+esc(statusWoord(r))+'</span></div>';
+    // Dekking direct in beeld, voor elk product.
+    if(heeftDekKolom(cfg.header)){
+      html+='<div class="dekkingregel"><span class="lbl">Dekking</span> '+
+        (o?'<span class="d-oud">'+esc(dash(dekkingVan(o,cfg.header)))+'</span> <span class="pijl-r">&rarr;</span> ':'')+
+        '<span class="d-nieuw">'+esc(dash(dekkingVan(n,cfg.header)))+'</span></div>';
+    } else {
+      html+='<div class="dekkingregel leeg"><span class="lbl">Dekking</span> kolom ontbreekt in deze export</div>';
+    }
 
     if(r.orphan){
       html+='<div class="banner warn"><strong>Nog invoeren.</strong> Geen bijbehorende '+esc(cfg.mijOud)+'-polis gevonden voor verwijzing <code>'+esc(dash(txt(n.row,n.map,"oudpolisnr")))+'</code> (regel '+n.line+'). De oude polis moet nog worden ingevoerd.</div>';
