@@ -1,0 +1,2479 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overvoer — ASR Parser</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    :root {
+      --bg:#f8f8f8; --surface:#ffffff; --surface2:#f0f4f1;
+      --green-dark:#00441D; --green-mid:#006b30; --green-light:#e8f2ec;
+      --yellow:#FFC000; --yellow-dark:#d9a200;
+      --text:#1a1a1a; --text-sub:#555555; --text-muted:#888888;
+      --border:#d8e0da; --border-strong:#b0c4b7;
+      --red:#c0392b; --radius:14px;
+    }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; line-height:1.6; }
+    .header { background:var(--green-dark); border-bottom:3px solid var(--yellow); padding:.85rem 2rem; display:flex; align-items:center; gap:1.25rem; position:sticky; top:0; z-index:100; }
+    .header-logo { font-size:1.35rem; font-weight:800; color:var(--yellow); letter-spacing:-0.5px; }
+    .header-divider { width:1px; height:1.4rem; background:rgba(255,255,255,.25); }
+    .header-sub { color:rgba(255,255,255,.75); font-size:0.875rem; }
+    .container { max-width:1200px; margin:0 auto; padding:2rem 1.5rem; }
+    .upload-zone { border:2px dashed var(--border-strong); border-radius:var(--radius); padding:2.5rem 2rem; text-align:center; background:var(--surface); cursor:pointer; transition:background .2s,border-color .2s; margin-bottom:1.5rem; user-select:none; box-shadow:0 1px 4px rgba(0,68,29,.07); }
+    .upload-zone:hover,.upload-zone.drag-over { border-color:var(--green-dark); background:var(--green-light); }
+    .upload-icon { font-size:2.5rem; display:block; margin-bottom:.6rem; line-height:1; }
+    .upload-title { font-size:1.1rem; font-weight:700; margin-bottom:.3rem; color:var(--green-dark); }
+    .upload-sub { color:var(--text-sub); font-size:.875rem; }
+    .upload-note { color:var(--text-muted); font-size:.75rem; margin-top:.6rem; }
+    #fileInput { display:none; }
+    .section-label { font-size:.68rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--green-dark); margin-bottom:.6rem; margin-top:1.75rem; opacity:.8; }
+    .progress-wrap { height:5px; background:var(--border); border-radius:9999px; margin-bottom:1.25rem; overflow:hidden; }
+    .progress-fill { height:100%; background:var(--yellow); border-radius:9999px; transition:width .3s ease; width:0%; }
+    .actions { display:flex; gap:.75rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .btn { display:inline-flex; align-items:center; gap:.45rem; padding:.6rem 1.2rem; border:2px solid transparent; border-radius:var(--radius); font-size:.875rem; font-weight:700; cursor:pointer; transition:all .15s; background:none; white-space:nowrap; }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-primary { background:var(--yellow); border-color:var(--yellow); color:var(--green-dark); }
+    .btn-primary:not(:disabled):hover { background:var(--yellow-dark); border-color:var(--yellow-dark); }
+    .btn-ghost { background:var(--surface); border-color:var(--border-strong); color:var(--green-dark); }
+    .btn-ghost:not(:disabled):hover { border-color:var(--green-dark); background:var(--green-light); }
+    .btn-success { background:var(--green-light); border-color:var(--green-mid); color:var(--green-dark); }
+    .btn-success:not(:disabled):hover { background:#cfe5d6; }
+    .btn-danger { background:#fff0ee; border-color:#e8b0ab; color:var(--red); }
+    .btn-danger:not(:disabled):hover { background:#ffe0db; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem 1rem; text-align:center; box-shadow:0 1px 3px rgba(0,68,29,.06); }
+    .card-val { font-size:1.9rem; font-weight:800; color:var(--green-dark); line-height:1; }
+    .card-lbl { font-size:.72rem; color:var(--text-muted); margin-top:.35rem; }
+    .table-wrap { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; margin-bottom:1.5rem; box-shadow:0 1px 3px rgba(0,68,29,.06); }
+    table { width:100%; border-collapse:collapse; font-size:.875rem; }
+    thead th { background:var(--green-light); padding:.55rem 1rem; text-align:left; font-size:.75rem; color:var(--green-dark); font-weight:700; white-space:nowrap; border-bottom:1px solid var(--border-strong); }
+    tbody td { padding:.55rem 1rem; border-bottom:1px solid var(--border); vertical-align:middle; color:var(--text); }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover td { background:var(--green-light); }
+    .badge { display:inline-flex; align-items:center; gap:.3rem; padding:.15rem .55rem; border-radius:9999px; font-size:.72rem; font-weight:700; line-height:1.6; }
+    .badge-pending   { background:#f0f0f0; color:#888; }
+    .badge-processing{ background:rgba(0,107,48,.12); color:var(--green-mid); }
+    .badge-done      { background:rgba(0,68,29,.1); color:var(--green-dark); }
+    .badge-empty     { background:rgba(255,192,0,.15); color:#8a6600; }
+    .badge-error     { background:rgba(192,57,43,.12); color:var(--red); }
+    .results-scroll { overflow-x:auto; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); margin-bottom:1.5rem; max-height:420px; overflow-y:auto; }
+    .results-scroll table { font-size:.78rem; min-width:max-content; }
+    .results-scroll thead th { position:sticky; top:0; z-index:1; font-size:.72rem; }
+    .results-scroll tbody td { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .empty { text-align:center; padding:5rem 2rem; color:var(--text-muted); }
+    .empty-icon { font-size:3rem; display:block; margin-bottom:.75rem; line-height:1; }
+    .empty-title { font-size:1rem; font-weight:600; margin-bottom:.35rem; color:var(--text-sub); }
+    .empty-sub { font-size:.875rem; opacity:.7; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { display:inline-block; animation:spin .9s linear infinite; }
+    .settings-row { display:flex; gap:1.25rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .setting-group { display:flex; flex-direction:column; gap:.35rem; }
+    .setting-label { font-size:.68rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--green-dark); opacity:.8; }
+    .setting-input { background:var(--surface); border:1.5px solid var(--border-strong); border-radius:10px; color:var(--text); padding:.5rem .85rem; font-size:.875rem; min-width:180px; font-family:inherit; }
+    .setting-input:focus { outline:none; border-color:var(--green-dark); }
+    .setting-input option { color:var(--text); background:var(--surface); }
+    /* Koppelbestand */
+    .mapping-panel { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:1.1rem 1.25rem; margin-bottom:1.5rem; box-shadow:0 1px 3px rgba(0,68,29,.06); }
+    .mapping-row { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+    .mapping-tag { display:inline-block; background:var(--green-light); color:var(--green-dark); border:1px solid var(--border-strong); border-radius:8px; padding:.15rem .5rem; font-size:.75rem; font-family:monospace; }
+    /* ASR-specifiek */
+    .warn-list { font-size:.75rem; color:#8a6600; }
+    .debug-panel { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; margin-bottom:1.5rem; box-shadow:0 1px 3px rgba(0,68,29,.06); }
+    .debug-panel summary { cursor:pointer; font-weight:700; color:var(--green-dark); font-size:.85rem; }
+    .debug-file { margin-top:.9rem; }
+    .debug-file-name { font-weight:700; font-size:.8rem; color:var(--green-dark); margin-bottom:.35rem; }
+    .debug-panel table { font-size:.75rem; }
+    .debug-panel pre { white-space:pre-wrap; word-break:break-word; font-size:.7rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.5rem .65rem; max-height:220px; overflow:auto; margin:.25rem 0 .5rem; }
+    .src-tag { display:inline-block; border-radius:6px; padding:0 .4rem; font-size:.68rem; font-weight:700; background:var(--green-light); color:var(--green-dark); }
+    .src-tag.weak { background:rgba(255,192,0,.18); color:#8a6600; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <span class="header-logo">&#9632; Overvoer</span>
+  <div class="header-divider"></div>
+  <span class="header-sub">ASR — Polis Parser <span id="appVersion" style="opacity:.6;font-size:.75em">v2026-10-13.1</span></span>
+</header>
+
+<main class="container">
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" multiple accept=".txt,.pdf" style="display:none">
+    <input type="file" id="folderInput" multiple webkitdirectory style="display:none">
+    <span class="upload-icon">&#128194;</span>
+    <div class="upload-title">Sleep bestanden of mappen hiernaartoe</div>
+    <div class="upload-sub"><strong>.txt</strong> en <strong>.pdf</strong> OCR-bestanden van ASR (pakketscherm, polisbladen, klantdossier)</div>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:1.1rem">
+      <button class="btn btn-ghost" id="pickFilesBtn" type="button">&#128196;&nbsp; Bestanden kiezen</button>
+      <button class="btn btn-ghost" id="pickFolderBtn" type="button">&#128194;&nbsp; Map kiezen</button>
+    </div>
+    <div class="upload-note" style="margin-top:1rem">Mapnaam formaat: <strong>relatienummer - Naam</strong> &mdash; bijv. <em>12345678 - A.J. van Slooten</em> &mdash; een 7- of 8-cijferig relatienummer bepaalt <code>NAWBES_PK</code> en <code>Pakketpolisnummer</code> (<em>relatienummer</em>.001)</div>
+    <div class="upload-note">Eén map = één ASR-bundel. Alleen <em>pakketscherm / pakketoverzicht / pakketgegevens / algemene gegevens / klantdossier</em> leveren bundle-brede NAW; polisbladen niet.</div>
+    <div class="upload-note">Alles verwerkt lokaal &mdash; er wordt niets ge&uuml;pload.</div>
+    <div id="folderDebug" style="margin-top:.6rem;font-size:.78rem;color:var(--green-dark);font-family:monospace;word-break:break-all;min-height:1.2em"></div>
+  </div>
+
+  <div class="settings-row">
+    <div class="setting-group">
+      <label class="setting-label" for="overvoermaand">Overvoermaand</label>
+      <select id="overvoermaand" class="setting-input">
+        <option value="">— kies maand —</option>
+        <option value="2026-06">Juni 2026</option>
+        <option value="2026-07">Juli 2026</option>
+        <option value="2026-08">Augustus 2026</option>
+        <option value="2026-09">September 2026</option>
+        <option value="2026-10">Oktober 2026</option>
+        <option value="2026-11">November 2026</option>
+        <option value="2026-12">December 2026</option>
+        <option value="2027-01">Januari 2027</option>
+        <option value="2027-02">Februari 2027</option>
+        <option value="2027-03">Maart 2027</option>
+        <option value="2027-04">April 2027</option>
+        <option value="2027-05">Mei 2027</option>
+        <option value="2027-06">Juni 2027</option>
+        <option value="2027-07">Juli 2027</option>
+        <option value="2027-08">Augustus 2027</option>
+        <option value="2027-09">September 2027</option>
+        <option value="2027-10">Oktober 2027</option>
+        <option value="2027-11">November 2027</option>
+        <option value="2027-12">December 2027</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label class="setting-label" for="kantoorInput">Kantoor (Pakketsoort)</label>
+      <select id="kantoorInput" class="setting-input">
+        <option value="">— kies kantoor —</option>
+        <option value="615">Schonewille &amp; ter Harkel (615)</option>
+        <option value="501">Poort en Woltjer (501)</option>
+        <option value="280">Kloosterboer (280)</option>
+        <option value="530">Ren&eacute; van Gameren (530)</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label class="setting-label" for="maatschappijInput">Maatschappijcode ASR</label>
+      <input id="maatschappijInput" class="setting-input" type="text" placeholder="bijv. code uit Volgorde.csv" style="min-width:150px">
+    </div>
+  </div>
+
+
+  <!-- Koppelbestand: relatienummer → oud polisnummer -->
+  <div class="mapping-panel">
+    <div class="section-label" style="margin-top:0">Koppelbestand — Relatienummer ↔ Oud Polisnummer</div>
+    <div class="mapping-row">
+      <input type="file" id="mappingFileInput" accept=".csv,.txt" style="display:none">
+      <button class="btn btn-ghost" id="loadMappingBtn" type="button">&#128203;&nbsp; CSV laden</button>
+      <button class="btn btn-danger" id="clearMappingBtn" type="button" style="display:none">&#10005;&nbsp; Wissen</button>
+      <span id="mappingStatus" style="font-size:.8rem;color:var(--text-muted)">Geen koppelbestand geladen &mdash; verwacht formaat: <code style="font-size:.75rem">relatienummer;oud_polisnummer</code></span>
+    </div>
+    <div id="mappingPreview" style="display:none;margin-top:.75rem">
+      <table style="font-size:.78rem">
+        <thead><tr><th>Relatienummer</th><th>Oud Polisnummer</th></tr></thead>
+        <tbody id="mappingBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="empty" id="emptyState">
+    <span class="empty-icon">&#128203;</span>
+    <div class="empty-title">Geen bestanden geladen</div>
+    <div class="empty-sub">Sleep een of meerdere mappen hierheen om te beginnen</div>
+  </div>
+
+  <div id="queueSection" style="display:none">
+    <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="processBtn">&#9654;&nbsp; Verwerken</button>
+      <button class="btn btn-ghost" id="clearBtn">&#10005;&nbsp; Wachtrij wissen</button>
+      <button class="btn btn-success" id="downloadBtn" disabled>&#11015;&nbsp; Download CSV</button>
+    </div>
+    <div class="cards" id="summaryCards" style="display:none">
+      <div class="card"><div class="card-val" id="statFiles">0</div><div class="card-lbl">Verwerkt</div></div>
+      <div class="card"><div class="card-val" id="statRows">0</div><div class="card-lbl">Polisrijen</div></div>
+      <div class="card"><div class="card-val" id="statProducts">0</div><div class="card-lbl">Unieke producten</div></div>
+      <div class="card"><div class="card-val" id="statWarnings">0</div><div class="card-lbl">Waarschuwingen</div></div>
+      <div class="card"><div class="card-val" id="statErrors">0</div><div class="card-lbl">Fouten</div></div>
+    </div>
+    <div class="section-label">Wachtrij</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Bestand</th><th>Map</th><th>Grootte</th><th>Type</th><th>Bron</th><th>Status</th><th>Rijen</th><th>Opmerking</th></tr></thead>
+        <tbody id="queueBody"></tbody>
+      </table>
+    </div>
+    <div id="resultsSection" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.5rem;margin-top:2rem">
+        <span class="section-label" id="resultsLabel" style="margin:0">Resultaten</span>
+        <button class="btn btn-success" id="downloadBtn2">&#11015;&nbsp; Download CSV</button>
+      </div>
+      <div class="results-scroll">
+        <table><thead id="resultsHead"></thead><tbody id="resultsBody"></tbody></table>
+      </div>
+    </div>
+    <div id="restPanel" style="display:none;margin-top:2rem;padding:1rem;border:2px dashed #b45309;border-radius:8px;margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+        <div>
+          <span class="section-label" style="margin:0">Handmatige overvoer — niet-parseerbare producten</span>
+          <div id="restCount" style="font-size:.8rem;color:var(--text-muted);margin-top:.25rem"></div>
+        </div>
+        <button class="btn btn-ghost" id="downloadRestBtn" style="border-color:#b45309;color:#b45309">&#11015;&nbsp; Download rest-CSV (Excel)</button>
+      </div>
+    </div>
+    <details class="debug-panel" id="debugPanel" style="display:none">
+      <summary>Polisvensters &amp; productdetectie (debug)</summary>
+      <div id="debugBody"></div>
+    </details>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+//  PDF.JS — ordered text (single source of truth voor ASR)
+// ═══════════════════════════════════════════════════════════════════════════════
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// Guard against hangs: a corrupt/protected PDF or a wedged worker must never
+// stall the queue forever — every step gets a hard timeout.
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(label)), ms)),
+  ]);
+}
+
+async function extractTextFromPDF(file) {
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js niet geladen (geen internetverbinding met CDN?)');
+  const buf = await file.arrayBuffer();
+  const task = pdfjsLib.getDocument({ data: buf, verbosity: 0 });
+  let pdf = null;
+  try {
+    pdf = await withTimeout(task.promise, 30000, 'Time-out bij openen PDF (30s)');
+    const parts = [];
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await withTimeout(pdf.getPage(p), 20000, `Time-out op pagina ${p}`);
+      const tc = await withTimeout(page.getTextContent({ includeMarkedContent: false }), 20000, `Time-out op pagina ${p}`);
+      parts.push(`--- PAGE ${p} ---\n${buildPageText(tc.items)}`);
+      if (page.cleanup) try { page.cleanup(); } catch (_) {}
+    }
+    return parts.join('\n\n');
+  } catch (err) {
+    if (err && (err.name === 'PasswordException' || /password/i.test(String(err.message)))) {
+      throw new Error('PDF is beveiligd met een wachtwoord');
+    }
+    if (err && err.name === 'InvalidPDFException') {
+      throw new Error('PDF is beschadigd of ongeldig');
+    }
+    throw err;
+  } finally {
+    try { if (pdf) pdf.destroy(); else task.destroy(); } catch (_) {}
+  }
+}
+
+// Ordered text: regels op y-positie, kolommen op x-positie, kolomsprongen als tab
+function buildPageText(items) {
+  if (!items.length) return '';
+  const Y_TOL = 4;
+  const lineMap = new Map();
+  for (const it of items) {
+    if (!it.str) continue;
+    const y = Math.round(it.transform[5] / Y_TOL) * Y_TOL;
+    if (!lineMap.has(y)) lineMap.set(y, []);
+    lineMap.get(y).push({ x: it.transform[4], w: it.width || 0, str: it.str });
+  }
+  const ys = [...lineMap.keys()].sort((a, b) => b - a);
+  return ys.map(y => {
+    const cols = lineMap.get(y).sort((a, b) => a.x - b.x);
+    let line = '';
+    for (let i = 0; i < cols.length; i++) {
+      if (i === 0) { line = cols[i].str; continue; }
+      const gap = cols[i].x - (cols[i-1].x + cols[i-1].w);
+      line += (gap > 8 ? '\t' : ' ') + cols[i].str;
+    }
+    return line;
+  }).join('\n');
+}
+
+// <ASR-ENGINE-START>
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CSV COLUMNS (Volgorde.csv schema — identiek aan de NN-parser)
+// ═══════════════════════════════════════════════════════════════════════════════
+const CSV_COLUMNS = [
+  'NAWBES_PK','PAKKET_PK','Pakketpolisnummer','Polisnummer',
+  'Voorletters','Tussenvoegsels','Achternaam',
+  'Straat','Huisnummer','Huisnummer toevoeging','Postcode','Woonplaats',
+  'Geboortedatum klant','Agent','Pakketsoort','Productomschrijving','Maatschappij',
+  'Ingangsdatum','Premievervaldatum','Hoofdvervaldatum','Contractvervaldatum',
+  'Betaaltermijn',
+  'Verzekerde som','Eigenrisico',
+  'Gewicht','Kenteken','Meldcode','Kilometrage','Cataloguswaarde','Dagwaarde',
+  'Incassobedrag','Schadevrije jaren','Gezinssamenstelling','Bouwjaar',
+  'Monumentaal pand','Bouwaard muren','Bouwaard vloeren','Bouwaard dak',
+  'Eigen woning','Woonhuis type',
+  'Dekkingsgebied','Maximale reisduur','Verzekerde som bagage','Verzekerde som annulering',
+  'Mediation meeverzekeren','Motorrijtuigen meeverzekeren','Arbeidsrecht meeverzekeren',
+  'Dekking 1','Omschrijving 1','Dekking 2','Omschrijving 2','Dekking 3','Omschrijving 3',
+  'Dekking 4','Omschrijving 4','Dekking 5','Omschrijving 5','Dekking 6','Omschrijving 6',
+  'Dekking 7','Omschrijving 7','Dekking 8','Omschrijving 8','Dekking 9','Omschrijving 9',
+  'Dekking 10','Omschrijving 10','Dekking 11','Omschrijving 11',
+  'Naam verzekeringsnemer 1','Voorletters verzekeringsnemer 1','Voorvoegsel verzekeringsnemer 1',
+  'Geboortedatum verzekeringsnemer 1','Geslacht verzekeringsnemer 1','Verzekerd relatie type verzekeringsnemer 1',
+  'Naam verzekeringsnemer 2','Voorletters verzekeringsnemer 2','Voorvoegsel verzekeringsnemer 2',
+  'Geboortedatum verzekeringsnemer 2','Geslacht verzekeringsnemer 2','Verzekerd relatie type verzekeringsnemer 2',
+  'Naam verzekeringsnemer 3','Voorletters verzekeringsnemer 3','Voorvoegsel verzekeringsnemer 3',
+  'Geboortedatum verzekeringsnemer 3','Geslacht verzekeringsnemer 3','Verzekerd relatie type verzekeringsnemer 3',
+  'Naam verzekeringsnemer 4','Voorletters verzekeringsnemer 4','Voorvoegsel verzekeringsnemer 4',
+  'Geboortedatum verzekeringsnemer 4','Geslacht verzekeringsnemer 4','Verzekerd relatie type verzekeringsnemer 4',
+  'Naam verzekeringsnemer 5','Voorletters verzekeringsnemer 5','Voorvoegsel verzekeringsnemer 5',
+  'Geboortedatum verzekeringsnemer 5','Geslacht verzekeringsnemer 5','Verzekerd relatie type verzekeringsnemer 5',
+  'Uitzondering 1','Uitzondering 2','Uitzondering 3','Uitzondering 4','Uitzondering 5',
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SCHEMA — productnormalisatie + export-guardrails (port van schema.py)
+// ═══════════════════════════════════════════════════════════════════════════════
+const ASRSchema = (() => {
+  'use strict';
+
+  const CANONICAL = ['AVP','Inboedel','Woonhuis','Personenauto','Rechtsbijstand','Doorlopende Reis'];
+
+  // Restproducten: wel herkend, niet automatisch over te voeren (gaan naar de rest-CSV)
+  const REST_PRODUCTS = [
+    [/bestel\s*(?:auto|wagen)/, 'Bestelauto'],
+    [/brom\s*fiets|snor\s*fiets|scooter/, 'Bromfiets'],
+    [/\bmotor\b|motor\s*(?:rijwiel|fiets)|motorverzekering/, 'Motor'],
+    [/oldtimer|klassieker/, 'Oldtimer'],
+    [/camper/, 'Camper'],
+    [/caravan|vouwwagen/, 'Caravan'],
+    [/aanhang\s*wagen/, 'Aanhangwagen'],
+    [/\b(?:e-?bike|fiets)(?:verzekering)?\b/, 'Fiets'],
+    [/boot|pleziervaartuig|vaartuig/, 'Pleziervaartuig'],
+    [/ongevallen(?:verzekering)?\b(?!\s*inzittenden)/, 'Ongevallen'],
+    [/uitvaart/, 'Uitvaart'],
+    [/kostbaarheden|sieraden/, 'Kostbaarheden'],
+  ];
+
+  // normalize_product_name — verplicht voor elke Productomschrijving
+  function normalize_product_name(raw) {
+    const s = String(raw || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+    for (const c of CANONICAL) if (s === c.toLowerCase()) return c;
+    if (/doorlopende\s*reis|reis\s*verzekering|\breis\b/.test(s)) return 'Doorlopende Reis';
+    if (/rechtsbijstand|\brbv\b/.test(s)) return 'Rechtsbijstand';
+    if (/inboedel|huisraad/.test(s)) return 'Inboedel';
+    // Backward-compat: 'Wonen' → 'Woonhuis'
+    if (/woonhuis|opstal|\bwonen\b|woon\s*verzekering/.test(s)) return 'Woonhuis';
+    for (const [re, name] of REST_PRODUCTS) if (re.test(s)) return name;
+    if (/aansprakelijk|\bavp\b/.test(s) && !/wettelijke|motorrijtuig|\bwam\b/.test(s)) return 'AVP';
+    if (/personen\s*auto|auto\s*verzekering|\bauto\b|motorrijtuig|wettelijke\s*aansprakelijkheid/.test(s)) return 'Personenauto';
+    return '';
+  }
+
+  const VEHICLE = ['Kenteken','Meldcode','Kilometrage','Cataloguswaarde','Dagwaarde','Gewicht','Schadevrije jaren'];
+  const WOON    = ['Bouwjaar','Monumentaal pand','Bouwaard muren','Bouwaard vloeren','Bouwaard dak','Eigen woning','Woonhuis type'];
+  const REIS    = ['Dekkingsgebied','Maximale reisduur','Verzekerde som bagage','Verzekerde som annulering'];
+  const RB      = ['Mediation meeverzekeren','Motorrijtuigen meeverzekeren','Arbeidsrecht meeverzekeren'];
+  const VN = [];
+  for (let i = 1; i <= 5; i++) for (const f of ['Naam','Voorletters','Voorvoegsel','Geboortedatum','Geslacht','Verzekerd relatie type']) VN.push(`${f} verzekeringsnemer ${i}`);
+
+  const FORBIDDEN = {
+    'AVP':              [...VEHICLE, ...WOON, ...REIS, ...RB, ...VN],
+    'Inboedel':         [...VEHICLE, ...REIS, ...RB, ...VN],
+    'Woonhuis':         [...VEHICLE, ...REIS, ...RB, ...VN],
+    // Bouwjaar wordt voor Personenauto bewust niet gebruikt; Gezinssamenstelling nooit op auto
+    'Personenauto':     ['Verzekerde som','Gezinssamenstelling', ...WOON, ...REIS, ...RB, ...VN],
+    'Rechtsbijstand':   ['Verzekerde som','Eigenrisico', ...VEHICLE, ...WOON, ...REIS, ...VN],
+    'Doorlopende Reis': ['Verzekerde som','Eigenrisico', ...VEHICLE, ...WOON, ...RB],
+  };
+
+  const KENTEKEN_SIDECODES = new Set([
+    'LL-DD-DD','DD-DD-LL','DD-LL-DD','LL-DD-LL','LL-LL-DD','DD-LL-LL',
+    'DD-LLL-D','D-LLL-DD','LL-DDD-L','L-DDD-LL','LLL-DD-L','D-LL-DDD','L-DD-LLL','DDD-LL-D',
+  ]);
+
+  function formatKenteken(s) {
+    const clean = String(s || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    return (clean.match(/[A-Z]+|\d+/g) || []).join('-');
+  }
+  function kentekenSidecode(k) {
+    return k.split('-').map(g => /\d/.test(g) ? 'D'.repeat(g.length) : 'L'.repeat(g.length)).join('-');
+  }
+  // Valideert NL-kenteken; pragmatische fallback voor minder courante formaten
+  function validateKenteken(raw) {
+    const k = formatKenteken(raw);
+    if (!k) return { value: '', ok: true };
+    if (KENTEKEN_SIDECODES.has(kentekenSidecode(k))) return { value: k, ok: true };
+    const flat = k.replace(/-/g, '');
+    if (flat.length >= 5 && flat.length <= 8 && /[A-Z]/.test(flat) && /\d/.test(flat)) return { value: k, ok: false };
+    return { value: '', ok: false };
+  }
+
+  function dekkingList(row) {
+    const out = [];
+    for (let i = 1; i <= 11; i++) {
+      const c = String(row[`Dekking ${i}`] || '').trim();
+      const o = String(row[`Omschrijving ${i}`] || '').trim();
+      if (c || o) out.push([c, o]);
+    }
+    return out;
+  }
+  // Dedupe + deterministische ordening op code
+  function writeDekkingen(row, list) {
+    const seen = new Set(), clean = [];
+    for (const [c, o] of list) {
+      const key = c || ('o:' + o.toLowerCase());
+      if (seen.has(key)) continue;
+      seen.add(key); clean.push([c, o]);
+    }
+    clean.sort((a, b) => (parseInt(a[0], 10) || 99999) - (parseInt(b[0], 10) || 99999));
+    for (let i = 1; i <= 11; i++) {
+      row[`Dekking ${i}`] = clean[i-1] ? clean[i-1][0] : '';
+      row[`Omschrijving ${i}`] = clean[i-1] ? clean[i-1][1] : '';
+    }
+    return clean.length;
+  }
+  function writeUitzonderingen(row, list) {
+    const seen = new Set(), clean = [];
+    for (const u of list) { const v = String(u || '').trim(); if (v && !seen.has(v.toLowerCase())) { seen.add(v.toLowerCase()); clean.push(v); } }
+    for (let i = 1; i <= 5; i++) row[`Uitzondering ${i}`] = clean[i-1] || '';
+    return clean.length;
+  }
+  function uitzonderingList(row) {
+    const out = [];
+    for (let i = 1; i <= 5; i++) if (row[`Uitzondering ${i}`]) out.push(row[`Uitzondering ${i}`]);
+    return out;
+  }
+
+  function warn(row, msg) {
+    if (!row._warnings) row._warnings = [];
+    if (!row._warnings.includes(msg)) row._warnings.push(msg);
+  }
+
+  // apply_schema_guardrails — elke ASR-row gaat hier doorheen
+  function apply_schema_guardrails(row, product) {
+    const p = normalize_product_name(product || row['Productomschrijving']) || String(product || row['Productomschrijving'] || '');
+    row['Productomschrijving'] = p;
+    if (!CANONICAL.includes(p)) { warn(row, `Product '${p || 'onbekend'}' niet automatisch over te voeren`); return row; }
+
+    // 1. forbidden fields leegmaken
+    for (const f of FORBIDDEN[p] || []) row[f] = '';
+
+    // 2. dekkingen: dedupe + sorteren; AVP houdt maar één dekking
+    let dk = dekkingList(row);
+    if (p === 'AVP') dk = dk.filter(([c]) => c === '6100').slice(0, 1);
+    if (!dk.length) {
+      const DEFAULTS = {
+        'AVP': ['6100','Aansprakelijkheid particulier'],
+        'Inboedel': ['5397','Inboedel Basis'],
+        'Woonhuis': ['5395','Opstal Basis'],
+        'Personenauto': ['2010','Wettelijke Aansprakelijkheid'],
+      };
+      if (DEFAULTS[p]) { dk = [DEFAULTS[p]]; warn(row, `Geen dekking gevonden — default ${DEFAULTS[p][0]} gezet`); }
+      else warn(row, 'Geen dekking gevonden');
+    }
+    writeDekkingen(row, dk);
+    writeUitzonderingen(row, uitzonderingList(row));
+
+    // 3. validaties
+    if (row['Gezinssamenstelling'] && !/^[AKIH]$/.test(row['Gezinssamenstelling'])) {
+      warn(row, `Ongeldige gezinssamenstelling '${row['Gezinssamenstelling']}' geleegd`);
+      row['Gezinssamenstelling'] = '';
+    }
+    for (const f of ['Monumentaal pand','Eigen woning','Mediation meeverzekeren','Motorrijtuigen meeverzekeren','Arbeidsrecht meeverzekeren']) {
+      if (row[f] && !/^[JN]$/.test(row[f])) { warn(row, `${f} '${row[f]}' is geen J/N — geleegd`); row[f] = ''; }
+    }
+    if (p === 'Personenauto') {
+      const kv = validateKenteken(row['Kenteken']);
+      if (row['Kenteken'] && !kv.ok && kv.value) warn(row, `Kenteken ${kv.value} heeft een ongebruikelijk formaat`);
+      if (row['Kenteken'] && !kv.value) warn(row, `Kenteken '${row['Kenteken']}' ongeldig — geleegd`);
+      row['Kenteken'] = kv.value;
+      if (!row['Kenteken']) warn(row, 'Personenauto zonder kenteken');
+      if (row['Kilometrage'] && !/^[123]$/.test(row['Kilometrage'])) row['Kilometrage'] = '';
+    }
+
+    // 4. defaults waar toegestaan
+    if (p === 'Woonhuis' || p === 'Inboedel') {
+      if (!row['Monumentaal pand']) row['Monumentaal pand'] = 'N';
+      if (!row['Eigen woning']) row['Eigen woning'] = 'J';
+    }
+    if (p === 'Doorlopende Reis' && row['Maximale reisduur'] && !/^(?:65|185)$/.test(row['Maximale reisduur'])) {
+      row['Maximale reisduur'] = parseInt(row['Maximale reisduur'], 10) > 65 ? '185' : '65';
+    }
+    if (!row['Polisnummer']) warn(row, 'Geen polisnummer');
+    return row;
+  }
+
+  return { CANONICAL, normalize_product_name, apply_schema_guardrails, writeDekkingen, writeUitzonderingen,
+           dekkingList, uitzonderingList, formatKenteken, validateKenteken, warn };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ASR PARSER — ASRParser.parse (base) + extract_policy_rows_asr (per polis)
+// ═══════════════════════════════════════════════════════════════════════════════
+const ASRParser = (() => {
+  'use strict';
+  const { normalize_product_name, apply_schema_guardrails, writeDekkingen, writeUitzonderingen,
+          dekkingList, uitzonderingList, formatKenteken, validateKenteken, warn } = ASRSchema;
+
+  // ── basis-utilities ────────────────────────────────────────────────────────
+  const TUSSENVOEGSELS = new Set([
+    'van','de','du','des','le','la','del','di','da','do','dos','das',
+    'los','las','von','zu','zum','zur','der','den','het',"'t",'ten',
+    'ter','te','op','in','aan','bij','tot','v','vd','v/d','v.d.','d'
+  ]);
+  const MONTHS = { januari:1, jan:1, februari:2, feb:2, maart:3, mrt:3, mar:3, april:4, apr:4, mei:5,
+    juni:6, jun:6, juli:7, jul:7, augustus:8, aug:8, september:9, sep:9, sept:9,
+    oktober:10, okt:10, oct:10, november:11, nov:11, december:12, dec:12 };
+
+  function normText(s) {
+    if (!s || typeof s !== 'string') return '';
+    return s.normalize('NFC')
+      .replace(/ /g, ' ')
+      .replace(/[‘’`´]/g, "'")
+      .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+      .replace(/[ ]{2,}/g, m => m.length >= 3 ? '\t' : ' ')   // brede spatieblokken = kolomsprong
+      .replace(/[ \t]+\n/g, '\n');
+  }
+  const pad2 = n => String(n).padStart(2, '0');
+  const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const daysInMonth = (y, m) => new Date(y, m, 0).getDate();
+
+  function buildDate(d, m, y) {
+    if (y < 100) y = y <= 50 ? 2000 + y : 1900 + y;
+    if (!(m >= 1 && m <= 12) || !(d >= 1 && d <= 31) || y < 1900 || y > 2100) return '';
+    if (d > daysInMonth(y, m)) return '';
+    return `${pad2(d)}-${pad2(m)}-${y}`;
+  }
+
+  // _norm_date — numeriek én Nederlandse tekstdatums → dd-mm-jjjj
+  function _norm_date(raw) {
+    if (!raw) return '';
+    const s = String(raw).toLowerCase().replace(/\s+/g, ' ');
+    let m = s.match(/(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2,4})(?!\d)/);
+    if (m) return buildDate(+m[1], +m[2], +m[3]);
+    m = s.match(/(\d{1,2})\s*(?:e\s+)?([a-z]{3,9})\.?\s+(\d{4})/);
+    if (m && MONTHS[m[2]]) return buildDate(+m[1], MONTHS[m[2]], +m[3]);
+    m = s.match(/(?:^|\D)(\d{4})-(\d{2})-(\d{2})(?!\d)/);
+    if (m) return buildDate(+m[3], +m[2], +m[1]);
+    return '';
+  }
+  // Dag+maand zonder jaar (bijv. prolongatiedatum "1 januari") → "dd-mm"
+  function _norm_day_month(raw) {
+    if (!raw) return '';
+    const full = _norm_date(raw);
+    if (full) return full;
+    const s = String(raw).toLowerCase();
+    let m = s.match(/(\d{1,2})\s*(?:e\s+)?([a-z]{3,9})\b/);
+    if (m && MONTHS[m[2]] && +m[1] >= 1 && +m[1] <= 31) return `${pad2(+m[1])}-${pad2(MONTHS[m[2]])}`;
+    m = s.match(/(?:^|\D)(\d{1,2})[\/.\-](\d{1,2})(?![\/.\-]?\d)/);
+    if (m && +m[1] >= 1 && +m[1] <= 31 && +m[2] >= 1 && +m[2] <= 12) return `${pad2(+m[1])}-${pad2(+m[2])}`;
+    return '';
+  }
+
+  function formatPostcode(s) {
+    const c = String(s || '').replace(/\s/g, '').toUpperCase();
+    return /^\d{4}[A-Z]{2}$/.test(c) ? c.slice(0, 4) + ' ' + c.slice(4) : c;
+  }
+  function titleCaseWord(s) {
+    if (!s) return s;
+    if ((s === s.toUpperCase() || s === s.toLowerCase()) && s.length > 1)
+      return s.toLowerCase().replace(/(^|[\s\-'])([a-zà-ÿ])/g, (_, a, c) => a + c.toUpperCase());
+    return s;
+  }
+  function titleCaseStr(s) { return String(s || '').split(' ').map(w => titleCaseWord(w)).join(' '); }
+
+  // Euro → integer (zonder centen) / → float
+  function euroInt(raw) {
+    if (raw == null) return NaN;
+    const s = String(raw).replace(/[€\s]|eur/gi, '').replace(/,-$/, '').replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(/,\d{1,2}$/, '');
+    return parseInt(s.replace(/\D/g, ''), 10);
+  }
+  function euroFloat(intPart, decPart) {
+    const v = parseInt(String(intPart).replace(/\./g, ''), 10) + (decPart ? parseInt(decPart, 10) / 100 : 0);
+    return isFinite(v) ? v : NaN;
+  }
+  const fmtEuro = v => (v != null && isFinite(v)) ? Number(v).toFixed(2).replace('.', ',') : '';
+
+  // ── label-value extractie (OCR-tolerant voor ASR-layout) ───────────────────
+  // label = regex-bron; waarde staat achter ':' / tab / brede spatie, of op de volgende regel.
+  function _extract_kv_lines(text, label, opts = {}) {
+    if (!text) return opts.all ? [] : '';
+    const lines = text.split('\n');
+    const sep = opts.loose ? String.raw`(?:\s*[:=]\s*|\s*\t\s*|\s+)` : String.raw`(?:\s*[:=]\s*|\s*\t\s*|\s*$)`;
+    const re = new RegExp(String.raw`(?:^|\t)\s*(?:${label})${sep}(.*)$`, 'i');
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(re);
+      if (!m) continue;
+      let v = m[1].split('\t').map(x => x.trim()).find(x => x && !/^[:=]$/.test(x)) || '';
+      v = v.replace(/^[:=»\s]+/, '').trim();
+      if (!v && opts.nextLine !== false) {
+        for (let j = i + 1; j < Math.min(lines.length, i + 3); j++) {
+          const segs = lines[j].split('\t');
+          const nx = segs[0].trim();
+          if (!nx) continue;
+          if (segs.length > 1 && segs.slice(1).some(x => x.trim()) && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\/\-]{1,35}$/.test(nx) && !/^(?:dhr|mevr|mw|de\s+heer|mevrouw)\b/i.test(nx)) break;
+          if (/[:]\s*$/.test(nx) || /^(?:[A-Z][a-z]+\s*){1,3}:\s/.test(nx)) break;
+          v = nx.replace(/^[:=»\s]+/, '').trim();
+          break;
+        }
+      }
+      if (v) { if (!opts.all) return v; out.push({ value: v, line: i }); }
+    }
+    return opts.all ? out : '';
+  }
+
+  // Ja/Nee-normalisatie
+  function _yn_code(v) {
+    const s = String(v || '').trim().toLowerCase();
+    if (!s) return '';
+    if (/^(?:ja|j|yes|y|x|✓|✔|v|wel|meeverzekerd|verzekerd|inbegrepen|aanwezig)\b/.test(s)) return 'J';
+    if (/^(?:nee|n|no|niet|geen|-|n\.?v\.?t\.?)\b/.test(s)) return 'N';
+    return '';
+  }
+
+  // Gezinssamenstelling → A (alleenstaand), K (alleenstaand + kinderen), H (gezin zonder kinderen), I (gezin met kinderen)
+  function _gezinssamenstelling_code(raw) {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    if (/^[AKIH]$/i.test(s)) return s.toUpperCase();
+    const pre = s.match(/^([AKIH])\s*[-–:]?\s+[a-z]/i);
+    if (pre) return pre[1].toUpperCase();
+    const l = s.toLowerCase();
+    const metKind = /met\s*(?:\w+\s+)?kind|en\s*kind|\+\s*kind|met\s*thuiswonend/.test(l);
+    const zonderKind = /zonder\s*kind/.test(l);
+    const alleen = /alleen\s*staand|alleen\s*wonend|eenpersoons|één\s*persoon|1\s*persoon|single/.test(l);
+    const gezin = /gezin|samenwon|gehuwd|echtpaar|partner|meerpersoons|twee\s*personen|2\s*personen|getrouwd|geregistreerd/.test(l);
+    if (alleen && metKind) return 'K';
+    if (alleen) return 'A';
+    if (gezin && metKind) return 'I';
+    if (gezin && (zonderKind || !metKind)) return /^gezin$/.test(l.trim()) ? 'I' : 'H';
+    if (metKind) return 'K';
+    if (zonderKind) return 'A';
+    return '';
+  }
+
+  // ── namen ──────────────────────────────────────────────────────────────────
+  // Knipt OCR-staart en aanspreekvormen weg
+  function _clean_person_name(raw) {
+    let s = normText(String(raw || '')).split('\t')[0];
+    s = s.replace(/\b(?:geboortedatum|geb\.?|relatienummer|klantnummer|polisnummer|adres|telefoon|e-?mail|iban)\b.*$/i, '');
+    s = s.replace(/\s+\d[\d\-\/. ]*$/, '').replace(/[,;:]+$/, '').trim();
+    return s;
+  }
+  function detectGeslacht(raw) {
+    const s = String(raw || '').trim();
+    if (/^(?:dhr\.?|de\s+heer|heer|mr\.?)\b/i.test(s)) return 'M';
+    if (/^(?:mevr\.?|mw\.?|mevrouw|mej\.?)\b/i.test(s)) return 'V';
+    return '';
+  }
+
+  function _parse_initials_lastname(raw) {
+    const empty = { voorletters: '', tussenvoegsel: '', achternaam: '', geslacht: '' };
+    if (!raw) return empty;
+    const geslacht = detectGeslacht(raw);
+    let s = _clean_person_name(raw)
+      .replace(/^\s*(?:dhr\.?|de\s+heer|heer|mevr\.?|mw\.?|mevrouw|mej\.?|fam\.?|familie)\s*/i, '')
+      .replace(/\s+(?:en|&)\s+(?:dhr\.?|mevr\.?|mw\.?).*$/i, '')
+      .trim();
+    if (!s) return empty;
+    // Achternaam-eerst vorm: "Vries, J.A. de" / "Jansen, P."
+    const comma = s.match(/^([A-Za-zÀ-ÿ'\- ]{2,}?)\s*,\s*([A-Za-z.\s]+?)(?:\s+((?:[a-z']+\s*){1,3}))?$/);
+    if (comma) {
+      const ini = (comma[2].match(/[A-Za-z]/g) || []).map(c => c.toUpperCase());
+      if (ini.length && ini.length <= 6) {
+        return { voorletters: ini.join('.') + '.', tussenvoegsel: (comma[3] || '').trim().toLowerCase(),
+                 achternaam: titleCaseWord(comma[1].trim()), geslacht };
+      }
+    }
+    s = s.replace(/\b([A-Z](?:\.[A-Z])*\.)(?=[A-Za-zÀ-ÿ]{2})/g, '$1 ');
+    const tokens = s.split(/\s+/), ini = [], tv = [], ach = [];
+    let state = 'init';
+    for (let ti = 0; ti < tokens.length; ti++) {
+      const tok = tokens[ti];
+      const low = tok.toLowerCase().replace(/\.$/, '');
+      if (state === 'init') {
+        if (/^[A-Z]\.?$/.test(tok)) ini.push(tok[0]);
+        else if (/^(?:[A-Za-z]\.){1,6}[A-Za-z]?\.?$/.test(tok)) { for (const c of tok.toUpperCase().replace(/[^A-Z]/g, '')) ini.push(c); }
+        else if (/^[A-Z]{2,3}$/.test(tok) && ti + 1 < tokens.length && !TUSSENVOEGSELS.has(low)) { for (const c of tok) ini.push(c); }
+        else if (TUSSENVOEGSELS.has(low) && ti + 1 < tokens.length) {
+          if ((low === 'der' || low === 'den') && tokens[ti+1] && tokens[ti+1].toLowerCase() === 'van') { tv.push('van ' + low); ti++; }
+          else tv.push(low);
+          state = 'tv';
+        }
+        else if (ini.length === 0 && ti + 1 < tokens.length && /^[A-Z][a-zà-ÿ]+$/.test(tok) && !TUSSENVOEGSELS.has(tokens[ti+1].toLowerCase()) && /^[A-Z]/.test(tokens[ti+1])) {
+          // Voluit voornaam ("Jan Jansen") → initiaal
+          ini.push(tok[0]);
+        }
+        else { state = 'ach'; ach.push(titleCaseWord(tok)); }
+      } else if (state === 'tv') {
+        if (TUSSENVOEGSELS.has(low) && ti + 1 < tokens.length) tv.push(low);
+        else { state = 'ach'; ach.push(titleCaseWord(tok)); }
+      } else ach.push(titleCaseWord(tok));
+    }
+    return {
+      voorletters: ini.length ? ini.join('.') + '.' : '',
+      tussenvoegsel: tv.join(' '),
+      achternaam: ach.join(' ').replace(/\s*-\s*/g, '-').trim(),
+      geslacht,
+    };
+  }
+
+  const SUSPICIOUS_ACHTERNAAM = /\b(?:allrisk|all-?in|polis|voorwaarden|premie|wettelijke|aansprakelijkheid|verzekering|verzekerd|dekking|inboedel|woonhuis|personenauto|pakket|asr|a\.s\.r|totaal|termijn|bedrag|datum|kenteken|klant|relatie|adviseur|geachte|betreft|naam|adres|straat|postcode|woonplaats|geboortedatum|verzekeringnemer)\b/i;
+  function isSuspiciousAchternaam(s) {
+    const v = String(s || '').trim();
+    return !v || v.length < 2 || v.length > 45 || /\d/.test(v) || SUSPICIOUS_ACHTERNAAM.test(v);
+  }
+
+  // ── adressen ───────────────────────────────────────────────────────────────
+  const POSTCODE_RE = /\b([1-9]\d{3})\s?([A-Z]{2})\b/;
+  const ADDR_GARBAGE = /postbus|antwoordnummer|a\.?s\.?r\.?\b|asr\s*(?:schade|verzekeringen|nederland)|archimedeslaan|adviseur|tussenpersoon|assurantie|kvk|iban|telefoon|e-?mail|www\.|@|klantenservice|bic\b/i;
+  const CITY_NOISE = /^(?:ja|nee|nederland|telefoon|geboortedatum|e-?mail|iban|polisnummer|pakketnummer|relatienummer)$/i;
+
+  // Splitst straat, huisnummer en toevoeging OCR-tolerant
+  function _split_street_house(raw) {
+    const r = { straat: '', huisnummer: '', huisnummertoevoeging: '' };
+    let s = normText(String(raw || '')).split('\t')[0].replace(/^(?:adres|straat|woonadres|risicoadres)\s*[:=]?\s*/i, '').replace(/[,;]+$/, '').trim();
+    if (!s) return r;
+    s = s.replace(/\b(\d{1,5})\s*[oO](?=\b)/, '$10').replace(/\b[lI](\d{1,4})\b/, '1$1');   // OCR: 1O → 10, l2 → 12
+    const m = s.match(/^(.*?[A-Za-zÀ-ÿ.'].*?)\s+(\d{1,5})(?:\s*[-\/]?\s*([A-Za-z]{1,4}(?:\s?\d{1,3})?|\d{1,4}(?:\s?[A-Za-z]{1,3})?|bis|hs|huis|rd|bg|zw))?\s*$/i);
+    if (m && /[A-Za-zÀ-ÿ]{2}/.test(m[1])) {
+      r.straat = m[1].trim(); r.huisnummer = m[2]; r.huisnummertoevoeging = (m[3] || '').replace(/\s+/g, '').toUpperCase();
+      return r;
+    }
+    if (/[A-Za-zÀ-ÿ]{3}/.test(s) && s.length <= 60 && !/\d{3,}/.test(s)) r.straat = s;
+    return r;
+  }
+  function cleanCity(s) {
+    const kept = [];
+    for (const p of String(s || '').split(/[\s\t]+/)) {
+      const l = p.replace(/[^A-Za-zÀ-ÿ'\-]/g, '');
+      if (!l || CITY_NOISE.test(l) || /\d/.test(p)) break;
+      kept.push(p);
+      if (kept.length >= 4) break;
+    }
+    return titleCaseStr(kept.join(' ').replace(/[,;.\s]+$/, '').trim());
+  }
+  function validStreet(s) { return !!s && s.length >= 3 && s.length <= 70 && /[A-Za-zÀ-ÿ]{2}/.test(s) && !ADDR_GARBAGE.test(s) && !/^(?:naam|adres|straat|postcode|woonplaats|geboortedatum|verzekeringnemer|polis)/i.test(s); }
+  function validCity(s) { return !!s && s.length >= 2 && s.length <= 40 && /[A-Za-z]/.test(s) && !ADDR_GARBAGE.test(s); }
+
+  // Pakt ASR-adresblokken uit multiline OCR-layout
+  function _parse_address_from_window(text, labelSrc) {
+    const r = { straat: '', huisnummer: '', huisnummertoevoeging: '', postcode: '', woonplaats: '' };
+    if (!text) return r;
+    const lines = text.split('\n');
+    const label = labelSrc || String.raw`adres|woonadres|correspondentie\s*adres|straat(?:\s*(?:en|\+)\s*huisnummer)?`;
+    const re = new RegExp(String.raw`(?:^|\t)\s*(?:${label})\s*(?:[:=]\s*|\t\s*|\s*$)(.*)$`, 'i');
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(re);
+      if (!m) continue;
+      let val = m[1].split('\t').map(x => x.trim()).find(Boolean) || '';
+      let j = i;
+      if (!val) { j = i + 1; while (j < lines.length && !lines[j].trim()) j++; val = (lines[j] || '').split('\t')[0].trim(); }
+      // postcode op dezelfde regel als straat ("Dorpsstraat 12, 1234 AB Utrecht")
+      const pcInline = val.match(POSTCODE_RE);
+      if (pcInline) {
+        const before = val.slice(0, pcInline.index).replace(/[,\s]+$/, '');
+        const after = val.slice(pcInline.index + pcInline[0].length);
+        const sp = _split_street_house(before);
+        if (validStreet(sp.straat)) Object.assign(r, sp);
+        r.postcode = formatPostcode(pcInline[1] + pcInline[2]);
+        r.woonplaats = cleanCity(after.replace(/^[,\s]+/, ''));
+        if (r.straat) return r;
+      }
+      const sp = _split_street_house(val);
+      if (!validStreet(sp.straat)) continue;
+      Object.assign(r, sp);
+      for (let k = j + 1; k < Math.min(lines.length, j + 4); k++) {
+        const pm = lines[k].match(POSTCODE_RE);
+        if (!pm) continue;
+        r.postcode = formatPostcode(pm[1] + pm[2]);
+        r.woonplaats = cleanCity(lines[k].slice(pm.index + pm[0].length).replace(/^[,\s\t]+/, ''));
+        if (!r.woonplaats && lines[k+1]) r.woonplaats = cleanCity(lines[k+1].split('\t')[0]);
+        break;
+      }
+      break;
+    }
+    if (!r.postcode) {
+      const pcw = _extract_kv_lines(text, String.raw`postcode\s*(?:en|\/|&)?\s*(?:woon)?plaats|postcode`);
+      const pm = pcw.match(POSTCODE_RE);
+      if (pm) {
+        r.postcode = formatPostcode(pm[1] + pm[2]);
+        const rest = cleanCity(pcw.slice(pm.index + pm[0].length).replace(/^[,\s]+/, ''));
+        if (rest) r.woonplaats = rest;
+      }
+    }
+    if (!r.woonplaats) {
+      const wp = _extract_kv_lines(text, String.raw`woonplaats|plaats`);
+      if (wp && !POSTCODE_RE.test(wp)) r.woonplaats = cleanCity(wp);
+    }
+    if (!r.huisnummer) {
+      const hn = _extract_kv_lines(text, String.raw`huisnummer`);
+      const hm = hn.match(/^(\d{1,5})\s*[-\/]?\s*([A-Za-z0-9]{0,4})/);
+      if (hm) { r.huisnummer = hm[1]; if (hm[2] && !r.huisnummertoevoeging) r.huisnummertoevoeging = hm[2].toUpperCase(); }
+    }
+    if (!r.huisnummertoevoeging) {
+      const tv = _extract_kv_lines(text, String.raw`huisnummer\s*toevoeg(?:ing|sel)|toevoeging`);
+      if (tv && /^[A-Za-z0-9\-]{1,6}$/.test(tv)) r.huisnummertoevoeging = tv.toUpperCase();
+    }
+    // Fallback: postcoderegel met straatregel erboven (adviseur-/ASR-blokken overslaan)
+    if (!r.straat) {
+      for (let i = 0; i < lines.length; i++) {
+        const pm = lines[i].match(POSTCODE_RE);
+        if (!pm || ADDR_GARBAGE.test(lines[i])) continue;
+        const ctx = lines.slice(Math.max(0, i - 6), i + 1).join(' ');
+        if (/adviseur|tussenpersoon|postbus|a\.s\.r|asr\s/i.test(ctx)) continue;
+        for (let k = i - 1; k >= Math.max(0, i - 3); k--) {
+          const cand = lines[k].split('\t')[0].trim();
+          const sp = _split_street_house(cand);
+          if (sp.huisnummer && validStreet(sp.straat)) {
+            Object.assign(r, sp);
+            r.postcode = formatPostcode(pm[1] + pm[2]);
+            r.woonplaats = cleanCity(lines[i].slice(pm.index + pm[0].length).replace(/^[,\s\t]+/, ''));
+            break;
+          }
+        }
+        if (r.straat) break;
+      }
+    }
+    if (!validCity(r.woonplaats)) r.woonplaats = '';
+    if (r.straat) r.straat = titleCaseStr(r.straat);
+    return r;
+  }
+
+  // ── dekking-context: "Niet verzekerd" bescherming ─────────────────────────
+  const NIET_VERZ_HEADING = /niet\s*(?:mee)?\s*verzekerd|niet\s*gekozen|niet\s*afgesloten|geen\s*dekking|uitgesloten\s*dekkingen|optioneel\s*(?:bij\s*te\s*sluiten)?|mogelijk\s*bij\s*te\s*verzekeren/i;
+  const WEL_VERZ_HEADING = /^\s*(?:wel\s*verzekerd|verzekerd|gekozen\s*dekkingen?|uw\s*dekkingen?|dekkingen|dekkingsoverzicht|meeverzekerd|aanvullende\s*dekkingen)\s*:?\s*$/i;
+  function _is_not_insured_near(text, idx) {
+    const before = text.slice(0, idx);
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const lineEndRel = text.indexOf('\n', idx);
+    const line = text.slice(lineStart, lineEndRel < 0 ? text.length : lineEndRel);
+    if (NIET_VERZ_HEADING.test(line)) return true;
+    const prev = before.slice(0, lineStart).split('\n').slice(-12).reverse();
+    for (const l of prev) {
+      const t = l.trim();
+      if (!t) continue;
+      if (WEL_VERZ_HEADING.test(t)) return false;
+      if (NIET_VERZ_HEADING.test(t) && t.length <= 60) return true;
+    }
+    return false;
+  }
+  // Positieve vermelding: match die niet onder "Niet verzekerd" hangt en niet door "nee" gevolgd wordt
+  function positiveFeature(text, re) {
+    if (!text) return false;
+    const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+    let m;
+    while ((m = g.exec(text))) {
+      const lineEnd = text.indexOf('\n', m.index);
+      const tail = text.slice(m.index + m[0].length, lineEnd < 0 ? text.length : lineEnd);
+      if (/^[^\n]{0,40}?\b(?:nee|niet\s*verzekerd|niet\s*meeverzekerd|niet\s*gekozen|geen|n\.v\.t\.?)\b/i.test(tail)) continue;
+      const lineStart = text.lastIndexOf('\n', m.index) + 1;
+      const head = text.slice(lineStart, m.index);
+      if (/\b(?:geen|niet|exclusief|excl\.?|zonder)\s*$/i.test(head)) continue;
+      if (_is_not_insured_near(text, m.index)) continue;
+      return true;
+    }
+    return false;
+  }
+  // Expliciete Ja/Nee achter een label: 'J' | 'N' | ''
+  function labelYN(text, label) {
+    for (const hit of _extract_kv_lines(text, label, { all: true })) {
+      const yn = _yn_code(hit.value);
+      if (yn) {
+        if (yn === 'J') {
+          const lines = text.split('\n');
+          const idx = lines.slice(0, hit.line).join('\n').length + 1;
+          if (_is_not_insured_near(text, Math.min(idx, text.length))) return 'N';
+        }
+        return yn;
+      }
+      if (/€|eur|\d/.test(hit.value) && !/^0+(?:,0+)?$/.test(hit.value.replace(/[€\s]/g, ''))) return 'J';
+    }
+    return '';
+  }
+
+  // ── premie / betaaltermijn ─────────────────────────────────────────────────
+  function termFromText(s) {
+    const v = String(s || '').toLowerCase();
+    if (/maand/.test(v)) return '1';
+    if (/kwartaal/.test(v)) return '3';
+    if (/half\s*jaar|halfjaar|semest/.test(v)) return '6';
+    if (/\bjaar|jaarlijks|per\s*jaar/.test(v)) return '12';
+    const n = v.match(/^\s*(1|3|6|12)\b/);
+    return n ? n[1] : '';
+  }
+  function extractBetaaltermijn(text) {
+    const v = _extract_kv_lines(text, String.raw`betaal\s*termijn|betalings\s*termijn|termijn|betaalfrequentie|premiebetaling`);
+    return termFromText(v);
+  }
+
+  // Kiest productpremieregels boven pakket- of marketingsamenvattingen
+  function _extract_premium_term_scored(sources) {
+    const cands = [];
+    sources.forEach((src, si) => {
+      if (!src) return;
+      const lines = src.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const ln = lines[i];
+        if (!/premie|termijnbedrag|te\s*betalen|incasso|bedrag\s*per|totaal\s*per/i.test(ln)) continue;
+        let segs = [ln];
+        // Waarde op volgende regel
+        if (!/\d+,\d{2}/.test(ln) && lines[i+1]) segs = [ln + '\t' + lines[i+1]];
+        for (const seg of segs) {
+          const labelIdx = seg.search(/premie|termijnbedrag|te\s*betalen|incasso|bedrag\s*per|totaal\s*per/i);
+          const after = seg.slice(labelIdx);
+          const am = after.match(/(?:€|eur)?\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})(?!\d)/i);
+          if (!am) continue;
+          const val = euroFloat(am[1], am[2]);
+          if (!(val > 0 && val < 50000)) continue;
+          const l = seg.toLowerCase();
+          let score = 10 - si * 3;
+          if (/termijn\s*premie|premie\s*per\s*(?:maand|kwartaal|half\s*jaar|jaar|termijn)|te\s*betalen\s*premie|totaal\s*premie|premie\s*(?:incl|inclusief)/.test(l)) score += 6;
+          if (/\bpremie\b/.test(l)) score += 2;
+          if (/pakket|totaal\s*pakket|alle\s*verzekeringen|totaalbedrag\s*pakket/.test(l)) score -= 7;
+          if (/korting|bespaar|vanaf|actie|voordeel|kosten\s*eenmalig|poliskosten|assurantiebelasting\s*[:=]|btw\b/.test(l)) score -= 6;
+          if (/netto\s*premie|premie\s*excl|exclusief/.test(l)) score -= 2;
+          if (/vorige|oude|was\b/.test(l)) score -= 5;
+          cands.push({ val, score, term: termFromText(l.match(/per\s*(maand|kwartaal|half\s*jaar|halfjaar|jaar)/)?.[0] || ''), line: ln.trim(), order: si * 10000 + i });
+        }
+      }
+    });
+    if (!cands.length) return null;
+    cands.sort((a, b) => b.score - a.score || a.order - b.order);
+    return cands[0];
+  }
+
+  // ── generieke veldextractors ───────────────────────────────────────────────
+  function extractDateKV(text, label) { return _norm_date(_extract_kv_lines(text, label)); }
+  function extractDayMonthKV(text, label) { return _norm_day_month(_extract_kv_lines(text, label)); }
+
+  const HVD_LABEL = String.raw`hoofd\s*vervaldatum|prolongatie\s*datum|prolongatie|jaarlijkse\s*vervaldatum|verlengingsdatum|vervaldatum`;
+  const CVD_LABEL = String.raw`contract\s*vervaldatum|contract\s*einddatum|einddatum\s*contract|einddatum|looptijd\s*tot`;
+  const ING_LABEL = String.raw`ingangsdatum(?:\s*(?:polis|verzekering|contract))?|begindatum|startdatum|datum\s*ingang`;
+  const PVD_LABEL = String.raw`premie\s*vervaldatum|volgende\s*premie\s*vervaldatum`;
+
+  function amountAfter(text, labelRe, minV, maxV) {
+    const re = new RegExp(String.raw`(?:${labelRe})[^\n€\d]{0,40}(?:€|eur)?\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(?:\d{2}|-))?`, 'gi');
+    const out = [];
+    let m;
+    while ((m = re.exec(text))) {
+      const v = euroInt(m[1]);
+      if (isFinite(v) && v >= minV && v <= maxV) out.push({ v, idx: m.index });
+    }
+    return out;
+  }
+  function extractEigenrisico(text) {
+    const v = _extract_kv_lines(text, String.raw`eigen\s*risico(?:\s*per\s*(?:gebeurtenis|schade))?`);
+    if (!v) return '';
+    if (/^(?:nee|geen|n\.?v\.?t|0+(?:,0+)?|€\s*0(?:,0+)?)\b/i.test(v.trim())) return '0';
+    const n = euroInt((v.match(/(?:€|eur)?\s*(\d{1,3}(?:\.\d{3})+|\d+)/i) || [])[1]);
+    return isFinite(n) ? String(n) : '';
+  }
+
+  // Bouwaard → schema-codes (project-specifiek)
+  function _bouwaard_muren_code(v) {
+    const s = String(v || '').toLowerCase();
+    if (!s) return '';
+    if (/grotendeels\s*hout|overwegend\s*hout/.test(s)) return 'J';
+    if (/hout/.test(s)) return 'H';
+    if (/steen|beton|baksteen|metsel|stenen|kalkzand/.test(s)) return 'T';
+    if (/^[hjst]$/i.test(s.trim())) return s.trim().toUpperCase();
+    return '';
+  }
+  function _bouwaard_vloeren_code(v) {
+    const s = String(v || '').toLowerCase();
+    if (!s) return '';
+    if (/hout/.test(s)) return 'H';
+    if (/steen|beton|cement|anders|vloerplaten|systeem/.test(s)) return 'S';
+    if (/^[hs]$/i.test(s.trim())) return s.trim().toUpperCase();
+    return '';
+  }
+  function _bouwaard_dak_code(v) {
+    const s = String(v || '').toLowerCase();
+    if (!s) return '';
+    if (/riet|stro/.test(s)) return 'R';
+    if (/pannen|dakpan/.test(s)) return 'P';
+    if (/beton/.test(s)) return 'J';
+    if (/bitumen|asfalt/.test(s)) return 'N';
+    if (/mastiek/.test(s)) return 'M';
+    if (/dakleer|harde?\s*dak|hard\b|harde\b|leien|lei\b|zink|metaal|golfplaten/.test(s)) return 'H';
+    if (/^[rpjnmh]$/i.test(s.trim())) return s.trim().toUpperCase();
+    return '';
+  }
+  // Inclusief project-mapping: twee-onder-een-kap → T
+  function _woonhuis_type_code(v) {
+    const s = String(v || '').toLowerCase();
+    if (!s) return '';
+    if (/(?:twee|2)\s*[- ]?\s*onder\s*[- ]?\s*(?:een|één|1)\s*[- ]?\s*kap|2\s*\/\s*1\s*kap|halfvrijstaand|geschakeld/.test(s)) return 'T';
+    if (/tussen\s*woning|rijtjes|rij\s*woning|tussenhuis/.test(s)) return 'U';
+    if (/hoek/.test(s)) return 'H';
+    if (/appartement|flat|etage|bovenwoning|benedenwoning|portiek|maisonnette/.test(s)) return 'A';
+    if (/recreatie|vakantie/.test(s)) return 'R';
+    if (/bungalow/.test(s)) return 'L';
+    if (/vrijstaand|villa|herenhuis|boerderij/.test(s)) return '2';
+    if (/eengezins|woning/.test(s)) return 'U';
+    if (/^[uarlht2]$/i.test(s.trim())) return s.trim().toUpperCase();
+    return '';
+  }
+
+  // Jaarkilometrage-range → code 1/2/3
+  function _parse_kilometrage(raw) {
+    const s = String(raw || '').toLowerCase();
+    const nums = [...s.matchAll(/\d{1,3}(?:[.,]\d{3})+|\d+/g)].map(n => parseInt(n[0].replace(/[.,]/g, ''), 10)).filter(n => n >= 1000);
+    return { s, nums };
+  }
+  function _kilometrage_code(raw) {
+    const { s, nums } = _parse_kilometrage(raw);
+    if (!nums.length) return '';
+    if (/meer\s*dan|boven|vanaf|onbeperkt|>\s*\d/.test(s)) return nums[0] >= 20000 ? '3' : nums[0] >= 12000 ? '2' : '1';
+    const u = Math.max(...nums);
+    return u <= 12000 ? '1' : u <= 20000 ? '2' : '3';
+  }
+
+  // ── voertuig ───────────────────────────────────────────────────────────────
+  const PLATE_RE = /\b([A-Z]{2}-\d{2}-\d{2}|\d{2}-\d{2}-[A-Z]{2}|\d{2}-[A-Z]{2}-\d{2}|[A-Z]{2}-\d{2}-[A-Z]{2}|[A-Z]{2}-[A-Z]{2}-\d{2}|\d{2}-[A-Z]{2}-[A-Z]{2}|\d{2}-[A-Z]{3}-\d|\d-[A-Z]{3}-\d{2}|[A-Z]{2}-\d{3}-[A-Z]|[A-Z]-\d{3}-[A-Z]{2}|[A-Z]{3}-\d{2}-[A-Z]|\d-[A-Z]{2}-\d{3}|[A-Z]-\d{2}-[A-Z]{3}|\d{3}-[A-Z]{2}-\d)\b/g;
+  function extractKenteken(t) {
+    if (!t) return '';
+    const lv = _extract_kv_lines(t, String.raw`kenteken(?:\s*(?:nummer|voertuig))?`);
+    if (lv) {
+      const m = lv.match(/^([A-Z0-9]{1,3}[-\s]?[A-Z0-9]{1,3}[-\s]?[A-Z0-9]{1,3})\b/i);
+      if (m) { const v = validateKenteken(m[1]); if (v.value) return v.value; }
+    }
+    const p = t.match(PLATE_RE);   // ook zonder label uit een losse plaatmatch
+    return p ? formatKenteken(p[0]) : '';
+  }
+  function extractAutoDetails(t) {
+    const d = {};
+    d.Kenteken = extractKenteken(t);
+    const mc = _extract_kv_lines(t, String.raw`meldcode`);
+    const mcm = (mc || '').match(/\b(\d{4})\b/) || (t.match(/meldcode[^\n\d]{0,40}(\d{4})\b/i) || []);
+    d.Meldcode = mcm[1] || '';
+    const km = _extract_kv_lines(t, String.raw`(?:jaar\s*)?kilometrage|kilometers?\s*per\s*jaar|km\s*per\s*jaar|jaarkilometrage|aantal\s*kilometers?`);
+    d.Kilometrage = _kilometrage_code(km);
+    const cw = amountAfter(t, String.raw`catalogus\s*waarde|cataloguswaarde`, 1000, 500000)[0];
+    d.Cataloguswaarde = cw ? String(cw.v) : '';
+    const dw = amountAfter(t, String.raw`dag\s*waarde|dagwaarde`, 100, 500000)[0];
+    d.Dagwaarde = dw ? String(dw.v) : '';
+    const gw = t.match(/(?:ledig\s*)?gewicht[^\n\d]{0,25}(\d{1,2}\.?\d{3}|\d{3,4})\s*(?:kg)?/i);
+    d.Gewicht = gw ? gw[1].replace(/\./g, '') : '';
+    const sv = _extract_kv_lines(t, String.raw`schade\s*vrije\s*jaren|schadevrije\s*jaren|aantal\s*schadevrije\s*jaren`);
+    const svm = (sv || '').match(/^-?\d{1,2}/);
+    d['Schadevrije jaren'] = svm ? svm[0] : '';
+    const kvs = (lbl) => _extract_kv_lines(t, lbl).slice(0, 40);
+    d.Merk = kvs(String.raw`merk`);
+    d.Model = kvs(String.raw`model`);
+    d.Type = kvs(String.raw`type(?:\s*voertuig)?|uitvoering`);
+    d.Brandstof = kvs(String.raw`brandstof(?:soort)?`);
+    d['LPG installatie'] = _yn_code(kvs(String.raw`lpg(?:\s*installatie)?`));
+    d.Cilinderinhoud = (kvs(String.raw`cilinder\s*inhoud`).match(/\d[\d.]*/) || [''])[0].replace(/\./g, '');
+    d.Vermogen = (kvs(String.raw`vermogen`).match(/\d[\d.]*/) || [''])[0].replace(/\./g, '');
+    d.Koetswerk = kvs(String.raw`koetswerk|carrosserie(?:vorm)?`);
+    return d;
+  }
+  // Auto-detailblokken op basis van kenteken, ook ver van het polisanker
+  function _extract_auto_blocks(text) {
+    const lines = text.split('\n');
+    const hits = [];
+    for (let i = 0; i < lines.length; i++) {
+      const k = extractKenteken(lines[i]) || (/^\s*kenteken\s*[:\t]?\s*$/i.test(lines[i]) && lines[i+1] ? extractKenteken('Kenteken\t' + lines[i+1]) : '');
+      if (k && !hits.some(h => h.kenteken === k)) hits.push({ kenteken: k, line: i });
+    }
+    return hits.map((h, n) => {
+      const end = n + 1 < hits.length ? hits[n+1].line : Math.min(lines.length, h.line + 40);
+      const blockText = lines.slice(Math.max(0, h.line - 4), end).join('\n');
+      return { kenteken: h.kenteken, line: h.line, text: blockText, details: extractAutoDetails(blockText) };
+    });
+  }
+
+  // ── productdetectie ────────────────────────────────────────────────────────
+  // Productkopregels: kort, geen dekkingslijst, geen "niet verzekerd"
+  function productFromHeaderLine(line) {
+    const l = line.trim();
+    if (!l || l.length > 70 || NIET_VERZ_HEADING.test(l)) return '';
+    const pm = l.match(/^\s*(?:product(?:naam|omschrijving)?|soort\s*verzekering|verzekering|branche)\s*[:\t]\s*(.+)$/i);
+    if (pm) return normalize_product_name(pm[1]);
+    if (/(?:verzekering|polis|polisblad|\bpakket)\b|^\s*(?:uw|ASR|a\.s\.r\.)\s/i.test(l) || l.split(/\s+/).length <= 3) {
+      if (/premie|dekking\s*[:\t]|bedrag|€|\d+,\d{2}/i.test(l)) return '';
+      return normalize_product_name(l);
+    }
+    return '';
+  }
+  function _detect_asr_product_from_header(headerLines) {
+    for (let i = headerLines.length - 1; i >= 0; i--) {
+      const p = productFromHeaderLine(headerLines[i].split('\t').join(' '));
+      if (p) return p;
+    }
+    return '';
+  }
+  function _detect_asr_product_from_verzekerd_block(text) {
+    const m = String(text || '').match(/(?:^|\n|\t)\s*(?:verzekerd|verzekerd\s*object|soort\s*verzekering|verzekeringsvorm|product)\s*[:\t]\s*([^\n\t]{3,50})/i);
+    return m ? normalize_product_name(m[1]) : '';
+  }
+  const PRODUCT_KEYWORDS = [
+    ['Personenauto', /personen\s*auto|autoverzekering|\bkenteken\b|\bmeldcode\b|cataloguswaarde|casco/gi],
+    ['Inboedel', /inboedel|huisraad/gi],
+    ['Woonhuis', /woonhuis|opstal|herbouwwaarde|bouwaard|\bbouwjaar\b/gi],
+    ['AVP', /aansprakelijkheid\s*(?:voor\s*)?particulier|\bavp\b|aansprakelijkheidsverzekering/gi],
+    ['Rechtsbijstand', /rechtsbijstand/gi],
+    ['Doorlopende Reis', /doorlopende\s*reis|reisverzekering|annuleringsverzekering|bagage|dekkingsgebied/gi],
+  ];
+  function keywordProduct(text) {
+    let best = '', bestN = 0;
+    for (const [p, re] of PRODUCT_KEYWORDS) {
+      const n = (String(text || '').match(re) || []).length;
+      if (n > bestN) { best = p; bestN = n; }
+    }
+    return best;
+  }
+  function _detect_asr_product_near_polisnummer(lines, anchorLine) {
+    const near = lines.slice(Math.max(0, anchorLine - 2), Math.min(lines.length, anchorLine + 4));
+    // Productnaam op de polisregel zelf (overzichtstabellen)
+    const own = normalize_product_name(lines[anchorLine].replace(/polis\s*nummer|polisnr\.?|subpolis/gi, ' ').replace(/\d[\d.\-\/,]*/g, ' '));
+    if (own) return own;
+    return keywordProduct(near.join('\n'));
+  }
+  // Combineert detectie met fallbackvolgorde, gekoppeld aan het polisanker
+  function _detect_asr_product_for_polis(sec, lines) {
+    let p = _detect_asr_product_from_header([...sec.header, lines[sec.anchorLine]]);
+    if (p) return { product: p, source: 'header' };
+    p = _detect_asr_product_from_verzekerd_block(sec.text);
+    if (p) return { product: p, source: 'verzekerd' };
+    p = _detect_asr_product_near_polisnummer(lines, sec.anchorLine);
+    if (p) return { product: p, source: 'near-polis' };
+    // Personenauto ook afleiden uit lokale Kenteken/Meldcode-context
+    if (/\bkenteken\b|\bmeldcode\b|personen\s*auto/i.test(sec.text)) return { product: 'Personenauto', source: 'auto-context' };
+    p = keywordProduct(sec.text);
+    if (p) return { product: p, source: 'keywords' };
+    return { product: '', source: 'none' };
+  }
+
+  // ── polisankers & vensters ─────────────────────────────────────────────────
+  const POLIS_VALUE = String.raw`(\d{1,3}(?:\.\d{3}){2,3}|[A-Z]{0,2}\d{5,13}(?:[-\/]\d{1,3})?)(?![\d\-\/])`;
+  const POLIS_ANCHOR_RE = new RegExp(String.raw`(subpolis(?:\s*(?:nummer|nr\.?))?|polis\s*nummer|polisnr\.?|polis\s*nr\.?)\s*[:.#]?\s*(?:\t\s*)?` + POLIS_VALUE, 'gi');
+  const polisKey = p => String(p || '').replace(/[^0-9A-Za-z\-\/]/g, '').toUpperCase();
+  const digits = p => String(p || '').replace(/\D/g, '');
+
+  function extractPakketnummer(text) {
+    const m = String(text || '').match(/pakket\s*(?:polis)?\s*(?:nummer|nr\.?)\s*[:.#]?\s*(?:\t\s*)?(\d{1,3}(?:\.\d{3}){2,3}|\d{5,13}(?:[.\-]\d{1,3})?)(?!\d)/i);
+    return m ? m[1].replace(/\s/g, '') : '';
+  }
+
+  function findPolisAnchors(lines, pakket) {
+    const pakketDigits = digits(pakket);
+    const anchors = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      POLIS_ANCHOR_RE.lastIndex = 0;
+      let m;
+      while ((m = POLIS_ANCHOR_RE.exec(line))) {
+        const before = line.slice(Math.max(0, m.index - 12), m.index);
+        if (/pakket\s*$/i.test(before)) continue;                      // Pakketpolisnummer
+        if (/(?:vorig|oud|oude|vorige|eerdere)\s*$/i.test(before)) continue;
+        const polis = polisKey(m[2]);
+        if (!polis || (pakketDigits && digits(polis) === pakketDigits)) continue;
+        anchors.push({ line: i, polis, kind: /sub/i.test(m[1]) ? 'subpolis' : 'polisnummer' });
+      }
+      // Tabelkop "Polisnummer" zonder waarde → rijen eronder met product + nummer
+      if (/polis\s*(?:nummer|nr)/i.test(line) && !new RegExp(POLIS_VALUE).test(line.replace(/\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}/g, ''))) {
+        for (let j = i + 1; j < Math.min(lines.length, i + 30); j++) {
+          const row = lines[j];
+          if (/polis\s*(?:nummer|nr)/i.test(row)) break;
+          const nm = row.replace(/\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}/g, ' ').match(/(?:^|[\s\t])(\d{6,13})(?:[\s\t]|$)/);
+          if (!nm || !normalize_product_name(row.replace(/\d[\d.,\-\/]*/g, ' '))) continue;
+          const polis = polisKey(nm[1]);
+          if (pakketDigits && digits(polis) === pakketDigits) continue;
+          if (!anchors.some(a => a.line === j && a.polis === polis)) anchors.push({ line: j, polis, kind: 'table' });
+        }
+      }
+    }
+    return anchors.sort((a, b) => a.line - b.line);
+  }
+
+  // Lokale polissectie: van het anker tot het volgende anker van een ándere polis (geen lekkage)
+  function _extract_local_polis_section(lines, anchors, a) {
+    let prevDiff = -1, nextDiff = lines.length;
+    for (const o of anchors) {
+      if (o.polis === a.polis) continue;
+      if (o.line < a.line && o.line > prevDiff) prevDiff = o.line;
+      if (o.line > a.line && o.line < nextDiff) nextDiff = o.line;
+      if (o.line === a.line && a.kind === 'table') nextDiff = Math.min(nextDiff, a.line + 1);
+    }
+    if (a.kind === 'table') nextDiff = Math.min(nextDiff, a.line + 1);
+    // Kopregels boven het anker (productnaam), nooit voorbij het vorige polisanker
+    const hStart = Math.max(prevDiff + 1, a.line - (prevDiff < 0 ? 12 : 4));
+    const header = lines.slice(hStart, a.line);
+    const text = lines.slice(a.line, nextDiff).join('\n');
+    return { anchorLine: a.line, start: a.line, end: nextDiff, header, text, kind: a.kind };
+  }
+
+  const CONTEXT_SCORE_RE = /premie|dekking|verzekerd|eigen\s*risico|bouwjaar|bouwaard|kenteken|meldcode|betaaltermijn|ingangsdatum|vervaldatum|gezinssamenstelling|dekkingsgebied|module|inboedel|woonhuis|cataloguswaarde/gi;
+  // Kiest het rijkste contextvenster per polisnummer
+  function _best_polis_window(sections) {
+    let best = null, bestScore = -Infinity;
+    for (const s of sections) {
+      const hits = (s.text.match(CONTEXT_SCORE_RE) || []).length;
+      const nLines = s.text.split('\n').length;
+      const score = hits * 2 + Math.min(nLines, 60) / 6 - (s.kind === 'table' ? 4 : 0);
+      if (score > bestScore) { best = s; bestScore = score; }
+    }
+    return best;
+  }
+
+  // ── reis: verzekeringsnemers ───────────────────────────────────────────────
+  function personKey(p) { return (p.voorletters || '').replace(/\W/g, '') + '|' + (p.achternaam || '').toLowerCase(); }
+  function _extract_reis_verzekeringsnemers(text, g) {
+    const vn1 = { voorletters: g.voorletters || '', tussenvoegsel: g.tussenvoegsel || '', achternaam: g.achternaam || '',
+                  geboortedatum: g.geboortedatum_klant || '', geslacht: g.geslacht || '' };
+    const cands = [];
+    const lines = text.split('\n');
+    const nearDate = (i) => {
+      for (let k = i; k < Math.min(lines.length, i + 3); k++) {
+        const d = _norm_date(lines[k].match(/\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4}|\d{1,2}\s+[a-z]{3,9}\s+\d{4}/i)?.[0] || '');
+        if (d) return d;
+      }
+      return '';
+    };
+    // 1. Partnerregels
+    for (const hit of _extract_kv_lines(text, String.raw`(?:naam\s*)?partner|echtgeno(?:o|te)|mede\s*verzekerde|verzekerde\s*2|2e\s*verzekerde`, { all: true })) {
+      const p = _parse_initials_lastname(hit.value);
+      if (!p.achternaam || isSuspiciousAchternaam(p.achternaam)) continue;
+      p.geboortedatum = _norm_date(_extract_kv_lines(lines.slice(hit.line, hit.line + 6).join('\n'), String.raw`geboortedatum(?:\s*partner)?`)) || nearDate(hit.line);
+      cands.push(p);
+    }
+    // 2. Lijst "Verzekerde personen" / "Verzekerden"
+    for (let i = 0; i < lines.length; i++) {
+      if (!/^\s*(?:verzekerde\s*personen|verzekerden|meeverzekerde\s*personen|gezinsleden)\s*:?\s*(?:\t|$)/i.test(lines[i])) continue;
+      for (let j = i + 1; j < Math.min(lines.length, i + 10); j++) {
+        const ln = lines[j].trim();
+        if (!ln) continue;
+        if (/^[A-Z][a-z]+(?:\s+[a-z]+)*\s*:/.test(ln) && !/^(?:dhr|mevr|mw)/i.test(ln)) break;
+        const namePart = ln.split('\t')[0].replace(/\b(?:verzekeringnemer|partner|kind|hoofdverzekerde)\b/ig, '').trim();
+        if (!/[A-Z]\.|^(?:dhr|mevr|mw|de\s+heer|mevrouw)/i.test(namePart)) continue;
+        const p = _parse_initials_lastname(namePart);
+        if (!p.achternaam || isSuspiciousAchternaam(p.achternaam)) continue;
+        if (/\bkind\b/i.test(ln)) continue;
+        p.geboortedatum = nearDate(j);
+        cands.push(p);
+      }
+    }
+    // 3. Voorletters/Naam-paren (tweede paar)
+    const vls = _extract_kv_lines(text, String.raw`voorletters`, { all: true });
+    const nms = _extract_kv_lines(text, String.raw`(?:achter)?naam`, { all: true });
+    if (vls.length >= 2 && nms.length >= 2) {
+      const p = _parse_initials_lastname(vls[1].value + ' ' + nms[1].value);
+      if (p.achternaam && !isSuspiciousAchternaam(p.achternaam)) { p.geboortedatum = nearDate(nms[1].line); cands.push(p); }
+    }
+    const k1 = personKey(vn1);
+    const vn2 = cands.find(c => personKey(c) !== k1 && c.achternaam);
+    return { vn1, vn2: vn2 || null };
+  }
+  function writeVN(row, n, p) {
+    if (!p) return;
+    row[`Naam verzekeringsnemer ${n}`] = p.achternaam || '';
+    row[`Voorletters verzekeringsnemer ${n}`] = p.voorletters || '';
+    row[`Voorvoegsel verzekeringsnemer ${n}`] = p.tussenvoegsel || '';
+    row[`Geboortedatum verzekeringsnemer ${n}`] = p.geboortedatum || '';
+    row[`Geslacht verzekeringsnemer ${n}`] = p.geslacht || '';
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════
+  //  ASRParser.parse — documentbrede bootstrap (conservatief, lower-case velden)
+  // ═════════════════════════════════════════════════════════════════════════
+  function parse(rawText) {
+    const text = normText(rawText || '');
+    const lines = text.split('\n');
+    const f = {
+      voorletters: '', tussenvoegsel: '', achternaam: '', geslacht: '',
+      straat: '', huisnummer: '', huisnummertoevoeging: '', postcode: '', woonplaats: '',
+      geboortedatum_klant: '', Pakketpolisnummer: '', Polisnummer: '',
+      ingangsdatum: '', hoofdvervaldatum: '', contractvervaldatum: '',
+      betaaltermijn: '', maandincasso: null, gezinssamenstelling: '',
+    };
+    // Klantblok: na "Verzekeringnemer"/"Klantgegevens", vóór adviseurblok
+    const vnIdx = lines.findIndex(l => /^\s*(?:verzekeringnemer|verzekeringsnemer|klantgegevens|gegevens\s*verzekeringnemer|relatiegegevens|uw\s*gegevens)\b/i.test(l));
+    const klantText = vnIdx >= 0 ? lines.slice(vnIdx, vnIdx + 40).join('\n') : text;
+
+    // Naam
+    const NAME_LABELS = [String.raw`naam\s*verzekeringnemer`, String.raw`naam`, String.raw`klantnaam`, String.raw`verzekeringnemer|verzekeringsnemer`, String.raw`relatie(?:naam)?|aanhef`];
+    let nameRaw = '';
+    for (const src of [klantText, text]) {
+      for (const lbl of NAME_LABELS) {
+        const v = _extract_kv_lines(src, lbl);
+        if (v && !isSuspiciousAchternaam(_parse_initials_lastname(v).achternaam)) { nameRaw = v; break; }
+      }
+      if (nameRaw) break;
+    }
+    if (!nameRaw || isSuspiciousAchternaam(_parse_initials_lastname(nameRaw).achternaam)) {
+      const sal = lines.find(l => /^\s*(?:de\s+heer|dhr\.?|mevrouw|mevr\.?|mw\.?)\s+[A-Z]/i.test(l) && !/adviseur|geachte/i.test(l));
+      if (sal) nameRaw = sal;
+    }
+    if (nameRaw) {
+      const p = _parse_initials_lastname(nameRaw);
+      if (!isSuspiciousAchternaam(p.achternaam)) Object.assign(f, { voorletters: p.voorletters, tussenvoegsel: p.tussenvoegsel, achternaam: p.achternaam, geslacht: p.geslacht });
+    }
+    // Losse "Voorletters" + "Achternaam" labels
+    if (!f.achternaam) {
+      const vl = _extract_kv_lines(klantText, String.raw`voorletters`);
+      const tv = _extract_kv_lines(klantText, String.raw`tussenvoegsel(?:s)?|voorvoegsel(?:s)?`);
+      const an = _extract_kv_lines(klantText, String.raw`achternaam|geslachtsnaam`);
+      if (an && !isSuspiciousAchternaam(an)) {
+        const ini = (vl.match(/[A-Za-z]/g) || []).map(c => c.toUpperCase());
+        Object.assign(f, { voorletters: ini.length ? ini.join('.') + '.' : '', tussenvoegsel: (tv || '').toLowerCase(), achternaam: titleCaseWord(an) });
+      }
+    }
+    if (!f.geslacht) {
+      const gs = _extract_kv_lines(klantText, String.raw`geslacht`);
+      if (/^(?:m|man)/i.test(gs)) f.geslacht = 'M'; else if (/^(?:v|vrouw)/i.test(gs)) f.geslacht = 'V';
+    }
+    // Adres
+    Object.assign(f, _parse_address_from_window(klantText));
+    if (!f.straat || !f.postcode) {
+      const a2 = _parse_address_from_window(text);
+      for (const k of ['straat','huisnummer','huisnummertoevoeging','postcode','woonplaats']) if (!f[k] && a2[k]) f[k] = a2[k];
+    }
+    // Geboortedatum klant
+    f.geboortedatum_klant = extractDateKV(klantText, String.raw`geboortedatum(?:\s*verzekeringnemer)?|geb\.?\s*datum`)
+                         || extractDateKV(text, String.raw`geboortedatum(?:\s*verzekeringnemer)?`);
+    // Pakket / polis (één sterke globale hint)
+    f.Pakketpolisnummer = extractPakketnummer(text);
+    const anchors = findPolisAnchors(lines, f.Pakketpolisnummer);
+    f.Polisnummer = anchors.length ? anchors[0].polis : '';
+    // Datums
+    f.ingangsdatum = extractDateKV(text, ING_LABEL);
+    f.hoofdvervaldatum = extractDayMonthKV(text, HVD_LABEL);
+    f.contractvervaldatum = extractDateKV(text, CVD_LABEL);
+    // Betaaltermijn + maandincasso
+    f.betaaltermijn = extractBetaaltermijn(text);
+    const prem = _extract_premium_term_scored([text]);
+    if (prem) { f.maandincasso = prem.val; if (!f.betaaltermijn && prem.term) f.betaaltermijn = prem.term; }
+    f.gezinssamenstelling = _gezinssamenstelling_code(_extract_kv_lines(text, String.raw`(?:verzekerde\s*)?gezinssamenstelling|gezinssituatie|samenstelling\s*(?:huishouden|gezin)|huishouden|gezinsvorm`));
+    // Voertuigsignalen
+    if (/\bkenteken\b|\bmeldcode\b|personen\s*auto/i.test(text)) {
+      const ad = extractAutoDetails(text);
+      f.kenteken = ad.Kenteken; f.meldcode = ad.Meldcode;
+    }
+    return f;
+  }
+
+  // ── row-opbouw ─────────────────────────────────────────────────────────────
+  function emptyRow() { const r = {}; for (const c of CSV_COLUMNS) r[c] = ''; r._warnings = []; return r; }
+  function syncAliases(row) {
+    const pairs = [['Voorletters','voorletters'],['Tussenvoegsels','tussenvoegsel'],['Achternaam','achternaam'],
+      ['Straat','straat'],['Huisnummer','huisnummer'],['Huisnummer toevoeging','huisnummertoevoeging'],
+      ['Postcode','postcode'],['Woonplaats','woonplaats'],['Geboortedatum klant','geboortedatum_klant'],
+      ['Pakketpolisnummer','pakketpolisnummer']];
+    for (const [T, l] of pairs) { if (row[T]) row[l] = row[T]; else if (row[l]) row[T] = row[l]; }
+    return row;
+  }
+  function baseRow(g, polis, pakket) {
+    const row = emptyRow();
+    row['Polisnummer'] = polis || '';
+    row['Pakketpolisnummer'] = pakket || g.Pakketpolisnummer || '';
+    row['Voorletters'] = (g.voorletters || '').toUpperCase();
+    row['Tussenvoegsels'] = g.tussenvoegsel || '';
+    row['Achternaam'] = g.achternaam || '';
+    row['Straat'] = g.straat || '';
+    row['Huisnummer'] = g.huisnummer || '';
+    row['Huisnummer toevoeging'] = g.huisnummertoevoeging || '';
+    row['Postcode'] = g.postcode || '';
+    row['Woonplaats'] = g.woonplaats || '';
+    row['Geboortedatum klant'] = g.geboortedatum_klant || '';
+    row._geslacht = g.geslacht || '';
+    return syncAliases(row);
+  }
+
+  // ── productslices ──────────────────────────────────────────────────────────
+  const VARIANT_TOP = /all[\s-]?in|\btop\b|all\s*-?\s*risk|allrisk|alle\s*risico|alle\s*gevaren/i;
+  const VARIANT_BASIS = /\bbasis\b/i;
+  function detectVariant(...sources) {
+    for (const s of sources) {
+      if (!s) continue;
+      const v = _extract_kv_lines(s, String.raw`dekking(?:svariant|svorm|soort)?|variant|uitvoering|pakket|soort\s*dekking|dekkingsniveau`);
+      if (v && VARIANT_TOP.test(v)) return 'top';
+      if (v && VARIANT_BASIS.test(v)) return 'basis';
+      const head = s.split('\n').slice(0, 6).join('\n');
+      if (positiveFeature(head, VARIANT_TOP)) return 'top';
+      if (VARIANT_BASIS.test(head)) return 'basis';
+    }
+    return '';
+  }
+  function eigenWoningCode(text) {
+    const ew = _extract_kv_lines(text, String.raw`eigen\s*woning|eigenaar\s*(?:\/|of)?\s*huurder|eigendom|eigenaar\s*woning|huur\s*(?:of|\/)\s*koop`);
+    if (ew) {
+      if (/huur/i.test(ew) || _yn_code(ew) === 'N') return 'N';
+      if (/eigenaar|eigen|koop/i.test(ew) || _yn_code(ew) === 'J') return 'J';
+    }
+    if (/huurwoning|huurhuis|huur\s*appartement|\bhuurder\b/i.test(text) && !/geen\s*huurder/i.test(text)) return 'N';
+    return 'J';
+  }
+  function woonFields(row, detail, cov) {
+    const src = detail + '\n' + cov;
+    const bj = (src.match(/bouwjaar[^\n\d]{0,15}((?:1[5-9]|20)\d{2})\b/i) || [])[1];
+    row['Bouwjaar'] = bj || '';
+    const bouwaard = _extract_kv_lines(src, String.raw`bouwaard|constructie|bouwwijze`);
+    row['Bouwaard muren'] = _bouwaard_muren_code(_extract_kv_lines(src, String.raw`bouwaard\s*muren|muren|buitenmuren|gevels?|wanden`) || bouwaard);
+    row['Bouwaard dak'] = _bouwaard_dak_code(_extract_kv_lines(src, String.raw`bouwaard\s*dak|dakbedekking|dak|dakconstructie`) || (bouwaard.match(/(?:met|en|\/)\s*(.+)$/i) || [])[1] || '');
+    row['Bouwaard vloeren'] = _bouwaard_vloeren_code(_extract_kv_lines(src, String.raw`bouwaard\s*vloeren|vloeren|vloer|soort\s*vloer|verdiepingsvloeren`));
+    if (!row['Bouwaard vloeren'] && bj) row['Bouwaard vloeren'] = parseInt(bj, 10) >= 2000 ? 'H' : 'S';
+    row['Woonhuis type'] = _woonhuis_type_code(_extract_kv_lines(src, String.raw`type\s*woning|soort\s*woning|woningtype|type\s*woonhuis|soort\s*woonhuis|bouwtype|woonvorm|type\s*pand`));
+    const mon = _extract_kv_lines(src, String.raw`monument(?:aal)?(?:\s*pand)?|rijksmonument|gemeentelijk\s*monument`);
+    row['Monumentaal pand'] = _yn_code(mon) || (/\b(?:rijks|gemeentelijk)\s*monument\b/i.test(src) && !/geen\s*monument/i.test(src) ? 'J' : 'N');
+    row['Eigen woning'] = eigenWoningCode(src);
+    // Risicoadres
+    const ra = _parse_address_from_window(src, String.raw`risico\s*adres|verzekerd\s*adres|adres\s*(?:van\s*het\s*)?risico|adres\s*woning|risicoplaats|ligging`);
+    if (ra.straat && ra.huisnummer) {
+      row['Straat'] = ra.straat; row['Huisnummer'] = ra.huisnummer; row['Huisnummer toevoeging'] = ra.huisnummertoevoeging || '';
+      if (ra.postcode) row['Postcode'] = ra.postcode;
+      if (ra.woonplaats) row['Woonplaats'] = ra.woonplaats;
+      row._risicoadres = true;
+    }
+  }
+
+  function applyAVP(row, detail, cov, ctx) {
+    const dk = [['6100', 'Aansprakelijkheid particulier']];
+    // Grootste geldige verzekerde som uit lokale bronnen
+    const sums = amountAfter(detail + '\n' + cov, String.raw`verzekerde?\s*(?:som|bedrag)|maximaal\s*verzekerd|dekking\s*per\s*gebeurtenis|per\s*gebeurtenis|maximum\s*per\s*aanspraak`, 100000, 10000000);
+    row['Verzekerde som'] = sums.length ? String(Math.max(...sums.map(s => s.v))) : '';
+    row['Eigenrisico'] = extractEigenrisico(detail) || extractEigenrisico(cov);
+    row['Gezinssamenstelling'] = _gezinssamenstelling_code(_extract_kv_lines(detail + '\n' + cov, String.raw`(?:verzekerde\s*)?gezinssamenstelling|gezinssituatie|samenstelling\s*(?:huishouden|gezin)|huishouden|verzekerd\s*voor|gezinsvorm`));
+    writeDekkingen(row, dk);
+  }
+
+  function applyInboedel(row, detail, cov, ctx) {
+    const variant = detectVariant(detail, cov);
+    const dk = [variant === 'top' ? ['5398', 'Inboedel All-In'] : ['5397', 'Inboedel Basis']];
+    // Buitenshuis alleen bij expliciet Ja en niet onder "Niet verzekerd"
+    if (labelYN(detail + '\n' + cov, String.raw`buitenshuis(?:dekking)?|inboedel\s*buitenshuis|dekking\s*buitenshuis`) === 'J') dk.push(['5408', 'Buitenshuisdekking']);
+    // Verzekerde som alleen uit huisraad-specifieke bronregels
+    const vs = amountAfter(detail + '\n' + cov, String.raw`verzekerde?\s*(?:som|bedrag)\s*(?:inboedel|huisraad)|(?:inboedel|huisraad)\s*(?:waarde|verzekerde?\s*(?:som|bedrag))|waarde\s*(?:inboedel|huisraad)|inboedelwaarde`, 1000, 1000000);
+    row['Verzekerde som'] = vs.length ? String(vs[0].v) : '';
+    row['Eigenrisico'] = extractEigenrisico(detail) || extractEigenrisico(cov);
+    row['Gezinssamenstelling'] = _gezinssamenstelling_code(_extract_kv_lines(detail + '\n' + cov, String.raw`gezinssamenstelling|gezinssituatie|samenstelling\s*huishouden|huishouden`));
+    woonFields(row, detail, cov);
+    writeDekkingen(row, dk);
+  }
+
+  function applyWoonhuis(row, detail, cov, ctx) {
+    const variant = detectVariant(detail, cov);
+    const dk = [variant === 'top' ? ['5396', 'Woonhuis All-In'] : ['5395', 'Opstal Basis']];
+    if (labelYN(detail + '\n' + cov, String.raw`glas(?:verzekering|dekking|schade)?|glas\s*in\s*woonhuis|glasbreuk`) === 'J') dk.push(['5409', 'Glas in Woonhuis']);
+    const vs = amountAfter(detail + '\n' + cov, String.raw`herbouw\s*waarde|verzekerde?\s*(?:som|bedrag)\s*(?:woonhuis|opstal)|(?:woonhuis|opstal)\s*verzekerde?\s*(?:som|bedrag)`, 50000, 5000000);
+    row['Verzekerde som'] = vs.length ? String(vs[0].v) : '';
+    row['Eigenrisico'] = extractEigenrisico(detail) || extractEigenrisico(cov);
+    row['Gezinssamenstelling'] = '';
+    woonFields(row, detail, cov);
+    writeDekkingen(row, dk);
+  }
+
+  function applyPersonenauto(row, detail, cov, ctx) {
+    const src = detail + '\n' + cov;
+    const d = extractAutoDetails(src);
+    Object.assign(row, {
+      'Kenteken': d.Kenteken, 'Meldcode': d.Meldcode, 'Kilometrage': d.Kilometrage,
+      'Cataloguswaarde': d.Cataloguswaarde, 'Dagwaarde': d.Dagwaarde, 'Gewicht': d.Gewicht,
+      'Schadevrije jaren': d['Schadevrije jaren'],
+    });
+    row._auto = d;
+    const dk = [['2010', 'Wettelijke Aansprakelijkheid']];
+    const dekkingTxt = _extract_kv_lines(src, String.raw`dekking|dekkingsvorm|soort\s*dekking|verzekerd\s*tegen`);
+    const casco = (dekkingTxt && /volledig\s*casco|all\s*-?\s*risk|allrisk|\bvc\b|casco\s*compleet/i.test(dekkingTxt)) || positiveFeature(src, /volledig\s*casco|all\s*-?\s*risk|allrisk|\bwa\s*\+\s*vc\b|\bwa\s*\+\s*casco\b/i);
+    const beperkt = (dekkingTxt && /beperkt\s*casco|\bbc\b|wa\s*\+|wa\s*extra|wa\s*plus/i.test(dekkingTxt)) || positiveFeature(src, /beperkt\s*casco|\bwa\s*\+\s*bc\b|wa\s*extra|wa\s*plus/i);
+    if (casco) dk.push(['2030', 'Casco']);
+    else if (beperkt) dk.push(['2020', 'Beperkt Casco']);
+    const svi = labelYN(src, String.raw`schade\s*(?:verzekering\s*)?(?:voor\s*)?(?:in|op)zittenden|svi`) === 'J' || positiveFeature(src, /schade\s*(?:verzekering\s*)?(?:voor\s*)?(?:in|op)zittenden|\bsvi\b/i);
+    const ovi = labelYN(src, String.raw`ongevallen\s*(?:verzekering\s*)?(?:voor\s*)?(?:in|op)zittenden|ovi`) === 'J' || positiveFeature(src, /ongevallen\s*(?:verzekering\s*)?(?:voor\s*)?(?:in|op)zittenden|\bovi\b/i);
+    if (svi) dk.push(['2080', 'Schadeverzekering Inzittenden']);
+    else if (ovi) dk.push(['2040', 'Ongevallen Inzittenden']);
+    writeDekkingen(row, dk);
+    // Pechhulp als uitzondering, niet als dekking
+    const ux = uitzonderingList(row);
+    const pech = _extract_kv_lines(src, String.raw`pechhulp(?:\s*(?:nederland|europa))?|hulpverlening|pech\s*onderweg`);
+    if ((pech && _yn_code(pech) !== 'N' && !/^\s*$/.test(pech)) || positiveFeature(src, /pechhulp\s*(?:europa|nederland|buitenland)?|pech\s*onderweg/i)) {
+      const scope = /europa|buitenland/i.test(pech + src.match(/pechhulp[^\n]{0,30}/i)?.[0]) ? ' Europa' : '';
+      ux.push(`Pechhulp${scope} meeverzekerd`);
+    }
+    writeUitzonderingen(row, ux);
+  }
+
+  function applyRechtsbijstand(row, detail, cov, ctx) {
+    const src = detail + '\n' + cov;
+    const modules = new Set();
+    const mod = (re) => positiveFeature(src, re);
+    if (mod(/module\s*a\b|\bverkeer\b|verkeersrechtsbijstand/i)) modules.add('A');
+    if (mod(/module\s*b\b|consument|\bwonen\b/i)) modules.add('B');
+    if (mod(/module\s*c\b|\binkomen\b|\bwerk\b/i)) modules.add('C');
+    const plus = labelYN(src, String.raw`plus\s*pakket|pluspakket|plusmodule`) === 'J' || positiveFeature(src, /plus\s*pakket|pluspakket/i);
+    if (/\bRBV\b/.test(src)) { modules.add('A'); modules.add('B'); modules.add('C'); }   // RBV forceert A, B en C
+    if (plus) modules.add('D');                                                             // D alleen met Pluspakket
+    const MOD = { A: ['9185', 'Module A: Verkeer'], B: ['9187', 'Module B: Consument en Wonen'], C: ['9186', 'Module C: Inkomen'], D: ['9190', 'Module D: Fiscaal en Vermogen'] };
+    writeDekkingen(row, [...modules].map(m => MOD[m]));
+    // J/N alleen waar expliciet aanwezig
+    row['Mediation meeverzekeren'] = labelYN(src, String.raw`mediation(?:\s*bij\s*(?:echt)?scheiding)?|scheidingsmediation`);
+    row['Motorrijtuigen meeverzekeren'] = labelYN(src, String.raw`motorrijtuig(?:en)?|rechtsbijstand\s*motorrijtuigen`);
+    row['Arbeidsrecht meeverzekeren'] = labelYN(src, String.raw`arbeidsrecht|arbeid`);
+    row['Gezinssamenstelling'] = _gezinssamenstelling_code(_extract_kv_lines(src, String.raw`(?:verzekerde\s*)?gezinssamenstelling|gezinssituatie|samenstelling\s*huishouden|huishouden|verzekerd\s*voor`));
+  }
+
+  function applyDoorlopendeReis(row, detail, cov, ctx) {
+    const src = detail + '\n' + cov;
+    const dg = _extract_kv_lines(src, String.raw`dekkingsgebied|gebied|werelddeel|geldigheidsgebied`);
+    if (/wereld/i.test(dg) || (!dg && positiveFeature(src, /werelddekking|wereldwijd/i))) row['Dekkingsgebied'] = 'W';
+    else if (/europa/i.test(dg) || (!dg && /europa/i.test(src))) row['Dekkingsgebied'] = 'X';
+    const rd = _extract_kv_lines(src, String.raw`maximale\s*reisduur|reisduur|max(?:imaal)?\s*aantal\s*(?:reis)?dagen|maximale\s*duur`);
+    const rdn = parseInt((rd.match(/\d{1,3}/) || src.match(/(\d{2,3})\s*(?:aaneengesloten\s*)?dagen/i) || [])[1] || (rd.match(/\d{1,3}/) || [])[0], 10);
+    if (rdn > 0) row['Maximale reisduur'] = rdn <= 65 ? '65' : '185';
+    row['Gezinssamenstelling'] = _gezinssamenstelling_code(_extract_kv_lines(src, String.raw`gezinssamenstelling|gezinssituatie|verzekerd\s*voor|samenstelling\s*huishouden|huishouden`));
+    // Dekkingsonderdelen
+    const yn = (lbl, re) => { const v = labelYN(src, lbl); return v ? v === 'J' : positiveFeature(src, re); };
+    const bagage = yn(String.raw`bagage`, /\bbagage\b/i);
+    const annulering = yn(String.raw`annulering(?:skosten)?(?:verzekering)?`, /annulering(?:skosten)?(?:verzekering|dekking)/i);
+    const medisch = yn(String.raw`(?:geneeskundige|medische)\s*kosten`, /(?:geneeskundige|medische)\s*kosten/i);
+    const winter = yn(String.raw`wintersport(?:\s*(?:en|&)\s*risicosporten)?`, /wintersport/i);
+    const auto = yn(String.raw`automobilistenhulp|hulpverlening\s*motorrijtuigen`, /automobilistenhulp/i);
+    const ongeval = yn(String.raw`ongevallen|reisongevallen|ongevallendekking`, /\b(?:reis)?ongevallen(?:dekking)?\b/i);
+    // Bagagebedrag (fallback 3500 als bagage verzekerd maar bedrag niet schoon)
+    let bag = NaN;
+    const bm = src.match(/bagage[^\n€\d]{0,40}(?:€|eur)\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
+    if (bm) bag = euroInt(bm[1]);
+    if (bagage && !(bag >= 100 && bag <= 50000)) bag = 3500;
+    if (bagage && bag) row['Verzekerde som bagage'] = String(bag);
+    if (annulering) {
+      const am = src.match(/annulering[^\n€\d]{0,50}(?:€|eur)\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
+      const an = am ? euroInt(am[1]) : NaN;
+      if (an >= 100 && an <= 100000) row['Verzekerde som annulering'] = String(an);
+    }
+    // Dekking 1: 3854 (compleet) / 3852 (basis) / 3853 (uitgebreid)
+    const variant = _extract_kv_lines(src, String.raw`dekking(?:svariant)?|variant|pakket|uitvoering`);
+    let sos;
+    if (/compleet|top|totaal/i.test(variant) || ongeval || (bag > 3500)) sos = ['3854', 'S.O.S. Hulpverlening Compleet'];
+    else if (/basis/i.test(variant) || (bagage && !annulering && !medisch && !winter)) sos = ['3852', 'S.O.S. Hulpverlening Basis'];
+    else sos = ['3853', 'S.O.S. Hulpverlening Uitgebreid'];
+    const dk = [sos];
+    if (winter) dk.push(['3851', 'Wintersport en Risicosporten']);
+    if (auto) dk.push(['3855', 'Automobilistenhulp']);
+    if (medisch) dk.push(['3856', 'Medische kosten']);
+    if (ongeval) dk.push(['3857', 'Ongevallen']);
+    if (bagage) dk.push(['3858', 'Bagage']);
+    if (annulering) dk.push(['3859', 'Annulering']);
+    writeDekkingen(row, dk);
+    const ux = uitzonderingList(row);
+    if (positiveFeature(src, /pech\s*onderweg/i)) ux.push('Pech onderweg meeverzekerd');
+    const bk = src.match(/bijzondere\s*kosten[^\n€\d]{0,30}(?:€|eur)\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{2}))?/i);
+    if (bk) ux.push(`Bijzondere kosten EUR ${bk[1]}${bk[2] && bk[2] !== '00' ? ',' + bk[2] : ''}`);
+    writeUitzonderingen(row, ux);
+    // Verzekeringsnemers 1 en 2
+    const { vn1, vn2 } = _extract_reis_verzekeringsnemers(src, ctx.g);
+    writeVN(row, 1, vn1);
+    writeVN(row, 2, vn2);
+  }
+
+  const SLICES = {
+    'AVP': applyAVP, 'Inboedel': applyInboedel, 'Woonhuis': applyWoonhuis, 'Personenauto': applyPersonenauto,
+    'Rechtsbijstand': applyRechtsbijstand, 'Doorlopende Reis': applyDoorlopendeReis,
+  };
+
+  function rowDates(row, detail, cov, g) {
+    row['Ingangsdatum'] = extractDateKV(detail, ING_LABEL) || g.ingangsdatum || '';
+    row['Hoofdvervaldatum'] = extractDayMonthKV(detail, HVD_LABEL) || extractDayMonthKV(cov, HVD_LABEL) || g.hoofdvervaldatum || '';
+    row['Contractvervaldatum'] = extractDateKV(detail, CVD_LABEL) || extractDateKV(cov, CVD_LABEL) || g.contractvervaldatum || '';
+    row['Premievervaldatum'] = extractDateKV(detail, PVD_LABEL) || '';
+    row._eigenProlongatie = !!(extractDayMonthKV(detail, HVD_LABEL) || extractDayMonthKV(cov, HVD_LABEL));
+  }
+
+  function finishRow(row, product, detail, cov, g, premiumSources, ctx) {
+    rowDates(row, detail, cov, g);
+    row['Betaaltermijn'] = extractBetaaltermijn(detail) || '';
+    const prem = _extract_premium_term_scored(premiumSources);
+    if (prem) {
+      row['Incassobedrag'] = fmtEuro(prem.val);
+      row._premieBron = prem.line;
+      if (!row['Betaaltermijn'] && prem.term) row['Betaaltermijn'] = prem.term;
+    } else if (ctx.singlePolis && g.maandincasso != null) {
+      row['Incassobedrag'] = fmtEuro(g.maandincasso);
+    } else {
+      warn(row, 'Geen premie gevonden in de polissectie');
+    }
+    if (!row['Betaaltermijn']) row['Betaaltermijn'] = extractBetaaltermijn(cov) || g.betaaltermijn || '';
+    row['Productomschrijving'] = normalize_product_name(product) || product || '';
+    const slice = SLICES[row['Productomschrijving']];
+    if (slice) slice(row, detail, cov, ctx);
+    else row._rest = true;
+    apply_schema_guardrails(row, row['Productomschrijving']);
+    return row;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════
+  //  extract_policy_rows_asr — één row per polisnummer
+  // ═════════════════════════════════════════════════════════════════════════
+  function extract_policy_rows_asr(rawText, global_fields) {
+    const text = normText(rawText || '');
+    const g = global_fields || parse(text);
+    const lines = text.split('\n');
+    const debug = { windows: [] };
+    // 1-3. documentbrede gezinssamenstelling + pakketnummer
+    const docGz = g.gezinssamenstelling || '';
+    const pakket = g.Pakketpolisnummer || extractPakketnummer(text);
+    // 4. polisnummers via SUBPOLIS / Polisnummer
+    const anchors = findPolisAnchors(lines, pakket);
+    const rows = [];
+
+    // 5. geen polisnummers → precies één row op basis van base_fields (+ autoverrijking)
+    if (!anchors.length) {
+      const sec = { anchorLine: 0, header: lines.slice(0, 8), text, kind: 'document' };
+      let det = { product: _detect_asr_product_from_header(lines.slice(0, 15)), source: 'header' };
+      if (!det.product) det = { product: _detect_asr_product_from_verzekerd_block(text), source: 'verzekerd' };
+      if (!det.product && (g.kenteken || /\bkenteken\b|\bmeldcode\b/i.test(text))) det = { product: 'Personenauto', source: 'auto-context' };
+      if (!det.product) det = { product: keywordProduct(text), source: 'keywords' };
+      const row = baseRow(g, g.Polisnummer || '', pakket);
+      finishRow(row, det.product || 'Onbekend', text, text, g, [text], { g, singlePolis: true });
+      if (row['Productomschrijving'] === 'Personenauto' && !row['Kenteken']) {
+        const blocks = _extract_auto_blocks(text);
+        if (blocks.length) enrichAuto(row, blocks[0].details);
+      }
+      row._detectie = det.source;
+      debug.windows.push({ polis: '(geen)', product: row['Productomschrijving'], source: det.source, lines: `1-${lines.length}`, text: text.slice(0, 1500) });
+      rows.push(row);
+      propagate(rows, text, docGz);
+      return { rows, debug };
+    }
+
+    // 6-11. per polisnummer
+    const order = [];
+    for (const a of anchors) if (!order.includes(a.polis)) order.push(a.polis);
+    const singlePolis = order.length === 1;
+    for (const polis of order) {
+      const sections = anchors.filter(a => a.polis === polis).map(a => _extract_local_polis_section(lines, anchors, a));
+      const best = _best_polis_window(sections);
+      const det = _detect_asr_product_for_polis(best, lines);
+      // Als het beste venster geen product oplevert, probeer de andere vensters van dezelfde polis
+      if (!det.product) {
+        for (const s of sections) { const d2 = _detect_asr_product_for_polis(s, lines); if (d2.product) { Object.assign(det, d2); break; } }
+      }
+      const detail = best.text;
+      const cov = sections.map(s => s.text).join('\n');
+      const headerTxt = best.header.join('\n');
+      const row = baseRow(g, polis, pakket);
+      finishRow(row, det.product || 'Onbekend', detail, cov, g, [detail, cov, headerTxt], { g, singlePolis });
+      row._detectie = det.source;
+      debug.windows.push({ polis, product: row['Productomschrijving'], source: det.source,
+        lines: sections.map(s => `${s.start + 1}-${s.end}`).join(', '), text: (headerTxt ? headerTxt + '\n' : '') + detail.slice(0, 1500) });
+      rows.push(row);
+    }
+    // 12. documentbrede propagatie
+    propagate(rows, text, docGz);
+    return { rows, debug };
+  }
+
+  function enrichAuto(row, d) {
+    for (const k of ['Kenteken','Meldcode','Kilometrage','Cataloguswaarde','Dagwaarde','Gewicht','Schadevrije jaren']) {
+      if (!row[k] && d[k]) row[k] = d[k];
+    }
+    if (row['Kenteken']) row._warnings = (row._warnings || []).filter(w => w !== 'Personenauto zonder kenteken');
+    row._auto = Object.assign({}, d, row._auto || {});
+  }
+
+  function propagate(rows, text, docGz) {
+    // Gezinssamenstelling: lokaal eerst, daarna documentbreed (nooit naar auto)
+    const gzSource = docGz || (rows.find(r => r['Productomschrijving'] === 'AVP' && r['Gezinssamenstelling']) || rows.find(r => r['Gezinssamenstelling']) || {})['Gezinssamenstelling'] || '';
+    for (const r of rows) {
+      const p = r['Productomschrijving'];
+      if (['AVP','Inboedel','Rechtsbijstand','Doorlopende Reis'].includes(p) && !r['Gezinssamenstelling'] && gzSource) r['Gezinssamenstelling'] = gzSource;
+      if (p === 'Personenauto' || p === 'Woonhuis') r['Gezinssamenstelling'] = '';
+    }
+    // Woonhuis ↔ Inboedel koppeling: eigen woning + bouwaardvelden delen op hetzelfde adres
+    const woonhuis = rows.filter(r => r['Productomschrijving'] === 'Woonhuis');
+    for (const ib of rows.filter(r => r['Productomschrijving'] === 'Inboedel')) {
+      const wh = woonhuis.find(w => !ib['Postcode'] || !w['Postcode'] || (w['Postcode'] === ib['Postcode'] && w['Huisnummer'] === ib['Huisnummer']));
+      if (!wh) continue;
+      ib['Eigen woning'] = 'J';
+      for (const f of ['Bouwjaar','Bouwaard muren','Bouwaard vloeren','Bouwaard dak','Woonhuis type','Monumentaal pand']) {
+        if (!ib[f] && wh[f]) ib[f] = wh[f];
+      }
+    }
+    // Auto-verrijking via documentbrede kentekenblokken
+    const autos = rows.filter(r => r['Productomschrijving'] === 'Personenauto');
+    if (autos.length) {
+      const blocks = _extract_auto_blocks(text);
+      const used = new Set(autos.map(r => r['Kenteken']).filter(Boolean));
+      const free = blocks.filter(b => !used.has(b.kenteken));
+      for (const r of autos) {
+        if (r['Kenteken']) {
+          const own = blocks.find(b => b.kenteken === r['Kenteken']);
+          if (own) enrichAuto(r, own.details);
+          continue;
+        }
+        const byPolis = free.find(b => b.text.includes(r['Polisnummer']));
+        const pick = byPolis || (free.length && (autos.filter(a => !a['Kenteken']).length === free.length || free.length === 1) ? free[0] : null);
+        if (pick) { enrichAuto(r, pick.details); free.splice(free.indexOf(pick), 1); }
+      }
+    }
+    // Guardrails opnieuw na propagatie
+    for (const r of rows) apply_schema_guardrails(r, r['Productomschrijving']);
+  }
+
+  // Score voor bundle-global bronkwaliteit (NAW-volledigheid)
+  function _asr_global_score(f) {
+    if (!f) return 0;
+    let s = 0;
+    if (f.achternaam && !isSuspiciousAchternaam(f.achternaam)) s += 4;
+    if (f.voorletters) s += 2;
+    if (/^\d{4} [A-Z]{2}$/.test(f.postcode || '')) s += 3;
+    if (f.huisnummer) s += 2;
+    if (f.straat) s += 2;
+    if (f.woonplaats) s += 1;
+    if (f.geboortedatum_klant) s += 2;
+    if (f.hoofdvervaldatum) s += 1;
+    if (f.Pakketpolisnummer) s += 1;
+    return s;
+  }
+
+  return {
+    parse, extract_policy_rows_asr, normalize_product_name, apply_schema_guardrails,
+    _norm_date, _norm_day_month, _gezinssamenstelling_code, _parse_initials_lastname, _split_street_house,
+    _kilometrage_code, _woonhuis_type_code, _asr_global_score, isSuspiciousAchternaam, syncAliases, fmtEuro, euroFloat,
+    findPolisAnchors, normText,
+  };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  POST-PROCESSING (port van _post_process in main.py, ASR-pad)
+// ═══════════════════════════════════════════════════════════════════════════════
+const ASRPost = (() => {
+  'use strict';
+  const pad2 = n => String(n).padStart(2, '0');
+  const dim = (y, m) => new Date(y, m, 0).getDate();
+  function parseDMY(s) {
+    const m = String(s || '').match(/^(\d{2})-(\d{2})(?:-(\d{4}))?$/);
+    return m ? { d: +m[1], m: +m[2], y: m[3] ? +m[3] : null } : null;
+  }
+  const fmt = o => `${pad2(Math.min(o.d, dim(o.y, o.m)))}-${pad2(o.m)}-${o.y}`;
+  const num = o => o.y * 10000 + o.m * 100 + Math.min(o.d, dim(o.y, o.m));
+  function addMonths(o, n) {
+    const t = (o.y * 12 + (o.m - 1)) + n;
+    return { d: o.d, m: (t % 12) + 1, y: Math.floor(t / 12) };
+  }
+  const clampYear = o => ({ ...o, y: Math.min(2027, Math.max(2026, o.y)) });
+
+  function mapBetaaltermijn(v) {
+    const s = String(v || '').toLowerCase().trim();
+    if (/^(?:1|3|6|12)$/.test(s)) return s;
+    if (/maand/.test(s)) return '1';
+    if (/kwartaal/.test(s)) return '3';
+    if (/half\s*jaar/.test(s)) return '6';
+    if (/jaar/.test(s)) return '12';
+    return '';
+  }
+
+  // Ingangsdatum: dag van prolongatie/contract behouden, maand+jaar uit de overvoermaand
+  function deriveIngangsdatum(prolongatie, contract, docIngang, overvoermaand) {
+    const src = parseDMY(prolongatie) || parseDMY(contract) || parseDMY(docIngang);
+    if (overvoermaand) {
+      const [y, m] = overvoermaand.split('-').map(Number);
+      return fmt({ d: src ? src.d : 1, m, y });
+    }
+    return docIngang || '';
+  }
+
+  function _post_process(row, opts = {}) {
+    // Premie/incasso: ASR-bedragen zijn al correct — géén 1.21-herleiding
+    if (row['Incassobedrag']) {
+      const v = parseFloat(String(row['Incassobedrag']).replace(/\./g, '').replace(',', '.'));
+      row['Incassobedrag'] = v > 0 ? v.toFixed(2).replace('.', ',') : '';
+    }
+    row['Betaaltermijn'] = mapBetaaltermijn(row['Betaaltermijn']);
+    if (row['Gezinssamenstelling'] && !/^[AKIH]$/.test(row['Gezinssamenstelling'])) row['Gezinssamenstelling'] = '';
+    if (opts.input_month) row.invoermaand = opts.input_month;
+    applyDates(row, opts.overvoermaand || '', opts.bundleIngangsdatum || '');
+    return row;
+  }
+
+  function applyDates(row, overvoermaand, bundleIngang) {
+    const ing = bundleIngang || deriveIngangsdatum(row['Hoofdvervaldatum'], row['Contractvervaldatum'], row['Ingangsdatum'], overvoermaand);
+    row['Ingangsdatum'] = ing;
+    const I = parseDMY(ing);
+    if (!I || !I.y) return row;
+    // Hoofdvervaldatum: dag/maand van prolongatie behouden, jaar na ingangsdatum
+    let H = parseDMY(row['Hoofdvervaldatum']);
+    // Geen prolongatiedatum: dag/maand van de contractvervaldatum aanhouden
+    if (!H && parseDMY(row['Contractvervaldatum'])) { const c = parseDMY(row['Contractvervaldatum']); H = { d: c.d, m: c.m, y: null }; }
+    if (H) {
+      H.y = H.y || I.y;
+      while (num(H) <= num(I)) H.y++;
+      while (num(addMonths(I, 12)) < num(H)) H.y--;
+    } else H = addMonths(I, 12);
+    H = clampYear(H);
+    row['Hoofdvervaldatum'] = fmt(H);
+    // Contractvervaldatum: dag behouden; nooit vóór ingangsdatum; default = hoofdvervaldatum
+    let C = parseDMY(row['Contractvervaldatum']);
+    if (C && C.y) { while (num(C) <= num(I)) C.y++; } else C = { ...H };
+    C = clampYear(C);
+    row['Contractvervaldatum'] = fmt(C);
+    // Premievervaldatum = ingangsdatum + betaaltermijn, nooit later dan hoofd-/contractvervaldatum
+    const bt = parseInt(row['Betaaltermijn'], 10) || 0;
+    let P = bt ? addMonths(I, bt) : { ...H };
+    if (num(P) > num(H)) P = { ...H };
+    if (num(P) > num(C)) P = { ...C };
+    P = clampYear(P);
+    row['Premievervaldatum'] = fmt(P);
+    return row;
+  }
+
+  return { _post_process, applyDates, deriveIngangsdatum, mapBetaaltermijn };
+})();
+// <ASR-ENGINE-END>
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ASR BUNDLE-REGELS (folderuploads met meerdere ASR-bestanden)
+// ═══════════════════════════════════════════════════════════════════════════════
+const ASRBundle = (() => {
+  'use strict';
+  // Alleen deze bestandsnamen mogen bundle-global bron zijn — een polisblad nooit
+  const GLOBAL_DOC_RE = /pakket\s*[-_ ]?\s*(?:scherm|overzicht|gegevens)|algemeen\s*[-_ ]?\s*gegevens|algemene\s*[-_ ]?\s*gegevens|klant\s*[-_ ]?\s*dossier/i;
+  const isGlobalDoc = name => GLOBAL_DOC_RE.test(name || '') && !/polis\s*[-_ ]?\s*blad/i.test(name || '');
+  // Documentprioriteit binnen een ASR-bundel (lager = eerder)
+  function docPriority(name) {
+    const n = (name || '').toLowerCase();
+    if (isGlobalDoc(n)) return 0;
+    if (/relatie|klant/.test(n)) return 1;
+    if (/polis\s*[-_ ]?\s*blad|polis/.test(n)) return 2;
+    if (/inboedel|woonhuis|wonen|opstal|avp|aansprakelijk|auto|reis|rechtsbijstand/.test(n)) return 3;
+    if (/voorwaarden|brief|factuur|nota/.test(n)) return 5;
+    return 4;
+  }
+  function sortBundle(items) {
+    return items.slice().sort((a, b) =>
+      (a.folderName || '').localeCompare(b.folderName || '') ||
+      (isGlobalDoc(b.file.name) - isGlobalDoc(a.file.name)) ||
+      (docPriority(a.file.name) - docPriority(b.file.name)) ||
+      a.file.name.localeCompare(b.file.name));
+  }
+
+  const IDENTITY = [['Voorletters','voorletters'],['Tussenvoegsels','tussenvoegsel'],['Achternaam','achternaam'],['Geboortedatum klant','geboortedatum_klant']];
+  const ADDRESS  = [['Straat','straat'],['Huisnummer','huisnummer'],['Huisnummer toevoeging','huisnummertoevoeging'],['Postcode','postcode'],['Woonplaats','woonplaats']];
+
+  // Kopieert een beperkte set identiteit- en datumvelden hard door (incl. alias-sync)
+  function _bundle_merge_asr_global(row, gl) {
+    if (!gl) return row;
+    for (const [T, l] of IDENTITY) if (gl[l]) { row[T] = T === 'Voorletters' ? gl[l].toUpperCase() : gl[l]; row[l] = gl[l]; }
+    if (!row._risicoadres) {
+      if (gl.straat && gl.postcode) for (const [T, l] of ADDRESS) { row[T] = gl[l] || ''; row[l] = gl[l] || ''; }
+    }
+    // Reis: verzekeringsnemer 1 = de klant uit de bundle-global bron
+    if (row['Productomschrijving'] === 'Doorlopende Reis' && gl.achternaam) {
+      row['Naam verzekeringsnemer 1'] = gl.achternaam;
+      row['Voorletters verzekeringsnemer 1'] = (gl.voorletters || '').toUpperCase();
+      row['Voorvoegsel verzekeringsnemer 1'] = gl.tussenvoegsel || '';
+      if (gl.geboortedatum_klant) row['Geboortedatum verzekeringsnemer 1'] = gl.geboortedatum_klant;
+      if (gl.geslacht) row['Geslacht verzekeringsnemer 1'] = gl.geslacht;
+    }
+    if (gl.hoofdvervaldatum && !row._eigenProlongatie) row['Hoofdvervaldatum'] = gl.hoofdvervaldatum;
+    if (gl.contractvervaldatum && !row['Contractvervaldatum']) row['Contractvervaldatum'] = gl.contractvervaldatum;
+    return ASRParser.syncAliases(row);
+  }
+
+  return { isGlobalDoc, docPriority, sortBundle, _bundle_merge_asr_global };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  APP
+// ═══════════════════════════════════════════════════════════════════════════════
+let queue = [], allRows = [], restRows = [];
+const AGENT_MAP = { '615': '37', '501': '36', '530': '199', '280': '28' };
+const MAIN_PRODUCTS = new Set(ASRSchema.CANONICAL);
+
+const $ = id => document.getElementById(id);
+const uploadZone    = $('uploadZone');
+const fileInput     = $('fileInput');
+const folderInput   = $('folderInput');
+const emptyState    = $('emptyState');
+const queueSection  = $('queueSection');
+const queueBody     = $('queueBody');
+const progressFill  = $('progressFill');
+const processBtn    = $('processBtn');
+const clearBtn      = $('clearBtn');
+const downloadBtn   = $('downloadBtn');
+const summaryCards  = $('summaryCards');
+const resultsSection = $('resultsSection');
+const resultsHead   = $('resultsHead');
+const resultsBody   = $('resultsBody');
+const resultsLabel  = $('resultsLabel');
+
+// Maatschappijcode onthouden (per browser)
+(() => {
+  const inp = $('maatschappijInput');
+  try { inp.value = localStorage.getItem('asr.maatschappij') || ''; } catch (_) {}
+  inp.addEventListener('change', () => { try { localStorage.setItem('asr.maatschappij', inp.value.trim()); } catch (_) {} });
+})();
+
+// ASR: relatienummer = 7- of 8-cijferig getal in de mapnaam
+function findRelatienummer(name) {
+  const s = String(name || '');
+  const runs = [...s.matchAll(/(?<!\d)(\d{7,8})(?!\d)/g)].map(m => m[1]);
+  if (!runs.length) return '';
+  const nonDate = runs.find(r => !/^(?:19|20)\d{6}$/.test(r));
+  return nonDate || runs[0];
+}
+function looksLikeDateFolder(name) { return /^(?:19|20)\d{6}(?!\d)/.test((name || '').trim()); }
+
+function parseFolderName(folderName) {
+  if (!folderName) return { relatienummer: '', naam: '', voorletters: '', tussenvoegsel: '', achternaam: '' };
+  const relatienummer = findRelatienummer(folderName);
+  let naam = folderName;
+  if (relatienummer) naam = folderName.replace(relatienummer, ' ').replace(/^[\s\-_.]+|[\s\-_.]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+  naam = naam.replace(/^\d{1,5}[\s._-]+/, '').trim() || folderName.trim();
+  const p = ASRParser._parse_initials_lastname(naam);
+  return { relatienummer, naam, voorletters: p.voorletters, tussenvoegsel: p.tussenvoegsel, achternaam: p.achternaam };
+}
+
+function folderFromPath(relativePath) {
+  const parts = (relativePath || '').replace(/\\/g, '/').split('/').filter(p => p.length > 0);
+  if (parts.length < 2) return '';
+  const folders = parts.slice(0, -1);
+  let dateCandidate = '';
+  for (let i = folders.length - 1; i >= 0; i--) {
+    if (findRelatienummer(folders[i])) {
+      if (looksLikeDateFolder(folders[i])) { if (!dateCandidate) dateCandidate = folders[i]; continue; }
+      return folders[i];
+    }
+  }
+  return dateCandidate || folders[folders.length - 1];
+}
+
+function readDirEntries(reader) {
+  return new Promise((resolve, reject) => {
+    const all = [];
+    function next() { reader.readEntries(batch => { if (!batch.length) { resolve(all); return; } all.push(...batch); next(); }, reject); }
+    next();
+  });
+}
+function entryToFile(entry) { return new Promise((res, rej) => entry.file(res, rej)); }
+
+async function collectFiles(entry, folderName, stats) {
+  const result = [];
+  if (entry.isFile) {
+    if (/\.(txt|pdf)$/i.test(entry.name)) {
+      try {
+        const file = await entryToFile(entry);
+        result.push({ file, folderName });
+        if (stats) stats.matched.set(folderName, (stats.matched.get(folderName) || 0) + 1);
+      } catch (err) {
+        if (stats) stats.errors.set(folderName, String(err && err.message || err));
+      }
+    } else if (stats) {
+      stats.other.set(folderName, (stats.other.get(folderName) || 0) + 1);
+    }
+  } else if (entry.isDirectory) {
+    const nrScore = n => findRelatienummer(n) ? (looksLikeDateFolder(n) ? 1 : 2) : 0;
+    const dirFolder = nrScore(entry.name) >= nrScore(folderName) ? entry.name : folderName;
+    if (stats && !stats.matched.has(dirFolder)) stats.matched.set(dirFolder, stats.matched.get(dirFolder) || 0);
+    try {
+      const entries = await readDirEntries(entry.createReader());
+      for (const child of entries) result.push(...await collectFiles(child, dirFolder, stats));
+    } catch (err) {
+      if (stats) stats.errors.set(dirFolder, String(err && err.message || err));
+    }
+  }
+  return result;
+}
+
+function buildSkippedReport(stats) {
+  const skipped = [];
+  for (const [folder, count] of stats.matched) {
+    if (count > 0) continue;
+    const other = stats.other.get(folder) || 0;
+    const err = stats.errors.get(folder);
+    if (err) skipped.push(`${folder} (leesfout: ${err})`);
+    else if (other > 0) skipped.push(`${folder} (${other} bestand(en), geen .pdf/.txt)`);
+    else skipped.push(`${folder} (leeg)`);
+  }
+  for (const [folder, err] of stats.errors) {
+    if (!stats.matched.has(folder)) skipped.push(`${folder} (leesfout: ${err})`);
+  }
+  return skipped;
+}
+
+function showFolderDebug(items, skipped) {
+  const uniqueFolders = [...new Set(items.map(i => i.folderName).filter(Boolean))];
+  const debugDiv = $('folderDebug');
+  if (!debugDiv) return;
+  if (!uniqueFolders.length && !(skipped && skipped.length)) {
+    debugDiv.textContent = 'Geen mapnaam gedetecteerd — controleer mapstructuur';
+    return;
+  }
+  const parts = uniqueFolders.map(f => {
+    const rel = parseFolderName(f).relatienummer;
+    if (rel) return `<span>${esc(f)} <span style="color:var(--green-dark);font-weight:700">[${esc(rel)} → ${esc(rel)}.001]</span></span>`;
+    return `<span>${esc(f)} <span style="color:#b45309;font-weight:700">[⚠ geen 7/8-cijferig relatienummer]</span> ` +
+      `<input type="text" inputmode="numeric" placeholder="relatienummer" data-folder="${encodeURIComponent(f)}" ` +
+      `class="manual-rel-input" style="width:9.5rem;font:inherit;font-size:.78rem;padding:.1rem .35rem;border:1px solid #b45309;border-radius:4px"></span>`;
+  });
+  let html = parts.length ? 'Gedetecteerde map(pen): ' + parts.join(' | ') : '';
+  if (skipped && skipped.length) {
+    html += `${html ? '<br>' : ''}<span style="color:#b91c1c;font-weight:700">⚠ Overgeslagen map(pen) (${skipped.length}):</span> ` +
+      skipped.map(s => esc(s)).join(' | ');
+  }
+  debugDiv.innerHTML = html;
+  debugDiv.querySelectorAll('.manual-rel-input').forEach(inp => {
+    const commit = () => applyManualRelatienummer(decodeURIComponent(inp.dataset.folder), inp.value);
+    inp.addEventListener('change', commit);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } });
+  });
+}
+
+function applyManualRelatienummer(folder, value) {
+  const v = (value || '').trim();
+  if (!v) return;
+  const nr = (v.match(/(?<!\d)(\d{7,8})(?!\d)/) || [])[1];
+  if (!nr) { alert('Ongeldig relatienummer: verwacht 7 of 8 cijfers, bijv. 71223845'); return; }
+  const newName = `${nr} - ${folder.replace(/^\d{6,10}(?!\d)\s*[-_.]?\s*/, '')}`;
+  for (const item of queue) {
+    if (item.folderName !== folder) continue;
+    item.folderName = newName;
+    const parsed = parseFolderName(newName);
+    item.relatienummer = parsed.relatienummer;
+    item.folderVoorletters = parsed.voorletters;
+    item.folderTussenvoegsel = parsed.tussenvoegsel;
+    item.folderAchternaam = parsed.achternaam;
+  }
+  renderQueue();
+  showFolderDebug(queue);
+}
+
+$('pickFilesBtn').addEventListener('click', e => { e.stopPropagation(); fileInput.value = ''; fileInput.click(); });
+$('pickFolderBtn').addEventListener('click', e => { e.stopPropagation(); folderInput.value = ''; folderInput.click(); });
+
+fileInput.addEventListener('change', e => {
+  const items = Array.from(e.target.files).filter(f => /\.(txt|pdf)$/i.test(f.name)).map(f => ({ file: f, folderName: '' }));
+  e.target.value = '';
+  if (items.length) handleFileItems(items);
+});
+
+folderInput.addEventListener('change', e => {
+  const rawFiles = Array.from(e.target.files);
+  const items = rawFiles.filter(f => /\.(txt|pdf)$/i.test(f.name)).map(f => ({ file: f, folderName: f.webkitRelativePath ? folderFromPath(f.webkitRelativePath) : '' }));
+  const folderHasMatch = new Map();
+  for (const f of rawFiles) {
+    const folder = folderFromPath(f.webkitRelativePath || '');
+    if (!folder) continue;
+    folderHasMatch.set(folder, (folderHasMatch.get(folder) || false) || /\.(txt|pdf)$/i.test(f.name));
+  }
+  const skipped = [...folderHasMatch.entries()].filter(([, has]) => !has).map(([folder]) => `${folder} (geen .pdf/.txt)`);
+  showFolderDebug(items, skipped);
+  e.target.value = '';
+  if (items.length) handleFileItems(items);
+  else alert('Geen .txt of .pdf bestanden gevonden in deze map.');
+});
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', e => { if (!uploadZone.contains(e.relatedTarget)) uploadZone.classList.remove('drag-over'); });
+uploadZone.addEventListener('drop', async e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  const fileItems = [];
+  // webkitGetAsEntry() is alleen geldig tijdens het drop-event — eerst synchroon verzamelen
+  const dtItems = Array.from(e.dataTransfer.items || []);
+  const entries = [];
+  const fallbackFiles = Array.from(e.dataTransfer.files || []);
+  if (dtItems.length && typeof dtItems[0].webkitGetAsEntry === 'function') {
+    for (const dtItem of dtItems) { try { const en = dtItem.webkitGetAsEntry(); if (en) entries.push(en); } catch (_) {} }
+  }
+  const stats = { matched: new Map(), other: new Map(), errors: new Map() };
+  for (const entry of entries) {
+    try { fileItems.push(...await collectFiles(entry, entry.isDirectory ? entry.name : '', stats)); }
+    catch (err) { stats.errors.set(entry.name || '(onbekend)', String(err && err.message || err)); }
+  }
+  if (!fileItems.length) for (const f of fallbackFiles) if (/\.(txt|pdf)$/i.test(f.name)) fileItems.push({ file: f, folderName: '' });
+  if (fileItems.length || stats.errors.size || stats.other.size) {
+    showFolderDebug(fileItems, buildSkippedReport(stats));
+    if (fileItems.length) handleFileItems(fileItems);
+  }
+});
+
+function handleFileItems(items) {
+  if (!items.length) return;
+  const newItems = items.map(({ file, folderName }) => {
+    const parsed = parseFolderName(folderName);
+    return { file, folderName, relatienummer: parsed.relatienummer,
+      folderVoorletters: parsed.voorletters, folderTussenvoegsel: parsed.tussenvoegsel, folderAchternaam: parsed.achternaam,
+      isGlobal: ASRBundle.isGlobalDoc(file.name), status: 'pending', rows: 0, error: null, warnings: [] };
+  });
+  // ASR-bundlebestanden vóór parsing sorteren: globale docs eerst, dan documentprioriteit, dan alfabetisch
+  queue = ASRBundle.sortBundle([...queue, ...newItems]);
+  allRows = [];
+  renderQueue();
+  emptyState.style.display    = 'none';
+  queueSection.style.display  = 'block';
+  resultsSection.style.display = 'none';
+  summaryCards.style.display  = 'none';
+  downloadBtn.disabled        = true;
+  progressFill.style.width    = '0%';
+  processBtn.disabled         = false;
+}
+
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtSize(b) { return b<1024?`${b} B`:b<1048576?`${(b/1024).toFixed(1)} KB`:`${(b/1048576).toFixed(1)} MB`; }
+function isPDF(f) { return f.name.toLowerCase().endsWith('.pdf'); }
+
+function renderQueue() {
+  queueBody.innerHTML = '';
+  for (const item of queue) {
+    const badge = {
+      pending:    `<span class="badge badge-pending">&#9203; Wachten</span>`,
+      processing: `<span class="badge badge-processing"><span class="spin">&#9881;</span> Verwerken&hellip;</span>`,
+      done:       `<span class="badge badge-done">&#10003; Klaar</span>`,
+      empty:      `<span class="badge badge-empty">&#9888; Geen data</span>`,
+      error:      `<span class="badge badge-error">&#10007; Fout</span>`,
+    }[item.status] || '';
+    const mapDisplay = item.folderName
+      ? `<span style="color:var(--green-mid);font-size:.8rem">${esc(item.folderName)}</span>`
+      : `<span style="color:var(--text-muted);font-size:.8rem">&mdash;</span>`;
+    const bron = item.isGlobal ? `<span class="src-tag">globaal</span>` : `<span class="src-tag weak">product</span>`;
+    const note = item.error ? esc(item.error)
+      : item.warnings && item.warnings.length ? `<span class="warn-list" title="${esc(item.warnings.join('\n'))}">&#9888; ${item.warnings.length} waarschuwing(en): ${esc(item.warnings.slice(0, 2).join('; '))}${item.warnings.length > 2 ? '&hellip;' : ''}</span>` : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600">${esc(item.file.name)}</td>
+      <td>${mapDisplay}</td>
+      <td style="color:var(--text-muted)">${fmtSize(item.file.size)}</td>
+      <td style="color:var(--text-muted)">${isPDF(item.file)?'PDF':'TXT'}</td>
+      <td>${bron}</td>
+      <td>${badge}</td>
+      <td style="color:var(--text-muted)">${item.status==='done'||item.status==='empty'?item.rows:'&mdash;'}</td>
+      <td style="color:var(--text-muted);font-size:.8rem">${note}</td>`;
+    queueBody.appendChild(tr);
+  }
+}
+
+processBtn.addEventListener('click', processQueue);
+clearBtn.addEventListener('click', () => {
+  queue=[]; allRows=[]; restRows=[];
+  $('restPanel').style.display='none'; $('debugPanel').style.display='none';
+  emptyState.style.display='block'; queueSection.style.display='none';
+  resultsSection.style.display='none'; fileInput.value='';
+});
+
+function readTxt(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = () => rej(new Error('Kan bestand niet lezen'));
+    r.readAsText(file, 'UTF-8');
+  });
+}
+function tick() { return new Promise(r => setTimeout(r, 0)); }
+
+// Folder-root regel: NAWBES_PK = relatienummer, Pakketpolisnummer = relatienummer.001
+function _apply_asr_folder_identifiers(rows, relatienummer) {
+  if (!/^\d{7,8}$/.test(relatienummer || '')) return rows;
+  for (const r of rows) {
+    r['NAWBES_PK'] = relatienummer;
+    r['Pakketpolisnummer'] = relatienummer + '.001';
+    r['pakketpolisnummer'] = relatienummer + '.001';
+    r._folderPk = relatienummer;
+  }
+  return rows;
+}
+
+function scoreRow(r) {
+  let s = 0;
+  if (/^\d{4}\s[A-Z]{2}$/.test(r['Postcode'] || '')) s += 3;
+  if (r['Huisnummer']) s += 2;
+  if ((r['Straat'] || '').length >= 4) s += 2;
+  if (r['Woonplaats']) s += 1;
+  if (r['Achternaam'] && !ASRParser.isSuspiciousAchternaam(r['Achternaam'])) s += 2;
+  if (r['Geboortedatum klant']) s += 1;
+  if (r['Incassobedrag']) s += 2;
+  for (let i = 1; i <= 11; i++) if (r[`Dekking ${i}`]) s += 1;
+  if (r['Kenteken']) s += 2;
+  if (r['Bouwjaar']) s += 1;
+  if (r['Verzekerde som']) s += 1;
+  return s;
+}
+
+// Eén polisnummer = één row; vul gaten aan uit de zwakkere duplicaten
+function mergeDuplicatePolissen(rows) {
+  const byKey = new Map(), out = [];
+  for (const r of rows) {
+    const key = r['Polisnummer'] ? 'p::' + r['Polisnummer'] : null;
+    if (!key) { out.push(r); continue; }
+    if (!byKey.has(key)) { byKey.set(key, r); out.push(r); continue; }
+    const cur = byKey.get(key);
+    const [win, lose] = scoreRow(r) > scoreRow(cur) ? [r, cur] : [cur, r];
+    for (const k of Object.keys(lose)) {
+      if (/^(?:Dekking|Omschrijving|Uitzondering) \d+$/.test(k)) continue;
+      if (!win[k] && lose[k]) win[k] = lose[k];
+    }
+    win._warnings = [...new Set([...(win._warnings || []), ...(lose._warnings || [])])];
+    if (win !== cur) { out[out.indexOf(cur)] = win; byKey.set(key, win); }
+  }
+  return out;
+}
+
+function renderDebug(fileResults) {
+  const body = $('debugBody');
+  body.innerHTML = fileResults.map(fr => {
+    if (!fr.debug) return '';
+    const rows = fr.debug.windows.map(w => `
+      <tr><td><span class="mapping-tag">${esc(w.polis)}</span></td><td><strong>${esc(w.product || '—')}</strong></td>
+      <td><span class="src-tag${/keywords|auto-context|none/.test(w.source) ? ' weak' : ''}">${esc(w.source)}</span></td>
+      <td>${esc(w.lines)}</td></tr>
+      <tr><td colspan="4"><pre>${esc(w.text)}</pre></td></tr>`).join('');
+    return `<div class="debug-file"><div class="debug-file-name">${esc(fr.item.file.name)}${fr.item.isGlobal ? ' — globale bron' : ''}</div>
+      <table><thead><tr><th>Polis</th><th>Product</th><th>Detectie</th><th>Regels</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }).join('');
+  $('debugPanel').style.display = fileResults.length ? 'block' : 'none';
+}
+
+async function processQueue() {
+  processBtn.disabled = true; allRows = []; restRows = [];
+  const kantoor = $('kantoorInput').value || '';
+  const overvoermaand = $('overvoermaand').value || '';
+  const maatschappij = ($('maatschappijInput').value || '').trim();
+  queue = ASRBundle.sortBundle(queue);
+  const fileResults = [];
+
+  // 1. Per bestand: ordered text → parse() → extract_policy_rows_asr() → _post_process()
+  for (let i = 0; i < queue.length; i++) {
+    const item = queue[i];
+    item.status = 'processing'; item.rows = 0; item.error = null; item.warnings = [];
+    progressFill.style.width = `${(i / queue.length) * 100}%`;
+    renderQueue();
+    try {
+      const text = isPDF(item.file) ? await extractTextFromPDF(item.file) : await readTxt(item.file);
+      const base = ASRParser.parse(text);
+      const { rows, debug } = ASRParser.extract_policy_rows_asr(text, base);
+      // Globale schermen zonder herkenbaar product leveren alleen NAW, geen row
+      const kept = rows.filter(r => !(item.isGlobal && (!r['Productomschrijving'] || r['Productomschrijving'] === 'Onbekend')));
+      for (const r of kept) { r._file = item.file.name; r._folder = item.folderName || ''; }
+      fileResults.push({ item, base, rows: kept, debug });
+      item.status = 'done';
+    } catch (err) {
+      item.status = 'error'; item.error = String(err.message || err).slice(0, 120);
+    }
+    renderQueue();
+    await tick();
+  }
+
+  // 2. Bundle-logica per map
+  const byFolder = new Map();
+  for (const fr of fileResults) {
+    const k = fr.item.folderName || '__los__::' + fr.item.file.name;
+    if (!byFolder.has(k)) byFolder.set(k, []);
+    byFolder.get(k).push(fr);
+  }
+  for (const [folderKey, frs] of byFolder) {
+    const isBundle = !folderKey.startsWith('__los__::');
+    let rows = frs.flatMap(fr => fr.rows);
+    if (isBundle) {
+      // Alleen pakket-/algemene schermen leveren bundle-global brondata (beste NAW-bron wint)
+      let gl = null, glScore = -1;
+      for (const fr of frs) {
+        if (!fr.item.isGlobal) continue;
+        const sc = ASRParser._asr_global_score(fr.base);
+        if (sc > glScore) { gl = fr.base; glScore = sc; }
+      }
+      if (gl) for (const r of rows) ASRBundle._bundle_merge_asr_global(r, gl);
+      // Vervuilde achternaam repareren vanuit de beste identiteit in dezelfde upload
+      let bestId = gl;
+      if (!bestId || ASRParser.isSuspiciousAchternaam(bestId.achternaam)) {
+        bestId = frs.map(fr => fr.base).filter(b => !ASRParser.isSuspiciousAchternaam(b.achternaam))
+          .sort((a, b) => ASRParser._asr_global_score(b) - ASRParser._asr_global_score(a))[0] || null;
+      }
+      if (bestId) for (const r of rows) {
+        if (ASRParser.isSuspiciousAchternaam(r['Achternaam'])) {
+          r['Voorletters'] = (bestId.voorletters || '').toUpperCase(); r['Tussenvoegsels'] = bestId.tussenvoegsel || ''; r['Achternaam'] = bestId.achternaam;
+          ASRParser.syncAliases(r);
+        }
+      }
+      // Inboedelbestand aanwezig maar geen Inboedel-row → patchen of synthetisch aanmaken
+      const inbFile = frs.find(fr => /inboedel/i.test(fr.item.file.name));
+      if (inbFile && !rows.some(r => r['Productomschrijving'] === 'Inboedel')) {
+        const patch = inbFile.rows.find(r => !ASRSchema.CANONICAL.includes(r['Productomschrijving']));
+        let r;
+        if (patch) { r = patch; r['Productomschrijving'] = 'Inboedel'; }
+        else {
+          const text = inbFile.debug && inbFile.debug.windows[0] ? inbFile.debug.windows[0].text : '';
+          r = ASRParser.extract_policy_rows_asr('Product: Inboedel\n' + text, inbFile.base).rows[0];
+          r._file = inbFile.item.file.name; r._folder = inbFile.item.folderName;
+          rows.push(r);
+        }
+        if (r['Dekking 1'] !== '5397' && r['Dekking 1'] !== '5398') ASRSchema.writeDekkingen(r, [['5397', 'Inboedel Basis']]);
+        ASRSchema.apply_schema_guardrails(r, 'Inboedel');
+        ASRSchema.warn(r, 'Inboedel-row synthetisch aangevuld uit inboedelbestand');
+        if (gl) ASRBundle._bundle_merge_asr_global(r, gl);
+      }
+      // Bundle-brede gezinssamenstelling en Eigen woning
+      const gz = (gl && gl.gezinssamenstelling) || (rows.find(r => r['Productomschrijving'] === 'AVP' && r['Gezinssamenstelling']) || rows.find(r => r['Gezinssamenstelling']) || {})['Gezinssamenstelling'];
+      const hasWoonhuis = rows.some(r => r['Productomschrijving'] === 'Woonhuis');
+      for (const r of rows) {
+        const p = r['Productomschrijving'];
+        if (gz && ['AVP','Inboedel','Rechtsbijstand','Doorlopende Reis'].includes(p) && !r['Gezinssamenstelling']) r['Gezinssamenstelling'] = gz;
+        if (hasWoonhuis && p === 'Inboedel') r['Eigen woning'] = 'J';
+      }
+    }
+    // Post-processing + bundle-brede ASR-ingangsdatum (uit prolongatie/contractbronnen)
+    let bundleIng = '';
+    if (isBundle) {
+      const glFr = frs.filter(fr => fr.item.isGlobal).sort((a, b) => ASRParser._asr_global_score(b.base) - ASRParser._asr_global_score(a.base))[0];
+      const src = glFr ? glFr.base : null;
+      if (src && (src.hoofdvervaldatum || src.contractvervaldatum) && overvoermaand) {
+        bundleIng = ASRPost.deriveIngangsdatum(src.hoofdvervaldatum, src.contractvervaldatum, src.ingangsdatum, overvoermaand);
+      }
+    }
+    for (const r of rows) {
+      ASRPost._post_process(r, { overvoermaand, bundleIngangsdatum: bundleIng, input_month: overvoermaand });
+      ASRSchema.apply_schema_guardrails(r, r['Productomschrijving']);
+    }
+    // Folder-root override (ASR-specifiek)
+    const item0 = frs[0].item;
+    _apply_asr_folder_identifiers(rows, item0.relatienummer);
+    if (!item0.relatienummer && isBundle) {
+      for (const r of rows) {
+        if (!r['Achternaam'] && item0.folderAchternaam) {
+          r['Voorletters'] = (item0.folderVoorletters || '').toUpperCase(); r['Tussenvoegsels'] = item0.folderTussenvoegsel || ''; r['Achternaam'] = item0.folderAchternaam;
+        }
+      }
+    }
+    // Vaste kolommen
+    for (const r of rows) {
+      r['PAKKET_PK'] = '1';
+      r['Pakketsoort'] = kantoor;
+      r['Agent'] = AGENT_MAP[kantoor] || '';
+      r['Maatschappij'] = maatschappij;
+    }
+    rows = mergeDuplicatePolissen(rows);
+    // Koppelbestand
+    applyKoppelMapping(rows);
+    for (const fr of frs) {
+      const own = rows.filter(r => r._file === fr.item.file.name);
+      fr.item.rows = own.length;
+      fr.item.warnings = [...new Set(own.flatMap(r => (r._warnings || []).map(w => `${r['Polisnummer'] || r['Productomschrijving']}: ${w}`)))];
+      if (!own.length && fr.item.status === 'done') {
+        fr.item.status = fr.item.isGlobal ? 'done' : 'empty';
+        if (!fr.item.isGlobal) fr.item.error = 'Geen polisrijen herkend';
+      }
+    }
+    for (const r of rows) {
+      if (MAIN_PRODUCTS.has(r['Productomschrijving'])) allRows.push(r);
+      else restRows.push(r);
+    }
+  }
+  if (!maatschappij && allRows.length) {
+    for (const it of queue) if (it.status === 'done' && it.rows) { it.warnings.unshift('Maatschappijcode niet ingevuld'); break; }
+  }
+
+  progressFill.style.width = '100%'; processBtn.disabled = false;
+  renderQueue();
+  showFolderDebug(queue);
+  renderDebug(fileResults);
+  showSummary();
+  if (allRows.length) { downloadBtn.disabled = false; renderResults(); } else resultsSection.style.display = 'none';
+  const restPanel = $('restPanel');
+  restPanel.style.display = restRows.length ? 'block' : 'none';
+  const perProduct = {};
+  for (const r of restRows) perProduct[r['Productomschrijving'] || 'Onbekend'] = (perProduct[r['Productomschrijving'] || 'Onbekend'] || 0) + 1;
+  $('restCount').textContent = restRows.length + ' rij(en): ' + Object.entries(perProduct).map(([p, n]) => `${p} (${n})`).join(', ');
+}
+
+function showSummary() {
+  $('statFiles').textContent = queue.filter(q => q.status === 'done').length;
+  $('statRows').textContent = allRows.length;
+  $('statProducts').textContent = new Set(allRows.map(r => r['Productomschrijving']).filter(Boolean)).size;
+  $('statWarnings').textContent = allRows.reduce((n, r) => n + ((r._warnings || []).length), 0);
+  $('statErrors').textContent = queue.filter(q => q.status === 'error').length;
+  summaryCards.style.display = 'grid';
+}
+
+function renderResults() {
+  const PREVIEW = 100;
+  resultsLabel.textContent = `Resultaten (${Math.min(allRows.length, PREVIEW)} van ${allRows.length} rijen)`;
+  resultsSection.style.display = 'block';
+  resultsHead.innerHTML = '<tr><th>&#9888;</th>' + CSV_COLUMNS.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>';
+  resultsBody.innerHTML = allRows.slice(0, PREVIEW).map(row => {
+    const w = row._warnings || [];
+    return `<tr><td title="${esc(w.join('\n'))}" style="color:#8a6600">${w.length ? '&#9888; ' + w.length : ''}</td>` +
+      CSV_COLUMNS.map(col => { const v = row[col] == null ? '' : String(row[col]); return `<td title="${esc(v)}">${esc(v)}</td>`; }).join('') + '</tr>';
+  }).join('');
+}
+
+function toCSV(rows) {
+  const lines = rows.map(row => CSV_COLUMNS.map(col => {
+    let v = row[col]; if (v == null) v = ''; v = String(v);
+    if (v.includes(';') || v.includes('"') || v.includes('\n') || v.includes('\r')) v = '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  }).join(';'));
+  return '﻿' + [CSV_COLUMNS.join(';'), ...lines].join('\r\n');
+}
+function downloadCSV(rows, name) {
+  if (!rows.length) return;
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8;' })),
+    download: `${name}_${new Date().toISOString().slice(0, 10)}.csv`,
+  });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+downloadBtn.addEventListener('click', () => downloadCSV(allRows, 'overvoer_asr'));
+document.addEventListener('click', e => {
+  if (e.target.id === 'downloadBtn2') downloadCSV(allRows, 'overvoer_asr');
+  if (e.target.id === 'downloadRestBtn') downloadCSV(restRows, 'overvoer_asr_rest');
+});
+
+// ── Koppelbestand (relatienummer → oud polisnummer) ──────────────────────
+let koppelMapping = {};
+function applyKoppelMapping(rows) {
+  for (const row of rows) {
+    const pk = row['NAWBES_PK'];
+    if (pk && koppelMapping[pk]) row['NAWBES_PK'] = koppelMapping[pk];
+  }
+}
+$('loadMappingBtn').addEventListener('click', () => $('mappingFileInput').click());
+$('mappingFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const lines = (ev.target.result || '').split(/\r?\n/).filter(l => l.trim());
+    const newMap = {};
+    for (const line of lines) {
+      const sep = line.includes(';') ? ';' : line.includes(',') ? ',' : '\t';
+      const parts = line.split(sep).map(s => s.trim());
+      if (parts.length >= 2 && /^\d{6,10}$/.test(parts[0])) newMap[parts[0]] = parts[1];
+    }
+    const count = Object.keys(newMap).length;
+    if (!count) { alert('Geen geldige regels gevonden. Verwacht formaat: relatienummer;oud_polisnummer'); return; }
+    koppelMapping = newMap;
+    $('mappingStatus').textContent = count + ' koppeling(en) geladen uit ' + file.name;
+    $('clearMappingBtn').style.display = '';
+    const tbody = $('mappingBody');
+    tbody.innerHTML = '';
+    let shown = 0;
+    for (const [rel, oud] of Object.entries(newMap)) {
+      if (shown++ >= 10) break;
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td><span class="mapping-tag">' + esc(rel) + '</span></td><td><span class="mapping-tag">' + esc(oud) + '</span></td>';
+      tbody.appendChild(tr);
+    }
+    if (count > 10) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="2" style="color:var(--text-muted);font-size:.75rem">... en nog ' + (count - 10) + ' meer</td>';
+      tbody.appendChild(tr);
+    }
+    $('mappingPreview').style.display = '';
+  };
+  reader.readAsText(file, 'utf-8');
+});
+$('clearMappingBtn').addEventListener('click', () => {
+  koppelMapping = {};
+  $('mappingStatus').textContent = 'Geen koppelbestand geladen — verwacht formaat: relatienummer;oud_polisnummer';
+  $('clearMappingBtn').style.display = 'none';
+  $('mappingPreview').style.display = 'none';
+  $('mappingBody').innerHTML = '';
+});
+</script>
+</body>
+</html>
