@@ -87,6 +87,11 @@
     .debug-panel table { font-size:.75rem; }
     .debug-panel pre { white-space:pre-wrap; word-break:break-word; font-size:.7rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.5rem .65rem; max-height:220px; overflow:auto; margin:.25rem 0 .5rem; }
     .src-tag { display:inline-block; border-radius:6px; padding:0 .4rem; font-size:.68rem; font-weight:700; background:var(--green-light); color:var(--green-dark); }
+    .product-filter { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.25rem; }
+    .pf-chip { display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .75rem; border:1.5px solid var(--border-strong); border-radius:9999px; background:var(--surface); font-size:.82rem; font-weight:600; color:var(--text-sub); cursor:pointer; user-select:none; transition:all .15s; }
+    .pf-chip:has(input:checked) { background:var(--green-light); border-color:var(--green-mid); color:var(--green-dark); }
+    .pf-chip input { accent-color:var(--green-dark); width:15px; height:15px; margin:0; cursor:pointer; }
+    .pf-link { background:none; border:none; color:var(--green-mid); font-size:.78rem; font-weight:700; cursor:pointer; padding:0 .25rem; text-decoration:underline; }
     .src-tag.weak { background:rgba(255,192,0,.18); color:#8a6600; }
   </style>
 </head>
@@ -157,6 +162,24 @@
     </div>
   </div>
 
+
+  <!-- Polissoorten: welke producten worden geparsed -->
+  <div class="mapping-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+      <div class="section-label" style="margin:0">Te parsen polissoorten</div>
+      <div><button type="button" class="pf-link" id="pfAll">Alles aan</button><button type="button" class="pf-link" id="pfNone">Alles uit</button></div>
+    </div>
+    <div class="product-filter" id="productFilter">
+      <label class="pf-chip"><input type="checkbox" value="AVP" checked> AVP</label>
+      <label class="pf-chip"><input type="checkbox" value="Inboedel" checked> Inboedel</label>
+      <label class="pf-chip"><input type="checkbox" value="Woonhuis" checked> Woonhuis</label>
+      <label class="pf-chip"><input type="checkbox" value="Personenauto" checked> Personenauto</label>
+      <label class="pf-chip"><input type="checkbox" value="Rechtsbijstand" checked> Rechtsbijstand</label>
+      <label class="pf-chip"><input type="checkbox" value="Doorlopende Reis" checked> Doorlopende Reis</label>
+      <label class="pf-chip"><input type="checkbox" value="__rest__" checked> Overige (rest-CSV)</label>
+    </div>
+    <div id="pfStatus" style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem">Alle polissoorten worden geparsed.</div>
+  </div>
 
   <!-- Koppelbestand: relatienummer → oud polisnummer -->
   <div class="mapping-panel">
@@ -1910,6 +1933,31 @@ const resultsLabel  = $('resultsLabel');
   inp.addEventListener('change', () => { try { localStorage.setItem('asr.maatschappij', inp.value.trim()); } catch (_) {} });
 })();
 
+// ── Polissoort-filter (standaard alles aan; keuze wordt per browser onthouden) ──
+const pfInputs = () => [...document.querySelectorAll('#productFilter input[type=checkbox]')];
+function selectedProducts() { return new Set(pfInputs().filter(i => i.checked).map(i => i.value)); }
+function productSelected(product, sel) {
+  return ASRSchema.CANONICAL.includes(product) ? sel.has(product) : sel.has('__rest__');
+}
+function updatePfStatus() {
+  const sel = selectedProducts(), all = pfInputs();
+  const names = all.filter(i => i.checked).map(i => i.parentElement.textContent.trim());
+  $('pfStatus').textContent = sel.size === all.length ? 'Alle polissoorten worden geparsed.'
+    : sel.size === 0 ? '⚠ Geen polissoort gekozen — er worden geen polisrijen geparsed.'
+    : 'Alleen geparsed: ' + names.join(', ') + '. Andere polissen in het polisscherm worden overgeslagen.';
+  try { localStorage.setItem('asr.productFilter', JSON.stringify([...sel])); } catch (_) {}
+}
+(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('asr.productFilter') || 'null');
+    if (Array.isArray(saved)) pfInputs().forEach(i => { i.checked = saved.includes(i.value); });
+  } catch (_) {}
+  pfInputs().forEach(i => i.addEventListener('change', updatePfStatus));
+  $('pfAll').addEventListener('click', () => { pfInputs().forEach(i => { i.checked = true; }); updatePfStatus(); });
+  $('pfNone').addEventListener('click', () => { pfInputs().forEach(i => { i.checked = false; }); updatePfStatus(); });
+  updatePfStatus();
+})();
+
 // ASR: relatienummer = 7- of 8-cijferig getal in de mapnaam
 function findRelatienummer(name) {
   const s = String(name || '');
@@ -2218,7 +2266,7 @@ function renderDebug(fileResults) {
   body.innerHTML = fileResults.map(fr => {
     if (!fr.debug) return '';
     const rows = fr.debug.windows.map(w => `
-      <tr><td><span class="mapping-tag">${esc(w.polis)}</span></td><td><strong>${esc(w.product || '—')}</strong></td>
+      <tr><td><span class="mapping-tag">${esc(w.polis)}</span></td><td><strong>${esc(w.product || '—')}</strong>${w.skipped ? ' <span class="src-tag weak">overgeslagen</span>' : ''}</td>
       <td><span class="src-tag${/keywords|auto-context|none/.test(w.source) ? ' weak' : ''}">${esc(w.source)}</span></td>
       <td>${esc(w.lines)}</td></tr>
       <tr><td colspan="4"><pre>${esc(w.text)}</pre></td></tr>`).join('');
@@ -2233,6 +2281,8 @@ async function processQueue() {
   const kantoor = $('kantoorInput').value || '';
   const overvoermaand = $('overvoermaand').value || '';
   const maatschappij = ($('maatschappijInput').value || '').trim();
+  const sel = selectedProducts();
+  if (!sel.size) { alert('Kies minimaal één polissoort om te parsen.'); processBtn.disabled = false; return; }
   queue = ASRBundle.sortBundle(queue);
   const fileResults = [];
 
@@ -2247,9 +2297,13 @@ async function processQueue() {
       const base = ASRParser.parse(text);
       const { rows, debug } = ASRParser.extract_policy_rows_asr(text, base);
       // Globale schermen zonder herkenbaar product leveren alleen NAW, geen row
-      const kept = rows.filter(r => !(item.isGlobal && (!r['Productomschrijving'] || r['Productomschrijving'] === 'Onbekend')));
+      const recognized = rows.filter(r => !(item.isGlobal && (!r['Productomschrijving'] || r['Productomschrijving'] === 'Onbekend')));
+      // Polissoort-filter: alleen de aangevinkte producten uit het polisscherm overhouden
+      const kept = recognized.filter(r => productSelected(r['Productomschrijving'], sel));
+      const skippedPolis = recognized.filter(r => !kept.includes(r));
+      for (const w of debug.windows) w.skipped = !productSelected(w.product, sel);
       for (const r of kept) { r._file = item.file.name; r._folder = item.folderName || ''; }
-      fileResults.push({ item, base, rows: kept, debug });
+      fileResults.push({ item, base, rows: kept, debug, skippedPolis });
       item.status = 'done';
     } catch (err) {
       item.status = 'error'; item.error = String(err.message || err).slice(0, 120);
@@ -2290,7 +2344,7 @@ async function processQueue() {
         }
       }
       // Inboedelbestand aanwezig maar geen Inboedel-row → patchen of synthetisch aanmaken
-      const inbFile = frs.find(fr => /inboedel/i.test(fr.item.file.name));
+      const inbFile = sel.has('Inboedel') && frs.find(fr => /inboedel/i.test(fr.item.file.name));
       if (inbFile && !rows.some(r => r['Productomschrijving'] === 'Inboedel')) {
         const patch = inbFile.rows.find(r => !ASRSchema.CANONICAL.includes(r['Productomschrijving']));
         let r;
@@ -2352,9 +2406,12 @@ async function processQueue() {
       const own = rows.filter(r => r._file === fr.item.file.name);
       fr.item.rows = own.length;
       fr.item.warnings = [...new Set(own.flatMap(r => (r._warnings || []).map(w => `${r['Polisnummer'] || r['Productomschrijving']}: ${w}`)))];
+      const nSkip = (fr.skippedPolis || []).length;
+      if (nSkip) fr.item.warnings.unshift(`${nSkip} polis(sen) overgeslagen (niet aangevinkt): ` +
+        [...new Set(fr.skippedPolis.map(r => r['Productomschrijving'] || 'Onbekend'))].join(', '));
       if (!own.length && fr.item.status === 'done') {
         fr.item.status = fr.item.isGlobal ? 'done' : 'empty';
-        if (!fr.item.isGlobal) fr.item.error = 'Geen polisrijen herkend';
+        if (!fr.item.isGlobal) fr.item.error = nSkip ? 'Alleen niet-aangevinkte polissoorten gevonden' : 'Geen polisrijen herkend';
       }
     }
     for (const r of rows) {
