@@ -129,12 +129,19 @@ details.invoer[open] > summary .pijl { transform: rotate(180deg); }
 /* Lijstkop */
 .lijstkop { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .lijstkop h2 { margin-right: auto; font-size: 18px; }
+.zoekbalk { display: flex; margin-bottom: 14px; border: 2px solid var(--rood); background: var(--surface); }
+.zoekbalk select { width: auto; max-width: 45%; border: 0; border-right: 1px solid var(--line); background: var(--surface-2); font-weight: 700; }
+.zoekbalk input { border: 0; font-size: 16px; padding: 11px 12px; flex: 1; min-width: 0; }
+.zoekbalk input:focus, .zoekbalk select:focus { outline: 2px solid var(--goud); outline-offset: -2px; }
+mark { background: var(--goud-licht, #FFE58A); color: #111; padding: 0 1px; }
+.meer { align-self: center; margin-top: 4px; }
 .lijstkop h2 .tel { color: var(--text-muted); font-weight: 400; }
 .lijstkop select { width: auto; }
 
 /* Agendablokken */
 .agendas { display: flex; flex-direction: column; gap: 10px; }
-.agenda { background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--line-strong); transition: opacity .25s, transform .25s; }
+.agenda { background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--line-strong); transition: opacity .25s, transform .25s;
+  content-visibility: auto; contain-intrinsic-size: auto 130px; }
 .agenda.st-verlopen { border-left-color: var(--signaal); }
 .agenda.st-vandaag { border-left-color: var(--goud); }
 .agenda.st-gepland { border-left-color: var(--rood-40); }
@@ -147,12 +154,19 @@ details.invoer[open] > summary .pijl { transform: rotate(180deg); }
 .agenda .vink input { width: 20px; height: 20px; cursor: pointer; margin: 0; }
 .agenda .open {
   all: unset; box-sizing: border-box; flex: 1; min-width: 0; cursor: pointer;
-  display: grid; grid-template-columns: 96px minmax(0, 1fr) auto 18px; gap: 14px; align-items: start; padding: 12px 14px;
+  display: grid; grid-template-columns: 112px minmax(0, 1fr) 270px 18px; gap: 16px; align-items: start; padding: 12px 14px;
 }
 .agenda .open:hover { background: var(--surface-2); }
 .agenda .open:focus-visible { outline: 3px solid var(--goud); outline-offset: -3px; }
 .datum { font-weight: 700; font-variant-numeric: tabular-nums; }
+.datum { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; font-size: 15px; }
+.datum .lbl, .nummers .lbl { font-size: 12px; color: var(--text-muted); font-weight: 400; }
 .datum small { display: block; font-weight: 700; font-size: 12px; }
+.nummers { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 12px; padding-left: 16px; border-left: 1px solid var(--line); align-self: stretch; align-content: start; }
+.nummers .val { overflow-wrap: anywhere; }
+.nummers .val.nr { font-variant-numeric: tabular-nums; }
+.nummers .val.mw { font-weight: 700; }
+.nummers .val.leegwaarde { color: var(--text-muted); }
 .st-verlopen .datum small { color: var(--signaal); }
 .st-vandaag .datum small { color: var(--text); }
 .st-gepland .datum small { color: var(--text-muted); font-weight: 400; }
@@ -163,17 +177,20 @@ details.invoer[open] > summary .pijl { transform: rotate(180deg); }
 .kern .val { overflow-wrap: anywhere; }
 .kern .val.oms { font-weight: 700; color: var(--heading); }
 .kern .val.leegwaarde { color: var(--text-muted); }
-.labels { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; max-width: 220px; }
-.labels .wie { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 .agenda .pijl { color: var(--text-muted); transition: transform .15s; text-align: center; }
 .agenda .open[aria-expanded="true"] .pijl { transform: rotate(180deg); }
+@media (max-width: 1080px) {
+  .agenda .open { grid-template-columns: 112px minmax(0, 1fr) 18px; }
+  .agenda .nummers { grid-column: 2; grid-row: 2; padding: 8px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+  .agenda .pijl { grid-column: 3; grid-row: 1; }
+}
 @media (max-width: 640px) {
-  .agenda .open { grid-template-columns: minmax(0, 1fr) 18px; gap: 6px 10px; }
-  .agenda .datum { grid-column: 1; display: flex; gap: 8px; align-items: baseline; }
-  .agenda .datum small { display: inline; }
+  .agenda .open { grid-template-columns: minmax(0, 1fr) 18px; gap: 8px 10px; }
+  .agenda .datum { grid-column: 1; grid-row: 1; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+  .agenda .datum .lbl { display: none; }
   .agenda .pijl { grid-column: 2; grid-row: 1; }
-  .agenda .hoofd, .agenda .labels { grid-column: 1 / -1; }
-  .labels { justify-content: flex-start; }
+  .agenda .hoofd { grid-column: 1 / -1; grid-row: 2; }
+  .agenda .nummers { grid-column: 1 / -1; grid-row: 3; }
 }
 
 .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; border: 1px solid transparent; white-space: nowrap; }
@@ -246,8 +263,8 @@ footer.voet .wrap { padding-top: 16px; padding-bottom: 16px; display: flex; gap:
       <aside class="kader filters" aria-label="Filters">
         <h2>Filteren</h2>
         <div class="groep">
-          <label class="kop" for="fZoek">Zoeken</label>
-          <input type="search" id="fZoek" placeholder="Naam, nummer, omschrijving...">
+          <span class="kop">Medewerker</span>
+          <div id="fMedewerker"></div>
         </div>
         <div class="groep" role="radiogroup" aria-label="Status">
           <span class="kop">Status</span>
@@ -256,10 +273,6 @@ footer.voet .wrap { padding-top: 16px; padding-bottom: 16px; display: flex; gap:
         <div class="groep">
           <span class="kop">Prioriteit</span>
           <div id="fPrio"></div>
-        </div>
-        <div class="groep">
-          <label class="kop" for="fMedewerker">Medewerker</label>
-          <select id="fMedewerker"><option value="">Iedereen</option></select>
         </div>
         <div class="groep">
           <span class="kop">Soort</span>
@@ -279,6 +292,22 @@ footer.voet .wrap { padding-top: 16px; padding-bottom: 16px; display: flex; gap:
       </aside>
 
       <section aria-labelledby="lijstTitel">
+        <div class="zoekbalk" role="search">
+          <label for="fZoekVeld" class="verborgen">Zoeken in</label>
+          <select id="fZoekVeld">
+            <option value="">Alle velden</option>
+            <option value="relatie">Relatie</option>
+            <option value="relnr">Relatienummer</option>
+            <option value="nummer">Polis- of schadenummer</option>
+            <option value="omschrijving">Omschrijving</option>
+            <option value="onderwerp">Onderwerp</option>
+            <option value="contactpers">Contactpersoon</option>
+            <option value="medewerker">Medewerker</option>
+            <option value="taakdatum">Taakdatum</option>
+          </select>
+          <label for="fZoek" class="verborgen">Zoeken</label>
+          <input type="search" id="fZoek" autocomplete="off" placeholder="Zoek op relatie, relatienummer, polisnummer, omschrijving, onderwerp, contactpersoon...">
+        </div>
         <div class="lijstkop">
           <h2 id="lijstTitel">Agenda's <span class="tel" id="telLijst"></span></h2>
           <label for="sorteer" class="verborgen">Sorteren</label>
@@ -510,44 +539,68 @@ function bewaarAf() { try { localStorage.setItem('wsAfgevinkt', JSON.stringify([
    ============================================================ */
 const PRIO = { P1: 'Hoog', P2: 'Middel', P3: 'Laag', P4: 'Slotvraag' };
 const STATUS = [['', 'Alle'], ['verlopen', 'Verlopen'], ['vandaag', 'Vandaag'], ['gepland', 'Gepland']];
-const standaardFilter = () => ({ zoek: '', status: '', prio: new Set(), medewerker: '', soort: new Set(), van: 0, tot: 0, toonAf: false });
+const standaardFilter = () => ({ zoek: '', zoekVeld: '', status: '', prio: new Set(), medewerker: new Set(), soort: new Set(), van: 0, tot: 0, toonAf: false });
 const st = { data: null, f: standaardFilter(), sorteer: 'datum-op', open: new Set() };
 
-function voldoet(r, zonder) {
+let zoekWoorden = [], zoekRegex = null;
+function zetZoek(tekst) {
+  st.f.zoek = tekst;
+  const ruw = tekst.split(/\s+/).filter(Boolean);
+  zoekWoorden = ruw.map(norm).filter(Boolean);
+  zoekRegex = ruw.length ? new RegExp('(' + ruw.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi') : null;
+}
+
+/* Filters die niet geteld worden: afgevinkt, datum en zoeken */
+function basis(r) {
   const f = st.f;
   if (!f.toonAf && afgevinkt.has(r.sleutel)) return false;
-  if (zonder !== 'status' && f.status && r.status !== f.status) return false;
-  if (zonder !== 'prio' && f.prio.size && !f.prio.has(r.prioriteit)) return false;
-  if (zonder !== 'soort' && f.soort.size && !f.soort.has(r.soort)) return false;
-  if (f.medewerker && r.medewerker !== f.medewerker) return false;
   if (f.van && (!r.taakdatumSort || r.taakdatumSort < f.van)) return false;
   if (f.tot && (!r.taakdatumSort || r.taakdatumSort > f.tot)) return false;
-  if (f.zoek) {
-    const woorden = f.zoek.split(/\s+/).map(norm).filter(Boolean);
-    if (!woorden.every(w => r._zoek.includes(w))) return false;
+  if (zoekWoorden.length) {
+    const hooiberg = f.zoekVeld ? r._veld[f.zoekVeld] : r._alles;
+    for (const w of zoekWoorden) if (!hooiberg.includes(w)) return false;
   }
   return true;
+}
+const DIMENSIES = {
+  status: r => r.status, prio: r => r.prioriteit, soort: r => r.soort, medewerker: r => r.medewerker || '(geen)'
+};
+function dimOk(r, d) {
+  const f = st.f, w = DIMENSIES[d](r);
+  if (d === 'status') return !f.status || w === f.status;
+  return !f[d].size || f[d].has(w);
+}
+function voldoet(r) {
+  return basis(r) && dimOk(r, 'status') && dimOk(r, 'prio') && dimOk(r, 'soort') && dimOk(r, 'medewerker');
 }
 
 function renderFilters() {
   const recs = st.data.records, f = st.f;
-  const tel = (zonder, fn) => recs.filter(r => voldoet(r, zonder) && fn(r)).length;
+  const telling = { status: {}, prio: {}, soort: {}, medewerker: {} }, dims = Object.keys(telling);
+  for (const r of recs) {
+    if (!basis(r)) continue;
+    const ok = dims.map(d => dimOk(r, d));
+    dims.forEach((d, i) => {
+      if (ok.every((v, j) => j === i || v)) { const w = DIMENSIES[d](r); telling[d][w] = (telling[d][w] || 0) + 1; }
+    });
+  }
+  const somStatus = Object.values(telling.status).reduce((a, b) => a + b, 0);
+  const tel = (d, w) => d === 'status' && !w ? somStatus : (telling[d][w] || 0);
   $('fStatus').innerHTML = STATUS.map(([w, n]) =>
     '<label class="optie"><input type="radio" name="status" value="' + w + '"' + (f.status === w ? ' checked' : '') + '> ' + n +
-    '<span class="tel">' + tel('status', r => !w || r.status === w) + '</span></label>').join('');
+    '<span class="tel">' + tel('status', w) + '</span></label>').join('');
   $('fPrio').innerHTML = Object.keys(PRIO).map(p =>
     '<label class="optie"><input type="checkbox" value="' + p + '"' + (f.prio.has(p) ? ' checked' : '') + '> ' + p + ' ' + PRIO[p] +
-    '<span class="tel">' + tel('prio', r => r.prioriteit === p) + '</span></label>').join('');
+    '<span class="tel">' + tel('prio', p) + '</span></label>').join('');
   const soorten = [...new Set(recs.map(r => r.soort))].sort((a, b) => a.localeCompare(b, 'nl'));
   $('fSoort').innerHTML = soorten.map(s =>
     '<label class="optie"><input type="checkbox" value="' + s + '"' + (f.soort.has(s) ? ' checked' : '') + '> ' + s +
-    '<span class="tel">' + tel('soort', r => r.soort === s) + '</span></label>').join('');
+    '<span class="tel">' + tel('soort', s) + '</span></label>').join('');
+  const medewerkers = [...new Set(recs.map(r => r.medewerker || '(geen)'))].sort((a, b) => a.localeCompare(b, 'nl'));
+  $('fMedewerker').innerHTML = medewerkers.map(m =>
+    '<label class="optie"><input type="checkbox" value="' + esc(m) + '"' + (f.medewerker.has(m) ? ' checked' : '') + '> ' + esc(m) +
+    '<span class="tel">' + tel('medewerker', m) + '</span></label>').join('');
   $('telAf').textContent = recs.filter(r => afgevinkt.has(r.sleutel)).length;
-}
-
-function vulMedewerkers() {
-  const lijst = [...new Set(st.data.records.map(r => r.medewerker).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'nl'));
-  $('fMedewerker').innerHTML = '<option value="">Iedereen</option>' + lijst.map(m => '<option>' + esc(m) + '</option>').join('');
 }
 
 /* ============================================================
@@ -573,54 +626,82 @@ function gesorteerd(lijst) {
   return lijst.slice().sort((a, b) => fn(a, b) || a.id - b.id);
 }
 
+function mark(waarde) {
+  if (!zoekRegex || !waarde) return esc(waarde);
+  return String(waarde).split(zoekRegex).map((deel, i) => i % 2 ? '<mark>' + esc(deel) + '</mark>' : esc(deel)).join('');
+}
 function kernRegel(label, waarde, klasse) {
-  return '<span class="lbl">' + label + '</span><span class="val ' + (klasse || '') + (waarde ? '' : ' leegwaarde') + '">' + (waarde ? esc(waarde) : '–') + '</span>';
+  return '<span class="lbl">' + label + '</span><span class="val ' + (klasse || '') + (waarde ? '' : ' leegwaarde') + '">' + (waarde ? mark(waarde) : '–') + '</span>';
+}
+
+function inhoudHtml(r) {
+  const velden = VELDEN.map(([k, n]) => {
+    let v = r[k];
+    if (k === 'prioriteit' && v) v = v + ' ' + (PRIO[v] || '');
+    return v ? '<div><dt>' + n + '</dt><dd>' + mark(v) + '</dd></div>' : '';
+  }).join('');
+  return '<dl>' + velden + '</dl>' +
+    '<details><summary>Originele bronregels</summary><pre class="bron">' + esc(r.raw.join('\n')) + '</pre></details>';
 }
 
 function blok(r) {
   const af = afgevinkt.has(r.sleutel), open = st.open.has(r.id);
   const statusTekst = { verlopen: 'Verlopen', vandaag: 'Vandaag', gepland: 'Gepland' }[r.status] || '';
   const titel = r.relatie || r.medewerker || 'Agenda';
-  const nummer = r.schadenr ? 'Schade ' + r.schadenr : r.polisnr ? 'Polis ' + r.polisnr : '';
-  const velden = VELDEN.map(([k, n]) => {
-    let v = r[k];
-    if (k === 'prioriteit' && v) v = v + ' ' + (PRIO[v] || '');
-    return v ? '<div><dt>' + n + '</dt><dd>' + esc(v) + '</dd></div>' : '';
-  }).join('');
   return '<article class="agenda st-' + (r.status || 'geen') + (af ? ' af' : '') + '" data-id="' + r.id + '">' +
     '<div class="rij">' +
       '<label class="vink" title="' + (af ? 'Terugzetten' : 'Afvinken') + '"><input type="checkbox" data-vink="' + r.id + '"' + (af ? ' checked' : '') +
       ' aria-label="' + esc((af ? 'Terugzetten: ' : 'Afvinken: ') + titel + ' – ' + r.omschrijving) + '"></label>' +
       '<button type="button" class="open" data-open="' + r.id + '" aria-expanded="' + open + '" aria-controls="inhoud' + r.id + '">' +
-        '<span class="datum">' + esc(r.taakdatum || 'Geen datum') + (r.ster ? ' <span class="ster" title="Gemarkeerd">*</span>' : '') + '<small>' + statusTekst + '</small></span>' +
-        '<span class="hoofd"><b>' + esc(titel) + '</b><span class="kern">' +
+        '<span class="datum"><span class="lbl">Taakdatum</span><span>' + mark(r.taakdatum || 'Geen datum') + (r.ster ? ' <span class="ster" title="Gemarkeerd">*</span>' : '') + '</span>' +
+          '<small>' + statusTekst + '</small>' +
+          (r.prioriteit ? '<span class="badge ' + r.prioriteit.toLowerCase() + '" title="' + esc(PRIO[r.prioriteit] || '') + '">' + r.prioriteit + ' ' + esc(PRIO[r.prioriteit] || '') + '</span>' : '') +
+        '</span>' +
+        '<span class="hoofd"><b>' + mark(titel) + '</b><span class="kern">' +
           kernRegel('Omschrijving', r.omschrijving, 'oms') + kernRegel('Onderwerp', r.onderwerp) + kernRegel('Contactpersoon', r.contactpers) +
         '</span></span>' +
-        '<span class="labels">' +
-          (r.prioriteit ? '<span class="badge ' + r.prioriteit.toLowerCase() + '" title="' + esc(PRIO[r.prioriteit] || '') + '">' + r.prioriteit + ' ' + esc(PRIO[r.prioriteit] || '') + '</span>' : '') +
-          '<span class="badge soort">' + esc(nummer || r.soort) + '</span>' +
-          '<span class="wie">' + esc(r.medewerker) + '</span>' +
+        '<span class="nummers">' +
+          kernRegel('Medewerker', r.medewerker, 'mw') +
+          kernRegel('Relatienummer', r.relnr, 'nr') +
+          (r.soort === 'Schade' ? kernRegel('Schadenummer', r.schadenr, 'nr') : kernRegel('Polisnummer', r.polisnr, 'nr')) +
+          kernRegel('Soort', r.soort) +
         '</span>' +
         '<span class="pijl" aria-hidden="true">▾</span>' +
       '</button>' +
     '</div>' +
-    '<div class="inhoud" id="inhoud' + r.id + '"' + (open ? '' : ' hidden') + '>' +
-      '<dl>' + velden + '</dl>' +
-      '<details><summary>Originele bronregels</summary><pre class="bron">' + esc(r.raw.join('\n')) + '</pre></details>' +
-    '</div>' +
+    '<div class="inhoud" id="inhoud' + r.id + '"' + (open ? '>' + inhoudHtml(r) : ' hidden>') + '</div>' +
   '</article>';
 }
 
-function render() {
+const STAP = 50;
+function meerKnop() {
+  const rest = st.zichtbaar.length - st.getoond;
+  return rest > 0 ? '<button type="button" class="meer" id="btnMeer">Nog ' + fmt(Math.min(rest, STAP)) + ' tonen (' + fmt(rest) + ' over)</button>' : '';
+}
+function toonMeer() {
+  const knop = $('btnMeer'); if (!knop) return;
+  const van = st.getoond; st.getoond = Math.min(van + STAP, st.zichtbaar.length);
+  knop.insertAdjacentHTML('beforebegin', st.zichtbaar.slice(van, st.getoond).map(blok).join(''));
+  knop.outerHTML = meerKnop();
+  kijkMeer();
+}
+const kijker = 'IntersectionObserver' in window ? new IntersectionObserver(e => { if (e.some(x => x.isIntersecting)) toonMeer(); }, { rootMargin: '600px' }) : null;
+function kijkMeer() { if (kijker) { kijker.disconnect(); const k = $('btnMeer'); if (k) kijker.observe(k); } }
+
+/* Opnieuw tekenen; nieuweLijst = true zet het aantal getoonde blokken terug */
+function render(nieuweLijst) {
   if (!st.data) return;
+  if (nieuweLijst !== false) st.getoond = STAP;
   renderFilters();
   const lijst = gesorteerd(st.data.records.filter(r => voldoet(r)));
   st.zichtbaar = lijst;
   $('telLijst').textContent = '(' + fmt(lijst.length) + ')';
-  $('agendas').innerHTML = lijst.length ? lijst.map(blok).join('') :
+  st.getoond = Math.min(st.getoond || STAP, lijst.length);
+  $('agendas').innerHTML = lijst.length ? lijst.slice(0, st.getoond).map(blok).join('') + meerKnop() :
     '<div class="kader leeg">' + (st.data.records.length && st.data.records.every(r => afgevinkt.has(r.sleutel))
       ? "Alle agenda's zijn afgevinkt." : "Geen agenda's die aan de filters voldoen.") + '</div>';
   $('btnAlles').textContent = lijst.length && lijst.every(r => st.open.has(r.id)) ? 'Alles inklappen' : 'Alles openklappen';
+  kijkMeer();
 }
 
 function renderMeta() {
@@ -644,10 +725,19 @@ function inlezen() {
   if (!tekst.trim()) { melding('Het tekstvak is leeg. Plak eerst de werklijst.', true); return; }
   const res = finalize(parseWerklijst(tekst));
   if (!res.records.length) { melding('Geen agenda\'s gevonden. Controleer of de tekst regels met "Medewerker" en "Taakdatum" bevat.', true); return; }
-  res.records.forEach(r => { r.sleutel = sleutel(r); });
+  res.records.forEach(r => {
+    r.sleutel = sleutel(r);
+    r._alles = r._zoek + ' ' + norm(r.raw.join(' '));
+    r._veld = {
+      relatie: norm(r.relatie), relnr: norm(r.relnr), nummer: norm(r.polisnr) + ' ' + norm(r.schadenr),
+      omschrijving: norm(r.omschrijving), onderwerp: norm(r.onderwerp), contactpers: norm(r.contactpers),
+      medewerker: norm(r.medewerker), taakdatum: norm(r.taakdatum)
+    };
+  });
   st.data = res; st.f = standaardFilter(); st.open = new Set();
+  zetZoek(''); $('fZoekVeld').value = '';
   $('fZoek').value = ''; $('fVan').value = ''; $('fTot').value = ''; $('fAf').checked = false;
-  vulMedewerkers(); renderMeta();
+  renderMeta();
   $('dashboard').classList.remove('verborgen');
   render();
   melding(fmt(res.records.length) + " agenda's ingelezen.");
@@ -678,8 +768,8 @@ function vink(id, aan) {
   toast((aan ? 'Afgevinkt: ' : 'Teruggezet: ') + (r.relatie || r.omschrijving));
   if (aan && !st.f.toonAf && blokEl) {
     blokEl.classList.add('weg');
-    setTimeout(render, 260);
-  } else render();
+    setTimeout(() => render(false), 260);
+  } else render(false);
 }
 
 /* ============================================================
@@ -820,21 +910,30 @@ $('bron').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey
 $('btnVoorbeeld').addEventListener('click', () => { $('bron').value = VOORBEELD; inlezen(); });
 $('btnWissen').addEventListener('click', wissen);
 
-$('fZoek').addEventListener('input', e => { st.f.zoek = e.target.value.trim(); render(); });
-$('fMedewerker').addEventListener('change', e => { st.f.medewerker = e.target.value; render(); });
+let zoekTimer = null;
+$('fZoek').addEventListener('input', e => {
+  clearTimeout(zoekTimer);
+  zoekTimer = setTimeout(() => { zetZoek(e.target.value.trim()); render(); }, 120);
+});
+$('fZoekVeld').addEventListener('change', e => { st.f.zoekVeld = e.target.value; render(); $('fZoek').focus(); });
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && st.data && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); $('fZoek').focus(); }
+});
 $('fVan').addEventListener('change', e => { st.f.van = isoNaarSort(e.target.value); render(); });
 $('fTot').addEventListener('change', e => { st.f.tot = isoNaarSort(e.target.value); render(); });
 $('fAf').addEventListener('change', e => { st.f.toonAf = e.target.checked; render(); });
 $('sorteer').addEventListener('change', e => { st.sorteer = e.target.value; render(); });
 $('btnHerstel').addEventListener('click', () => {
   st.f = standaardFilter();
-  $('fZoek').value = ''; $('fMedewerker').value = ''; $('fVan').value = ''; $('fTot').value = ''; $('fAf').checked = false;
+  zetZoek(''); $('fZoekVeld').value = '';
+  $('fZoek').value = ''; $('fVan').value = ''; $('fTot').value = ''; $('fAf').checked = false;
   render();
 });
 document.querySelector('.filters').addEventListener('change', e => {
   const i = e.target;
   if (i.name === 'status') { st.f.status = i.value; render(); }
   else if (i.closest('#fPrio')) { i.checked ? st.f.prio.add(i.value) : st.f.prio.delete(i.value); render(); }
+  else if (i.closest('#fMedewerker')) { i.checked ? st.f.medewerker.add(i.value) : st.f.medewerker.delete(i.value); render(); }
   else if (i.closest('#fSoort')) { i.checked ? st.f.soort.add(i.value) : st.f.soort.delete(i.value); render(); }
 });
 
@@ -842,17 +941,20 @@ $('agendas').addEventListener('change', e => {
   if (e.target.dataset.vink) vink(+e.target.dataset.vink, e.target.checked);
 });
 $('agendas').addEventListener('click', e => {
+  if (e.target.id === 'btnMeer') { toonMeer(); return; }
   const knop = e.target.closest('[data-open]'); if (!knop) return;
   const id = +knop.dataset.open, open = !st.open.has(id);
   open ? st.open.add(id) : st.open.delete(id);
   knop.setAttribute('aria-expanded', open);
-  $('inhoud' + id).hidden = !open;
+  const inhoud = $('inhoud' + id);
+  if (open && !inhoud.firstChild) inhoud.innerHTML = inhoudHtml(st.data.records[id - 1]);
+  inhoud.hidden = !open;
   $('btnAlles').textContent = st.zichtbaar.every(r => st.open.has(r.id)) ? 'Alles inklappen' : 'Alles openklappen';
 });
 $('btnAlles').addEventListener('click', () => {
   const alleOpen = st.zichtbaar.every(r => st.open.has(r.id));
   st.zichtbaar.forEach(r => alleOpen ? st.open.delete(r.id) : st.open.add(r.id));
-  render();
+  render(false);
 });
 $('btnTerug').addEventListener('click', () => {
   if (laatste) { const l = laatste; laatste = null; vink(l.id, !l.aan); }
