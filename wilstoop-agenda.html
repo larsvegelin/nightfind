@@ -167,6 +167,15 @@ section + section, #dashboard, #leegstaat { margin-top: 24px; }
 .chip button { padding: 0 6px; border: 0; background: transparent; font-size: 14px; line-height: 1; color: inherit; }
 .resultaat { font-size: 13px; color: var(--text-muted); margin-left: auto; }
 
+/* Statustabbladen */
+.tabs { display: flex; gap: 0; flex-wrap: wrap; border-bottom: 2px solid var(--line); margin-bottom: 10px; }
+.tab { border: 0; border-radius: 0; background: transparent; padding: 9px 16px; font-weight: 700; color: var(--text-muted); border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.tab:hover { background: var(--surface-2); }
+.tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--rood); }
+.tab .tel { display: inline-block; min-width: 22px; padding: 1px 7px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font-size: 12px; color: var(--text); }
+.tab-verlopen .tel { background: var(--signaal); border-color: var(--signaal); color: #fff; }
+.tab-vandaag .tel { background: var(--goud); border-color: var(--goud); color: #111; }
+
 /* Tabel */
 .tabelkader { border: 1px solid var(--line); background: var(--surface); overflow: auto; max-height: 72vh; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
@@ -184,6 +193,9 @@ tbody tr:nth-child(even) td { background: var(--surface-2); }
 tbody tr:hover td { background: var(--rood-20); }
 tbody tr:focus-visible { outline: 3px solid var(--goud); outline-offset: -3px; }
 td.num { font-variant-numeric: tabular-nums; }
+tbody tr.rij-verlopen td:first-child { box-shadow: inset 4px 0 0 var(--signaal); }
+tbody tr.rij-vandaag td:first-child { box-shadow: inset 4px 0 0 var(--goud); }
+.notitie { display: inline-block; max-width: 340px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 
 /* Badges */
 .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; border: 1px solid transparent; }
@@ -329,7 +341,7 @@ footer.voet .wrap { padding-top: 16px; padding-bottom: 16px; display: flex; gap:
       </aside>
 
       <div>
-        <section aria-labelledby="schadeTitel">
+        <section aria-labelledby="schadeTitel" id="secSchade">
           <div class="sectiekop">
             <span class="picto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>
             <h2 id="schadeTitel">Schades</h2>
@@ -356,8 +368,10 @@ footer.voet .wrap { padding-top: 16px; padding-bottom: 16px; display: flex; gap:
             <div class="zoek"><label class="blok" for="qZoek">Zoeken</label><input type="search" id="qZoek" placeholder="Naam, nummer, kenteken, omschrijving..."></div>
             <div class="kies"><label class="blok" for="qSchadesoort">Schadesoort</label><select id="qSchadesoort"><option value="">Alle schadesoorten</option></select></div>
             <label class="vink"><input type="checkbox" id="qSter"> Alleen gemarkeerd (*)</label>
+            <button type="button" id="btnKolommen" aria-pressed="false">Alle kolommen</button>
             <button type="button" class="cta" id="btnCsv">Exporteren naar CSV</button>
           </div>
+          <div class="tabs" id="tabs" role="tablist" aria-label="Status"></div>
           <div class="chips" id="chips"></div>
           <div class="tabelkader">
             <table>
@@ -528,7 +542,7 @@ function parseWerklijst(tekst) {
         const door = rest.match(/door\s+(.*)$/i); if (door) cur.mutatieDoor = door[1].trim();
         break;
       }
-      case 'Contactpers': cur.contactpers = rest; break;
+      case 'Contactpers': cur.contactpers = rest; laatsteTekst = 'contactpers'; break;
     }
   }
   sluit();
@@ -558,6 +572,8 @@ function finalize(res) {
     r.schadedatumSort = naarSort(r.schadedatum);
     r.ingevoerdSort = naarSort(r.ingevoerd);
     r.mutatieSort = naarSort(r.mutatie);
+    r.nummer = r.schadenr || r.polisnr;
+    r.notitie = [r.onderwerp, r.contactpers].filter(Boolean).join(' – ');
     r.status = !r.taakdatumSort ? '' : r.taakdatumSort < peil ? 'verlopen' : r.taakdatumSort === peil ? 'vandaag' : 'gepland';
     const tekst = r.raw.join(' ');
     r.afgehandeld = vlag(tekst, 'afgehandeld');
@@ -586,6 +602,7 @@ const st = {
   filter: standaardFilter(),
   snel: { zoek: '', schadesoort: '', ster: false },
   extra: {},                         // veld -> waarde (vanuit verdelingen)
+  alleKolommen: false,
   sort: { key: 'taakdatumSort', dir: 1 }
 };
 
@@ -729,11 +746,21 @@ function celHtml(r, veld) {
   if (veld === 'prioriteit') return v ? '<span class="badge ' + v.toLowerCase() + '" title="' + esc(PRIO[v] || '') + '">' + esc(v) + '</span>' : '';
   if (veld === 'status') return v ? '<span class="s-' + v + '">' + esc(v.charAt(0).toUpperCase() + v.slice(1)) + '</span>' : '';
   if (veld === 'ster') return v ? '<span class="ster" title="Gemarkeerd">*</span>' : '';
+  if (veld === 'taakdatum') return esc(v) + (r.ster ? ' <span class="ster" title="Gemarkeerd">*</span>' : '');
+  if (veld === 'notitie') return '<span class="notitie" title="' + esc(v) + '">' + esc(v) + '</span>';
   return esc(v);
 }
 
+const COMPACT = ['soort', 'taakdatum', 'prioriteit', 'status', 'medewerker', 'relatie', 'nummer', 'postcode', 'omschrijving', 'notitie', 'frequentie'];
+const EXTRA_KOLOMMEN = [['nummer', 'Polis- of schadenummer'], ['notitie', 'Onderwerp en contactpersoon']];
+function zichtbareKolommen() {
+  if (st.alleKolommen) return KOLOMMEN;
+  const alle = KOLOMMEN.concat(EXTRA_KOLOMMEN);
+  return COMPACT.map(v => alle.find(k => k[0] === v));
+}
+
 function renderKop() {
-  $('kop').innerHTML = KOLOMMEN.map(([veld, naam, sk]) => {
+  $('kop').innerHTML = zichtbareKolommen().map(([veld, naam, sk]) => {
     const key = sk || veld, actief = st.sort.key === key;
     return '<th scope="col" aria-sort="' + (actief ? (st.sort.dir > 0 ? 'ascending' : 'descending') : 'none') + '">' +
       '<button type="button" data-sort="' + key + '">' + esc(naam) + '<span class="pijl">' + (actief ? (st.sort.dir > 0 ? '▲' : '▼') : '') + '</span></button></th>';
@@ -759,9 +786,9 @@ function renderTabel(lijst) {
   renderKop();
   const rijen = gesorteerd(lijst);
   $('rijen').innerHTML = rijen.length ? rijen.map(r =>
-    '<tr tabindex="0" data-id="' + r.id + '">' + KOLOMMEN.map(([veld]) =>
+    '<tr tabindex="0" data-id="' + r.id + '" class="rij-' + (r.status || 'geen') + '">' + zichtbareKolommen().map(([veld]) =>
       '<td' + (/datum|^ingevoerd|^mutatie$|blad|Code|relnr|nr$/.test(veld) ? ' class="num"' : '') + '>' + celHtml(r, veld) + '</td>').join('') + '</tr>'
-  ).join('') : '<tr><td colspan="' + KOLOMMEN.length + '" class="leeg" style="cursor:default">Geen agenda\'s die aan de filters voldoen.</td></tr>';
+  ).join('') : '<tr><td colspan="' + zichtbareKolommen().length + '" class="leeg" style="cursor:default">Geen agenda\'s die aan de filters voldoen.</td></tr>';
 }
 
 function renderChips(aantal) {
@@ -780,9 +807,19 @@ function renderChips(aantal) {
     '<span class="resultaat">' + fmt(aantal) + ' van ' + fmt(st.data.records.length) + " agenda's</span>";
 }
 
+function renderTabs() {
+  const zonderStatus = st.data.records.filter(r => { const s = st.filter.status; st.filter.status = ''; const ok = voldoet(r); st.filter.status = s; return ok; });
+  const tel = s => zonderStatus.filter(r => !s || r.status === s).length;
+  $('tabs').innerHTML = [['', 'Alle'], ['verlopen', 'Verlopen'], ['vandaag', 'Vandaag'], ['gepland', 'Gepland']].map(([s, n]) =>
+    '<button type="button" role="tab" class="tab tab-' + (s || 'alle') + '" data-tab="' + s + '" aria-selected="' + (st.filter.status === s) + '">' +
+    n + ' <span class="tel">' + fmt(tel(s)) + '</span></button>').join('');
+}
+
 function render() {
   if (!st.data) return;
   const lijst = st.data.records.filter(voldoet);
+  renderTabs();
+  $('secSchade').classList.toggle('verborgen', !st.data.records.some(r => r.soort === 'Schade'));
   renderSchade(lijst);
   renderAgenda(lijst);
   renderChips(lijst.length);
@@ -1031,6 +1068,12 @@ $('qZoek').addEventListener('input', e => { st.snel.zoek = e.target.value.trim()
 $('qSchadesoort').addEventListener('change', e => { st.snel.schadesoort = e.target.value; render(); });
 $('qSter').addEventListener('change', e => { st.snel.ster = e.target.checked; render(); });
 $('btnCsv').addEventListener('click', exportCsv);
+$('btnKolommen').addEventListener('click', () => {
+  st.alleKolommen = !st.alleKolommen;
+  $('btnKolommen').textContent = st.alleKolommen ? 'Compacte weergave' : 'Alle kolommen';
+  $('btnKolommen').setAttribute('aria-pressed', st.alleKolommen);
+  renderTabel(st.laatsteLijst || []);
+});
 
 document.addEventListener('click', e => {
   const balk = e.target.closest('.balk');
@@ -1043,6 +1086,8 @@ document.addEventListener('click', e => {
     document.getElementById('tabelTitel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
+  const tab = e.target.closest('[data-tab]');
+  if (tab) { st.filter.status = tab.dataset.tab; $('fStatus').value = st.filter.status; render(); return; }
   const chip = e.target.closest('[data-chip]');
   if (chip) {
     const [bron, veld] = chip.dataset.chip.split(':');
