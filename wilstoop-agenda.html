@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda dashboard – Wil Stoop Assurantiën</title>
+<meta name="description" content="Agenda dashboard voor Wil Stoop Assurantiën: plak het werklijst-overzicht uit het CRM en krijg direct tellingen, filters en een sorteerbare tabel.">
+<style>
+/* ============================================================
+   Huisstijl-tokens Wil Stoop Assurantiën (rood / wit)
+   Alle componenten lopen via deze tokens; geen harde kleuren.
+   ============================================================ */
+:root {
+  --rood: #C8102E; --rood-80: #D34058; --rood-60: #DE7082; --rood-40: #E99FAB; --rood-20: #F4CFD5;
+  --accent: #9E0B23;              /* hover op CTA-knop, focus op invoervelden */
+  --goud: #E0A100;                /* prioriteit middel, "vandaag"-tegel */
+  --signaal: #7A0919;             /* verlopen, prioriteit hoog */
+  --wit: #FFFFFF; --grijs: #E6E6E6; --zwart: #111111;
+  --bg: #FAF7F7; --surface: #FFFFFF; --surface-2: #F6EFF0;
+  --text: var(--zwart); --text-muted: #5C4F51; --heading: var(--rood);
+  --line: #E4D6D8; --line-strong: #CBB5B8;
+  --on-primary: #FFFFFF; --bar: var(--rood); --bar-track: var(--rood-20);
+  --btn: #FFFFFF; --btn-text: #111111;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --rood: #C8102E; --rood-80: #E0566C; --rood-60: #EB8193; --rood-40: #6E2531; --rood-20: #3A1C21;
+    --accent: #E23A55; --goud: #F2B829; --signaal: #FF6B7F;
+    --bg: #141112; --surface: #1D191A; --surface-2: #262022;
+    --text: #F3EEEF; --text-muted: #B9AAAD; --heading: #F2667C;
+    --line: #3A3033; --line-strong: #54464A;
+    --bar: #E0566C; --bar-track: #3A1C21;
+    --btn: #262022; --btn-text: #F3EEEF; --grijs: #3A3033;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --rood: #C8102E; --rood-80: #E0566C; --rood-60: #EB8193; --rood-40: #6E2531; --rood-20: #3A1C21;
+  --accent: #E23A55; --goud: #F2B829; --signaal: #FF6B7F;
+  --bg: #141112; --surface: #1D191A; --surface-2: #262022;
+  --text: #F3EEEF; --text-muted: #B9AAAD; --heading: #F2667C;
+  --line: #3A3033; --line-strong: #54464A;
+  --bar: #E0566C; --bar-track: #3A1C21;
+  --btn: #262022; --btn-text: #F3EEEF; --grijs: #3A3033;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.45;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+h1 { font-weight: 500; color: var(--heading); font-size: clamp(30px, 4vw, 44px); margin: 0; line-height: 1.1; }
+h2 { font-size: 16px; font-weight: 700; margin: 0 0 12px; }
+h3 { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
+p { margin: 0 0 8px; }
+.muted { color: var(--text-muted); }
+.wrap { width: 100%; max-width: 1480px; margin: 0 auto; padding: 0 24px; }
+@media (max-width: 640px) { .wrap { padding: 0 16px; } }
+
+/* Kop */
+header.top { background: var(--surface); border-bottom: 3px solid var(--rood); }
+header.top .wrap { display: flex; align-items: center; gap: 24px; padding-top: 20px; padding-bottom: 20px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); padding: 4px 8px 4px 0; }
+.logo .name { font-size: 18px; font-weight: 700; line-height: 1.1; }
+.logo .name span { display: block; font-weight: 400; font-size: 12px; color: var(--text-muted); letter-spacing: .04em; text-transform: uppercase; }
+.titel { flex: 1 1 280px; }
+.meta { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+.meta b { color: var(--text); }
+
+/* Knoppen */
+button, .btn {
+  font: inherit; font-size: 14px; cursor: pointer; border-radius: 10px; box-shadow: none;
+  border: 1px solid var(--line-strong); background: var(--btn); color: var(--btn-text);
+  padding: 8px 16px; text-align: center; line-height: 1.2;
+}
+button:hover, .btn:hover { background: var(--grijs); }
+button.cta { background: var(--rood); border-color: var(--rood); color: var(--on-primary); }
+button.cta:hover { background: var(--accent); border-color: var(--accent); }
+button.klein { padding: 4px 10px; font-size: 12px; }
+button:focus-visible, .btn:focus-visible { outline: 3px solid var(--goud); outline-offset: 2px; }
+.icoonknop { display: inline-flex; align-items: center; gap: 8px; }
+
+/* Kaders: rechte hoeken */
+.kader { background: var(--surface); border: 1px solid var(--line); padding: 20px; }
+input[type=text], input[type=search], input[type=date], select, textarea {
+  font: inherit; font-size: 14px; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 0; padding: 7px 9px; width: 100%;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+textarea {
+  font-family: "Courier New", Courier, monospace; font-size: 13px; line-height: 1.35;
+  min-height: 220px; resize: vertical; white-space: pre; overflow: auto;
+}
+label { font-size: 13px; }
+
+/* Pictogram: wit in een rode cirkel */
+.picto { width: 34px; height: 34px; border-radius: 50%; background: var(--rood); color: #fff; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.picto svg { width: 18px; height: 18px; }
+
+main { flex: 1; padding: 24px 0 40px; }
+section + section, #dashboard, #leegstaat { margin-top: 24px; }
+
+/* Invoer */
+.invoer-kop { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.invoer-kop h2 { margin: 0; }
+.knoppen { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+.melding { font-size: 13px; margin-left: auto; }
+.melding.fout { color: var(--signaal); font-weight: 700; }
+.verborgen { display: none !important; }
+
+/* Raster dashboard */
+.raster { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 980px) { .raster { grid-template-columns: minmax(0, 1fr); } }
+
+/* Filterpaneel */
+.panel { position: sticky; top: 16px; }
+@media (max-width: 980px) { .panel { position: static; } }
+.panel fieldset { min-width: 0; border: 0; border-top: 1px solid var(--line); margin: 0; padding: 12px 0; }
+.panel legend { font-weight: 700; font-size: 13px; padding: 0 0 6px; color: var(--heading); }
+.panel .opties { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.panel .opties label { display: flex; align-items: center; gap: 6px; }
+.panel .opties .telling { margin-left: auto; color: var(--text-muted); font-size: 12px; }
+.panel .veld { margin-bottom: 10px; }
+.panel .veld > label { display: block; margin-bottom: 3px; color: var(--text-muted); }
+.panel .twee { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.snel { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.panel .acties { display: flex; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.panel .acties button { flex: 1; }
+
+/* Tegels */
+.sectiekop { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.sectiekop h2 { margin: 0; }
+.tegels { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.tegel { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--rood); padding: 12px 14px; min-height: 96px; }
+.tegel .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em; }
+.tegel .waarde { font-size: 30px; font-weight: 500; margin: 2px 0; font-variant-numeric: tabular-nums; }
+.tegel .waarde.klein { font-size: 18px; font-weight: 700; }
+.tegel .sub { font-size: 12px; color: var(--text-muted); }
+.tegel.signaal { border-top-color: var(--signaal); }
+.tegel.signaal .waarde { color: var(--signaal); }
+.tegel.vandaag { border-top-color: var(--goud); }
+.tegel.rustig { border-top-color: var(--line-strong); }
+
+/* Verdelingen (balken) */
+.verdelingen { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+.verdeling { background: var(--surface); border: 1px solid var(--line); padding: 14px; }
+.balk { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; width: 100%; text-align: left; border: 0; border-radius: 0; background: transparent; padding: 5px 4px; color: var(--text); }
+.balk:hover { background: var(--surface-2); }
+.balk .naam { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.balk .getal { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.balk .spoor { grid-column: 1 / -1; height: 8px; background: var(--bar-track); }
+.balk .vul { height: 100%; background: var(--bar); }
+.leeg { color: var(--text-muted); font-size: 13px; padding: 4px; }
+
+/* Werkbalk boven de tabel */
+.werkbalk { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 12px; }
+.werkbalk .zoek { flex: 1 1 240px; }
+.werkbalk .kies { flex: 0 1 220px; }
+.werkbalk label.blok { display: block; color: var(--text-muted); margin-bottom: 3px; }
+.werkbalk .vink { display: flex; align-items: center; gap: 6px; padding-bottom: 8px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--rood-20); color: var(--text); border: 1px solid var(--rood-40); padding: 3px 4px 3px 10px; font-size: 12px; border-radius: 10px; }
+.chip button { padding: 0 6px; border: 0; background: transparent; font-size: 14px; line-height: 1; color: inherit; }
+.resultaat { font-size: 13px; color: var(--text-muted); margin-left: auto; }
+
+/* Tabel */
+.tabelkader { border: 1px solid var(--line); background: var(--surface); overflow: auto; max-height: 72vh; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+thead th {
+  position: sticky; top: 0; z-index: 1; background: var(--rood); color: var(--on-primary);
+  text-align: left; font-weight: 700; white-space: nowrap; padding: 0; border-right: 1px solid var(--rood-80);
+}
+thead th button { all: unset; display: block; padding: 9px 10px; cursor: pointer; width: 100%; box-sizing: border-box; }
+thead th button:hover { background: var(--accent); }
+thead th button:focus-visible { outline: 3px solid var(--goud); outline-offset: -3px; }
+thead th .pijl { opacity: .85; font-size: 10px; margin-left: 4px; }
+tbody td { padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; vertical-align: top; }
+tbody tr { cursor: pointer; }
+tbody tr:nth-child(even) td { background: var(--surface-2); }
+tbody tr:hover td { background: var(--rood-20); }
+tbody tr:focus-visible { outline: 3px solid var(--goud); outline-offset: -3px; }
+td.num { font-variant-numeric: tabular-nums; }
+
+/* Badges */
+.badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; border: 1px solid transparent; }
+.p1 { background: var(--signaal); color: #fff; }
+.p2 { background: var(--goud); color: #111; }
+.p3 { border-color: var(--line-strong); color: var(--text); }
+.p4 { border: 1px dashed var(--line-strong); color: var(--text-muted); }
+.s-verlopen { color: var(--signaal); font-weight: 700; }
+.s-vandaag { color: var(--text); background: var(--goud); padding: 1px 6px; border-radius: 10px; font-weight: 700; color: #111; }
+.s-gepland { color: var(--text-muted); }
+.ster { color: var(--rood); font-weight: 700; }
+
+/* Detailpaneel */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; }
+.detail {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); z-index: 21;
+  background: var(--surface); border-left: 4px solid var(--rood); overflow: auto; padding: 20px 24px 32px;
+}
+.detail .kop { display: flex; align-items: start; gap: 12px; margin-bottom: 12px; }
+.detail .kop h2 { flex: 1; margin: 4px 0 0; color: var(--heading); font-size: 20px; font-weight: 500; }
+.detail dl { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 4px 12px; margin: 0 0 16px; font-size: 13px; }
+.detail dt { color: var(--text-muted); }
+.detail dd { margin: 0; overflow-wrap: anywhere; }
+.bron { font-family: "Courier New", Courier, monospace; font-size: 12px; background: var(--surface-2); border: 1px solid var(--line); padding: 10px; white-space: pre; overflow: auto; margin: 0; }
+
+/* Lege staat */
+.leegstaat { text-align: left; padding: 28px; display: flex; gap: 16px; align-items: start; }
+
+/* Voetbalk */
+footer.voet { background: var(--rood); color: #fff; font-size: 13px; }
+footer.voet .wrap { padding-top: 16px; padding-bottom: 16px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#" aria-label="Wil Stoop Assurantiën">
+      <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+        <circle cx="23" cy="23" r="23" fill="#C8102E"/>
+        <text x="23" y="29.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">WS</text>
+      </svg>
+      <div class="name">Wil Stoop<span>Assurantiën</span></div>
+    </a>
+    <div class="titel">
+      <h1>Agenda dashboard</h1>
+      <div class="meta" id="meta">
+        <span>Plak het werklijst-overzicht om te beginnen.</span>
+      </div>
+    </div>
+    <button type="button" id="thema" class="icoonknop" aria-label="Thema wisselen">
+      <span id="themaTekst">Thema: automatisch</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <!-- Invoer: tekstvak -->
+    <section class="kader" aria-labelledby="invoerTitel">
+      <div class="invoer-kop">
+        <span class="picto" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="16"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+        </span>
+        <div>
+          <h2 id="invoerTitel">Werklijst inlezen</h2>
+          <p class="muted" style="margin:0">Plak hieronder de tekstexport "Werklijst overzicht" uit het CRM en klik op Inlezen. De gegevens blijven in uw browser.</p>
+        </div>
+      </div>
+      <label for="bron" class="verborgen">Werklijst overzicht</label>
+      <textarea id="bron" spellcheck="false" placeholder="WIL STOOP ASSURANTIEN Werklijst overzicht           Datum 14-10-2026 Blad   1&#10;Medewerker   Stoop W.                  Jansen P.&#10;Relnr/Volg   ...&#10;Taakdatum    ..."></textarea>
+      <div class="knoppen">
+        <button type="button" class="cta" id="btnInlezen">Inlezen</button>
+        <button type="button" id="btnBestand">Bestand openen</button>
+        <input type="file" id="bestand" accept=".txt,.csv,text/plain" class="verborgen">
+        <button type="button" id="btnVoorbeeld">Voorbeeld laden</button>
+        <button type="button" id="btnWissen">Wissen</button>
+        <span class="melding" id="melding" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <!-- Lege staat -->
+    <section class="kader leegstaat" id="leegstaat">
+      <span class="picto" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>
+      </span>
+      <div>
+        <h2>Nog geen agenda's ingelezen</h2>
+        <p class="muted">Na het inlezen ziet u hier:</p>
+        <p class="muted" style="margin:0">- Tellingen van schades en agenda's;<br>- Filters volgens het CRM-venster "Filter werklijstitems";<br>- Een sorteerbare tabel met detailpaneel en export naar CSV.</p>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <div class="raster verborgen" id="dashboard">
+
+      <aside class="kader panel" aria-label="Filter werklijstitems">
+        <h2>Filter werklijstitems</h2>
+        <fieldset>
+          <legend>Status</legend>
+          <div class="opties">
+            <label><input type="radio" name="afg" value="niet" checked> Niet afgehandeld</label>
+            <label><input type="radio" name="afg" value="wel"> Afgehandeld</label>
+            <label><input type="checkbox" id="fNietGelezen" checked> Niet gelezen</label>
+            <label><input type="checkbox" id="fGelezen" checked> Gelezen</label>
+            <label><input type="checkbox" id="fNietGeindexeerd" checked> Niet geïndexeerd</label>
+            <label><input type="checkbox" id="fGeindexeerd" checked> Geïndexeerd</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Soort</legend>
+          <div class="opties" id="soorten"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Eigenschappen</legend>
+          <div class="veld"><label for="fKantoor">Kantoor</label><input type="text" id="fKantoor" autocomplete="off"></div>
+          <div class="veld"><label for="fAfdeling">Afdeling</label><input type="text" id="fAfdeling" autocomplete="off"></div>
+          <div class="veld"><label for="fGebruiker">Gebruiker</label><select id="fGebruiker"><option value="">Alle gebruikers</option></select></div>
+          <div class="twee">
+            <div class="veld"><label for="fPrioriteit">Prioriteit</label>
+              <select id="fPrioriteit"><option value="">Alle</option><option value="P1">P1 Hoog</option><option value="P2">P2 Middel</option><option value="P3">P3 Laag</option><option value="P4">P4 Slotvraag</option></select></div>
+            <div class="veld"><label for="fStatus">Status</label>
+              <select id="fStatus"><option value="">Alle</option><option value="verlopen">Verlopen</option><option value="vandaag">Vandaag</option><option value="gepland">Gepland</option></select></div>
+          </div>
+          <div class="twee">
+            <div class="veld"><label for="fVan">Datum vanaf</label><input type="date" id="fVan"></div>
+            <div class="veld"><label for="fTot">Tot en met</label><input type="date" id="fTot"></div>
+          </div>
+          <div class="snel" aria-label="Snelle datumkeuze">
+            <button type="button" class="klein" data-snel="verlopen">Verlopen</button>
+            <button type="button" class="klein" data-snel="vandaag">Vandaag</button>
+            <button type="button" class="klein" data-snel="week">Week</button>
+            <button type="button" class="klein" data-snel="maand">Maand</button>
+            <button type="button" class="klein" data-snel="kwartaal">Kwartaal</button>
+            <button type="button" class="klein" data-snel="alles">Alles</button>
+          </div>
+        </fieldset>
+        <div class="acties">
+          <button type="button" class="cta" id="btnOk">OK</button>
+          <button type="button" id="btnHerstel">Herstel</button>
+        </div>
+      </aside>
+
+      <div>
+        <section aria-labelledby="schadeTitel">
+          <div class="sectiekop">
+            <span class="picto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>
+            <h2 id="schadeTitel">Schades</h2>
+          </div>
+          <div class="tegels" id="tegelsSchade"></div>
+          <div class="verdelingen" id="verdSchade"></div>
+        </section>
+
+        <section aria-labelledby="agendaTitel">
+          <div class="sectiekop">
+            <span class="picto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="16"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span>
+            <h2 id="agendaTitel">Agenda's in de werklijst</h2>
+          </div>
+          <div class="tegels" id="tegelsAgenda"></div>
+          <div class="verdelingen" id="verdAgenda"></div>
+        </section>
+
+        <section aria-labelledby="tabelTitel">
+          <div class="sectiekop">
+            <span class="picto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span>
+            <h2 id="tabelTitel">Werklijst</h2>
+          </div>
+          <div class="werkbalk">
+            <div class="zoek"><label class="blok" for="qZoek">Zoeken</label><input type="search" id="qZoek" placeholder="Naam, nummer, kenteken, omschrijving..."></div>
+            <div class="kies"><label class="blok" for="qSchadesoort">Schadesoort</label><select id="qSchadesoort"><option value="">Alle schadesoorten</option></select></div>
+            <label class="vink"><input type="checkbox" id="qSter"> Alleen gemarkeerd (*)</label>
+            <button type="button" class="cta" id="btnCsv">Exporteren naar CSV</button>
+          </div>
+          <div class="chips" id="chips"></div>
+          <div class="tabelkader">
+            <table>
+              <thead><tr id="kop"></tr></thead>
+              <tbody id="rijen"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="overlay verborgen" id="overlay"></div>
+<aside class="detail verborgen" id="detail" role="dialog" aria-modal="true" aria-labelledby="detailTitel"></aside>
+
+<footer class="voet">
+  <div class="wrap">
+    <span>Wil Stoop Assurantiën – Agenda dashboard</span>
+    <span>De werklijst wordt alleen in deze browser verwerkt; er wordt niets verzonden of opgeslagen.</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+'use strict';
+
+/* ============================================================
+   Hulpfuncties
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const DATUM_RE = /(\d{2})-(\d{2})-(\d{4})/;
+const POSTCODE_RE = /^\d{4}\s?[A-Za-z]{2}\b/;
+
+function naarSort(d) {
+  const m = String(d || '').match(DATUM_RE);
+  return m ? (+m[3]) * 10000 + (+m[2]) * 100 + (+m[1]) : 0;
+}
+function sortNaarDate(n) { return new Date(Math.floor(n / 10000), Math.floor(n / 100) % 100 - 1, n % 100); }
+function dateNaarSort(d) { return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+function isoNaarSort(s) { return s ? +s.replace(/-/g, '') : 0; }
+function sortNaarIso(n) { const s = String(n); return n ? s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6, 8) : ''; }
+function sortNaarNl(n) { const s = String(n); return n ? s.slice(6, 8) + '-' + s.slice(4, 6) + '-' + s.slice(0, 4) : ''; }
+function plusDagen(n, dagen) { const d = sortNaarDate(n); d.setDate(d.getDate() + dagen); return dateNaarSort(d); }
+function plusMaanden(n, maanden) { const d = sortNaarDate(n); d.setMonth(d.getMonth() + maanden); d.setDate(d.getDate() - 1); return dateNaarSort(d); }
+function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, ''); }
+const fmt = n => n.toLocaleString('nl-NL');
+
+/* ============================================================
+   Parser (zie WERKLIJST-BASISPRINCIPES §3)
+   ============================================================ */
+const LABEL_RE = /^(Medewerker|Relnr\/Volg|Polisnr|Schadenr|Mij\/Branche|Collect|Schadesoort|Taakdatum|Omschrijving|Ingevoerd|Mutatie|Contactpers|Onderwerp)\.?(?:\s+(.*))?$/;
+const MIJ_RE = /^(\S+)\s+(.*?)\s+(\d{5})\s+(.*?)(?:\s{2,}(\S+))?$/;
+const SOORT_WOORD_RE = /^(Overige|DDi|Email|E-mail|Quantum)\b/i;
+
+function nieuwRecord(blad) {
+  return {
+    id: 0, soort: 'Relatie', blad: blad,
+    medewerker: '', relatie: '', relnr: '', adres: '', postcode: '',
+    polisnr: '', schadenr: '', mijCode: '', maatschappij: '', brancheCode: '', branche: '', kenteken: '',
+    collect: '', schadesoort: '', schadedatum: '',
+    taakdatum: '', taakdatumSort: 0, prioriteit: '', ster: false, frequentie: '', agendaPerFreq: '',
+    omschrijving: '', onderwerp: '', contactpers: '', ingevoerd: '', mutatie: '', mutatieDoor: '',
+    status: '', afgehandeld: false, gelezen: false, geindexeerd: false,
+    raw: [], _polis: false, _soortWoord: ''
+  };
+}
+
+function parseWerklijst(tekst) {
+  const rapport = { kantoor: '', reportDate: '', pages: 0 };
+  const records = [];
+  const bladen = new Set();
+  let blad = '', cur = null, laatsteTekst = null;
+
+  const sluit = () => { if (cur) records.push(cur); cur = null; laatsteTekst = null; };
+
+  for (const ruw of tekst.replace(/\r\n?/g, '\n').split('\n')) {
+    const regel = ruw.replace(/\t/g, '    ').replace(/\s+$/, '');
+    const t = regel.trim();
+    if (!t) continue;
+    if (/^[-=_\s]+$/.test(t) && /[-=_]{3,}/.test(t)) continue;               // streepjeslijn
+
+    if (/Werklijst overzicht/i.test(t)) {                                     // kopregel
+      const k = t.match(/^(.*?)\s*Werklijst overzicht/i);
+      if (k && k[1].trim()) rapport.kantoor = k[1].trim();
+      const d = t.match(/Datum\s+(\d{2}-\d{2}-\d{4})/i);
+      if (d) rapport.reportDate = d[1];
+      const b = t.match(/Blad\s+(\d+)/i);
+      if (b) { blad = b[1]; bladen.add(b[1]); }
+      continue;
+    }
+
+    const apf = t.match(/^Agenda per freq\.?\s+(\S+)/i);
+    if (apf) { if (cur) { cur.agendaPerFreq = apf[1]; cur.raw.push(regel); } continue; }
+
+    const m = t.match(LABEL_RE);
+    if (!m) {                                                                 // vervolgregel
+      if (!cur) continue;
+      cur.raw.push(regel);
+      const sw = t.match(SOORT_WOORD_RE);
+      if (sw && !cur._soortWoord) cur._soortWoord = sw[1];
+      if (laatsteTekst) cur[laatsteTekst] += (cur[laatsteTekst] ? ' ' : '') + t;
+      continue;
+    }
+
+    const label = m[1], rest = (m[2] || '').trim();
+    if (label === 'Medewerker') sluit();
+    if (!cur) cur = nieuwRecord(blad);
+    cur.raw.push(regel);
+    const delen = rest.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+    laatsteTekst = null;
+
+    switch (label) {
+      case 'Medewerker':
+        cur.medewerker = delen[0] || '';
+        cur.relatie = delen.slice(1).join(' ');
+        break;
+      case 'Relnr/Volg':
+        if (delen[0] && /\d/.test(delen[0])) { cur.relnr = delen[0]; cur.adres = delen.slice(1).join(' '); }
+        else cur.adres = delen.join(' ');
+        break;
+      case 'Polisnr':
+      case 'Schadenr': {
+        const veld = label === 'Polisnr' ? 'polisnr' : 'schadenr';
+        if (label === 'Polisnr') cur._polis = true;
+        if (delen.length >= 2) { cur[veld] = delen[0]; cur.postcode = delen.slice(1).join(' '); }
+        else if (delen.length === 1) {
+          if (POSTCODE_RE.test(delen[0])) cur.postcode = delen[0];
+          else cur[veld] = delen[0];
+        }
+        break;
+      }
+      case 'Mij/Branche': {
+        const mb = rest.match(MIJ_RE);
+        if (mb) {
+          cur.mijCode = mb[1]; cur.maatschappij = mb[2].trim(); cur.brancheCode = mb[3];
+          cur.branche = mb[4].trim(); cur.kenteken = mb[5] || '';
+        } else cur.maatschappij = rest;
+        break;
+      }
+      case 'Collect':
+        cur.collect = rest;
+        break;
+      case 'Schadesoort': {
+        const sd = rest.match(/Sch\.?\s?datum\s+(\d{2}-\d{2}-\d{4})/i);
+        if (sd) cur.schadedatum = sd[1];
+        cur.schadesoort = rest.replace(/\s*Sch\.?\s?datum.*$/i, '').trim();
+        break;
+      }
+      case 'Taakdatum': {
+        const d = rest.match(DATUM_RE);
+        if (d) cur.taakdatum = d[0];
+        const p = rest.match(/\bP(\d+)\b/);
+        if (p) cur.prioriteit = 'P' + p[1];
+        const voorFreq = rest.split(/Frequentie/i)[0];
+        cur.ster = voorFreq.includes('*');
+        const f = rest.match(/Frequentie\s+(.*)$/i);
+        if (f) cur.frequentie = f[1].replace(/\s+/g, ' ').trim();
+        break;
+      }
+      case 'Omschrijving': cur.omschrijving = rest; laatsteTekst = 'omschrijving'; break;
+      case 'Onderwerp': cur.onderwerp = rest; laatsteTekst = 'onderwerp'; break;
+      case 'Ingevoerd': { const d = rest.match(DATUM_RE); cur.ingevoerd = d ? d[0] : rest; break; }
+      case 'Mutatie': {
+        const d = rest.match(DATUM_RE); if (d) cur.mutatie = d[0];
+        const door = rest.match(/door\s+(.*)$/i); if (door) cur.mutatieDoor = door[1].trim();
+        break;
+      }
+      case 'Contactpers': cur.contactpers = rest; break;
+    }
+  }
+  sluit();
+  rapport.pages = bladen.size;
+  return { ...rapport, records };
+}
+
+function vlag(tekst, woord) {
+  const re = new RegExp('\\b' + woord + '\\b', 'i');
+  const niet = new RegExp('\\bniet\\s+' + woord + '\\b', 'i');
+  return re.test(tekst) && !niet.test(tekst);
+}
+
+function finalize(res) {
+  const vandaag = dateNaarSort(new Date());
+  const peil = naarSort(res.reportDate) || vandaag;
+  res.reportSort = peil;
+  res.records.forEach((r, i) => {
+    r.id = i + 1;
+    if (r.schadenr || r.schadesoort || r.mijCode) r.soort = 'Schade';
+    else if (r._polis) r.soort = 'Polis';
+    else if (r._soortWoord) {
+      const w = r._soortWoord.toLowerCase();
+      r.soort = w === 'ddi' ? 'DDi' : w.startsWith('e') ? 'Email' : w === 'quantum' ? 'Quantum' : 'Overige';
+    } else r.soort = 'Relatie';
+    r.taakdatumSort = naarSort(r.taakdatum);
+    r.schadedatumSort = naarSort(r.schadedatum);
+    r.ingevoerdSort = naarSort(r.ingevoerd);
+    r.mutatieSort = naarSort(r.mutatie);
+    r.status = !r.taakdatumSort ? '' : r.taakdatumSort < peil ? 'verlopen' : r.taakdatumSort === peil ? 'vandaag' : 'gepland';
+    const tekst = r.raw.join(' ');
+    r.afgehandeld = vlag(tekst, 'afgehandeld');
+    r.gelezen = vlag(tekst, 'gelezen');
+    r.geindexeerd = vlag(tekst, 'ge[iï]ndexeerd');
+    r._zoek = norm([r.soort, r.medewerker, r.relatie, r.relnr, r.adres, r.postcode, r.polisnr, r.schadenr, r.maatschappij,
+      r.branche, r.kenteken, r.collect, r.schadesoort, r.omschrijving, r.onderwerp, r.contactpers, r.mutatieDoor, r.frequentie, r.taakdatum].join(' '));
+  });
+  return res;
+}
+
+/* ============================================================
+   Status en filters (zie §5)
+   ============================================================ */
+const SOORTEN = ['Relatie', 'Polis', 'Schade', 'Overige', 'DDi', 'Email', 'Quantum'];
+const PRIO = { P1: 'Hoog', P2: 'Middel', P3: 'Laag', P4: 'Slotvraag' };
+const EXTRA_NAAM = { branche: 'Branche', frequentie: 'Frequentie', agendaPerFreq: 'Agenda per frequentie' };
+
+const standaardFilter = () => ({
+  afgehandeld: 'niet', nietGelezen: true, gelezen: true, nietGeindexeerd: true, geindexeerd: true,
+  soorten: new Set(SOORTEN), kantoor: '', afdeling: '', gebruiker: '', prioriteit: '', status: '', van: 0, tot: 0
+});
+
+const st = {
+  data: null,
+  filter: standaardFilter(),
+  snel: { zoek: '', schadesoort: '', ster: false },
+  extra: {},                         // veld -> waarde (vanuit verdelingen)
+  sort: { key: 'taakdatumSort', dir: 1 }
+};
+
+function leesPaneel() {
+  const f = standaardFilter();
+  f.afgehandeld = document.querySelector('input[name=afg]:checked').value;
+  f.nietGelezen = $('fNietGelezen').checked; f.gelezen = $('fGelezen').checked;
+  f.nietGeindexeerd = $('fNietGeindexeerd').checked; f.geindexeerd = $('fGeindexeerd').checked;
+  f.soorten = new Set([...document.querySelectorAll('#soorten input:checked')].map(i => i.value));
+  f.kantoor = $('fKantoor').value.trim(); f.afdeling = $('fAfdeling').value.trim();
+  f.gebruiker = $('fGebruiker').value; f.prioriteit = $('fPrioriteit').value; f.status = $('fStatus').value;
+  f.van = isoNaarSort($('fVan').value); f.tot = isoNaarSort($('fTot').value);
+  return f;
+}
+function schrijfPaneel(f) {
+  document.querySelector('input[name=afg][value=' + f.afgehandeld + ']').checked = true;
+  $('fNietGelezen').checked = f.nietGelezen; $('fGelezen').checked = f.gelezen;
+  $('fNietGeindexeerd').checked = f.nietGeindexeerd; $('fGeindexeerd').checked = f.geindexeerd;
+  document.querySelectorAll('#soorten input').forEach(i => { i.checked = f.soorten.has(i.value); });
+  $('fKantoor').value = f.kantoor; $('fAfdeling').value = f.afdeling; $('fGebruiker').value = f.gebruiker;
+  $('fPrioriteit').value = f.prioriteit; $('fStatus').value = f.status;
+  $('fVan').value = sortNaarIso(f.van); $('fTot').value = sortNaarIso(f.tot);
+}
+
+function voldoet(r) {
+  const f = st.filter, s = st.snel;
+  if ((f.afgehandeld === 'wel') !== r.afgehandeld) return false;
+  if (!(r.gelezen ? f.gelezen : f.nietGelezen)) return false;
+  if (!(r.geindexeerd ? f.geindexeerd : f.nietGeindexeerd)) return false;
+  if (!f.soorten.has(r.soort)) return false;
+  if (f.kantoor) {
+    const a = norm(f.kantoor), b = norm(st.data.kantoor);
+    if (!(b.startsWith(a) || a.startsWith(b))) return false;
+  }
+  if (f.afdeling) {
+    const a = norm(f.afdeling);
+    if (!norm(r.medewerker).includes(a) && !norm(r.raw.join(' ')).includes(a)) return false;
+  }
+  if (f.gebruiker && r.medewerker !== f.gebruiker) return false;
+  if (f.prioriteit && r.prioriteit !== f.prioriteit) return false;
+  if (f.status && r.status !== f.status) return false;
+  if (f.van && (!r.taakdatumSort || r.taakdatumSort < f.van)) return false;
+  if (f.tot && (!r.taakdatumSort || r.taakdatumSort > f.tot)) return false;
+  if (s.zoek) { const woorden = s.zoek.split(/\s+/).map(norm).filter(Boolean); if (!woorden.every(w => r._zoek.includes(w))) return false; }
+  if (s.schadesoort && r.schadesoort !== s.schadesoort) return false;
+  if (s.ster && !r.ster) return false;
+  for (const k in st.extra) if ((r[k] || '(leeg)') !== st.extra[k]) return false;
+  return true;
+}
+
+/* ============================================================
+   Weergave
+   ============================================================ */
+function tegel(label, waarde, sub, klasse, klein) {
+  return '<div class="tegel ' + (klasse || '') + '"><div class="label">' + esc(label) + '</div>' +
+    '<div class="waarde' + (klein ? ' klein' : '') + '">' + waarde + '</div>' +
+    (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
+}
+
+function telPer(lijst, veld) {
+  const m = new Map();
+  lijst.forEach(r => { const k = r[veld] || '(leeg)'; m.set(k, (m.get(k) || 0) + 1); });
+  return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'nl'));
+}
+
+function verdeling(titel, entries, actie) {
+  const max = entries.length ? entries[0][1] : 0;
+  const rijen = entries.slice(0, 12).map(([k, n]) =>
+    '<button type="button" class="balk" data-actie="' + actie + '" data-waarde="' + esc(k) + '" title="Filter op ' + esc(k) + '">' +
+    '<span class="naam">' + esc(k) + '</span><span class="getal">' + fmt(n) + '</span>' +
+    '<span class="spoor"><span class="vul" style="display:block;width:' + (max ? Math.max(2, n / max * 100) : 0) + '%"></span></span></button>'
+  ).join('');
+  const meer = entries.length > 12 ? '<div class="leeg">En nog ' + (entries.length - 12) + ' andere.</div>' : '';
+  return '<div class="verdeling"><h3>' + esc(titel) + '</h3>' + (rijen || '<div class="leeg">Geen gegevens.</div>') + meer + '</div>';
+}
+
+function renderSchade(lijst) {
+  const peil = st.data.reportSort;
+  const sch = lijst.filter(r => r.soort === 'Schade');
+  const uniek = new Set(sch.map(r => r.schadenr).filter(Boolean)).size;
+  const verlopen = sch.filter(r => r.status === 'verlopen').length;
+  const sluit = sch.filter(r => /sluit/i.test(r.omschrijving + ' ' + r.onderwerp)).length;
+  const letsel = sch.filter(r => /letsel/i.test(r.schadesoort)).length;
+  const metDatum = sch.filter(r => r.schadedatumSort);
+  const peilDate = sortNaarDate(peil);
+  const leeftijden = metDatum.map(r => (peilDate - sortNaarDate(r.schadedatumSort)) / (365.25 * 864e5));
+  const gem = leeftijden.length ? leeftijden.reduce((a, b) => a + b, 0) / leeftijden.length : null;
+  const oudste = metDatum.slice().sort((a, b) => a.schadedatumSort - b.schadedatumSort)[0];
+
+  $('tegelsSchade').innerHTML =
+    tegel("Schade-agenda's", fmt(sch.length), fmt(uniek) + ' unieke schadenummers') +
+    tegel('Verlopen', fmt(verlopen), 'Taakdatum vóór ' + esc(sortNaarNl(peil)), verlopen ? 'signaal' : '') +
+    tegel('Sluitvragen', fmt(sluit), 'Omschrijving of onderwerp met "sluit"') +
+    tegel('Letsel', fmt(letsel), 'Schadesoort met "letsel"') +
+    tegel('Gemiddelde leeftijd dossier', gem == null ? '–' : gem.toLocaleString('nl-NL', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + ' jaar', 'Rapportdatum min schadedatum', 'rustig', gem != null) +
+    tegel('Oudste schade', oudste ? esc(oudste.schadedatum) : '–', oudste ? esc(oudste.relatie) + ' – ' + esc(oudste.schadenr) : 'Geen schadedatum bekend', 'rustig', true);
+
+  $('verdSchade').innerHTML =
+    verdeling('Per schadesoort', telPer(sch, 'schadesoort'), 'schadesoort') +
+    verdeling('Per branche', telPer(sch, 'branche'), 'branche') +
+    verdeling('Per medewerker', telPer(sch, 'medewerker'), 'gebruiker');
+}
+
+function renderAgenda(lijst) {
+  const tel = fn => lijst.filter(fn).length;
+  const overig = tel(r => ['Overige', 'DDi', 'Email', 'Quantum'].includes(r.soort));
+  let html =
+    tegel('Totaal', fmt(lijst.length), fmt(st.data.pages || 0) + (st.data.pages === 1 ? ' blad' : ' bladen')) +
+    tegel('Polis', fmt(tel(r => r.soort === 'Polis')), 'Relatie ' + fmt(tel(r => r.soort === 'Relatie'))) +
+    tegel('Schade', fmt(tel(r => r.soort === 'Schade')), 'Overig ' + fmt(overig));
+  Object.keys(PRIO).forEach(p => {
+    const set = lijst.filter(r => r.prioriteit === p);
+    html += tegel(PRIO[p] + ' (' + p + ')', fmt(set.length),
+      fmt(set.filter(r => r.status === 'verlopen').length) + ' verlopen – ' + fmt(set.filter(r => r.ster).length) + ' gemarkeerd',
+      p === 'P1' ? 'signaal' : p === 'P2' ? 'vandaag' : 'rustig');
+  });
+  const v = tel(r => r.status === 'verlopen');
+  html += tegel('Verlopen', fmt(v), fmt(tel(r => r.status === 'vandaag')) + ' vandaag – ' + fmt(tel(r => r.status === 'gepland')) + ' gepland', v ? 'signaal' : '');
+  $('tegelsAgenda').innerHTML = html;
+
+  $('verdAgenda').innerHTML =
+    verdeling('Per medewerker', telPer(lijst, 'medewerker'), 'gebruiker') +
+    verdeling('Per frequentie', telPer(lijst, 'frequentie'), 'frequentie') +
+    verdeling('Agenda per frequentie', telPer(lijst, 'agendaPerFreq'), 'agendaPerFreq');
+}
+
+/* Tabel: alle velden als kolommen */
+const KOLOMMEN = [
+  ['soort', 'Soort'], ['taakdatum', 'Taakdatum', 'taakdatumSort'], ['prioriteit', 'Prioriteit'], ['ster', 'Gemarkeerd'],
+  ['status', 'Status'], ['medewerker', 'Medewerker'], ['relatie', 'Relatie'], ['relnr', 'Relatienummer'],
+  ['adres', 'Adres'], ['postcode', 'Postcode en plaats'], ['polisnr', 'Polisnummer'], ['schadenr', 'Schadenummer'],
+  ['mijCode', 'Maatschappijcode'], ['maatschappij', 'Maatschappij'], ['brancheCode', 'Branchecode'], ['branche', 'Branche'],
+  ['kenteken', 'Kenteken'], ['collect', 'Collectiviteit'], ['schadesoort', 'Schadesoort'], ['schadedatum', 'Schadedatum', 'schadedatumSort'],
+  ['frequentie', 'Frequentie'], ['agendaPerFreq', 'Agenda per frequentie'], ['omschrijving', 'Omschrijving'], ['onderwerp', 'Onderwerp'],
+  ['contactpers', 'Contactpersoon'], ['ingevoerd', 'Ingevoerd', 'ingevoerdSort'], ['mutatie', 'Mutatie', 'mutatieSort'],
+  ['mutatieDoor', 'Mutatie door'], ['blad', 'Blad']
+];
+
+function celHtml(r, veld) {
+  const v = r[veld];
+  if (veld === 'prioriteit') return v ? '<span class="badge ' + v.toLowerCase() + '" title="' + esc(PRIO[v] || '') + '">' + esc(v) + '</span>' : '';
+  if (veld === 'status') return v ? '<span class="s-' + v + '">' + esc(v.charAt(0).toUpperCase() + v.slice(1)) + '</span>' : '';
+  if (veld === 'ster') return v ? '<span class="ster" title="Gemarkeerd">*</span>' : '';
+  return esc(v);
+}
+
+function renderKop() {
+  $('kop').innerHTML = KOLOMMEN.map(([veld, naam, sk]) => {
+    const key = sk || veld, actief = st.sort.key === key;
+    return '<th scope="col" aria-sort="' + (actief ? (st.sort.dir > 0 ? 'ascending' : 'descending') : 'none') + '">' +
+      '<button type="button" data-sort="' + key + '">' + esc(naam) + '<span class="pijl">' + (actief ? (st.sort.dir > 0 ? '▲' : '▼') : '') + '</span></button></th>';
+  }).join('');
+}
+
+function gesorteerd(lijst) {
+  const { key, dir } = st.sort;
+  return lijst.slice().sort((a, b) => {
+    let x = a[key], y = b[key];
+    if (typeof x === 'boolean') { x = +x; y = +y; }
+    if (typeof x === 'number') {
+      if (!x && y) return 1; if (x && !y) return -1;               // lege datums achteraan
+      return (x - y) * dir || a.id - b.id;
+    }
+    x = String(x || ''); y = String(y || '');
+    if (!x && y) return 1; if (x && !y) return -1;
+    return x.localeCompare(y, 'nl', { numeric: true, sensitivity: 'base' }) * dir || a.id - b.id;
+  });
+}
+
+function renderTabel(lijst) {
+  renderKop();
+  const rijen = gesorteerd(lijst);
+  $('rijen').innerHTML = rijen.length ? rijen.map(r =>
+    '<tr tabindex="0" data-id="' + r.id + '">' + KOLOMMEN.map(([veld]) =>
+      '<td' + (/datum|^ingevoerd|^mutatie$|blad|Code|relnr|nr$/.test(veld) ? ' class="num"' : '') + '>' + celHtml(r, veld) + '</td>').join('') + '</tr>'
+  ).join('') : '<tr><td colspan="' + KOLOMMEN.length + '" class="leeg" style="cursor:default">Geen agenda\'s die aan de filters voldoen.</td></tr>';
+}
+
+function renderChips(aantal) {
+  const chips = [];
+  const f = st.filter;
+  if (f.gebruiker) chips.push(['paneel:gebruiker', 'Gebruiker: ' + f.gebruiker]);
+  if (f.prioriteit) chips.push(['paneel:prioriteit', 'Prioriteit: ' + f.prioriteit]);
+  if (f.status) chips.push(['paneel:status', 'Status: ' + f.status]);
+  if (f.van || f.tot) chips.push(['paneel:datum', 'Taakdatum: ' + (f.van ? sortNaarNl(f.van) : '…') + ' tot en met ' + (f.tot ? sortNaarNl(f.tot) : '…')]);
+  if (f.kantoor) chips.push(['paneel:kantoor', 'Kantoor: ' + f.kantoor]);
+  if (f.afdeling) chips.push(['paneel:afdeling', 'Afdeling: ' + f.afdeling]);
+  if (st.snel.schadesoort) chips.push(['snel:schadesoort', 'Schadesoort: ' + st.snel.schadesoort]);
+  for (const k in st.extra) chips.push(['extra:' + k, EXTRA_NAAM[k] + ': ' + st.extra[k]]);
+  $('chips').innerHTML = chips.map(([k, t]) =>
+    '<span class="chip">' + esc(t) + '<button type="button" data-chip="' + esc(k) + '" aria-label="Filter ' + esc(t) + ' verwijderen">×</button></span>').join('') +
+    '<span class="resultaat">' + fmt(aantal) + ' van ' + fmt(st.data.records.length) + " agenda's</span>";
+}
+
+function render() {
+  if (!st.data) return;
+  const lijst = st.data.records.filter(voldoet);
+  renderSchade(lijst);
+  renderAgenda(lijst);
+  renderChips(lijst.length);
+  renderTabel(lijst);
+  st.laatsteLijst = lijst;
+}
+
+function vulKeuzelijsten() {
+  const recs = st.data.records;
+  const telSoort = {}; SOORTEN.forEach(s => { telSoort[s] = 0; }); recs.forEach(r => { telSoort[r.soort]++; });
+  $('soorten').innerHTML = SOORTEN.map(s =>
+    '<label><input type="checkbox" value="' + s + '"' + (st.filter.soorten.has(s) ? ' checked' : '') + '> ' + s +
+    '<span class="telling">' + telSoort[s] + '</span></label>').join('');
+  const gebruikers = [...new Set(recs.map(r => r.medewerker).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'nl'));
+  $('fGebruiker').innerHTML = '<option value="">Alle gebruikers</option>' + gebruikers.map(g => '<option>' + esc(g) + '</option>').join('');
+  const soorten = [...new Set(recs.map(r => r.schadesoort).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'nl'));
+  $('qSchadesoort').innerHTML = '<option value="">Alle schadesoorten</option>' + soorten.map(g => '<option>' + esc(g) + '</option>').join('');
+}
+
+function renderMeta() {
+  const d = st.data;
+  $('meta').innerHTML =
+    '<span>Kantoor <b>' + esc(d.kantoor || 'onbekend') + '</b></span>' +
+    '<span>Rapportdatum <b>' + esc(d.reportDate || sortNaarNl(d.reportSort) + ' (vandaag, geen datum in kopregel)') + '</b></span>' +
+    '<span>Bladen <b>' + fmt(d.pages || 0) + '</b></span>' +
+    "<span>Agenda's <b>" + fmt(d.records.length) + '</b></span>';
+}
+
+/* ============================================================
+   Inlezen
+   ============================================================ */
+function melding(tekst, fout) { const m = $('melding'); m.textContent = tekst; m.className = 'melding' + (fout ? ' fout' : ''); }
+
+function readText() { return $('bron').value; }
+
+function inlezen() {
+  const tekst = readText();
+  if (!tekst.trim()) { melding('Het tekstvak is leeg. Plak eerst de werklijst.', true); return; }
+  const res = finalize(parseWerklijst(tekst));
+  if (!res.records.length) { melding('Geen agenda\'s gevonden. Controleer of de tekst regels met "Medewerker" en "Taakdatum" bevat.', true); return; }
+  st.data = res;
+  st.filter = standaardFilter(); st.snel = { zoek: '', schadesoort: '', ster: false }; st.extra = {};
+  $('qZoek').value = ''; $('qSter').checked = false;
+  vulKeuzelijsten(); schrijfPaneel(st.filter); renderMeta();
+  $('leegstaat').classList.add('verborgen'); $('dashboard').classList.remove('verborgen');
+  render();
+  melding(fmt(res.records.length) + " agenda's ingelezen" + (res.reportDate ? ' (rapportdatum ' + res.reportDate + ').' : '. Let op: geen rapportdatum gevonden; vandaag wordt als peildatum gebruikt.'), !res.reportDate);
+}
+
+function wissen() {
+  $('bron').value = ''; st.data = null;
+  $('dashboard').classList.add('verborgen'); $('leegstaat').classList.remove('verborgen');
+  $('meta').innerHTML = '<span>Plak het werklijst-overzicht om te beginnen.</span>';
+  melding('');
+}
+
+/* ============================================================
+   Detailpaneel
+   ============================================================ */
+let vorigeFocus = null;
+function openDetail(id) {
+  const r = st.data.records.find(x => x.id === id); if (!r) return;
+  vorigeFocus = document.activeElement;
+  const rij = (k, v) => v === '' || v == null || v === false ? '' : '<dt>' + esc(k) + '</dt><dd>' + v + '</dd>';
+  $('detail').innerHTML =
+    '<div class="kop"><span class="picto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></span>' +
+    '<h2 id="detailTitel">' + esc(r.relatie || r.medewerker || 'Agenda') + '</h2>' +
+    '<button type="button" id="sluitDetail">Sluiten</button></div>' +
+    '<dl>' + KOLOMMEN.map(([veld, naam]) => rij(naam, celHtml(r, veld))).join('') +
+    rij('Afgehandeld', r.afgehandeld ? 'Ja' : 'Nee') + rij('Gelezen', r.gelezen ? 'Ja' : 'Nee') + rij('Geïndexeerd', r.geindexeerd ? 'Ja' : 'Nee') +
+    '</dl><h3>Originele bronregels</h3><pre class="bron">' + esc(r.raw.join('\n')) + '</pre>';
+  $('detail').classList.remove('verborgen'); $('overlay').classList.remove('verborgen');
+  $('sluitDetail').focus();
+}
+function sluitDetail() {
+  $('detail').classList.add('verborgen'); $('overlay').classList.add('verborgen');
+  if (vorigeFocus) vorigeFocus.focus();
+}
+
+/* ============================================================
+   CSV-export (puntkomma, UTF-8 met BOM)
+   ============================================================ */
+function exportCsv() {
+  if (!st.data) return;
+  const lijst = gesorteerd(st.laatsteLijst || []);
+  const q = v => { const s = typeof v === 'boolean' ? (v ? 'Ja' : 'Nee') : String(v == null ? '' : v); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const regels = [KOLOMMEN.map(k => q(k[1])).join(';')].concat(lijst.map(r => KOLOMMEN.map(([veld]) => q(r[veld])).join(';')));
+  const blob = new Blob(['﻿' + regels.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'werklijst-wil-stoop-' + (st.data.reportDate || sortNaarNl(st.data.reportSort)) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ============================================================
+   Voorbeelddata (fictief)
+   ============================================================ */
+const VOORBEELD = [
+"WIL STOOP ASSURANTIEN Werklijst overzicht           Datum 14-10-2026 Blad   1",
+"--------------------------------------------------------------------------------",
+"Medewerker   Stoop W.                  Jansen P.",
+"Relnr/Volg   40112233.80001.05001      Dorpsstraat 12",
+"Polisnr.     30098811                  1234 AB VOORBEELDSTAD",
+"Taakdatum    02-10-2026 P1  *                    Frequentie           weken",
+"                                                 Agenda per freq  Nee",
+"Omschrijving Polis opmaken",
+"Ingevoerd    26-09-2026",
+"Mutatie      03-10-2026 door   Stoop W.",
+"Contactpers  M1001",
+"Onderwerp    Nieuwe aanvraag woonhuis",
+"--------------------------------------------------------------------------------",
+"Medewerker   Schadeafdeling            de Vries M. J.",
+"Relnr/Volg   40118877.80001.02004      Kerkweg 76",
+"Schadenr.    2307594.01                2716 HX VOORBEELDSTAD",
+"Mij/Branche  A210  Voorbeeld Verz. N.V 02103 Personenauto            XX-123-Y",
+"Collect.     Provisie 20%",
+"Schadesoort  MOT:WA/Letsel                       Sch.datum  29-09-2023",
+"Taakdatum    14-10-2026 P2  *                    Frequentie        12 weken",
+"                                                 Agenda per freq  Nee",
+"Omschrijving Dossier sluiten?",
+"Ingevoerd    16-05-2024",
+"Mutatie      29-06-2026 door   Bakker S.",
+"Onderwerp    Letselschade afwikkeling, wachten op",
+"             medisch advies.",
+"--------------------------------------------------------------------------------",
+"Medewerker   Schadeafdeling            Pietersen B.",
+"Relnr/Volg   40120011.80001.03001      Molenlaan 3",
+"Schadenr.    2401188.02                3011 CD VOORBEELDSTAD",
+"Mij/Branche  B440  Fictief Assurantie  01102 Inboedel",
+"Collect.     Provisie 15%",
+"Schadesoort  BRA:Waterschade                     Sch.datum  12-02-2024",
+"Taakdatum    30-10-2026 P3                       Frequentie         4 weken",
+"                                                 Agenda per freq  Ja",
+"Omschrijving Herinnering expertiserapport",
+"Ingevoerd    20-02-2024",
+"Mutatie      01-10-2026 door   Bakker S.",
+"Onderwerp    Rapport expert opvragen",
+"--------------------------------------------------------------------------------",
+"Medewerker   Bakker S.                 Smit Holding B.V.",
+"Relnr/Volg   40133344.80001.01001      Industrieweg 40",
+"Schadenr.    2209911.01                4801 EF VOORBEELDSTAD",
+"Mij/Branche  A210  Voorbeeld Verz. N.V 05301 Aansprakelijkheid",
+"Schadesoort  AVB:Zaakschade                      Sch.datum  03-11-2022",
+"Taakdatum    20-09-2026 P1                       Frequentie           weken",
+"                                                 Agenda per freq  Nee",
+"Omschrijving Sluiten na betaling eigen risico",
+"Ingevoerd    10-11-2022",
+"Mutatie      15-09-2026 door   Bakker S.",
+"Onderwerp    Eigen risico nog niet ontvangen",
+"WIL STOOP ASSURANTIEN Werklijst overzicht           Datum 14-10-2026 Blad   2",
+"--------------------------------------------------------------------------------",
+"Medewerker   Stoop W.                  Visser A.",
+"Relnr/Volg   40140055.80001.05002      Havenkade 8",
+"Polisnr.                               1011 GH VOORBEELDSTAD",
+"Taakdatum    21-10-2026 P4                       Frequentie           weken",
+"                                                 Agenda per freq  Nee",
+"Omschrijving Slotvraag premievoorstel",
+"Ingevoerd    01-10-2026",
+"Mutatie      08-10-2026 door   Stoop W.",
+"Contactpers  M1002",
+"Onderwerp    Klant heeft nog geen keuze gemaakt",
+"--------------------------------------------------------------------------------",
+"Medewerker   Bakker S.                 Mulder T.",
+"Relnr/Volg   40150066.80001.05001      Stationsweg 21",
+"Polisnr.     30101234                  5611 JK VOORBEELDSTAD",
+"Taakdatum    09-10-2026 P2                       Frequentie         2 weken",
+"                                                 Agenda per freq  Ja",
+"Omschrijving Wijziging verwerken",
+"Ingevoerd    02-10-2026",
+"Mutatie      09-10-2026 door   Bakker S.",
+"Onderwerp    Nieuwe auto, kenteken doorgeven",
+"--------------------------------------------------------------------------------",
+"Medewerker   Stoop W.                  Bos K.",
+"Relnr/Volg   40160077.80001.00001      Lindelaan 5",
+"Polisnr.                               6811 LM VOORBEELDSTAD",
+"Taakdatum    05-11-2026 P3                       Frequentie           weken",
+"                                                 Agenda per freq  Nee",
+"Omschrijving Jaarlijks adviesgesprek",
+"Ingevoerd    05-10-2026",
+"Mutatie      05-10-2026 door   Stoop W.",
+"Onderwerp    Afspraak inplannen",
+"--------------------------------------------------------------------------------",
+"Medewerker   Schadeafdeling            Hendriks R.",
+"Relnr/Volg   40170088.80001.02001      Parkweg 19",
+"Schadenr.    2502207.01                7511 NP VOORBEELDSTAD",
+"Mij/Branche  B440  Fictief Assurantie  02103 Personenauto            YY-456-Z",
+"Collect.     Provisie 20%",
+"Schadesoort  MOT:Casco                           Sch.datum  18-08-2025",
+"Taakdatum    11-10-2026 P2                       Frequentie         6 weken",
+"                                                 Agenda per freq  Ja",
+"Omschrijving Regres opvolgen",
+"Ingevoerd    25-08-2025",
+"Mutatie      30-09-2026 door   Bakker S.",
+"Onderwerp    Tegenpartij reageert niet"
+].join('\n');
+
+/* ============================================================
+   Thema
+   ============================================================ */
+const THEMAS = ['auto', 'light', 'dark'], THEMA_NAAM = { auto: 'automatisch', light: 'licht', dark: 'donker' };
+function zetThema(t) {
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+  $('themaTekst').textContent = 'Thema: ' + THEMA_NAAM[t];
+  try { localStorage.setItem('wsThema', t); } catch (e) { /* geen opslag beschikbaar */ }
+}
+let thema = 'auto';
+try { thema = localStorage.getItem('wsThema') || 'auto'; } catch (e) { /* geen opslag beschikbaar */ }
+if (!THEMAS.includes(thema)) thema = 'auto';
+zetThema(thema);
+$('thema').addEventListener('click', () => { thema = THEMAS[(THEMAS.indexOf(thema) + 1) % THEMAS.length]; zetThema(thema); });
+
+/* ============================================================
+   Gebeurtenissen
+   ============================================================ */
+$('btnInlezen').addEventListener('click', inlezen);
+$('bron').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) inlezen(); });
+$('btnVoorbeeld').addEventListener('click', () => { $('bron').value = VOORBEELD; inlezen(); });
+$('btnWissen').addEventListener('click', wissen);
+$('btnBestand').addEventListener('click', () => $('bestand').click());
+$('bestand').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const lezer = new FileReader();
+  lezer.onload = () => { $('bron').value = lezer.result; inlezen(); e.target.value = ''; };
+  lezer.readAsText(file);
+});
+
+$('btnOk').addEventListener('click', () => { st.filter = leesPaneel(); render(); });
+$('btnHerstel').addEventListener('click', () => { st.filter = standaardFilter(); st.extra = {}; schrijfPaneel(st.filter); render(); });
+document.querySelectorAll('[data-snel]').forEach(b => b.addEventListener('click', () => {
+  if (!st.data) return;
+  const p = st.data.reportSort; let van = 0, tot = 0;
+  switch (b.dataset.snel) {
+    case 'verlopen': tot = plusDagen(p, -1); break;
+    case 'vandaag': van = tot = p; break;
+    case 'week': van = p; tot = plusDagen(p, 6); break;
+    case 'maand': van = p; tot = plusMaanden(p, 1); break;
+    case 'kwartaal': van = p; tot = plusMaanden(p, 3); break;
+  }
+  $('fVan').value = sortNaarIso(van); $('fTot').value = sortNaarIso(tot);
+  st.filter = leesPaneel(); render();
+}));
+
+$('qZoek').addEventListener('input', e => { st.snel.zoek = e.target.value.trim(); render(); });
+$('qSchadesoort').addEventListener('change', e => { st.snel.schadesoort = e.target.value; render(); });
+$('qSter').addEventListener('change', e => { st.snel.ster = e.target.checked; render(); });
+$('btnCsv').addEventListener('click', exportCsv);
+
+document.addEventListener('click', e => {
+  const balk = e.target.closest('.balk');
+  if (balk) {
+    const w = balk.dataset.waarde, a = balk.dataset.actie;
+    if (a === 'gebruiker') { st.filter.gebruiker = w === '(leeg)' ? '' : w; $('fGebruiker').value = st.filter.gebruiker; }
+    else if (a === 'schadesoort') { st.snel.schadesoort = w === '(leeg)' ? '' : w; $('qSchadesoort').value = st.snel.schadesoort; }
+    else st.extra[a] = w;
+    render();
+    document.getElementById('tabelTitel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  const chip = e.target.closest('[data-chip]');
+  if (chip) {
+    const [bron, veld] = chip.dataset.chip.split(':');
+    if (bron === 'extra') delete st.extra[veld];
+    else if (bron === 'snel') { st.snel.schadesoort = ''; $('qSchadesoort').value = ''; }
+    else if (veld === 'datum') { st.filter.van = st.filter.tot = 0; }
+    else st.filter[veld] = '';
+    schrijfPaneel(st.filter); render();
+    return;
+  }
+  const th = e.target.closest('[data-sort]');
+  if (th) {
+    const k = th.dataset.sort;
+    st.sort = st.sort.key === k ? { key: k, dir: -st.sort.dir } : { key: k, dir: 1 };
+    renderTabel(st.laatsteLijst || []);
+    const knop = document.querySelector('[data-sort="' + k + '"]'); if (knop) knop.focus();
+    return;
+  }
+  const tr = e.target.closest('tr[data-id]');
+  if (tr) { openDetail(+tr.dataset.id); return; }
+  if (e.target.id === 'sluitDetail' || e.target.id === 'overlay') sluitDetail();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('detail').classList.contains('verborgen')) sluitDetail();
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('tr[data-id]')) openDetail(+e.target.dataset.id);
+});
+
+/* Voor hergebruik (bijvoorbeeld tests of een latere ophaal-laag) */
+window.WilStoopWerklijst = { parseWerklijst, finalize };
+})();
+</script>
+</body>
+</html>
