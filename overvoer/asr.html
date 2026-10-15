@@ -175,6 +175,7 @@
       <label class="pf-chip"><input type="checkbox" value="AVP" checked> AVP</label>
       <label class="pf-chip"><input type="checkbox" value="Inboedel" checked> Inboedel</label>
       <label class="pf-chip"><input type="checkbox" value="Woonhuis" checked> Woonhuis</label>
+      <label class="pf-chip"><input type="checkbox" value="Recreatiewoning" checked> Recreatiewoning</label>
       <label class="pf-chip"><input type="checkbox" value="Personenauto" checked> Personenauto</label>
       <label class="pf-chip"><input type="checkbox" value="Bromfiets" checked> Bromfiets</label>
       <label class="pf-chip"><input type="checkbox" value="Motor" checked> Motor</label>
@@ -372,7 +373,7 @@ const CSV_COLUMNS = [
 const ASRSchema = (() => {
   'use strict';
 
-  const CANONICAL = ['AVP','Inboedel','Woonhuis','Personenauto','Bromfiets','Motor','Camper','Caravan','Rechtsbijstand','Doorlopende Reis'];
+  const CANONICAL = ['AVP','Inboedel','Woonhuis','Recreatiewoning','Personenauto','Bromfiets','Motor','Camper','Caravan','Rechtsbijstand','Doorlopende Reis'];
   // Motorrijtuigen met dezelfde ASR-schermopbouw (Kenteken, Meldcode, Dekking-regels)
   const VOERTUIGEN = ['Personenauto','Bromfiets','Motor','Camper','Caravan'];
 
@@ -399,6 +400,7 @@ const ASRSchema = (() => {
     for (const c of CANONICAL) if (s === c.toLowerCase()) return c;
     if (/doorlopende\s*reis|reis\s*verzekering|\breis\b/.test(s)) return 'Doorlopende Reis';
     if (/rechtsbijstand|\brbv\b/.test(s)) return 'Rechtsbijstand';
+    if (/recreatie\s*woning|vakantie\s*woning|chalet|stacaravan|recreatiewoning/.test(s)) return 'Recreatiewoning';
     if (/inboedel|huisraad/.test(s)) return 'Inboedel';
     // Backward-compat: 'Wonen' → 'Woonhuis'
     if (/woonhuis|opstal|\bwonen\b|woon\s*verzekering/.test(s)) return 'Woonhuis';
@@ -419,6 +421,7 @@ const ASRSchema = (() => {
     'AVP':              [...VEHICLE, ...WOON, ...REIS, ...RB, ...VN],
     'Inboedel':         [...VEHICLE, ...REIS, ...RB, ...VN],
     'Woonhuis':         [...VEHICLE, ...REIS, ...RB, ...VN],
+    'Recreatiewoning':  ['Gezinssamenstelling', ...VEHICLE, ...REIS, ...RB, ...VN],
     // Bouwjaar wordt voor Personenauto bewust niet gebruikt; Gezinssamenstelling nooit op auto
     'Personenauto':     ['Verzekerde som','Gezinssamenstelling', ...WOON, ...REIS, ...RB, ...VN],
     'Bromfiets':        ['Verzekerde som','Gezinssamenstelling', ...WOON, ...REIS, ...RB, ...VN],
@@ -538,8 +541,8 @@ const ASRSchema = (() => {
     for (const f of ['Monumentaal pand','Eigen woning','Mediation meeverzekeren','Motorrijtuigen meeverzekeren','Arbeidsrecht meeverzekeren']) {
       if (row[f] && !/^[JN]$/.test(row[f])) { warn(row, `${f} '${row[f]}' is geen J/N — geleegd`); row[f] = ''; }
     }
+    if (dekkingList(row).some(([c]) => !c)) warn(row, `Dekkingcodes voor ${p} nog niet ingesteld — alleen omschrijving gevuld`);
     if (VOERTUIGEN.includes(p)) {
-      if (dekkingList(row).some(([c]) => !c)) warn(row, `Dekkingcodes voor ${p} nog niet ingesteld — alleen omschrijving gevuld`);
       const kv = validateKenteken(row['Kenteken']);
       if (row['Kenteken'] && !kv.ok && kv.value) warn(row, `Kenteken ${kv.value} heeft een ongebruikelijk formaat`);
       if (row['Kenteken'] && !kv.value) warn(row, `Kenteken '${row['Kenteken']}' ongeldig — geleegd`);
@@ -549,7 +552,7 @@ const ASRSchema = (() => {
     }
 
     // 4. defaults waar toegestaan
-    if (p === 'Woonhuis' || p === 'Inboedel') {
+    if (p === 'Woonhuis' || p === 'Inboedel' || p === 'Recreatiewoning') {
       if (!row['Monumentaal pand']) row['Monumentaal pand'] = 'N';
       if (!row['Eigen woning']) row['Eigen woning'] = 'J';
     }
@@ -1208,6 +1211,7 @@ const ASRParser = (() => {
     ['Caravan', /caravan|vouwwagen/gi],
     ['Inboedel', /inboedel|huisraad/gi],
     ['Woonhuis', /woonhuis|opstal|herbouwwaarde|bouwaard|\bbouwjaar\b/gi],
+    ['Recreatiewoning', /recreatie\s*woning|chalet|stacaravan/gi],
     ['AVP', /aansprakelijkheid\s*(?:voor\s*)?particulier|\bavp\b|aansprakelijkheidsverzekering/gi],
     ['Rechtsbijstand', /rechtsbijstand/gi],
     ['Doorlopende Reis', /doorlopende\s*reis|reisverzekering|annuleringsverzekering|bagage|dekkingsgebied/gi],
@@ -1323,6 +1327,20 @@ const ASRParser = (() => {
                   geboortedatum: g.geboortedatum_klant || '', geslacht: g.geslacht || '' };
     const cands = [];
     const lines = text.split('\n');
+    // ASR: "Naam partner / Voorletters partner / Tussenvoegsel partner / Geboortedatum partner"
+    const pNaam = _extract_kv_lines(text, String.raw`naam\s*partner|achternaam\s*partner`);
+    if (pNaam) {
+      const vl = _extract_kv_lines(text, String.raw`voorletters\s*partner`);
+      const ini = (vl.match(/[A-Za-z]/g) || []).map(c => c.toUpperCase());
+      cands.push({
+        voorletters: ini.length ? ini.join('.') + '.' : '',
+        tussenvoegsel: _extract_kv_lines(text, String.raw`tussenvoegsels?\s*partner|voorvoegsels?\s*partner`).toLowerCase(),
+        achternaam: /^[A-Z\s'-]+$/.test(pNaam) ? titleCaseStr(pNaam.toLowerCase()) : pNaam.replace(/\s+/g, ' ').trim(),
+        geboortedatum: _norm_date(_extract_kv_lines(text, String.raw`geboortedatum\s*partner`)),
+        geslacht: detectGeslacht(_extract_kv_lines(text, String.raw`aanhef\s*partner|geslacht\s*partner`)) ||
+                  ({ man: 'M', vrouw: 'V' })[(_extract_kv_lines(text, String.raw`geslacht\s*partner`) || '').toLowerCase()] || '',
+      });
+    }
     const nearDate = (i) => {
       for (let k = i; k < Math.min(lines.length, i + 3); k++) {
         const d = _norm_date(lines[k].match(/\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4}|\d{1,2}\s+[a-z]{3,9}\s+\d{4}/i)?.[0] || '');
@@ -1520,6 +1538,22 @@ const ASRParser = (() => {
     const mon = _extract_kv_lines(src, String.raw`monument(?:aal)?(?:\s*pand)?|rijksmonument|gemeentelijk\s*monument`);
     row['Monumentaal pand'] = _yn_code(mon) || (/\b(?:rijks|gemeentelijk)\s*monument\b/i.test(src) && !/geen\s*monument/i.test(src) ? 'J' : 'N');
     row['Eigen woning'] = eigenWoningCode(src);
+    // Risicoadres uit het ASR-objectblok ("Recreatiewoning / Inboedel / Opstal" gevolgd door Postcode/Huisnummer/Straat/Plaats)
+    const objLines = src.split('\n');
+    const oi = objLines.findIndex(l => /^\s*(?:recreatiewoning|inboedel|opstal|woonhuis)\s*$/i.test(l));
+    if (oi >= 0) {
+      const blok = objLines.slice(oi + 1, oi + 16).join('\n');
+      const pc = _extract_kv_lines(blok, String.raw`postcode`), hn = _extract_kv_lines(blok, String.raw`huisnummer`);
+      const st = _extract_kv_lines(blok, String.raw`straat`), pl = _extract_kv_lines(blok, String.raw`plaats|woonplaats`);
+      const tv = _extract_kv_lines(blok, String.raw`huisnummer\s*toevoeg(?:ing|sel)|toevoeging`);
+      if (st && /^\d+/.test(hn) && POSTCODE_RE.test(pc.toUpperCase())) {
+        row['Straat'] = titleCaseStr(st); row['Huisnummer'] = hn.match(/^\d+/)[0];
+        row['Huisnummer toevoeging'] = tv && !/^n\.?v\.?t/i.test(tv) ? tv.toUpperCase() : '';
+        row['Postcode'] = formatPostcode(pc); if (pl) row['Woonplaats'] = cleanCity(pl);
+        row._risicoadres = true;
+        return;
+      }
+    }
     // Risicoadres
     const ra = _parse_address_from_window(src, String.raw`risico\s*adres|verzekerd\s*adres|adres\s*(?:van\s*het\s*)?risico|adres\s*woning|risicoplaats|ligging`);
     if (ra.straat && ra.huisnummer) {
@@ -1552,6 +1586,36 @@ const ASRParser = (() => {
       if (a) out.push(a[1].trim().replace(/\s+/g, ' ').replace(/^afkoop/i, 'Afkoop'));
     }
     return out;
+  }
+
+  // Dekkingcodes recreatiewoning nog niet bekend — omschrijving staat al goed
+  const RECREATIE_CODES = { opstal: '', inboedel: '', aansprakelijkheid: '' };
+  function applyRecreatiewoning(row, detail, cov, ctx) {
+    const src = detail + '\n' + cov;
+    const lines = src.split('\n');
+    const dk = [], ux = uitzonderingList(row);
+    // Per "Dekking:"-blok het verzekerd bedrag meenemen (staat in de regels tot de volgende Dekking:)
+    const blokken = [];
+    lines.forEach((l, i) => { const m = l.match(/(?:^|\t)\s*dekking\s*:\s*(?:\t\s*)?(.+)$/i); if (m) blokken.push({ naam: m[1].split('\t')[0].trim(), i }); });
+    blokken.forEach((b, n) => {
+      const body = lines.slice(b.i + 1, n + 1 < blokken.length ? blokken[n+1].i : b.i + 12).join('\n');
+      const bedrag = (body.match(/verzekerd\s*bedrag[^\n€\d]{0,40}(?:€\s*)?(\d{1,3}(?:\.\d{3})+|\d+)/i) || [])[1];
+      if (/inboedel/i.test(b.naam)) { dk.push([RECREATIE_CODES.inboedel, 'Inboedel recreatiewoning']); if (bedrag) ux.push(`Inboedel recreatiewoning € ${bedrag}`); }
+      else if (/aansprakelijk/i.test(b.naam)) { dk.push([RECREATIE_CODES.aansprakelijkheid, 'Aansprakelijkheid recreatiewoning']); if (bedrag) ux.push(`Aansprakelijkheid recreatiewoning € ${bedrag}`); }
+      else dk.push([RECREATIE_CODES.opstal, `Recreatiewoning ${VARIANT_TOP.test(b.naam) ? 'Allrisk' : b.naam}`]);
+    });
+    if (!dk.length) dk.push([RECREATIE_CODES.opstal, 'Recreatiewoning']);
+    const vs = amountAfter(src, String.raw`aankoopwaarde|herbouw\s*waarde|verzekerde\s*waarde|verzekerd\s*bedrag\s*(?:opstal|recreatiewoning)`, 1000, 5000000);
+    row['Verzekerde som'] = vs.length ? String(vs[0].v) : '';
+    row['Eigenrisico'] = extractEigenrisico(detail) || extractEigenrisico(cov);
+    woonFields(row, detail, cov);
+    row['Woonhuis type'] = 'R';
+    const soort = _extract_kv_lines(src, String.raw`soort\s*object`);
+    if (soort) ux.unshift(`Soort object: ${soort}`);
+    if (labelYN(src, String.raw`staat\s*de\s*recreatiewoning\s*op\s*een\s*park`) === 'J') ux.push('Recreatiewoning op een park');
+    ux.push(...extraMeeverzekerd(src));
+    writeDekkingen(row, dk);
+    writeUitzonderingen(row, ux);
   }
 
   function applyAVP(row, detail, cov, ctx) {
@@ -1659,19 +1723,24 @@ const ASRParser = (() => {
   function applyRechtsbijstand(row, detail, cov, ctx) {
     const src = detail + '\n' + cov;
     const modules = new Set();
-    const mod = (re) => positiveFeature(src, re);
-    if (mod(/module\s*a\b|\bverkeer\b|verkeersrechtsbijstand/i)) modules.add('A');
+    // ASR: modules staan als "Dekking:  Consument en Wonen / Verkeer / Inkomen / Rechtsbijstand Verkeersdeelnemers"
+    const dekRegels = _extract_kv_lines(src, String.raw`dekking`, { all: true }).map(h => h.value);
+    const mod = (re) => dekRegels.length ? dekRegels.some(v => re.test(v)) : positiveFeature(src, re);
+    if (mod(/module\s*a\b|\bverkeer|verkeersrechtsbijstand/i)) modules.add('A');
     if (mod(/module\s*b\b|consument|\bwonen\b/i)) modules.add('B');
     if (mod(/module\s*c\b|\binkomen\b|\bwerk\b/i)) modules.add('C');
-    const plus = labelYN(src, String.raw`plus\s*pakket|pluspakket|plusmodule`) === 'J' || positiveFeature(src, /plus\s*pakket|pluspakket/i);
-    if (/\bRBV\b/.test(src)) { modules.add('A'); modules.add('B'); modules.add('C'); }   // RBV forceert A, B en C
+    const plus = labelYN(src, String.raw`plus\s*pakket(?:\s*aanwezig)?|pluspakket(?:\s*aanwezig)?|plusmodule|verkeersdeelnemers\s*inclusief\s*pluspakket`) === 'J'
+              || (!/pluspakket[^\n]*\t\s*nee/i.test(src) && positiveFeature(src, /plus\s*pakket\s*(?:aanwezig|meeverzekerd)?\s*(?:\t|:)\s*ja/i));
+    // RBV forceert A, B en C — alleen als het scherm zelf geen "Dekking:"-regels toont
+    // (in ASR-backoffice is "RBV 2019-01" de productvoorwaarde van Rechtsbijstand Verkeersdeelnemers = alleen A)
+    if (!dekRegels.length && /\bRBV\b/.test(src)) { modules.add('A'); modules.add('B'); modules.add('C'); }
     if (plus) modules.add('D');                                                             // D alleen met Pluspakket
     const MOD = { A: ['9185', 'Module A: Verkeer'], B: ['9187', 'Module B: Consument en Wonen'], C: ['9186', 'Module C: Inkomen'], D: ['9190', 'Module D: Fiscaal en Vermogen'] };
     writeDekkingen(row, [...modules].map(m => MOD[m]));
     // J/N alleen waar expliciet aanwezig
-    row['Mediation meeverzekeren'] = labelYN(src, String.raw`mediation(?:\s*bij\s*(?:echt)?scheiding)?|scheidingsmediation`);
-    row['Motorrijtuigen meeverzekeren'] = labelYN(src, String.raw`motorrijtuig(?:en)?|rechtsbijstand\s*motorrijtuigen`);
-    row['Arbeidsrecht meeverzekeren'] = labelYN(src, String.raw`arbeidsrecht|arbeid`);
+    row['Mediation meeverzekeren'] = labelYN(src, String.raw`mediation(?:\s*bij\s*(?:echt)?scheiding)?(?:\s*meeverzekerd)?|scheidingsmediation`);
+    row['Motorrijtuigen meeverzekeren'] = labelYN(src, String.raw`(?:eigen\s*)?motorrijtuig(?:en)?(?:\s*meeverzekerd)?|rechtsbijstand\s*motorrijtuigen`);
+    row['Arbeidsrecht meeverzekeren'] = labelYN(src, String.raw`arbeidsrecht(?:\s*meeverzekerd)?|arbeid(?:\s*meeverzekerd)?`);
     row['Gezinssamenstelling'] = _gezinssamenstelling_code(_extract_kv_lines(src, String.raw`(?:verzekerde\s*)?gezinssamenstelling|gezinssituatie|samenstelling\s*huishouden|huishouden|verzekerd\s*voor`));
   }
 
@@ -1684,30 +1753,46 @@ const ASRParser = (() => {
     const rdn = parseInt((rd.match(/\d{1,3}/) || src.match(/(\d{2,3})\s*(?:aaneengesloten\s*)?dagen/i) || [])[1] || (rd.match(/\d{1,3}/) || [])[0], 10);
     if (rdn > 0) row['Maximale reisduur'] = rdn <= 65 ? '65' : '185';
     row['Gezinssamenstelling'] = _gezinssamenstelling_code(_extract_kv_lines(src, String.raw`gezinssamenstelling|gezinssituatie|verzekerd\s*voor|samenstelling\s*huishouden|huishouden`));
-    // Dekkingsonderdelen
-    const yn = (lbl, re) => { const v = labelYN(src, lbl); return v ? v === 'J' : positiveFeature(src, re); };
+    // Dekkingsonderdelen — ASR: "Dekking:  Bagage" / "Bagage meeverzekerd  Ja", anders Ja/Nee-labels of vrije tekst
+    const dekRegels = _extract_kv_lines(src, String.raw`dekking`, { all: true }).map(h => h.value);
+    const yn = (lbl, re) => {
+      if (dekRegels.some(v => re.test(v))) return true;
+      const v = labelYN(src, `(?:${lbl})(?:\\s*meeverzekerd)?`);
+      return v ? v === 'J' : positiveFeature(src, re);
+    };
     const bagage = yn(String.raw`bagage`, /\bbagage\b/i);
-    const annulering = yn(String.raw`annulering(?:skosten)?(?:verzekering)?`, /annulering(?:skosten)?(?:verzekering|dekking)/i);
+    const annulering = yn(String.raw`annulering(?:skosten)?(?:verzekering)?`, /^\s*annulering|annulering(?:skosten)?(?:verzekering|dekking)/i);
     const medisch = yn(String.raw`(?:geneeskundige|medische)\s*kosten`, /(?:geneeskundige|medische)\s*kosten/i);
-    const winter = yn(String.raw`wintersport(?:\s*(?:en|&)\s*risicosporten)?`, /wintersport/i);
-    const auto = yn(String.raw`automobilistenhulp|hulpverlening\s*motorrijtuigen`, /automobilistenhulp/i);
+    const winter = yn(String.raw`(?:sporten\s*en\s*)?wintersport(?:\s*(?:en|&)\s*risicosporten)?`, /wintersport/i);
+    const auto = yn(String.raw`automobilistenhulp|hulpverlening\s*motorrijtuigen|hulp\s*en\s*huur\s*vervoermiddel`, /automobilistenhulp|hulp\s*en\s*huur\s*vervoermiddel/i);
     const ongeval = yn(String.raw`ongevallen|reisongevallen|ongevallendekking`, /\b(?:reis)?ongevallen(?:dekking)?\b/i);
-    // Bagagebedrag (fallback 3500 als bagage verzekerd maar bedrag niet schoon)
-    let bag = NaN;
-    const bm = src.match(/bagage[^\n€\d]{0,40}(?:€|eur)\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
-    if (bm) bag = euroInt(bm[1]);
+    // Bagagebedrag: per verzekerde per reis (niet het polismaximum); fallback 3500 als bedrag niet schoon is
+    let bag = euroInt(_extract_kv_lines(src, String.raw`vergoeding\s*per\s*verzekerde(?:\s*per\s*reis)?|verzekerd\s*bedrag\s*bagage(?:\s*per\s*(?:persoon|verzekerde))?`).replace(/\s/g, ''));
+    if (!(bag >= 100)) {
+      const bm = src.match(/(?:^|\n|\t)(?!maximum)[^\n]{0,20}bagage[^\n€\d]{0,40}(?:€|eur)\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
+      if (bm && !/maximum/i.test(bm[0])) bag = euroInt(bm[1]);
+    }
     if (bagage && !(bag >= 100 && bag <= 50000)) bag = 3500;
     if (bagage && bag) row['Verzekerde som bagage'] = String(bag);
     if (annulering) {
-      const am = src.match(/annulering[^\n€\d]{0,50}(?:€|eur)\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
-      const an = am ? euroInt(am[1]) : NaN;
+      // "Annulering verzekerd bedrag  € 1.500" (OCR soms "€ 1 500")
+      let an = NaN;
+      for (const h of _extract_kv_lines(src, String.raw`annulering\s*verzekerd\s*bedrag|verzekerd\s*bedrag\s*annulering|annuleringsbedrag`, { all: true })) {
+        const v = euroInt(h.value.replace(/(\d)\s+(?=\d{3}\b)/g, '$1'));
+        if (v >= 100 && v <= 100000) { an = v; break; }
+      }
+      if (!(an >= 100)) {
+        const am = src.match(/annulering[^\n€\d]{0,50}(?:€|eur)\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
+        an = am ? euroInt(am[1]) : NaN;
+      }
       if (an >= 100 && an <= 100000) row['Verzekerde som annulering'] = String(an);
     }
     // Dekking 1: 3854 (compleet) / 3852 (basis) / 3853 (uitgebreid)
     const variant = _extract_kv_lines(src, String.raw`dekking(?:svariant)?|variant|pakket|uitvoering`);
     let sos;
+    // ASR noemt de basismodule altijd "Dekking: Basis" — dat is geen SOS-niveau, dus niet op 'basis' sturen
     if (/compleet|top|totaal/i.test(variant) || ongeval || (bag > 3500)) sos = ['3854', 'S.O.S. Hulpverlening Compleet'];
-    else if (/basis/i.test(variant) || (bagage && !annulering && !medisch && !winter)) sos = ['3852', 'S.O.S. Hulpverlening Basis'];
+    else if (bagage && !annulering && !medisch && !winter) sos = ['3852', 'S.O.S. Hulpverlening Basis'];
     else sos = ['3853', 'S.O.S. Hulpverlening Uitgebreid'];
     const dk = [sos];
     if (winter) dk.push(['3851', 'Wintersport en Risicosporten']);
@@ -1721,6 +1806,9 @@ const ASRParser = (() => {
     if (positiveFeature(src, /pech\s*onderweg/i)) ux.push('Pech onderweg meeverzekerd');
     const bk = src.match(/bijzondere\s*kosten[^\n€\d]{0,30}(?:€|eur)\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{2}))?/i);
     if (bk) ux.push(`Bijzondere kosten EUR ${bk[1]}${bk[2] && bk[2] !== '00' ? ',' + bk[2] : ''}`);
+    const annVariant = _extract_kv_lines(src, String.raw`annulering\s*variant`);
+    if (/garantie|plus|extra/i.test(annVariant)) ux.push(annVariant.replace(/\s+/g, ' '));
+    ux.push(...extraMeeverzekerd(src, /bagage|geneeskundige|medische|ongevallen|sport|annulering|hulp/i));
     writeUitzonderingen(row, ux);
     // Verzekeringsnemers 1 en 2
     const { vn1, vn2 } = _extract_reis_verzekeringsnemers(src, ctx.g);
@@ -1729,7 +1817,7 @@ const ASRParser = (() => {
   }
 
   const SLICES = {
-    'AVP': applyAVP, 'Inboedel': applyInboedel, 'Woonhuis': applyWoonhuis, 'Personenauto': applyVoertuig, 'Bromfiets': applyVoertuig, 'Motor': applyVoertuig, 'Camper': applyVoertuig, 'Caravan': applyVoertuig,
+    'AVP': applyAVP, 'Inboedel': applyInboedel, 'Woonhuis': applyWoonhuis, 'Recreatiewoning': applyRecreatiewoning, 'Personenauto': applyVoertuig, 'Bromfiets': applyVoertuig, 'Motor': applyVoertuig, 'Camper': applyVoertuig, 'Caravan': applyVoertuig,
     'Rechtsbijstand': applyRechtsbijstand, 'Doorlopende Reis': applyDoorlopendeReis,
   };
 
