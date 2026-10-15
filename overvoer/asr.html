@@ -2066,25 +2066,28 @@ const ASRPost = (() => {
     const I = parseDMY(ing);
     if (!I || !I.y) return row;
     yearLo = Math.max(2026, I.y); yearHi = Math.max(2027, I.y + 1);
-    // Hoofdvervaldatum: dag/maand van prolongatie behouden, jaar na ingangsdatum
+    // Premie-, hoofd- en contractvervaldatum altijd op de 1e van de maand (maand blijft gelijk)
+    const eerste = o => ({ ...o, d: 1 });
+    // Hoofdvervaldatum: maand van prolongatie behouden, jaar na ingangsdatum
     let H = parseDMY(row['Hoofdvervaldatum']);
-    // Geen prolongatiedatum: dag/maand van de contractvervaldatum aanhouden
+    // Geen prolongatiedatum: maand van de contractvervaldatum aanhouden
     if (!H && parseDMY(row['Contractvervaldatum'])) { const c = parseDMY(row['Contractvervaldatum']); H = { d: c.d, m: c.m, y: null }; }
+    if (H) H = eerste(H);
     if (H) {
       H.y = H.y || I.y;
       while (num(H) <= num(I)) H.y++;
       while (num(addMonths(I, 12)) < num(H)) H.y--;
-    } else H = addMonths(I, 12);
+    } else H = eerste(addMonths(I, 12));
     H = clampYear(H);
     row['Hoofdvervaldatum'] = fmt(H);
-    // Contractvervaldatum: dag behouden; nooit vóór ingangsdatum; default = hoofdvervaldatum
+    // Contractvervaldatum: maand behouden; nooit vóór ingangsdatum; default = hoofdvervaldatum
     let C = parseDMY(row['Contractvervaldatum']);
-    if (C && C.y) { while (num(C) <= num(I)) C.y++; } else C = { ...H };
+    if (C && C.y) { C = eerste(C); while (num(C) <= num(I)) C.y++; } else C = { ...H };
     C = clampYear(C);
     row['Contractvervaldatum'] = fmt(C);
     // Premievervaldatum = ingangsdatum + betaaltermijn, nooit later dan hoofd-/contractvervaldatum
     const bt = parseInt(row['Betaaltermijn'], 10) || 0;
-    let P = bt ? addMonths(I, bt) : { ...H };
+    let P = bt ? eerste(addMonths(I, bt)) : { ...H };
     if (num(P) > num(H)) P = { ...H };
     if (num(P) > num(C)) P = { ...C };
     P = clampYear(P);
