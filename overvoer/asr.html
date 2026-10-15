@@ -157,8 +157,8 @@
       </select>
     </div>
     <div class="setting-group">
-      <label class="setting-label" for="maatschappijInput">Maatschappijcode ASR</label>
-      <input id="maatschappijInput" class="setting-input" type="text" placeholder="bijv. code uit Volgorde.csv" style="min-width:150px">
+      <span class="setting-label">Maatschappij</span>
+      <span class="setting-input" style="min-width:0;background:var(--surface2);font-weight:700;color:var(--green-dark)">A059 (ASR)</span>
     </div>
   </div>
 
@@ -931,19 +931,39 @@ const ASRParser = (() => {
     return n ? n[1] : '';
   }
   function extractBetaaltermijn(text) {
-    const v = _extract_kv_lines(text, String.raw`betaal\s*termijn|betalings\s*termijn|termijn|betaalfrequentie|premiebetaling`);
-    return termFromText(v);
+    for (const lbl of [String.raw`betaal\s*termijn|betalings\s*termijn|betaalfrequentie`, String.raw`wijze\s*van\s*betalen|betaalwijze|betalingswijze|premiebetaling`, String.raw`termijn`]) {
+      for (const hit of _extract_kv_lines(text, lbl, { all: true })) {
+        // "Automatische Incasso (Maand)" → term tussen haakjes heeft voorrang
+        const t = termFromText((hit.value.match(/\(([^)]*)\)/) || [])[1] || '') || termFromText(hit.value);
+        if (t) return t;
+      }
+    }
+    return '';
   }
 
   // Kiest productpremieregels boven pakket- of marketingsamenvattingen
-  function _extract_premium_term_scored(sources) {
+  function _extract_premium_term_scored(sources, wantTerm) {
     const cands = [];
     sources.forEach((src, si) => {
       if (!src) return;
       const lines = src.split('\n');
       for (let i = 0; i < lines.length; i++) {
         const ln = lines[i];
-        if (!/premie|termijnbedrag|te\s*betalen|incasso|bedrag\s*per|totaal\s*per/i.test(ln)) continue;
+        if (!/premie|termijnbedrag|te\s*betalen|incasso|bedrag\s*per|totaal\s*per|jaarbedrag|maandbedrag|termijnbedrag/i.test(ln)) continue;
+        // "Jaarbedrag € 107,88 (€ 8,99 per maand)" → elk bedrag met eigen termijn
+        const perTerm = [...ln.matchAll(/(?:€|eur)\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*\)?\s*(?:per|\/)\s*(maand|kwartaal|half\s*jaar|halfjaar|jaar)/gi)];
+        const isJaarbedrag = /jaar\s*bedrag|jaar\s*premie/i.test(ln);
+        for (const m of perTerm) {
+          const val = euroFloat(m[1], m[2]);
+          const pen = /pakket|alle\s*verzekeringen|korting|bespaar|vanaf|actie|vorige|oude/i.test(ln) ? 9 : 0;
+          if (val > 0 && val < 50000) cands.push({ val, score: 14 - si * 3 - pen, term: termFromText(m[3]), line: ln.trim(), order: si * 10000 + i });
+        }
+        if (isJaarbedrag) {
+          const jm = ln.match(/(?:jaar\s*bedrag|jaar\s*premie)[^\d€]*(?:€|eur)?\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/i);
+          if (jm) cands.push({ val: euroFloat(jm[1], jm[2]), score: 8 - si * 3, term: '12', line: ln.trim(), order: si * 10000 + i });
+          continue;
+        }
+        if (perTerm.length) continue;
         let segs = [ln];
         // Waarde op volgende regel
         if (!/\d+,\d{2}/.test(ln) && lines[i+1]) segs = [ln + '\t' + lines[i+1]];
@@ -968,6 +988,8 @@ const ASRParser = (() => {
     });
     if (!cands.length) return null;
     cands.sort((a, b) => b.score - a.score || a.order - b.order);
+    // Bekende betaaltermijn: kies het bedrag dat bij die termijn hoort
+    if (wantTerm) { const hit = cands.find(c => c.term === wantTerm); if (hit) return hit; }
     return cands[0];
   }
 
@@ -991,7 +1013,7 @@ const ASRParser = (() => {
     return out;
   }
   function extractEigenrisico(text) {
-    const v = _extract_kv_lines(text, String.raw`eigen\s*risico(?:\s*per\s*(?:gebeurtenis|schade))?`);
+    const v = _extract_kv_lines(text, String.raw`eigen\s*risico(?:\s*(?:per\s*(?:gebeurtenis|schade)|keuze|bedrag))?`);
     if (!v) return '';
     if (/^(?:nee|geen|n\.?v\.?t|0+(?:,0+)?|€\s*0(?:,0+)?)\b/i.test(v.trim())) return '0';
     const n = euroInt((v.match(/(?:€|eur)?\s*(\d{1,3}(?:\.\d{3})+|\d+)/i) || [])[1]);
@@ -1183,7 +1205,9 @@ const ASRParser = (() => {
 
   function extractPakketnummer(text) {
     const m = String(text || '').match(/pakket\s*(?:polis)?\s*(?:nummer|nr\.?)\s*[:.#]?\s*(?:\t\s*)?(\d{1,3}(?:\.\d{3}){2,3}|\d{5,13}(?:[.\-]\d{1,3})?)(?!\d)/i);
-    return m ? m[1].replace(/\s/g, '') : '';
+    if (m) return m[1].replace(/\s/g, '');
+    const m2 = String(text || '').match(/\bPAKKET\b\s*[:\t ]?\s*\n?\s*(\d{6,13})(?!\d)/);
+    return m2 ? m2[1] : '';
   }
 
   function findPolisAnchors(lines, pakket) {
@@ -1372,7 +1396,7 @@ const ASRParser = (() => {
     f.contractvervaldatum = extractDateKV(text, CVD_LABEL);
     // Betaaltermijn + maandincasso
     f.betaaltermijn = extractBetaaltermijn(text);
-    const prem = _extract_premium_term_scored([text]);
+    const prem = _extract_premium_term_scored([text], f.betaaltermijn);
     if (prem) { f.maandincasso = prem.val; if (!f.betaaltermijn && prem.term) f.betaaltermijn = prem.term; }
     f.gezinssamenstelling = _gezinssamenstelling_code(_extract_kv_lines(text, String.raw`(?:verzekerde\s*)?gezinssamenstelling|gezinssituatie|samenstelling\s*(?:huishouden|gezin)|huishouden|gezinsvorm`));
     // Voertuigsignalen
@@ -1610,8 +1634,8 @@ const ASRParser = (() => {
 
   function finishRow(row, product, detail, cov, g, premiumSources, ctx) {
     rowDates(row, detail, cov, g);
-    row['Betaaltermijn'] = extractBetaaltermijn(detail) || '';
-    const prem = _extract_premium_term_scored(premiumSources);
+    row['Betaaltermijn'] = extractBetaaltermijn(detail) || extractBetaaltermijn(cov) || g.betaaltermijn || '';
+    const prem = _extract_premium_term_scored(premiumSources, row['Betaaltermijn']);
     if (prem) {
       row['Incassobedrag'] = fmtEuro(prem.val);
       row._premieBron = prem.line;
@@ -1780,7 +1804,9 @@ const ASRPost = (() => {
     const t = (o.y * 12 + (o.m - 1)) + n;
     return { d: o.d, m: (t % 12) + 1, y: Math.floor(t / 12) };
   }
-  const clampYear = o => ({ ...o, y: Math.min(2027, Math.max(2026, o.y)) });
+  // Defensieve jaarklem: standaard 2026–2027, schuift mee als de ingangsdatum zelf al in 2027 ligt
+  let yearLo = 2026, yearHi = 2027;
+  const clampYear = o => ({ ...o, y: Math.min(yearHi, Math.max(yearLo, o.y)) });
 
   function mapBetaaltermijn(v) {
     const s = String(v || '').toLowerCase().trim();
@@ -1820,6 +1846,7 @@ const ASRPost = (() => {
     row['Ingangsdatum'] = ing;
     const I = parseDMY(ing);
     if (!I || !I.y) return row;
+    yearLo = Math.max(2026, I.y); yearHi = Math.max(2027, I.y + 1);
     // Hoofdvervaldatum: dag/maand van prolongatie behouden, jaar na ingangsdatum
     let H = parseDMY(row['Hoofdvervaldatum']);
     // Geen prolongatiedatum: dag/maand van de contractvervaldatum aanhouden
@@ -1926,12 +1953,8 @@ const resultsHead   = $('resultsHead');
 const resultsBody   = $('resultsBody');
 const resultsLabel  = $('resultsLabel');
 
-// Maatschappijcode onthouden (per browser)
-(() => {
-  const inp = $('maatschappijInput');
-  try { inp.value = localStorage.getItem('asr.maatschappij') || ''; } catch (_) {}
-  inp.addEventListener('change', () => { try { localStorage.setItem('asr.maatschappij', inp.value.trim()); } catch (_) {} });
-})();
+// Maatschappijcode ASR — altijd A059
+const MAATSCHAPPIJ_ASR = 'A059';
 
 // ── Polissoort-filter (standaard alles aan; keuze wordt per browser onthouden) ──
 const pfInputs = () => [...document.querySelectorAll('#productFilter input[type=checkbox]')];
@@ -2280,7 +2303,7 @@ async function processQueue() {
   processBtn.disabled = true; allRows = []; restRows = [];
   const kantoor = $('kantoorInput').value || '';
   const overvoermaand = $('overvoermaand').value || '';
-  const maatschappij = ($('maatschappijInput').value || '').trim();
+  const maatschappij = MAATSCHAPPIJ_ASR;
   const sel = selectedProducts();
   if (!sel.size) { alert('Kies minimaal één polissoort om te parsen.'); processBtn.disabled = false; return; }
   queue = ASRBundle.sortBundle(queue);
@@ -2418,9 +2441,6 @@ async function processQueue() {
       if (MAIN_PRODUCTS.has(r['Productomschrijving'])) allRows.push(r);
       else restRows.push(r);
     }
-  }
-  if (!maatschappij && allRows.length) {
-    for (const it of queue) if (it.status === 'done' && it.rows) { it.warnings.unshift('Maatschappijcode niet ingevuld'); break; }
   }
 
   progressFill.style.width = '100%'; processBtn.disabled = false;
