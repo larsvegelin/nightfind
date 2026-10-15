@@ -1539,6 +1539,11 @@ const ASRParser = (() => {
       }
       out.push(`${label.charAt(0).toUpperCase()}${label.slice(1)} meeverzekerd${bedrag}`);
     }
+    // "Afkoop eigen risico storm  Ja" → bijzonderheid "Afkoop eigen risico storm"
+    for (const ln of lines) {
+      const a = ln.match(/(?:^|\t)\s*(afkoop\s[^\t:]{2,60}?)\s*(?:\t|\s{2,}|:)\s*ja\b/i);
+      if (a) out.push(a[1].trim().replace(/\s+/g, ' ').replace(/^afkoop/i, 'Afkoop'));
+    }
     return out;
   }
 
