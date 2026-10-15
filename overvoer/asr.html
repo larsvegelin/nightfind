@@ -92,6 +92,8 @@
     .pf-chip:has(input:checked) { background:var(--green-light); border-color:var(--green-mid); color:var(--green-dark); }
     .pf-chip input { accent-color:var(--green-dark); width:15px; height:15px; margin:0; cursor:pointer; }
     .pf-link { background:none; border:none; color:var(--green-mid); font-size:.78rem; font-weight:700; cursor:pointer; padding:0 .25rem; text-decoration:underline; }
+    td.wd-filled { background:rgba(255,192,0,.22) !important; font-weight:700; }
+    .wd-status { font-size:.8rem; color:var(--text-sub); margin:.25rem 0 .6rem; }
     .src-tag.weak { background:rgba(255,192,0,.18); color:#8a6600; }
   </style>
 </head>
@@ -100,7 +102,7 @@
 <header class="header">
   <span class="header-logo">&#9632; Overvoer</span>
   <div class="header-divider"></div>
-  <span class="header-sub">ASR — Polis Parser <span id="appVersion" style="opacity:.6;font-size:.75em">v2026-10-13.1</span></span>
+  <span class="header-sub">ASR — Polis Parser <span id="appVersion" style="opacity:.6;font-size:.75em">v2026-10-15.1</span></span>
 </header>
 
 <main class="container">
@@ -231,8 +233,12 @@
     <div id="resultsSection" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.5rem;margin-top:2rem">
         <span class="section-label" id="resultsLabel" style="margin:0">Resultaten</span>
-        <button class="btn btn-success" id="downloadBtn2">&#11015;&nbsp; Download CSV</button>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+          <button class="btn btn-ghost" id="woningdataBtn" type="button" title="Lege velden (bouwjaar, woningtype, bouwaard vloeren, straat, woonplaats) van Woonhuis/Inboedel aanvullen uit de BAG (PDOK)">&#127968;&nbsp; Woningdata ophalen</button>
+          <button class="btn btn-success" id="downloadBtn2">&#11015;&nbsp; Download CSV</button>
+        </div>
       </div>
+      <div class="wd-status" id="woningdataStatus">Woningdata: lege woonvelden aanvullen uit de BAG (Kadaster via PDOK). Al gevulde waardes blijven ongewijzigd; aangevulde cellen worden <span style="background:rgba(255,192,0,.22);font-weight:700;padding:0 .3rem;border-radius:4px">geel</span> gemarkeerd.</div>
       <div class="results-scroll">
         <table><thead id="resultsHead"></thead><tbody id="resultsBody"></tbody></table>
       </div>
@@ -2559,7 +2565,11 @@ function renderResults() {
   resultsBody.innerHTML = allRows.slice(0, PREVIEW).map(row => {
     const w = row._warnings || [];
     return `<tr><td title="${esc(w.join('\n'))}" style="color:#8a6600">${w.length ? '&#9888; ' + w.length : ''}</td>` +
-      CSV_COLUMNS.map(col => { const v = row[col] == null ? '' : String(row[col]); return `<td title="${esc(v)}">${esc(v)}</td>`; }).join('') + '</tr>';
+      CSV_COLUMNS.map(col => {
+        const v = row[col] == null ? '' : String(row[col]);
+        const wd = row._woningdata && row._woningdata[col];
+        return wd ? `<td class="wd-filled" title="${esc(v)} — aangevuld: ${esc(wd)}">${esc(v)}</td>` : `<td title="${esc(v)}">${esc(v)}</td>`;
+      }).join('') + '</tr>';
   }).join('');
 }
 
@@ -2583,6 +2593,192 @@ downloadBtn.addEventListener('click', () => downloadCSV(allRows, 'overvoer_asr')
 document.addEventListener('click', e => {
   if (e.target.id === 'downloadBtn2') downloadCSV(allRows, 'overvoer_asr');
   if (e.target.id === 'downloadRestBtn') downloadCSV(restRows, 'overvoer_asr_rest');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  WONINGDATA (BAG via PDOK) — vult alleen lege woonvelden aan, markeert wat gevuld is
+//  Zelfde bronnen/heuristiek als de Woningdata Verrijker: Locatieserver → BAG pand + verblijfsobject.
+// ═══════════════════════════════════════════════════════════════════════════════
+const WoningData = (() => {
+  'use strict';
+  const LOCATIESERVER = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/free';
+  const BAG_BASES = ['https://api.pdok.nl/kadaster/bag/ogc/v2', 'https://api.pdok.nl/lv/bag/ogc/v1'];
+  const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  let bagApi = null;
+
+  async function fetchJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' bij ' + url.split('?')[0]);
+    return res.json();
+  }
+  function propLike(props, needle) {
+    if (!props) return undefined;
+    const n = norm(needle);
+    for (const k of Object.keys(props)) if (norm(k).includes(n)) return props[k];
+    return undefined;
+  }
+  // Geometrie (WGS84 lon/lat)
+  const ringsOf = g => !g ? [] : g.type === 'Polygon' ? g.coordinates : g.type === 'MultiPolygon' ? g.coordinates.flat() : [];
+  function pointInGeom(pt, geom) {
+    let inside = false;
+    for (const ring of ringsOf(geom)) for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if (((yi > pt[1]) !== (yj > pt[1])) && (pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+  function segPointDistM(p, a, b, mpd) {
+    const ax = (p[0]-a[0])*mpd[0], ay = (p[1]-a[1])*mpd[1], bx = (b[0]-a[0])*mpd[0], by = (b[1]-a[1])*mpd[1];
+    const len2 = bx*bx + by*by;
+    let t = len2 ? (ax*bx + ay*by) / len2 : 0; t = Math.max(0, Math.min(1, t));
+    return Math.hypot(ax - t*bx, ay - t*by);
+  }
+  function polysTouch(gA, gB, lat, tolM) {
+    const mpd = [111320 * Math.cos(lat * Math.PI / 180), 111320];
+    const test = (rs1, rs2) => { for (const r of rs2) for (const v of r) for (const r1 of rs1) for (let i = 0; i < r1.length - 1; i++) if (segPointDistM(v, r1[i], r1[i+1], mpd) <= tolM) return true; return false; };
+    return test(ringsOf(gA), ringsOf(gB)) || test(ringsOf(gB), ringsOf(gA));
+  }
+
+  async function initBagApi() {
+    if (bagApi) return bagApi;
+    let lastErr = null;
+    for (const base of BAG_BASES) {
+      try {
+        const cols = ((await fetchJSON(base + '/collections?f=json')).collections || []).map(c => c.id);
+        const pick = w => cols.find(c => norm(c) === w) || cols.find(c => norm(c).includes(w));
+        const pandCol = pick('pand'), vboCol = pick('verblijfsobject');
+        if (pandCol) return (bagApi = { base, pandCol, vboCol });
+      } catch (e) { lastErr = e; }
+    }
+    throw new Error('BAG niet bereikbaar' + (lastErr ? ': ' + lastErr.message : ''));
+  }
+  async function locatieserver(postcode, nummer, toev) {
+    const params = new URLSearchParams({
+      q: `postcode:${postcode} and huisnummer:${nummer}`, fq: 'type:adres', rows: '50', wt: 'json',
+      fl: 'weergavenaam straatnaam huisnummer huisletter huisnummertoevoeging huis_nlt postcode woonplaatsnaam adresseerbaarobject_id centroide_ll',
+    });
+    const docs = ((await fetchJSON(LOCATIESERVER + '?' + params)).response || {}).docs || [];
+    if (!docs.length) return { doc: null, reden: 'adres niet gevonden in BAG' };
+    const t = norm(toev);
+    const suffix = d => norm((d.huisletter || '') + (d.huisnummertoevoeging || ''));
+    let doc = docs.find(d => suffix(d) === t);
+    if (!doc && !t) doc = docs.length === 1 ? docs[0] : docs.find(d => suffix(d) === '');
+    if (!doc) return { doc: null, reden: t ? 'toevoeging niet gevonden' : 'meerdere adressen, toevoeging nodig' };
+    return { doc };
+  }
+  async function bagLookup(pt, aoId) {
+    const api = await initBagApi();
+    const d = 0.00045;
+    const bbox = [pt[0]-d, pt[1]-d, pt[0]+d, pt[1]+d].join(',');
+    const feats = ((await fetchJSON(`${api.base}/collections/${api.pandCol}/items?f=json&limit=200&bbox=${bbox}`)).features || [])
+      .filter(f => !/gesloopt|niet gerealiseerd|ingetrokken/i.test(String(propLike(f.properties, 'status') || '')));
+    const target = feats.find(f => pointInGeom(pt, f.geometry)) || null;
+    let vbo = null, vboInPand = 0;
+    if (api.vboCol) {
+      try {
+        for (const f of ((await fetchJSON(`${api.base}/collections/${api.vboCol}/items?f=json&limit=1000&bbox=${bbox}`)).features || [])) {
+          if (aoId && String(propLike(f.properties, 'identificatie') || '') === String(aoId)) vbo = f;
+          if (target && f.geometry && f.geometry.type === 'Point' && pointInGeom(f.geometry.coordinates, target.geometry)) vboInPand++;
+        }
+      } catch (_) { /* verblijfsobjecten optioneel */ }
+    }
+    // Aangrenzende panden (gedeelde muur); bij één buur: hoekwoning als die buur zelf weer aan een ander pand grenst
+    const neighbours = target ? feats.filter(f => f !== target && polysTouch(target.geometry, f.geometry, pt[1], 0.35)) : [];
+    let neighbourAttached = 0;
+    if (neighbours.length === 1) neighbourAttached = feats.filter(f => f !== neighbours[0] && f !== target && polysTouch(neighbours[0].geometry, f.geometry, pt[1], 0.35)).length;
+    return { target, vbo, vboInPand, attached: neighbours.length, neighbourAttached };
+  }
+  // Afgeleid woningtype → schema-code (U tussen, H hoek, T 2-onder-1-kap, 2 vrijstaand, A appartement)
+  function woningtypeCode(bag, gebruiksdoel) {
+    if (!bag.target) return null;
+    if (gebruiksdoel && !/woon/i.test(gebruiksdoel)) return null;
+    if (bag.vboInPand > 2) return { code: 'A', label: 'appartement' };
+    if (bag.attached === 0) return { code: '2', label: 'vrijstaand' };
+    if (bag.attached === 1) return bag.neighbourAttached >= 1 ? { code: 'H', label: 'hoekwoning' } : { code: 'T', label: 'twee-onder-een-kap' };
+    return { code: 'U', label: 'tussenwoning' };
+  }
+
+  async function lookup(postcode, huisnummer, toev) {
+    const pc = String(postcode || '').replace(/\s+/g, '').toUpperCase();
+    const nr = (String(huisnummer || '').match(/^\d+/) || [''])[0];
+    if (!/^\d{4}[A-Z]{2}$/.test(pc) || !nr) return { ok: false, reden: 'geen geldige postcode/huisnummer' };
+    const { doc, reden } = await locatieserver(pc, nr, toev);
+    if (!doc) return { ok: false, reden };
+    const out = { ok: true, straat: doc.straatnaam || '', woonplaats: doc.woonplaatsnaam || '' };
+    const m = /POINT\s*\(\s*([\d.eE+-]+)\s+([\d.eE+-]+)\s*\)/.exec(doc.centroide_ll || '');
+    if (m) {
+      const bag = await bagLookup([parseFloat(m[1]), parseFloat(m[2])], doc.adresseerbaarobject_id);
+      const gd = bag.vbo ? propLike(bag.vbo.properties, 'gebruiksdoel') : '';
+      const gebruiksdoel = Array.isArray(gd) ? gd.join(', ') : (gd || '');
+      if (bag.target) {
+        const bj = propLike(bag.target.properties, 'bouwjaar');
+        if (bj != null && /^\d{4}$/.test(String(bj))) out.bouwjaar = String(bj);
+        out.woningtype = woningtypeCode(bag, gebruiksdoel);
+      } else out.reden = 'geen pand op deze locatie';
+    }
+    return out;
+  }
+
+  const WOON = new Set(['Woonhuis', 'Inboedel']);
+  // Vult alleen lege velden; registreert per veld de bron in row._woningdata
+  async function enrichRows(rows, onProgress) {
+    const targets = rows.filter(r => WOON.has(r['Productomschrijving']) &&
+      (!r['Bouwjaar'] || !r['Woonhuis type'] || !r['Bouwaard vloeren'] || !r['Straat'] || !r['Woonplaats']));
+    const cache = new Map();
+    const stats = { rijen: targets.length, aangevuld: 0, velden: {}, nietGevonden: [] };
+    for (let i = 0; i < targets.length; i++) {
+      const r = targets[i];
+      const key = `${r['Postcode']}|${r['Huisnummer']}|${r['Huisnummer toevoeging']}`;
+      onProgress && onProgress(i, targets.length);
+      let res;
+      try {
+        if (!cache.has(key)) { cache.set(key, await lookup(r['Postcode'], r['Huisnummer'], r['Huisnummer toevoeging'])); await new Promise(z => setTimeout(z, 120)); }
+        res = cache.get(key);
+      } catch (e) { res = { ok: false, reden: e.message }; }
+      if (!res.ok) {
+        stats.nietGevonden.push(`${r['Polisnummer'] || r['Productomschrijving']}: ${res.reden}`);
+        ASRSchema.warn(r, `Woningdata niet gevonden (${res.reden})`);
+        continue;
+      }
+      const filled = r._woningdata || (r._woningdata = {});
+      const fill = (col, val, bron) => {
+        if (r[col] || !val) return;                         // al gevulde waardes nooit aanpassen
+        r[col] = val; filled[col] = bron;
+        stats.velden[col] = (stats.velden[col] || 0) + 1;
+      };
+      fill('Bouwjaar', res.bouwjaar, 'BAG bouwjaar');
+      if (res.woningtype) fill('Woonhuis type', res.woningtype.code, `BAG-geometrie (afgeleid: ${res.woningtype.label})`);
+      if (r['Bouwjaar']) fill('Bouwaard vloeren', parseInt(r['Bouwjaar'], 10) >= 2000 ? 'H' : 'S', 'afgeleid uit bouwjaar');
+      fill('Straat', res.straat, 'BAG adres');
+      fill('Woonplaats', res.woonplaats, 'BAG adres');
+      const lijst = Object.entries(filled).map(([k, v]) => `${k}=${r[k]} (${v})`);
+      if (lijst.length) {
+        stats.aangevuld++;
+        r._warnings = (r._warnings || []).filter(w => !/^Woningdata aangevuld:/.test(w));
+        ASRSchema.warn(r, 'Woningdata aangevuld: ' + lijst.join(', '));
+      }
+    }
+    onProgress && onProgress(targets.length, targets.length);
+    return stats;
+  }
+  return { enrichRows, lookup };
+})();
+
+$('woningdataBtn').addEventListener('click', async () => {
+  const btn = $('woningdataBtn'), st = $('woningdataStatus');
+  btn.disabled = true;
+  try {
+    const stats = await WoningData.enrichRows(allRows, (i, n) => { st.textContent = `Woningdata ophalen… ${i} / ${n}`; });
+    if (!stats.rijen) { st.textContent = 'Woningdata: geen Woonhuis/Inboedel-rijen met lege woonvelden — niets aangevuld.'; return; }
+    const velden = Object.entries(stats.velden).map(([k, n]) => `${k} (${n}×)`).join(', ');
+    st.innerHTML = `<strong>Woningdata:</strong> ${stats.aangevuld} van ${stats.rijen} rij(en) aangevuld` +
+      (velden ? ` — gevuld: ${esc(velden)}` : ' — geen nieuwe waardes') +
+      (stats.nietGevonden.length ? `. <span style="color:#b45309">Niet gevonden: ${esc(stats.nietGevonden.join('; '))}</span>` : '') +
+      '. Gele cellen zijn aangevuld; bestaande waardes zijn niet aangepast.';
+    renderResults(); showSummary();
+  } catch (e) {
+    st.textContent = 'Woningdata ophalen mislukt: ' + e.message;
+  } finally { btn.disabled = false; }
 });
 
 // ── Koppelbestand (relatienummer → oud polisnummer) ──────────────────────
