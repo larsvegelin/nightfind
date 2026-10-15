@@ -1105,7 +1105,8 @@ const ASRParser = (() => {
     if (/recreatie|vakantie/.test(s)) return 'R';
     if (/bungalow/.test(s)) return 'L';
     if (/vrijstaand|villa|herenhuis|boerderij/.test(s)) return '2';
-    if (/eengezins|woning/.test(s)) return 'U';
+    if (/eengezins/.test(s)) return 'U';
+    if (/^\s*woning\s*$/.test(s)) return '';            // ASR "Soort woning: Woning" zegt niets over het type → leeg
     if (/^[uarlht2]$/i.test(s.trim())) return s.trim().toUpperCase();
     return '';
   }
@@ -1618,6 +1619,27 @@ const ASRParser = (() => {
     writeUitzonderingen(row, ux);
   }
 
+  // "Totaal verzekerd bedrag bijzondere bezittingen  € 27.000,00" → uitzondering als het bedrag > € 15.000
+  function hogeTotaalBedragen(src, ux) {
+    const re = /(?:^|\t)\s*totaal\s*verzekerd\s*bedrag\s+([A-Za-zÀ-ÿ][^\t€\d\n]{2,50}?)\s*(?:\t|\s{2,}|:)\s*(?:€\s*)?(\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{2})?/gim;
+    let m;
+    while ((m = re.exec(src))) {
+      const n = euroInt(m[2]);
+      const label = m[1].trim().replace(/\s+/g, ' ');
+      if (!(n > 15000)) {
+        // Bijzondere bezittingen alleen boven € 15.000 als bijzonderheid opnemen
+        if (/bijzondere\s*bezittingen/i.test(label)) for (let k = ux.length - 1; k >= 0; k--) if (/bijzondere\s*bezittingen/i.test(ux[k])) ux.splice(k, 1);
+        continue;
+      }
+      const bedrag = `€ ${m[2]}`;
+      const i = ux.findIndex(u => u.toLowerCase().includes(label.toLowerCase()));
+      const tekst = `${label.charAt(0).toUpperCase()}${label.slice(1)} verzekerd ${bedrag}`;
+      if (i >= 0) { if (!ux[i].includes(m[2])) ux[i] = tekst; }
+      else ux.push(tekst);
+    }
+    return ux;
+  }
+
   function applyAVP(row, detail, cov, ctx) {
     const dk = [['6100', 'Aansprakelijkheid particulier']];
     // Grootste geldige verzekerde som uit lokale bronnen
@@ -1640,7 +1662,7 @@ const ASRParser = (() => {
     row['Gezinssamenstelling'] = _gezinssamenstelling_code(_extract_kv_lines(detail + '\n' + cov, String.raw`gezinssamenstelling|gezinssituatie|samenstelling\s*huishouden|huishouden`));
     woonFields(row, detail, cov);
     writeDekkingen(row, dk);
-    writeUitzonderingen(row, [...uitzonderingList(row), ...extraMeeverzekerd(detail + '\n' + cov, /buitenshuis|glas/i)]);
+    writeUitzonderingen(row, hogeTotaalBedragen(detail + '\n' + cov, [...uitzonderingList(row), ...extraMeeverzekerd(detail + '\n' + cov, /buitenshuis|glas/i)]));
   }
 
   function applyWoonhuis(row, detail, cov, ctx) {
@@ -1653,7 +1675,7 @@ const ASRParser = (() => {
     row['Gezinssamenstelling'] = '';
     woonFields(row, detail, cov);
     writeDekkingen(row, dk);
-    writeUitzonderingen(row, [...uitzonderingList(row), ...extraMeeverzekerd(detail + '\n' + cov, /glas/i)]);
+    writeUitzonderingen(row, hogeTotaalBedragen(detail + '\n' + cov, [...uitzonderingList(row), ...extraMeeverzekerd(detail + '\n' + cov, /glas/i)]));
   }
 
   // Dekkingcodes per voertuigsoort. Personenauto is vastgesteld; voor Bromfiets, Motor en
