@@ -113,7 +113,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   label.chk input { width: 17px; height: 17px; accent-color: var(--dwa-groen); }
   .error { background: var(--fout-bg); border: 1px solid var(--fout-rand); color: var(--fout-tekst); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 0.92rem; display: none; }
   #results { display: none; }
-  /* Smalle linkerkolom (soort relatie + hoofdvervaldatum) | producten over de rest van de breedte */
+  /* Smalle linkerkolom (hoofdvervaldatum) | producten over de rest van de breedte */
   .filtergrid { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 14px; align-items: start; margin-bottom: 14px; }
   .filterkolom { display: flex; flex-direction: column; gap: 10px; }
   @media (max-width: 1000px) { .filtergrid { grid-template-columns: 1fr; } }
@@ -121,13 +121,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .filtergrid .filterbar { flex-direction: column; align-items: stretch; border: 1px solid var(--rand); border-radius: 12px; }
   .filtergrid .filterbar button { text-align: left; }
   .filterbar button { background: var(--wit); border: 2px solid var(--dwa-groen); color: var(--dwa-groen); border-radius: 999px; padding: 11px 22px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
-  /* Soort relatie: kleine knopjes onder elkaar */
-  #fbGroep { gap: 5px; padding: 10px; }
-  #fbGroep button { padding: 6px 10px; font-size: 0.82rem; border-radius: 8px; border-width: 1px; }
   /* Producten: vaste lijst in kolommen, geen scrollbalk */
   #fbProducten { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; align-content: start; padding: 10px 12px; }
   #fbProducten .groeplabel { grid-column: 1 / -1; margin-top: 4px; }
   #fbProducten button { padding: 7px 10px; font-size: 0.82rem; border-radius: 8px; border-width: 1px; line-height: 1.25; }
+  /* Groen = alle oude polissen van dit product staan in de wacht */
+  #fbProducten button.compleet { background: var(--dwa-accent); border-color: var(--dwa-accent); color: var(--wit); }
+  #fbProducten button.compleet:hover { background: var(--dwa-groen-80); }
+  /* Geselecteerde tegel = goud (zodat groen alleen 'alles in de wacht' betekent) */
+  #fbProducten button.actief { background: var(--dwa-goud-60); border-color: var(--dwa-goud-80); color: var(--tekst); box-shadow: 0 0 0 2px var(--dwa-goud); }
+  #fbProducten button.compleet.actief { background: var(--dwa-accent); border-color: var(--dwa-accent); color: var(--wit); box-shadow: 0 0 0 3px var(--dwa-goud); }
   #fbMaanden { gap: 4px; padding: 10px; }
   #fbMaanden button { padding: 4px 8px; font-size: 0.75rem; border-width: 1px; border-radius: 8px; text-align: center; }
   .switchrij { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 0; }
@@ -183,8 +186,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <body>
 
 <header>
-  <h1>DWA Premiecontrole Dashboard <span>versie 10-2</span></h1>
-  <p>Matcht nieuwe polissen (VL309) tegen de oude polissen (LV309), haalt de producten uit de selectie (per soort relatie), controleert de premie en sorteert alles aflopend op provisie.</p>
+  <h1>DWA Premiecontrole Dashboard <span>versie 10-3</span></h1>
+  <p>Matcht nieuwe polissen (VL309) tegen de oude polissen (LV309), haalt de producten uit de selectie, controleert de premie en sorteert alles aflopend op provisie.</p>
 </header>
 
 <main>
@@ -194,7 +197,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       <div class="dropzone" id="dzLv">
         <div class="icoon">&#128196;</div>
         <div class="kop">Sleep het LV309-bestand hierheen of klik om te kiezen</div>
-        <div class="sub">.exp, Excel (.xlsx/.xls), .csv, .tsv of .txt &middot; kolommen worden herkend op de kopregel &middot; Soort relatie bepaalt particulier/zakelijk</div>
+        <div class="sub">.exp, Excel (.xlsx/.xls), .csv, .tsv of .txt &middot; kolommen worden herkend op de kopregel &middot; een extra kolom (bijv. kolom A) maakt niet uit</div>
         <div class="status" id="stLv"></div>
         <input type="file" id="fileLv" accept=".xlsx,.xls,.csv,.tsv,.txt,.exp">
       </div>
@@ -207,7 +210,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       <div class="dropzone" id="dzVl">
         <div class="icoon">&#128194;</div>
         <div class="kop">Sleep het VL309-bestand hierheen of klik om te kiezen</div>
-        <div class="sub">.exp, Excel (.xlsx/.xls), .csv, .tsv of .txt &middot; kolommen worden herkend op de kopregel &middot; Soort relatie bepaalt particulier/zakelijk</div>
+        <div class="sub">.exp, Excel (.xlsx/.xls), .csv, .tsv of .txt &middot; kolommen worden herkend op de kopregel &middot; een extra kolom (bijv. kolom A) maakt niet uit</div>
         <div class="status" id="stVl"></div>
         <input type="file" id="fileVl" accept=".xlsx,.xls,.csv,.tsv,.txt,.exp">
       </div>
@@ -230,7 +233,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   <div id="results">
     <div class="filtergrid">
       <div class="filterkolom">
-        <div class="filterbar" id="fbGroep" style="border: 2px solid var(--dwa-groen);"></div>
         <div class="filterbar" id="fbMaanden"></div>
       </div>
       <div class="filterbar" id="fbProducten"></div>
@@ -306,31 +308,30 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   // ---- Premieregels ----
   // De producttegels staan hier NIET meer vast: ze worden uit de selectie
-  // opgehaald (unieke polisomschrijvingen, ingedeeld op soort relatie).
+  // opgehaald (unieke polisomschrijvingen, één tegel per product).
   // Komt er iets bij in de selectie, dan verschijnt er vanzelf een tegel.
   // Deze tabel bepaalt alleen nog de premiecontrole van bekende omzettingen:
   // band [a,b] = premie is goed bij een afwijking tussen a% en b% t.o.v. oud;
   // nieuwePremie = geen premiecontrole (krijgt een nieuwe premie);
   // geen regel = premie moet gelijk blijven (marge € 0,11).
-  // 'groep' wordt alleen gebruikt als de selectie geen Soort relatie heeft.
   var PREMIEREGELS = [
-    { groep: "Particulier", naam: "Oldtimer Personenauto", band: [5, 7], oud: [["P113", "2110"]], nieuw: [["P113", "2110"]] },
-    { groep: "Particulier", naam: "Oldtimer motor en Scooter", band: [5, 7], oud: [["P113", "2510"]], nieuw: [["A400", "2100"]] },
-    { groep: "Particulier", naam: "Aanhanger (Particulieren)", band: [5, 7], soort: "prive", oud: [["P300", "2230"]], nieuw: [["N200", "2230"]] },
-    { groep: "Particulier", naam: "Bromfiets", band: [5, 7], oud: [["P513", "2336"]], nieuw: [["N200", "2340"]] },
-    { groep: "Particulier", naam: "Doorlopende reis AGA", oud: [["E200", "3970"]], nieuw: [["E200", "3970"]] },
-    { groep: "Particulier", naam: "Doorlopende reis Anker", nieuwePremie: true, oud: [["P022", "3950"]], nieuw: [["P022", "3950"]] },
-    { groep: "Particulier", naam: "Aansprakelijkheid", band: [-1, 1], oud: [["P115", "6121"]], nieuw: [["P113", "6121"]] },
-    { groep: "Particulier", naam: "Inboedel", band: [-1, 1], oud: [["P115", "5600"]], nieuw: [["P113", "5620"]] },
-    { groep: "Particulier", naam: "Opstal", band: [-1, 1], oud: [["P115", "5500"]], nieuw: [["P113", "5520"]] },
-    { groep: "Zakelijk", naam: "Aanhanger (zakelijk)", soort: "zakelijk", oud: [["P300", "2230"]], nieuw: [["N200", "2230"]] },
-    { groep: "Zakelijk", naam: "Eigen Vervoer", oud: [["P300", "3150"]], nieuw: [["N200", "3150"]] },
-    { groep: "Zakelijk", naam: "Werk- en landbouwmaterieel", oud: [["P300", "3500"]], nieuw: [["N200", "3503"]] },
-    { groep: "Zakelijk", naam: "Inventaris- en goederen", oud: [["P300", "5700"]], nieuw: [["N200", "5703"]] },
-    { groep: "Zakelijk", naam: "Bedrijfsgebouw", oud: [["P300", "5750"]], nieuw: [["N200", "5753"]] },
-    { groep: "Zakelijk", naam: "Bedrijfsschade", oud: [["P300", "5800"]], nieuw: [["N200", "5803"]] },
-    { groep: "Zakelijk", naam: "Aansprakelijkheid voor bedrijven", soort: "zakelijk", oud: [["P300", "6500"]], nieuw: [["N200", "6503"]] },
-    { groep: "Zakelijk", naam: "Zakenreis", oud: [["E200", "3910"]], nieuw: [["E200", "3910"]] }
+    { naam: "Oldtimer Personenauto", band: [5, 7], oud: [["P113", "2110"]], nieuw: [["P113", "2110"]] },
+    { naam: "Oldtimer motor en Scooter", band: [5, 7], oud: [["P113", "2510"]], nieuw: [["A400", "2100"]] },
+    { naam: "Aanhanger (Particulieren)", band: [5, 7], soort: "prive", oud: [["P300", "2230"]], nieuw: [["N200", "2230"]] },
+    { naam: "Bromfiets", band: [5, 7], oud: [["P513", "2336"]], nieuw: [["N200", "2340"]] },
+    { naam: "Doorlopende reis AGA", oud: [["E200", "3970"]], nieuw: [["E200", "3970"]] },
+    { naam: "Doorlopende reis Anker", nieuwePremie: true, oud: [["P022", "3950"]], nieuw: [["P022", "3950"]] },
+    { naam: "Aansprakelijkheid", band: [-1, 1], oud: [["P115", "6121"]], nieuw: [["P113", "6121"]] },
+    { naam: "Inboedel", band: [-1, 1], oud: [["P115", "5600"]], nieuw: [["P113", "5620"]] },
+    { naam: "Opstal", band: [-1, 1], oud: [["P115", "5500"]], nieuw: [["P113", "5520"]] },
+    { naam: "Aanhanger (zakelijk)", soort: "zakelijk", oud: [["P300", "2230"]], nieuw: [["N200", "2230"]] },
+    { naam: "Eigen Vervoer", oud: [["P300", "3150"]], nieuw: [["N200", "3150"]] },
+    { naam: "Werk- en landbouwmaterieel", oud: [["P300", "3500"]], nieuw: [["N200", "3503"]] },
+    { naam: "Inventaris- en goederen", oud: [["P300", "5700"]], nieuw: [["N200", "5703"]] },
+    { naam: "Bedrijfsgebouw", oud: [["P300", "5750"]], nieuw: [["N200", "5753"]] },
+    { naam: "Bedrijfsschade", oud: [["P300", "5800"]], nieuw: [["N200", "5803"]] },
+    { naam: "Aansprakelijkheid voor bedrijven", soort: "zakelijk", oud: [["P300", "6500"]], nieuw: [["N200", "6503"]] },
+    { naam: "Zakenreis", oud: [["E200", "3910"]], nieuw: [["E200", "3910"]] }
   ];
 
   function vindRegel(kant, mij, branche, soortRelatie) {
@@ -362,13 +363,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       ? "1:1 (afwijking tussen " + r.band[0] + "% en +" + r.band[1] + "% is goed)"
       : "verhoging van " + r.band[0] + "-" + r.band[1] + "% is goed";
     return "premie gelijk (marge € 0,11)";
-  }
-
-  // Particulier / zakelijk op basis van de kolom Soort relatie.
-  function groepVan(soort, regelIdx) {
-    var s = String(soort || "").trim();
-    if (s) return /priv|particul/i.test(s) ? "Particulier" : "Zakelijk";
-    return regelIdx >= 0 ? PREMIEREGELS[regelIdx].groep : "Onbekend";
   }
 
   var MAANDEN = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
@@ -765,7 +759,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
     // ---- Producttegels uit de selectie ----
     // Eén tegel per unieke polisomschrijving (PolisOms->Branche) van de oude
-    // polis, per soort relatie. De omzetting oud -> nieuw wordt uit de gematchte
+    // polis. De omzetting oud -> nieuw wordt uit de gematchte
     // polissen afgeleid; nieuwe polissen zonder oude polis volgen die omzetting.
     function codeSleutel(row, Kx) { return String(cel(row, Kx.mij)).trim().toUpperCase() + "|" + String(cel(row, Kx.brCode)).trim().replace(/^0+/, ""); }
     function omsVan(row, Kx) {
@@ -808,29 +802,31 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     });
     rest.forEach(function (r) { r.oudOms = omsVan(r.row, KL); r.van = routeVan(r.row, KL); });
 
+    // Eén tegel per product (geen splitsing particulier/zakelijk, dus geen
+    // dubbele tegels). 'rest' telt de oude polissen die nog niet in de wacht staan.
     var tegels = {};
-    function plaats(x, soort) {
-      x.groep = groepVan(soort, x.prodIdx);
-      x.tegel = x.groep + "|" + omsSleutel(x.oudOms);
+    function plaats(x) {
+      x.tegel = omsSleutel(x.oudOms);
       var t = tegels[x.tegel];
-      if (!t) t = tegels[x.tegel] = { key: x.tegel, groep: x.groep, naam: x.oudOms, naar: {}, omz: {}, alleenOud: {}, alleenNieuw: {}, regels: {}, n: 0 };
+      if (!t) t = tegels[x.tegel] = { key: x.tegel, naam: x.oudOms, naar: {}, omz: {}, alleenOud: {}, alleenNieuw: {}, regels: {}, n: 0, rest: 0 };
       t.n++;
       t.regels[regelTekst(x.prodIdx)] = true;
       return t;
     }
     verschil.concat(gelijk).forEach(function (item) {
-      var t = plaats(item, item.soort);
+      var t = plaats(item);
       if (omsSleutel(item.nieuwOms) !== omsSleutel(item.oudOms)) t.naar[item.nieuwOms] = true;
       var o = item.van + " → " + item.naar;
       t.omz[o] = (t.omz[o] || 0) + 1;
     });
     geenMatch.forEach(function (rec) {
-      var t = plaats(rec, rec.soort);
+      var t = plaats(rec);
       if (omsSleutel(rec.nieuwOms) !== omsSleutel(rec.oudOms)) t.naar[rec.nieuwOms] = true;
       t.alleenNieuw[rec.naar] = (t.alleenNieuw[rec.naar] || 0) + 1;
     });
     rest.forEach(function (r) {
-      var t = plaats(r, r.soort);
+      var t = plaats(r);
+      t.rest++;
       t.alleenOud[r.van] = (t.alleenOud[r.van] || 0) + 1;
     });
 
@@ -846,12 +842,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   // ---- Weergave / filters ----
   function bouwWeergave(vlRows, gelijk, verschil, geenMatch, rest, oversluitingUit, tegels) {
-    var actiefGroep = "Alles", actiefTegel = null, actiefJaar = "", actiefMaand = "";
+    var actiefTegel = null, actiefJaar = "", actiefMaand = "";
     var laatsteF = { verschil: [], gelijk: [], geenMatch: [], rest: [] };
 
     function metFilter(lijst, datumVan) {
       return lijst.filter(function (x) {
-        if (actiefGroep !== "Alles" && x.groep !== actiefGroep) return false;
         if (actiefTegel !== null && x.tegel !== actiefTegel) return false;
         var mk = datumVan(x).maandKey;
         if (actiefJaar !== "" && mk.slice(0, 4) !== actiefJaar) return false;
@@ -931,12 +926,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       bouwRapport(vlRows, verschilF, gelijkF, geenMatchF, restF, oversluitingUit);
     }
 
-    // Alle records met datum, groep en tegel voor de knoppenbalken.
+    // Alle records met datum en tegel voor de knoppenbalken.
     var alles = [];
-    verschil.forEach(function (item) { alles.push({ datum: item.rec.datum, groep: item.groep, tegel: item.tegel }); });
-    gelijk.forEach(function (item) { alles.push({ datum: item.rec.datum, groep: item.groep, tegel: item.tegel }); });
-    geenMatch.forEach(function (r) { alles.push({ datum: r.datum, groep: r.groep, tegel: r.tegel }); });
-    rest.forEach(function (r) { alles.push({ datum: r.datum, groep: r.groep, tegel: r.tegel }); });
+    verschil.forEach(function (item) { alles.push({ datum: item.rec.datum, tegel: item.tegel }); });
+    gelijk.forEach(function (item) { alles.push({ datum: item.rec.datum, tegel: item.tegel }); });
+    geenMatch.forEach(function (r) { alles.push({ datum: r.datum, tegel: r.tegel }); });
+    rest.forEach(function (r) { alles.push({ datum: r.datum, tegel: r.tegel }); });
 
     function maakKnop(bar, tekst, onclick) {
       var b = document.createElement("button");
@@ -956,7 +951,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       var route = $("productRoute");
       if (key !== null && tegels[key]) {
         var t = tegels[key], regels = [];
-        regels.push("<div style='font-size:1rem; margin-bottom:4px;'>" + esc(tegelLabel(t)) + " &middot; " + esc(t.groep.toLowerCase()) + "</div>");
+        regels.push("<div style='font-size:1rem; margin-bottom:4px;'>" + esc(tegelLabel(t)) +
+          (t.rest ? " &middot; nog " + t.rest + " niet in de wacht" : " &middot; &#10003; alles staat in de wacht") + "</div>");
         var lijn = function (prefix, obj) {
           Object.keys(obj).forEach(function (o) { regels.push("<div>" + prefix + esc(o) + " <span style='opacity:.7;'>(" + obj[o] + "&times;)</span></div>"); });
         };
@@ -970,45 +966,30 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       renderAll();
     }
 
-    var GROEPEN = ["Particulier", "Zakelijk"];
-    if (alles.some(function (x) { return x.groep === "Onbekend"; })) GROEPEN.push("Onbekend");
-    GROEPEN.push("Alles");
-    function telGroep(g) { return g === "Alles" ? alles.length : alles.filter(function (x) { return x.groep === g; }).length; }
+    // Groene tegel = alle oude polissen van dit product staan in de wacht
+    // (niets meer onder 'nog niet in de wacht').
+    function markeerCompleet(b, rest) {
+      if (rest === 0) { b.classList.add("compleet"); b.textContent = "✓ " + b.textContent; b.title = "Alle oude polissen staan in de wacht"; }
+      else b.title = rest + " oude polis(sen) nog niet in de wacht";
+    }
 
     function bouwProductTegels() {
       var fbP = $("fbProducten");
       fbP.innerHTML = "";
       var lbl = document.createElement("span");
-      lbl.className = "groeplabel"; lbl.textContent = "Producten uit de selectie — " + actiefGroep.toLowerCase();
+      lbl.className = "groeplabel"; lbl.textContent = "Producten uit de selectie";
       fbP.appendChild(lbl);
       var lijst = Object.keys(tegels).map(function (k) { return tegels[k]; })
-        .filter(function (t) { return actiefGroep === "Alles" || t.groep === actiefGroep; })
-        .sort(function (a, b) {
-          if (a.groep !== b.groep) return GROEPEN.indexOf(a.groep) - GROEPEN.indexOf(b.groep);
-          return tegelLabel(a).localeCompare(tegelLabel(b), "nl");
-        });
-      var totaal = lijst.reduce(function (s, t) { return s + t.n; }, 0);
-      var alleKnop = maakKnop(fbP, "Alle producten (" + totaal + ")", function () { zetTegel(null); });
+        .sort(function (a, b) { return tegelLabel(a).localeCompare(tegelLabel(b), "nl"); });
+      var alleKnop = maakKnop(fbP, "Alle producten (" + alles.length + ")", function () { zetTegel(null); });
       alleKnop.classList.add("actief");
-      var vorige = "";
+      markeerCompleet(alleKnop, rest.length);
       lijst.forEach(function (t) {
-        if (actiefGroep === "Alles" && t.groep !== vorige) {
-          vorige = t.groep;
-          var g = document.createElement("span"); g.className = "groeplabel"; g.textContent = t.groep; fbP.appendChild(g);
-        }
-        maakKnop(fbP, tegelLabel(t) + " (" + t.n + ")", function () { zetTegel(t.key); });
+        var b = maakKnop(fbP, tegelLabel(t) + " (" + t.n + ")", function () { zetTegel(t.key); });
+        markeerCompleet(b, t.rest);
       });
       zetTegel(null);
     }
-
-    var fbG = $("fbGroep");
-    fbG.innerHTML = "";
-    var lblG = document.createElement("span"); lblG.className = "groeplabel"; lblG.textContent = "Soort relatie"; fbG.appendChild(lblG);
-    actiefGroep = GROEPEN.filter(function (g) { return g !== "Alles" && telGroep(g) > 0; })[0] || "Alles";
-    GROEPEN.forEach(function (groep) {
-      var b = maakKnop(fbG, groep + " (" + telGroep(groep) + ")", function () { actiefGroep = groep; bouwProductTegels(); });
-      if (groep === actiefGroep) b.classList.add("actief");
-    });
 
     // Maand/jaar-tegels: alleen de maanden die in de selectie voorkomen.
     var maandKeys = [];
@@ -1067,13 +1048,13 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         laatsteF.verschil.map(function (item) {
           return [item.relnr, item.naam, item.branche, item.rec.polis, item.lvPolis, item.rec.datum.toon,
             item.rec.bedragTekst, item.oudTekst, item.delta == null ? "onleesbaar" : item.delta.toFixed(2).replace(".", ","), fmtPct(item.pct), item.rec.provisieTekst,
-            item.groep, item.oudOms];
+            item.soort, item.oudOms];
         }));
     });
     koppelDownload("dlGeenMatch", function () {
       downloadCsv("geroyeerd-of-polisnr-fout.csv",
         ["agent", "rel.nr", "naam", "polisnr nieuw", "hoofdvervaldatum", "nieuw bedrag", "provisie", "status", "soort relatie", "product"],
-        laatsteF.geenMatch.map(function (r) { return [r.agent, r.relnr, r.naam, r.polis, r.datum.toon, r.bedragTekst, r.provisieTekst, SUB_TEKST[r.sub], r.groep, r.oudOms]; }));
+        laatsteF.geenMatch.map(function (r) { return [r.agent, r.relnr, r.naam, r.polis, r.datum.toon, r.bedragTekst, r.provisieTekst, SUB_TEKST[r.sub], r.soort, r.oudOms]; }));
     });
     koppelDownload("dlGelijk", function () {
       downloadCsv("premie-komt-overeen.csv",
@@ -1081,13 +1062,13 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         laatsteF.gelijk.map(function (item) {
           return [item.relnr, item.naam, item.branche, item.rec.polis, item.lvPolis, item.rec.datum.toon,
             item.rec.bedragTekst, item.oudTekst, fmtPct(item.pct), item.rec.provisieTekst, (item.nieuwePremie ? "nieuwe premie" : "gelijk") + (item.opRelatie ? " · via rel.nr" : ""),
-            item.groep, item.oudOms];
+            item.soort, item.oudOms];
         }));
     });
     koppelDownload("dlRest", function () {
       downloadCsv("nog-niet-in-de-wacht.csv",
-        ["rel.nr", "soort relatie", "naam", "branche", "polisnr oud", "hoofdvervaldatum", "oud bedrag", "provisie", "groep", "product"],
-        laatsteF.rest.map(function (r) { return [r.relnr, r.soort, r.naam, r.branche, r.polis, r.datum.toon, r.bedrag, r.provisieTekst, r.groep, r.oudOms]; }));
+        ["rel.nr", "soort relatie", "naam", "branche", "polisnr oud", "hoofdvervaldatum", "oud bedrag", "provisie", "product"],
+        laatsteF.rest.map(function (r) { return [r.relnr, r.soort, r.naam, r.branche, r.polis, r.datum.toon, r.bedrag, r.provisieTekst, r.oudOms]; }));
     });
 
     $("results").style.display = "block";
