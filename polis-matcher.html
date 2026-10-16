@@ -124,13 +124,17 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   /* Producten: vaste lijst in kolommen, geen scrollbalk */
   #fbProducten { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; align-content: start; padding: 10px 12px; }
   #fbProducten .groeplabel { grid-column: 1 / -1; margin-top: 4px; }
-  #fbProducten button { padding: 7px 10px; font-size: 0.82rem; border-radius: 8px; border-width: 1px; line-height: 1.25; }
-  /* Groen = alle oude polissen van dit product staan in de wacht */
+  #fbProducten button { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; font-size: 0.82rem; border-radius: 8px; border-width: 1px; line-height: 1.25; }
+  /* Teller: nog in de wacht zetten / totaal oude polissen */
+  #fbProducten .wachtteller { flex-shrink: 0; font-family: Consolas, Menlo, monospace; font-weight: 800; font-size: 0.8rem; background: rgba(0, 0, 0, 0.12); border-radius: 6px; padding: 1px 7px; }
+  /* Groen = alles in de wacht · geel = nog niet af */
   #fbProducten button.compleet { background: var(--dwa-accent); border-color: var(--dwa-accent); color: var(--wit); }
   #fbProducten button.compleet:hover { background: var(--dwa-groen-80); }
-  /* Geselecteerde tegel = goud (zodat groen alleen 'alles in de wacht' betekent) */
-  #fbProducten button.actief { background: var(--dwa-goud-60); border-color: var(--dwa-goud-80); color: var(--tekst); box-shadow: 0 0 0 2px var(--dwa-goud); }
-  #fbProducten button.compleet.actief { background: var(--dwa-accent); border-color: var(--dwa-accent); color: var(--wit); box-shadow: 0 0 0 3px var(--dwa-goud); }
+  #fbProducten button.open { background: var(--dwa-geel); border-color: var(--dwa-geel-donker); color: var(--tekst); }
+  #fbProducten button.open:hover { background: var(--dwa-goud-80); }
+  /* Geselecteerde tegel: donkergroene rand (kleur blijft de status tonen) */
+  #fbProducten button.actief { outline: 3px solid var(--dwa-groen); outline-offset: 2px; }
+  #fbProducten button.actief:not(.compleet):not(.open) { background: var(--wit); color: var(--dwa-groen); }
   #fbMaanden { gap: 4px; padding: 10px; }
   #fbMaanden button { padding: 4px 8px; font-size: 0.75rem; border-width: 1px; border-radius: 8px; text-align: center; }
   .switchrij { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 0; }
@@ -186,7 +190,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <body>
 
 <header>
-  <h1>DWA Premiecontrole Dashboard <span>versie 10-3</span></h1>
+  <h1>DWA Premiecontrole Dashboard <span>versie 10-4</span></h1>
   <p>Matcht nieuwe polissen (VL309) tegen de oude polissen (LV309), haalt de producten uit de selectie, controleert de premie en sorteert alles aflopend op provisie.</p>
 </header>
 
@@ -727,7 +731,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           rec: rec, lvRow: lv, opRelatie: opRelatie, prodIdx: lvProd >= 0 ? lvProd : rec.prodIdx,
           soort: cel(lv, KL.soort) || rec.soort,
           relnr: cel(lv, KL.relnr), naam: cel(lv, KL.naam), branche: cel(lv, KL.brOms),
-          lvPolis: cel(lv, KL.polis), oudTekst: cel(lv, KL.bedrag), oud: oud,
+          lvPolis: cel(lv, KL.polis), oudTekst: cel(lv, KL.bedrag), oud: oud, lvDatum: parseDatum(cel(lv, KL.verval)),
           delta: (rec.bedrag != null && oud != null) ? rec.bedrag - oud : null,
           pct: (rec.bedrag != null && oud != null && oud > 0) ? ((rec.bedrag - oud) / oud) * 100 : null
         };
@@ -845,13 +849,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     var actiefTegel = null, actiefJaar = "", actiefMaand = "";
     var laatsteF = { verschil: [], gelijk: [], geenMatch: [], rest: [] };
 
+    function datumOk(dt) {
+      var mk = dt.maandKey;
+      if (actiefJaar !== "" && mk.slice(0, 4) !== actiefJaar) return false;
+      if (actiefMaand !== "" && mk !== actiefMaand) return false;
+      return true;
+    }
     function metFilter(lijst, datumVan) {
       return lijst.filter(function (x) {
         if (actiefTegel !== null && x.tegel !== actiefTegel) return false;
-        var mk = datumVan(x).maandKey;
-        if (actiefJaar !== "" && mk.slice(0, 4) !== actiefJaar) return false;
-        if (actiefMaand !== "" && mk !== actiefMaand) return false;
-        return true;
+        return datumOk(datumVan(x));
       });
     }
     function deltaCel(item) {
@@ -861,6 +868,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     }
 
     function renderAll() {
+      telTegels();
       var vlDatum = function (x) { return x.rec ? x.rec.datum : x.datum; };
       var eigen = function (r) { return r.datum; };
       var verschilF = metFilter(verschil, vlDatum);
@@ -946,47 +954,70 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       return t.naam + (naar.length ? " → " + naar.join(" / ") : "");
     }
 
-    function zetTegel(key) {
-      actiefTegel = key;
-      var route = $("productRoute");
-      if (key !== null && tegels[key]) {
-        var t = tegels[key], regels = [];
-        regels.push("<div style='font-size:1rem; margin-bottom:4px;'>" + esc(tegelLabel(t)) +
-          (t.rest ? " &middot; nog " + t.rest + " niet in de wacht" : " &middot; &#10003; alles staat in de wacht") + "</div>");
-        var lijn = function (prefix, obj) {
-          Object.keys(obj).forEach(function (o) { regels.push("<div>" + prefix + esc(o) + " <span style='opacity:.7;'>(" + obj[o] + "&times;)</span></div>"); });
-        };
-        lijn("Omzetting: ", t.omz);
-        lijn("Nog niet in de wacht: ", t.alleenOud);
-        lijn("Nieuw zonder oude polis: &rarr; ", t.alleenNieuw);
-        regels.push("<div>Premiecontrole: " + esc(Object.keys(t.regels).join(" / ")) + "</div>");
-        route.innerHTML = regels.join("");
-        route.style.display = "block";
-      } else route.style.display = "none";
-      renderAll();
+    // ---- Teller op de tegels: nog in de wacht zetten / totaal oude polissen ----
+    // Oude polissen = gematchte oude polissen + 'nog niet in de wacht'. Volgt de
+    // gekozen hoofdvervaldatum van de OUDE polis. Groen = alles in de wacht,
+    // geel = nog niet af, wit = geen oude polissen in de gekozen periode.
+    var knoppen = {};    // tegel-sleutel -> knop ("" = Alle producten)
+    var telling = {};
+    function telTegels() {
+      telling = { "": { open: 0, oud: 0 } };
+      Object.keys(tegels).forEach(function (k) { telling[k] = { open: 0, oud: 0 }; });
+      verschil.concat(gelijk).forEach(function (x) {
+        if (!datumOk(x.lvDatum)) return;
+        telling[x.tegel].oud++; telling[""].oud++;
+      });
+      rest.forEach(function (r) {
+        if (!datumOk(r.datum)) return;
+        telling[r.tegel].open++; telling[r.tegel].oud++; telling[""].open++; telling[""].oud++;
+      });
+      Object.keys(knoppen).forEach(function (k) {
+        var b = knoppen[k], c = telling[k], leeg = c.oud === 0, af = !leeg && c.open === 0;
+        b.classList.toggle("compleet", af);
+        b.classList.toggle("open", c.open > 0);
+        b.innerHTML = "<span>" + (af ? "&#10003; " : "") + esc(b.dataset.naam) + "</span><span class='wachtteller'>" + c.open + "/" + c.oud + "</span>";
+        b.title = leeg ? "Geen oude polissen in de gekozen periode"
+          : af ? "Alle " + c.oud + " oude polissen staan in de wacht"
+          : "Nog " + c.open + " van de " + c.oud + " oude polissen in de wacht zetten";
+      });
+      toonRoute();
     }
 
-    // Groene tegel = alle oude polissen van dit product staan in de wacht
-    // (niets meer onder 'nog niet in de wacht').
-    function markeerCompleet(b, rest) {
-      if (rest === 0) { b.classList.add("compleet"); b.textContent = "✓ " + b.textContent; b.title = "Alle oude polissen staan in de wacht"; }
-      else b.title = rest + " oude polis(sen) nog niet in de wacht";
+    function toonRoute() {
+      var route = $("productRoute"), t = actiefTegel !== null ? tegels[actiefTegel] : null;
+      if (!t) { route.style.display = "none"; return; }
+      var c = telling[t.key] || { open: 0, oud: 0 }, regels = [];
+      regels.push("<div style='font-size:1rem; margin-bottom:4px;'>" + esc(tegelLabel(t)) + " &middot; " +
+        (c.open ? "nog " + c.open + "/" + c.oud + " in de wacht zetten"
+          : c.oud ? "&#10003; alles staat in de wacht (" + c.oud + ")" : "geen oude polissen in de gekozen periode") + "</div>");
+      var lijn = function (prefix, obj) {
+        Object.keys(obj).forEach(function (o) { regels.push("<div>" + prefix + esc(o) + " <span style='opacity:.7;'>(" + obj[o] + "&times;)</span></div>"); });
+      };
+      lijn("Omzetting: ", t.omz);
+      lijn("Nog niet in de wacht: ", t.alleenOud);
+      lijn("Nieuw zonder oude polis: &rarr; ", t.alleenNieuw);
+      regels.push("<div>Premiecontrole: " + esc(Object.keys(t.regels).join(" / ")) + "</div>");
+      route.innerHTML = regels.join("");
+      route.style.display = "block";
     }
+
+    function zetTegel(key) { actiefTegel = key; renderAll(); }
 
     function bouwProductTegels() {
       var fbP = $("fbProducten");
       fbP.innerHTML = "";
+      knoppen = {};
       var lbl = document.createElement("span");
-      lbl.className = "groeplabel"; lbl.textContent = "Producten uit de selectie";
+      lbl.className = "groeplabel"; lbl.textContent = "Producten uit de selectie · nog in de wacht zetten / totaal";
       fbP.appendChild(lbl);
       var lijst = Object.keys(tegels).map(function (k) { return tegels[k]; })
         .sort(function (a, b) { return tegelLabel(a).localeCompare(tegelLabel(b), "nl"); });
-      var alleKnop = maakKnop(fbP, "Alle producten (" + alles.length + ")", function () { zetTegel(null); });
+      var alleKnop = maakKnop(fbP, "", function () { zetTegel(null); });
+      alleKnop.dataset.naam = "Alle producten"; knoppen[""] = alleKnop;
       alleKnop.classList.add("actief");
-      markeerCompleet(alleKnop, rest.length);
       lijst.forEach(function (t) {
-        var b = maakKnop(fbP, tegelLabel(t) + " (" + t.n + ")", function () { zetTegel(t.key); });
-        markeerCompleet(b, t.rest);
+        var b = maakKnop(fbP, "", function () { zetTegel(t.key); });
+        b.dataset.naam = tegelLabel(t); knoppen[t.key] = b;
       });
       zetTegel(null);
     }
