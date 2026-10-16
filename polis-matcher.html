@@ -190,7 +190,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <body>
 
 <header>
-  <h1>DWA Premiecontrole Dashboard <span>versie 10-4</span></h1>
+  <h1>DWA Premiecontrole Dashboard <span>versie 10-5</span></h1>
   <p>Matcht nieuwe polissen (VL309) tegen de oude polissen (LV309), haalt de producten uit de selectie, controleert de premie en sorteert alles aflopend op provisie.</p>
 </header>
 
@@ -241,7 +241,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       </div>
       <div class="filterbar" id="fbProducten"></div>
     </div>
-    <div id="productRoute" style="display:none; background: var(--dwa-goud-60); border: 1px solid var(--dwa-goud); border-radius: 10px; padding: 10px 16px; margin-bottom: 12px; font-size: 0.92rem; font-weight: 600;"></div>
 
     <div class="summary">
       <div class="stat"><div class="num" id="numTotaal">0</div><div class="lbl">Nieuwe polissen gecontroleerd</div></div>
@@ -360,14 +359,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   }
 
   var TOLERANTIE = 0.11;
-  function regelTekst(idx) {
-    var r = idx >= 0 ? PREMIEREGELS[idx] : null;
-    if (r && r.nieuwePremie) return "geen premiecontrole (krijgt nieuwe premie)";
-    if (r && r.band) return r.band[0] < 0
-      ? "1:1 (afwijking tussen " + r.band[0] + "% en +" + r.band[1] + "% is goed)"
-      : "verhoging van " + r.band[0] + "-" + r.band[1] + "% is goed";
-    return "premie gelijk (marge € 0,11)";
-  }
 
   var MAANDEN = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
@@ -538,8 +529,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       vorm: zoek(bevat("verzekeringsvorm")), polis: zoek(bevat("polisnummer")),
       polisOudMij: zoek(function (h) { return /polisnr\.? ?oude mij/.test(h); }),
       verval: zoek(bevat("hoofdvervaldatum")), bedrag: zoek(bevat("incassobedrag")),
-      provisie: zoek(bevat("provisietotaal")),
-      pv: zoek(bevat("polisvoorwaarde 1"), 0), pvOms: zoek(bevat("polisvoorwaarde 1"), 1)
+      provisie: zoek(bevat("provisietotaal"))
     };
   }
 
@@ -552,12 +542,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     if (kant === "vl") return {
       soort: off ? 0 : -1, kantoor: -1, agent: c("A"), relnr: c("B"), naam: c("C"),
       mij: c("D"), mijOms: c("E"), brCode: c("F"), brOms: c("G"), vorm: c("H"), polis: c("I"),
-      polisOudMij: c("Z"), verval: c("K"), bedrag: c("Y"), provisie: c("Q"), pv: c("R"), pvOms: c("S")
+      polisOudMij: c("Z"), verval: c("K"), bedrag: c("Y"), provisie: c("Q")
     };
     var K = {
       soort: c("D"), kantoor: c("A"), agent: c("B"), relnr: c("C"), naam: c("E"),
       mij: c("F"), mijOms: c("G"), brCode: c("H"), brOms: c("I"), vorm: c("J"), polis: c("K"),
-      polisOudMij: -1, verval: c("M"), bedrag: c("Q"), provisie: c("T"), pv: c("U"), pvOms: c("V")
+      polisOudMij: -1, verval: c("M"), bedrag: c("Q"), provisie: c("T")
     };
     // Oude regels zonder 'Soort relatie'-kolom (polisnr één kolom eerder) rechtzetten.
     rows.forEach(function (row) {
@@ -772,11 +762,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       var c = [cel(row, Kx.mij), cel(row, Kx.brCode)].filter(function (v) { return String(v).trim() !== ""; }).join(" ");
       return c ? "Branche " + c : "Onbekend product";
     }
-    function routeVan(row, Kx) {
-      var code = [cel(row, Kx.mij) || "?", cel(row, Kx.brCode) || "?", cel(row, Kx.vorm) || "leeg"].join("/");
-      var pv = [cel(row, Kx.pv), cel(row, Kx.pvOms)].filter(function (v) { return String(v).trim() !== ""; }).join(" ");
-      return code + (pv ? " · " + pv : "");
-    }
     var lvOmsPerCode = {};
     lvRows.forEach(function (row) { var k = codeSleutel(row, KL); if (!lvOmsPerCode[k]) lvOmsPerCode[k] = omsVan(row, KL); });
 
@@ -784,8 +769,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     verschil.concat(gelijk).forEach(function (item) {
       item.oudOms = omsVan(item.lvRow, KL);
       item.nieuwOms = omsVan(item.rec.row, KV);
-      item.van = routeVan(item.lvRow, KL);
-      item.naar = routeVan(item.rec.row, KV);
       var k = codeSleutel(item.rec.row, KV);
       if (!geleerd[k]) geleerd[k] = {};
       geleerd[k][item.oudOms] = (geleerd[k][item.oudOms] || 0) + 1;
@@ -797,42 +780,29 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     }
     geenMatch.forEach(function (rec) {
       rec.nieuwOms = omsVan(rec.row, KV);
-      rec.naar = routeVan(rec.row, KV);
       var oms = meestGeleerd(codeSleutel(rec.row, KV));
       if (!oms && rec.prodIdx >= 0) {
         PREMIEREGELS[rec.prodIdx].oud.some(function (c) { var o = lvOmsPerCode[c[0] + "|" + c[1]]; if (o) { oms = o; return true; } return false; });
       }
       rec.oudOms = oms || rec.nieuwOms;
     });
-    rest.forEach(function (r) { r.oudOms = omsVan(r.row, KL); r.van = routeVan(r.row, KL); });
+    rest.forEach(function (r) { r.oudOms = omsVan(r.row, KL); });
 
     // Eén tegel per product (geen splitsing particulier/zakelijk, dus geen
-    // dubbele tegels). 'rest' telt de oude polissen die nog niet in de wacht staan.
+    // dubbele tegels). 'naar' telt per nieuwe omschrijving hoeveel polissen
+    // erheen gaan; het label toont alleen de belangrijkste.
     var tegels = {};
     function plaats(x) {
       x.tegel = omsSleutel(x.oudOms);
       var t = tegels[x.tegel];
-      if (!t) t = tegels[x.tegel] = { key: x.tegel, naam: x.oudOms, naar: {}, omz: {}, alleenOud: {}, alleenNieuw: {}, regels: {}, n: 0, rest: 0 };
-      t.n++;
-      t.regels[regelTekst(x.prodIdx)] = true;
+      if (!t) t = tegels[x.tegel] = { key: x.tegel, naam: x.oudOms, naar: {} };
       return t;
     }
-    verschil.concat(gelijk).forEach(function (item) {
-      var t = plaats(item);
-      if (omsSleutel(item.nieuwOms) !== omsSleutel(item.oudOms)) t.naar[item.nieuwOms] = true;
-      var o = item.van + " → " + item.naar;
-      t.omz[o] = (t.omz[o] || 0) + 1;
+    verschil.concat(gelijk, geenMatch).forEach(function (x) {
+      var t = plaats(x);
+      t.naar[x.nieuwOms] = (t.naar[x.nieuwOms] || 0) + 1;
     });
-    geenMatch.forEach(function (rec) {
-      var t = plaats(rec);
-      if (omsSleutel(rec.nieuwOms) !== omsSleutel(rec.oudOms)) t.naar[rec.nieuwOms] = true;
-      t.alleenNieuw[rec.naar] = (t.alleenNieuw[rec.naar] || 0) + 1;
-    });
-    rest.forEach(function (r) {
-      var t = plaats(r);
-      t.rest++;
-      t.alleenOud[r.van] = (t.alleenOud[r.van] || 0) + 1;
-    });
+    rest.forEach(plaats);
 
     // ---- Sorteer alles aflopend op provisie (hoog -> laag) ----
     function provVan(x) { var p = x.rec ? x.rec.provisie : x.provisie; return p == null ? -Infinity : p; }
@@ -949,10 +919,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       return b;
     }
 
+    // Naam van de oude polis; met '→ nieuw' alleen als de meeste polissen naar
+    // een andere omschrijving gaan (losse uitzonderingen, bijv. pakketpolissen
+    // die deels naar een ander product gaan, tonen we niet in de naam).
     function tegelLabel(t) {
-      var naar = Object.keys(t.naar);
-      return t.naam + (naar.length ? " → " + naar.join(" / ") : "");
+      var best = "", n = 0;
+      Object.keys(t.naar).forEach(function (o) { if (t.naar[o] > n) { n = t.naar[o]; best = o; } });
+      return t.naam + (best && omsSleutel(best) !== omsSleutel(t.naam) ? " → " + best : "");
     }
+    function omsSleutel(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
 
     // ---- Teller op de tegels: nog in de wacht zetten / totaal oude polissen ----
     // Oude polissen = gematchte oude polissen + 'nog niet in de wacht'. Volgt de
@@ -980,25 +955,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           : af ? "Alle " + c.oud + " oude polissen staan in de wacht"
           : "Nog " + c.open + " van de " + c.oud + " oude polissen in de wacht zetten";
       });
-      toonRoute();
-    }
-
-    function toonRoute() {
-      var route = $("productRoute"), t = actiefTegel !== null ? tegels[actiefTegel] : null;
-      if (!t) { route.style.display = "none"; return; }
-      var c = telling[t.key] || { open: 0, oud: 0 }, regels = [];
-      regels.push("<div style='font-size:1rem; margin-bottom:4px;'>" + esc(tegelLabel(t)) + " &middot; " +
-        (c.open ? "nog " + c.open + "/" + c.oud + " in de wacht zetten"
-          : c.oud ? "&#10003; alles staat in de wacht (" + c.oud + ")" : "geen oude polissen in de gekozen periode") + "</div>");
-      var lijn = function (prefix, obj) {
-        Object.keys(obj).forEach(function (o) { regels.push("<div>" + prefix + esc(o) + " <span style='opacity:.7;'>(" + obj[o] + "&times;)</span></div>"); });
-      };
-      lijn("Omzetting: ", t.omz);
-      lijn("Nog niet in de wacht: ", t.alleenOud);
-      lijn("Nieuw zonder oude polis: &rarr; ", t.alleenNieuw);
-      regels.push("<div>Premiecontrole: " + esc(Object.keys(t.regels).join(" / ")) + "</div>");
-      route.innerHTML = regels.join("");
-      route.style.display = "block";
     }
 
     function zetTegel(key) { actiefTegel = key; renderAll(); }
