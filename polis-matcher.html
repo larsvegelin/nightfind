@@ -113,8 +113,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   label.chk input { width: 17px; height: 17px; accent-color: var(--dwa-groen); }
   .error { background: var(--fout-bg); border: 1px solid var(--fout-rand); color: var(--fout-tekst); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 0.92rem; display: none; }
   #results { display: none; }
-  /* Smalle kolom soort relatie | producten in vaste kolommen | hoofdvervaldatum */
-  .filtergrid { display: grid; grid-template-columns: 150px minmax(0, 1fr) 290px; gap: 14px; align-items: start; margin-bottom: 14px; }
+  /* Smalle linkerkolom (soort relatie + hoofdvervaldatum) | producten over de rest van de breedte */
+  .filtergrid { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 14px; align-items: start; margin-bottom: 14px; }
+  .filterkolom { display: flex; flex-direction: column; gap: 10px; }
   @media (max-width: 1000px) { .filtergrid { grid-template-columns: 1fr; } }
   .filterbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; background: #fafcfa; border-bottom: 1px solid var(--rand); }
   .filtergrid .filterbar { flex-direction: column; align-items: stretch; border: 1px solid var(--rand); border-radius: 12px; }
@@ -127,8 +128,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   #fbProducten { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; align-content: start; padding: 10px 12px; }
   #fbProducten .groeplabel { grid-column: 1 / -1; margin-top: 4px; }
   #fbProducten button { padding: 7px 10px; font-size: 0.82rem; border-radius: 8px; border-width: 1px; line-height: 1.25; }
-  #fbMaanden button { padding: 8px 14px; font-size: 0.85rem; border-width: 1px; }
-  .switchrij { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+  #fbMaanden { gap: 4px; padding: 10px; }
+  #fbMaanden button { padding: 4px 8px; font-size: 0.75rem; border-width: 1px; border-radius: 8px; text-align: center; }
+  .switchrij { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 0; }
   .filterbar button:hover { background: var(--dwa-groen-licht); }
   .filterbar button.actief { background: var(--dwa-groen); color: var(--wit); }
   .filterbar .groeplabel { align-self: flex-start; font-weight: 800; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--dwa-groen); padding: 2px 4px 4px 10px; border-left: 3px solid var(--dwa-goud); }
@@ -181,7 +183,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <body>
 
 <header>
-  <h1>DWA Premiecontrole Dashboard <span>versie 10-1</span></h1>
+  <h1>DWA Premiecontrole Dashboard <span>versie 10-2</span></h1>
   <p>Matcht nieuwe polissen (VL309) tegen de oude polissen (LV309), haalt de producten uit de selectie (per soort relatie), controleert de premie en sorteert alles aflopend op provisie.</p>
 </header>
 
@@ -227,9 +229,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <div id="results">
     <div class="filtergrid">
-      <div class="filterbar" id="fbGroep" style="border: 2px solid var(--dwa-groen);"></div>
+      <div class="filterkolom">
+        <div class="filterbar" id="fbGroep" style="border: 2px solid var(--dwa-groen);"></div>
+        <div class="filterbar" id="fbMaanden"></div>
+      </div>
       <div class="filterbar" id="fbProducten"></div>
-      <div class="filterbar" id="fbMaanden"></div>
     </div>
     <div id="productRoute" style="display:none; background: var(--dwa-goud-60); border: 1px solid var(--dwa-goud); border-radius: 10px; padding: 10px 16px; margin-bottom: 12px; font-size: 0.92rem; font-weight: 600;"></div>
 
