@@ -227,3 +227,15 @@ Persoonlijke tool om inkomsten en uitgaven bij te houden, gekoppeld aan Supabase
 
 Schema: `supabase/migrations/20261002_budget_tracker.sql` (al toegepast op het `nightvibe-production` project).
 Bestanden: `budget.html`, `assets/css/budget.css`, `assets/js/budget.js`.
+
+## ✉️ Brieventool (`brieven.html`)
+
+Eén los HTML-bestand (geen installatie, werkt ook offline): dubbelklik om te openen in de browser.
+
+- **Brieven** – `X-OVR` (overgang kantoor naar De Waerdse), `X-BRF` (aanhanger) en **Eigen**: plak HTML/tekst of kies een `.html`/`.txt` bestand en klik op *Preview laden*
+- **X-OVR opties** – kantoor kiezen, **particulier/zakelijk** en **met/zonder Q&A**; kantoorgegevens zijn aan te passen en in de browser te bewaren
+- **Uitlezen** – samenvoegvelden van het briefsysteem (`@L97020@`, `@ondertek_naam@`, …) worden herkend en getoond; ze blijven in de downloads staan
+- **Preview** – A4-weergave, optioneel met voorbeeldgegevens ingevuld
+- **Downloaden** – TXT (UTF-8) en Word (`.docx`, gemaakt in de browser zonder externe bibliotheek), plus *HTML kopiëren*
+
+Kantoor vast toevoegen: kopieer het blok in `KANTOREN` bovenin het script van `brieven.html`. Sjablonen staan in `SJABLONEN` (`{{veld}}` = kantoorgegeven, `[[zakelijk]]…[[/zakelijk]]` = alleen bij die optie).
