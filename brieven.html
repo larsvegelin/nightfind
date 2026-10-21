@@ -143,6 +143,17 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .preview-col { min-width: 0; display: flex; flex-direction: column; gap: 0.75rem; }
 .preview-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
 .preview-title { font-weight: 600; font-size: 0.95rem; }
+.plakvak {
+    min-height: 110px; max-height: 280px; overflow: auto; border: 1px dashed var(--border); border-radius: 8px;
+    padding: 0.6rem 0.7rem; background: var(--surface); font-family: Arial, Helvetica, sans-serif; font-size: 0.85rem; line-height: 1.45;
+}
+.plakvak:empty::before { content: attr(data-leeg); color: var(--muted); }
+.plakvak:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+.plakvak p, .plakvak ul, .plakvak ol { margin: 0 0 0.6em; }
+.plakvak ul, .plakvak ol { padding-left: 1.3em; }
+.plakvak table { border-collapse: collapse; margin-bottom: 0.6em; }
+.plakvak td, .plakvak th { padding: 0 6px 0 0; vertical-align: top; }
+#eigenInvoer { min-height: 140px; }
 .checks { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
 .switch { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.88rem; cursor: pointer; user-select: none; }
 .switch input { width: 1rem; height: 1rem; accent-color: var(--accent); }
@@ -192,7 +203,7 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
             <div class="segmented" id="briefKeuze">
                 <button type="button" data-waarde="X-OVR">X-OVR<small>Overgang kantoor</small></button>
                 <button type="button" data-waarde="X-BRF">X-BRF<small>Productbrief</small></button>
-                <button type="button" data-waarde="EIGEN">Eigen<small>Brief inladen</small></button>
+                <button type="button" data-waarde="EIGEN">Eigen<small>Word → HTML</small></button>
             </div>
         </section>
 
@@ -267,14 +278,42 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
         </section>
 
         <section class="card" data-alleen="EIGEN">
-            <h2>2. Brief inladen</h2>
-            <textarea id="eigenInvoer" placeholder="Plak hier de HTML of tekst van een brief…" spellcheck="false"></textarea>
+            <h2>2. Word → HTML</h2>
+            <label class="label" for="eigenNaam">Naam van de brief</label>
+            <input type="text" id="eigenNaam" placeholder="Eigen brief" autocomplete="off">
+            <span class="label">Plak uit Word</span>
+            <div class="plakvak" id="eigenPlak" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Plak hier tekst uit Word"
+                 data-leeg="Klik hier en plak (Ctrl+V) de tekst uit Word…"></div>
+            <div class="row-actions">
+                <label class="btn" for="eigenBestand">Word-bestand (.docx)</label>
+                <input type="file" id="eigenBestand" accept=".docx,.html,.htm,.txt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain" hidden>
+                <button type="button" class="btn" id="eigenLeeg">Leegmaken</button>
+            </div>
+            <label class="label" for="eigenInvoer">HTML-code</label>
+            <textarea id="eigenInvoer" placeholder="Hier verschijnt de HTML-code. Je kunt ook zelf HTML plakken of aanpassen." spellcheck="false"></textarea>
             <div class="row-actions">
                 <button type="button" class="btn btn-primary" id="eigenLaden">Preview laden</button>
-                <label class="btn" for="eigenBestand">Bestand kiezen…</label>
-                <input type="file" id="eigenBestand" accept=".html,.htm,.txt,text/html,text/plain" hidden>
             </div>
-            <p class="hint">HTML (zoals uit het briefsysteem) of platte tekst. Samenvoegvelden zoals <code>@L99906@</code> worden herkend.</p>
+            <p class="hint">Vet, cursief, onderstreept, links, tabellen en opsommingen worden overgenomen; lettertypes en kleuren niet. Samenvoegvelden zoals <code>@L99906@</code> worden herkend.</p>
+        </section>
+
+        <section class="card">
+            <h2>Vaste kop</h2>
+            <div class="segmented" id="kopKeuze">
+                <button type="button" data-waarde="met">Met vaste kop</button>
+                <button type="button" data-waarde="zonder">Zonder vaste kop</button>
+            </div>
+            <p class="hint" id="kopUitleg"></p>
+            <div id="kopVelden">
+                <div class="field">
+                    <label for="kopPlaats">Plaats</label>
+                    <input type="text" id="kopPlaats" autocomplete="off">
+                </div>
+                <div class="field">
+                    <label for="kopOnderwerp">Onderwerp</label>
+                    <input type="text" id="kopOnderwerp" autocomplete="off">
+                </div>
+            </div>
         </section>
 
         <section class="card">
@@ -282,8 +321,9 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
             <div class="downloads">
                 <button type="button" class="btn btn-primary" id="downloadTxt">TXT</button>
                 <button type="button" class="btn btn-primary" id="downloadWord">Word (.docx)</button>
+                <button type="button" class="btn btn-primary" id="downloadHtml">HTML (.html)</button>
                 <button type="button" class="btn" id="kopieerHtml">HTML kopiëren</button>
-                <button type="button" class="btn" id="bewaarBrief">Bewaren in lijst</button>
+                <button type="button" class="btn btn-wide" id="bewaarBrief">Bewaren in lijst</button>
             </div>
             <p class="filename" id="bestandsnaam"></p>
             <p class="hint">Samenvoegvelden (@…@) blijven in de download staan, zodat het briefsysteem ze kan vullen.</p>
@@ -427,17 +467,21 @@ const SAMENVOEGVELDEN = {
    [[naam]] … [[/naam]]      -> alleen opnemen als optie aan staat (particulier, zakelijk, qa)
    @…@                       -> samenvoegveld briefsysteem (blijft staan) */
 
-// Briefhoofd voor de X-OVR brieven (zelfde opbouw als in het briefsysteem)
-const OVR_KOP = (onderwerp) => `
+// Vaste kop: briefhoofd + aanhef (zelfde opbouw als in het briefsysteem), voor alle brieven
+const VASTE_KOP = (plaats, onderwerp) => `
 <table>
 <thead>
-<tr><td>{{plaats}}</td><td>:</td><td>@L97020@</td></tr>
+<tr><td>${plaats}</td><td>:</td><td>@L97020@</td></tr>
 <tr><td>Ons Kenmerk</td><td>:</td><td>@L00084@</td></tr>
 <tr><td>Onderwerp</td><td>:</td><td>${onderwerp}</td></tr>
 </thead>
 </table>
 <p>@L99906@</p>
 `;
+
+const KOP_LABELS = { kopPlaats: 'Plaats (vaste kop)', kopOnderwerp: 'Onderwerp (vaste kop)' };
+// Plaats in de kop van X-BRF (De Waerdse). Bron: overzicht volmachten NN; nog bevestigen.
+const DE_WAERDSE_PLAATS = 'Heerhugowaard';
 
 // X-OVR reeks: brief 1 (aankondiging), 2 (tussentijdse kennisgeving), 3 (nieuwe polisbladen)
 const OVR_BRIEVEN = {
@@ -533,6 +577,8 @@ const state = {
     brf: { maatschappij: 'Nationale Nederlanden', maatschappijAnders: '', product: 'aanhanger', productAnders: '', stijging: '6' },
     voorbeeld: false,
     eigen: { html: '', naam: '' },
+    kop: { 'X-OVR': true, 'X-BRF': true, EIGEN: true },
+    kopTekst: { 'X-BRF': { plaats: '', onderwerp: '' }, EIGEN: { plaats: '', onderwerp: '' } },
     brieven: [],
     resultaat: null
 };
@@ -608,7 +654,8 @@ function bouwBrief() {
         labels.maatschappij = 'Huidige maatschappij';
         labels.pakket = pakket.naamLabel;
         labels.pakketFamilie = 'Korte naam';
-        const { html, ontbrekend } = vulSjabloon(OVR_KOP(ovr.onderwerp) + ovr.tekst + OVR_QA,
+        const kop = state.kop['X-OVR'] ? VASTE_KOP('{{plaats}}', ovr.onderwerp) : '';
+        const { html, ontbrekend } = vulSjabloon(kop + ovr.tekst + OVR_QA,
             { qa: state.qa, particulier: !zakelijk, zakelijk }, waarden, labels);
         // Naam: kantoornaam - maatschappij - brief (nummer), met afwijkende opties tussen haakjes
         const kantoorNaam = String(k.korteNaam || k.naam || '').trim() || 'Nieuw kantoor';
@@ -630,19 +677,34 @@ function bouwBrief() {
             else if (pct < 0) { premiezin = `De premie daalt met ${getal}%.`; stijgingKort = `-${getal}%`; }
             else { premiezin = 'De premie blijft gelijk.'; stijgingKort = 'premie gelijk'; }
         }
-        const { html, ontbrekend } = vulSjabloon(SJABLONEN['X-BRF'], {}, { maatschappij, product, premiezin },
-            { maatschappij: 'Maatschappij', product: 'Type product', premiezin: 'Premiestijging' });
+        const kop = state.kop['X-BRF'] ? VASTE_KOP('{{kopPlaats}}', '{{kopOnderwerp}}') : '';
+        const { html, ontbrekend } = vulSjabloon(kop + SJABLONEN['X-BRF'], {},
+            { maatschappij, product, premiezin, ...kopWaarden('X-BRF') },
+            { ...KOP_LABELS, maatschappij: 'Maatschappij', product: 'Type product', premiezin: 'Premiestijging' });
         // Naam: De Waerdse - maatschappij - X-BRF (product, stijging)
         const naam = schoneNaam(`De Waerdse - ${maatschappij || 'Maatschappij'} - X-BRF (${[product || 'product', stijgingKort].filter(Boolean).join(', ')})`);
         return { html, ontbrekend, titel: naam, bestand: naam };
     }
     const invoer = state.eigen.html.trim();
-    const html = /<[a-z][\s\S]*>/i.test(invoer) ? invoer : tekstNaarHtml(invoer);
-    return {
-        html, ontbrekend: [],
-        titel: state.eigen.naam ? `Eigen brief · ${state.eigen.naam}` : 'Eigen brief',
-        bestand: schoneNaam(state.eigen.naam.replace(/\.[^.]+$/, '')) || 'Eigen brief'
-    };
+    const romp = /<[a-z][\s\S]*>/i.test(invoer) ? invoer : tekstNaarHtml(invoer);
+    const kop = state.kop.EIGEN
+        ? vulSjabloon(VASTE_KOP('{{kopPlaats}}', '{{kopOnderwerp}}'), {}, kopWaarden('EIGEN'), KOP_LABELS)
+        : { html: '', ontbrekend: [] };
+    const naam = schoneNaam(state.eigen.naam) || 'Eigen brief';
+    return { html: kop.html + romp, ontbrekend: kop.ontbrekend, titel: naam, bestand: naam };
+}
+
+// Plaats en onderwerp voor de vaste kop van X-BRF en Eigen (leeg veld = standaard)
+function kopWaarden(modus) {
+    const t = state.kopTekst[modus];
+    if (modus === 'X-BRF') {
+        const product = gekozen(state.brf.product, state.brf.productAnders);
+        return {
+            kopPlaats: t.plaats.trim() || DE_WAERDSE_PLAATS,
+            kopOnderwerp: t.onderwerp.trim() || (product ? `Uw ${product}verzekering` : '')
+        };
+    }
+    return { kopPlaats: t.plaats.trim(), kopOnderwerp: t.onderwerp.trim() };
 }
 
 // Pakket in de brief: kantoorpakket of Waerdse pakket, per klanttype
@@ -1099,12 +1161,13 @@ function render() {
 
     $('previewTitel').textContent = brief.titel;
     if (state.brief === 'X-OVR') toonKantoorInfo();
+    toonKop();
     toonPreview();
     toonVelden();
     toonMeldingen(brief, leeg);
 
-    for (const id of ['downloadTxt', 'downloadWord', 'kopieerHtml', 'bewaarBrief']) $(id).disabled = leeg;
-    $('bestandsnaam').textContent = leeg ? '' : veiligBestand(`${brief.bestand}.txt / .docx`);
+    for (const id of ['downloadTxt', 'downloadWord', 'downloadHtml', 'kopieerHtml', 'bewaarBrief']) $(id).disabled = leeg;
+    $('bestandsnaam').textContent = leeg ? '' : veiligBestand(`${brief.bestand}.txt / .docx / .html`);
 }
 
 function toonPreview() {
@@ -1567,6 +1630,465 @@ function verwijderKantoor() {
     toast('Kantoor verwijderd.');
 }
 
+/* ---------- Vaste kop ---------- */
+
+function toonKop() {
+    const modus = state.brief;
+    const aan = state.kop[modus];
+    zetSegment('kopKeuze', aan ? 'met' : 'zonder');
+    const velden = modus !== 'X-OVR';
+    $('kopVelden').hidden = !aan || !velden;
+    $('kopUitleg').textContent = !aan
+        ? 'De brief begint zonder briefhoofd en aanhef.'
+        : modus === 'X-OVR'
+            ? 'Plaats komt uit de kantoorgegevens, het onderwerp volgt uit de gekozen brief.'
+            : 'Datum (@L97020@), kenmerk (@L00084@) en aanhef (@L99906@) vult het briefsysteem in.';
+    if (!velden) return;
+    const w = kopWaarden(modus);
+    for (const [id, waarde] of [['kopPlaats', w.kopPlaats], ['kopOnderwerp', w.kopOnderwerp]]) {
+        const input = $(id);
+        if (document.activeElement !== input) input.value = waarde;
+        input.classList.toggle('is-invalid', aan && !waarde);
+    }
+    $('kopPlaats').placeholder = modus === 'EIGEN' ? 'bijv. Culemborg' : DE_WAERDSE_PLAATS;
+    $('kopOnderwerp').placeholder = 'Onderwerp van de brief';
+}
+
+/* =====================================================================
+   WORD -> HTML (plakken uit Word of .docx inlezen)
+   ===================================================================== */
+
+const OPSLAG_EIGEN = 'brieventool.eigen';
+const isHtml = (s) => /<[a-z][\s\S]*>/i.test(s);
+
+// Nette HTML-code: alleen toegestane opmaak, b/i -> strong/em, geen spans, elk blok op een eigen regel
+function netteHtml(html) {
+    const body = schoonmaken(html);
+    const doc = body.ownerDocument;
+    const walker = doc.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+    const teksten = [];
+    while (walker.nextNode()) teksten.push(walker.currentNode);
+    for (const t of teksten) t.nodeValue = t.nodeValue.replace(/[ \t]*[\r\n]+[ \t]*/g, ' ');
+
+    for (const el of [...body.querySelectorAll('b, i, span, div')].reverse()) {
+        if (el.tagName === 'B' || el.tagName === 'I') {
+            const nieuw = doc.createElement(el.tagName === 'B' ? 'strong' : 'em');
+            nieuw.append(...el.childNodes);
+            el.replaceWith(nieuw);
+        } else if (el.tagName === 'SPAN') {
+            el.replaceWith(...el.childNodes);
+        } else if ([...el.children].some((c) => BLOK.has(c.tagName))) {
+            el.replaceWith(...el.childNodes);
+        } else {
+            const nieuw = doc.createElement('p');
+            nieuw.append(...el.childNodes);
+            el.replaceWith(nieuw);
+        }
+    }
+    for (const el of [...body.querySelectorAll('strong, em, u')].reverse()) {
+        if (!el.textContent && !el.querySelector('br')) el.remove();
+    }
+    let veranderd = true;
+    while (veranderd) {
+        veranderd = false;
+        for (const el of body.querySelectorAll('strong, em, u, a')) {
+            const volgende = el.nextSibling;
+            if (volgende && volgende.nodeType === Node.ELEMENT_NODE && volgende.tagName === el.tagName
+                && (el.tagName !== 'A' || volgende.getAttribute('href') === el.getAttribute('href'))) {
+                el.append(...volgende.childNodes);
+                volgende.remove();
+                veranderd = true;
+                break;
+            }
+        }
+    }
+    // tabelcel met één alinea: alinea weglaten (compacter, zoals in het briefsysteem)
+    for (const cel of body.querySelectorAll('td, th')) {
+        const kids = [...cel.childNodes].filter((n) => n.nodeType !== Node.TEXT_NODE || n.nodeValue.trim());
+        if (kids.length === 1 && kids[0].nodeType === Node.ELEMENT_NODE && kids[0].tagName === 'P') cel.replaceChildren(...kids[0].childNodes);
+    }
+    for (const el of [...body.querySelectorAll('p, h1, h2, h3, h4, li')]) {
+        if (!el.textContent.replace(/[ \t\r\n]/g, '') && !el.querySelector('br, table, ul, ol')) el.remove();
+    }
+    // losse tekst op het hoogste niveau in een alinea zetten; elk blok op een eigen regel
+    const regels = [];
+    let los = [];
+    const losAf = () => {
+        const p = doc.createElement('p');
+        p.append(...los);
+        if (p.textContent.trim() || p.querySelector('br')) regels.push(p.outerHTML.replace(/^<p>\s+|\s+<\/p>$/g, (m) => m.trim()));
+        los = [];
+    };
+    for (const n of [...body.childNodes]) {
+        if (n.nodeType === Node.ELEMENT_NODE && BLOK.has(n.tagName)) { losAf(); regels.push(n.outerHTML); }
+        else los.push(n);
+    }
+    losAf();
+    return regels.join('\n');
+}
+
+// HTML van het klembord (Word, Outlook, Google Docs) opschonen
+function wordHtmlOpschonen(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const body = doc.body;
+    const markering = new Map();
+
+    // Oude Word-lijsten: <![if !supportLists]> … <![endif]>
+    const cw = doc.createTreeWalker(body, NodeFilter.SHOW_COMMENT);
+    const opmerkingen = [];
+    while (cw.nextNode()) opmerkingen.push(cw.currentNode);
+    for (const c of opmerkingen) {
+        if (!c.isConnected || !/\[if !supportLists\]/i.test(c.data)) continue;
+        const weg = [c];
+        let tekst = '';
+        let n = c.nextSibling;
+        while (n && !(n.nodeType === Node.COMMENT_NODE && /\[endif\]/i.test(n.data))) { tekst += n.textContent; weg.push(n); n = n.nextSibling; }
+        if (n) weg.push(n);
+        const p = c.parentElement && c.parentElement.closest('p');
+        if (p) markering.set(p, tekst);
+        weg.forEach((x) => x.remove());
+    }
+    // Stijlen: lijstmarkering weg, vet/cursief/onderstreept via style omzetten
+    for (const el of [...body.querySelectorAll('[style]')]) {
+        if (!el.isConnected) continue;
+        const st = el.getAttribute('style').toLowerCase().replace(/\s+/g, '');
+        if (st.includes('mso-list:ignore')) {
+            const p = el.closest('p');
+            if (p && !markering.has(p)) markering.set(p, el.textContent);
+            el.remove();
+            continue;
+        }
+        const vet = /font-weight:(bold|[6-9]00)/.test(st);
+        const normaal = /font-weight:(normal|[1-4]00)/.test(st);
+        if ((el.tagName === 'B' || el.tagName === 'STRONG') && normaal) { el.replaceWith(...el.childNodes); continue; }
+        if (el.tagName === 'SPAN' || el.tagName === 'FONT') {
+            const omhul = (tag) => { const w = doc.createElement(tag); w.append(...el.childNodes); el.append(w); };
+            if (/text-decoration[^;]*underline/.test(st)) omhul('u');
+            if (/font-style:italic/.test(st)) omhul('em');
+            if (vet) omhul('strong');
+        }
+    }
+    // Word-lijstalinea's samenvoegen tot echte opsommingen
+    const isLijst = (n) => n && n.nodeType === Node.ELEMENT_NODE && n.tagName === 'P'
+        && (markering.has(n) || /mso-list:\s*l\d+/i.test(n.getAttribute('style') || ''));
+    const volgende = (n) => {
+        let x = n.nextSibling;
+        while (x && (x.nodeType === Node.COMMENT_NODE || (x.nodeType === Node.TEXT_NODE && !x.nodeValue.trim()))) x = x.nextSibling;
+        return x;
+    };
+    for (const p of [...body.querySelectorAll('p')]) {
+        if (!p.isConnected || !isLijst(p)) continue;
+        const lijstId = (n) => ((n.getAttribute('style') || '').match(/mso-list:\s*(l\d+)/i) || [])[1] || '';
+        const items = [];
+        for (let n = p; isLijst(n) && lijstId(n) === lijstId(p); n = volgende(n)) items.push(n);
+        const lijst = bouwLijst(doc, items.map((n) => ({
+            p: n,
+            niveau: Math.max(0, Number(((n.getAttribute('style') || '').match(/level(\d+)/i) || [])[1] || 1) - 1),
+            geordend: /^\s*(\d+|[a-z]|[ivxlc]+)[.)]/i.test(markering.get(n) || '')
+        })));
+        p.before(lijst);
+        items.forEach((n) => n.remove());
+    }
+    return netteHtml(body.innerHTML);
+}
+
+function bouwLijst(doc, items) {
+    let wortel = null;
+    const stapel = [];
+    for (const it of items) {
+        while (stapel.length > 1 && stapel[stapel.length - 1].niveau > it.niveau) stapel.pop();
+        let top = stapel[stapel.length - 1];
+        if (!top || (top.niveau < it.niveau && top.laatsteLi)) {
+            const lijst = doc.createElement(it.geordend ? 'ol' : 'ul');
+            if (top) top.laatsteLi.append(lijst); else wortel = lijst;
+            top = { niveau: it.niveau, lijst, laatsteLi: null };
+            stapel.push(top);
+        }
+        const li = doc.createElement('li');
+        li.append(...it.p.childNodes);
+        const eerste = li.firstChild;
+        if (eerste && eerste.nodeType === Node.TEXT_NODE) eerste.nodeValue = eerste.nodeValue.replace(/^[\s ]+/, '');
+        top.lijst.append(li);
+        top.laatsteLi = li;
+    }
+    return wortel;
+}
+
+/* ---------- .docx inlezen (zonder externe bibliotheek) ---------- */
+
+const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const R_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const wKinderen = (el, naam) => (el ? [...el.children].filter((c) => c.namespaceURI === W_NS && c.localName === naam) : []);
+const wKind = (el, naam) => wKinderen(el, naam)[0] || null;
+const wAttr = (el, naam) => (el ? el.getAttributeNS(W_NS, naam) : null);
+
+async function leesZip(buffer) {
+    const data = new Uint8Array(buffer);
+    const dv = new DataView(buffer);
+    let eind = -1;
+    for (let i = data.length - 22; i >= Math.max(0, data.length - 65557); i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) { eind = i; break; }
+    }
+    if (eind < 0) throw new Error('Dit is geen geldig Word-bestand (.docx).');
+    const aantal = dv.getUint16(eind + 10, true);
+    let pos = dv.getUint32(eind + 16, true);
+    const dec = new TextDecoder();
+    const bestanden = {};
+    for (let n = 0; n < aantal && dv.getUint32(pos, true) === 0x02014b50; n++) {
+        const methode = dv.getUint16(pos + 10, true);
+        const grootte = dv.getUint32(pos + 20, true);
+        const naamLen = dv.getUint16(pos + 28, true);
+        const extraLen = dv.getUint16(pos + 30, true);
+        const notitieLen = dv.getUint16(pos + 32, true);
+        const lokaal = dv.getUint32(pos + 42, true);
+        const naam = dec.decode(data.subarray(pos + 46, pos + 46 + naamLen));
+        const start = lokaal + 30 + dv.getUint16(lokaal + 26, true) + dv.getUint16(lokaal + 28, true);
+        bestanden[naam] = { methode, ruw: data.subarray(start, start + grootte) };
+        pos += 46 + naamLen + extraLen + notitieLen;
+    }
+    return async (naam) => {
+        const b = bestanden[naam];
+        if (!b) return null;
+        if (b.methode === 0) return dec.decode(b.ruw);
+        if (b.methode !== 8) throw new Error('Onbekende compressie in het Word-bestand.');
+        if (typeof DecompressionStream === 'undefined') {
+            throw new Error('Deze browser kan geen .docx lezen. Gebruik een recente Chrome, Edge of Firefox, of kopieer de tekst uit Word en plak die.');
+        }
+        const stroom = new Blob([b.ruw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return dec.decode(await new Response(stroom).arrayBuffer());
+    };
+}
+
+async function docxNaarHtml(buffer) {
+    const lees = await leesZip(buffer);
+    const xml = await lees('word/document.xml');
+    if (!xml) throw new Error('Dit Word-bestand bevat geen tekst (word/document.xml ontbreekt).');
+    const parse = (s) => (s ? new DOMParser().parseFromString(s, 'application/xml') : null);
+    const doc = parse(xml);
+    if (doc.getElementsByTagName('parsererror').length) throw new Error('Het Word-bestand kon niet worden gelezen.');
+
+    const ctx = { rels: {}, nummering: {}, stijlen: {} };
+    const rels = parse(await lees('word/_rels/document.xml.rels'));
+    if (rels) {
+        for (const r of rels.getElementsByTagName('Relationship')) {
+            ctx.rels[r.getAttribute('Id')] = { doel: r.getAttribute('Target'), extern: r.getAttribute('TargetMode') === 'External' };
+        }
+    }
+    const num = parse(await lees('word/numbering.xml'));
+    if (num) {
+        const abstract = {};
+        for (const a of num.getElementsByTagNameNS(W_NS, 'abstractNum')) {
+            const niveaus = {};
+            for (const l of wKinderen(a, 'lvl')) niveaus[wAttr(l, 'ilvl')] = wAttr(wKind(l, 'numFmt'), 'val');
+            abstract[wAttr(a, 'abstractNumId')] = niveaus;
+        }
+        for (const n of num.getElementsByTagNameNS(W_NS, 'num')) {
+            ctx.nummering[wAttr(n, 'numId')] = abstract[wAttr(wKind(n, 'abstractNumId'), 'val')] || {};
+        }
+    }
+    const stijlen = parse(await lees('word/styles.xml'));
+    if (stijlen) {
+        for (const st of stijlen.getElementsByTagNameNS(W_NS, 'style')) {
+            ctx.stijlen[wAttr(st, 'styleId')] = (wAttr(wKind(st, 'name'), 'val') || '').toLowerCase();
+        }
+    }
+    const body = doc.getElementsByTagNameNS(W_NS, 'body')[0];
+    return netteHtml(docxBlokken(body, ctx).join('\n'));
+}
+
+function docxBlokken(container, ctx) {
+    const uit = [];
+    let lijst = null;
+    const sluitLijst = () => { if (lijst) { uit.push(docxLijst(lijst)); lijst = null; } };
+    const loop = (el) => {
+        for (const c of el.children) {
+            if (c.namespaceURI !== W_NS) continue;
+            if (c.localName === 'p') {
+                const a = docxAlinea(c, ctx);
+                if (a.lijst) { (lijst = lijst || []).push(a); continue; }
+                sluitLijst();
+                uit.push(a.kop ? `<h${a.kop}>${a.html}</h${a.kop}>` : `<p>${a.html || '&nbsp;'}</p>`);
+            } else if (c.localName === 'tbl') {
+                sluitLijst();
+                uit.push(docxTabel(c, ctx));
+            } else if (c.localName === 'sdt') {
+                const inhoud = wKind(c, 'sdtContent');
+                if (inhoud) loop(inhoud);
+            } else if (c.localName === 'customXml' || c.localName === 'ins') {
+                loop(c);
+            }
+        }
+    };
+    loop(container);
+    sluitLijst();
+    return uit;
+}
+
+function docxAlinea(p, ctx) {
+    const pPr = wKind(p, 'pPr');
+    let kop = 0;
+    let lijst = null;
+    if (pPr) {
+        const stijl = wAttr(wKind(pPr, 'pStyle'), 'val');
+        const naam = stijl ? (ctx.stijlen[stijl] || stijl.toLowerCase()) : '';
+        const m = naam.match(/^(?:heading|kop)\s*([1-4])$/);
+        if (m) kop = Number(m[1]);
+        const numPr = wKind(pPr, 'numPr');
+        const numId = wAttr(wKind(numPr, 'numId'), 'val');
+        if (numId && numId !== '0') {
+            const niveau = Number(wAttr(wKind(numPr, 'ilvl'), 'val') || 0);
+            const fmt = (ctx.nummering[numId] || {})[niveau] || 'bullet';
+            lijst = { niveau, geordend: fmt !== 'bullet' && fmt !== 'none', id: numId };
+        }
+    }
+    const runs = [];
+    docxRuns(p, {}, runs, ctx);
+    // Witruimte en regeleinden aan het eind van de alinea weglaten (in HTML onzichtbaar)
+    while (runs.length && runs[runs.length - 1].br) runs.pop();
+    for (let k = runs.length - 1; k >= 0 && !runs[k].br; k--) {
+        runs[k].tekst = runs[k].tekst.replace(/[ \u00a0\t]+$/, '');
+        if (runs[k].tekst) break;
+    }
+    return { html: docxRunsHtml(runs.filter((r) => r.br || r.tekst)), kop, lijst };
+}
+
+function docxRuns(el, opmaak, runs, ctx) {
+    for (const c of el.children) {
+        if (c.namespaceURI !== W_NS) continue;
+        const n = c.localName;
+        if (n === 'r') docxRun(c, opmaak, runs);
+        else if (n === 'hyperlink') {
+            const rel = ctx.rels[c.getAttributeNS(R_NS, 'id')];
+            const href = rel && rel.extern && /^(https?:|mailto:)/i.test(rel.doel) ? rel.doel : null;
+            docxRuns(c, href ? { ...opmaak, href } : opmaak, runs, ctx);
+        } else if (n === 'sdt') {
+            const inhoud = wKind(c, 'sdtContent');
+            if (inhoud) docxRuns(inhoud, opmaak, runs, ctx);
+        } else if (['ins', 'smartTag', 'customXml', 'fldSimple', 'bdo', 'dir'].includes(n)) {
+            docxRuns(c, opmaak, runs, ctx);
+        }
+    }
+}
+
+function docxRun(r, opmaak, runs) {
+    const rPr = wKind(r, 'rPr');
+    const o = { ...opmaak };
+    if (rPr) {
+        if (wKind(rPr, 'vanish')) return;
+        const aan = (naam) => {
+            const e = wKind(rPr, naam);
+            if (!e) return null;
+            const v = wAttr(e, 'val');
+            return !['0', 'false', 'off', 'none'].includes(v || '');
+        };
+        for (const [naam, sleutel] of [['b', 'b'], ['i', 'i'], ['u', 'u']]) {
+            const v = aan(naam);
+            if (v !== null) o[sleutel] = v;
+        }
+        const rStijl = wAttr(wKind(rPr, 'rStyle'), 'val') || '';
+        if (/^(strong|zwaar)$/i.test(rStijl)) o.b = true;
+    }
+    for (const c of r.children) {
+        if (c.namespaceURI !== W_NS) continue;
+        const n = c.localName;
+        if (n === 't') runs.push({ ...o, tekst: c.textContent });
+        else if (n === 'tab') runs.push({ ...o, tekst: ' ' });
+        else if (n === 'noBreakHyphen') runs.push({ ...o, tekst: '-' });
+        else if ((n === 'br' && !['page', 'column'].includes(wAttr(c, 'type'))) || n === 'cr') runs.push({ br: true });
+    }
+}
+
+function docxRunsHtml(runs) {
+    let html = '';
+    let i = 0;
+    const gelijk = (a, b) => !b.br && !!a.b === !!b.b && !!a.i === !!b.i && !!a.u === !!b.u && (a.href || '') === (b.href || '');
+    while (i < runs.length) {
+        const r = runs[i];
+        if (r.br) { html += '<br>'; i += 1; continue; }
+        let tekst = '';
+        let j = i;
+        while (j < runs.length && gelijk(r, runs[j])) { tekst += runs[j].tekst; j += 1; }
+        // Meerdere spaties uit Word zichtbaar houden
+        let stuk = escHtml(tekst.replace(/ {2,}/g, (m) => ' ' + ' '.repeat(m.length - 1)));
+        if (r.u) stuk = `<u>${stuk}</u>`;
+        if (r.i) stuk = `<em>${stuk}</em>`;
+        if (r.b) stuk = `<strong>${stuk}</strong>`;
+        if (r.href) stuk = `<a href="${escHtml(r.href)}">${stuk}</a>`;
+        html += stuk;
+        i = j;
+    }
+    return html;
+}
+
+function docxTabel(tbl, ctx) {
+    let html = '<table>';
+    for (const tr of wKinderen(tbl, 'tr')) {
+        html += '<tr>';
+        for (const tc of wKinderen(tr, 'tc')) {
+            const span = Number(wAttr(wKind(wKind(tc, 'tcPr'), 'gridSpan'), 'val') || 1);
+            const delen = docxBlokken(tc, ctx);
+            let inhoud = delen.length === 1 && delen[0].startsWith('<p>') ? delen[0].slice(3, -4) : delen.join('');
+            if (inhoud === '&nbsp;') inhoud = '';
+            html += `<td${span > 1 ? ` colspan="${span}"` : ''}>${inhoud}</td>`;
+        }
+        html += '</tr>';
+    }
+    return html + '</table>';
+}
+
+function docxLijst(items) {
+    let html = '';
+    const stapel = [];
+    for (const it of items) {
+        const tag = it.lijst.geordend ? 'ol' : 'ul';
+        while (stapel.length > 1 && stapel[stapel.length - 1].niveau > it.lijst.niveau) html += `</li></${stapel.pop().tag}>`;
+        const top = stapel[stapel.length - 1];
+        if (!top || top.niveau < it.lijst.niveau) { html += `<${tag}><li>`; stapel.push({ niveau: it.lijst.niveau, tag, id: it.lijst.id }); }
+        else if (top.tag !== tag || (stapel.length === 1 && top.id !== it.lijst.id)) {
+            // andere soort of andere lijst: huidige lijst sluiten, nieuwe beginnen
+            html += `</li></${top.tag}><${tag}><li>`;
+            stapel[stapel.length - 1] = { niveau: it.lijst.niveau, tag, id: it.lijst.id };
+        } else html += '</li><li>';
+        html += it.html || '&nbsp;';
+    }
+    while (stapel.length) html += `</li></${stapel.pop().tag}>`;
+    return html;
+}
+
+/* ---------- Eigen brief: plakvak, HTML-code en preview synchroon houden ---------- */
+
+function bewaarEigen() {
+    schrijf(OPSLAG_EIGEN, state.eigen);
+}
+
+function zetEigenHtml(html, { vanPlakvak = false, vanCode = false } = {}) {
+    state.eigen.html = html;
+    if (!vanCode) $('eigenInvoer').value = html;
+    if (!vanPlakvak) {
+        const schoon = schoonmaken(isHtml(html) ? html : tekstNaarHtml(html));
+        $('eigenPlak').replaceChildren(...[...schoon.childNodes].map((n) => document.importNode(n, true)));
+    }
+    bewaarEigen();
+    render();
+}
+
+function zetEigenNaam(naam) {
+    state.eigen.naam = naam;
+    $('eigenNaam').value = naam;
+    bewaarEigen();
+}
+
+async function leesEigenBestand(bestand) {
+    const ext = (bestand.name.split('.').pop() || '').toLowerCase();
+    if (ext === 'doc') throw new Error('Oude .doc-bestanden kan de tool niet lezen. Sla het op als .docx of kopieer de tekst uit Word.');
+    if (ext === 'docx') return docxNaarHtml(await bestand.arrayBuffer());
+    const tekst = await bestand.text();
+    return isHtml(tekst) ? wordHtmlOpschonen(tekst) : tekstNaarHtml(tekst);
+}
+
+let plakTimer;
+let codeTimer;
+
 /* ---------- Keuzes ---------- */
 
 function zetSegment(groepId, waarde) {
@@ -1586,7 +2108,8 @@ function bewaarKeuzes() {
     schrijf(OPSLAG_KEUZES, {
         brief: state.brief, kantoorId: state.kantoorId === NIEUW ? STANDAARD_KANTOOR : state.kantoorId,
         klanttype: state.klanttype, pakket: state.pakket, ovr: state.ovr,
-        qa: state.qa, brf: state.brf, bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld
+        qa: state.qa, brf: state.brf, kop: state.kop, kopTekst: state.kopTekst,
+        bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld
     });
 }
 
@@ -1653,6 +2176,18 @@ function init() {
         if (b.maatschappij !== ANDERS && !MAATSCHAPPIJEN.includes(b.maatschappij)) { b.maatschappijAnders = b.maatschappij; b.maatschappij = ANDERS; }
         if (b.product !== ANDERS && !PRODUCTEN.includes(b.product)) { b.productAnders = b.product; b.product = ANDERS; }
     }
+    if (keuzes.kop && typeof keuzes.kop === 'object') {
+        for (const m of Object.keys(state.kop)) if (typeof keuzes.kop[m] === 'boolean') state.kop[m] = keuzes.kop[m];
+    }
+    if (keuzes.kopTekst && typeof keuzes.kopTekst === 'object') {
+        for (const m of Object.keys(state.kopTekst)) {
+            for (const v of ['plaats', 'onderwerp']) {
+                if (keuzes.kopTekst[m] && typeof keuzes.kopTekst[m][v] === 'string') state.kopTekst[m][v] = keuzes.kopTekst[m][v];
+            }
+        }
+    }
+    const eigen = lees(OPSLAG_EIGEN, null);
+    if (eigen && typeof eigen.html === 'string' && typeof eigen.naam === 'string') state.eigen = { html: eigen.html, naam: eigen.naam };
     if (Array.isArray(keuzes.bijlagen)) {
         for (const i of $('bijlageFormaten').querySelectorAll('input')) i.checked = keuzes.bijlagen.includes(i.value);
     }
@@ -1725,20 +2260,67 @@ function init() {
     $('kantoorHerstel').addEventListener('click', () => kiesKantoor(state.kantoorId));
     $('kantoorVerwijder').addEventListener('click', verwijderKantoor);
 
+    // Vaste kop
+    $('kopKeuze').addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        state.kop[state.brief] = b.dataset.waarde === 'met';
+        bewaarKeuzes(); render();
+    });
+    for (const [id, veld] of [['kopPlaats', 'plaats'], ['kopOnderwerp', 'onderwerp']]) {
+        $(id).addEventListener('input', (e) => {
+            if (!state.kopTekst[state.brief]) return;
+            state.kopTekst[state.brief][veld] = e.target.value;
+            bewaarKeuzes(); render();
+        });
+        $(id).addEventListener('blur', toonKop);
+    }
+
+    // Word -> HTML
+    try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch { /* niet ondersteund */ }
+    $('eigenNaam').addEventListener('input', (e) => { state.eigen.naam = e.target.value; bewaarEigen(); render(); });
+    $('eigenPlak').addEventListener('paste', (e) => {
+        e.preventDefault();
+        const html = e.clipboardData.getData('text/html');
+        const schoon = html ? wordHtmlOpschonen(html) : tekstNaarHtml(e.clipboardData.getData('text/plain'));
+        if (!schoon.trim()) return;
+        const vak = $('eigenPlak');
+        if (!vak.textContent.trim()) zetEigenHtml(schoon);
+        else {
+            document.execCommand('insertHTML', false, schoon);
+            zetEigenHtml(netteHtml(vak.innerHTML), { vanPlakvak: true });
+        }
+        toast('Tekst uit Word omgezet naar HTML.');
+    });
+    $('eigenPlak').addEventListener('input', () => {
+        clearTimeout(plakTimer);
+        plakTimer = setTimeout(() => zetEigenHtml(netteHtml($('eigenPlak').innerHTML), { vanPlakvak: true }), 300);
+    });
+    $('eigenInvoer').addEventListener('input', () => {
+        clearTimeout(codeTimer);
+        codeTimer = setTimeout(() => zetEigenHtml($('eigenInvoer').value, { vanCode: true }), 400);
+    });
     $('eigenLaden').addEventListener('click', () => {
-        state.eigen.html = $('eigenInvoer').value;
-        render();
+        clearTimeout(codeTimer);
+        zetEigenHtml($('eigenInvoer').value, { vanCode: true });
         if (state.resultaat) toast('Preview geladen.');
     });
     $('eigenBestand').addEventListener('change', async (e) => {
         const bestand = e.target.files[0];
-        if (!bestand) return;
-        const tekst = await bestand.text();
-        $('eigenInvoer').value = tekst;
-        state.eigen = { html: tekst, naam: bestand.name };
         e.target.value = '';
-        render();
-        toast(`“${bestand.name}” ingeladen.`);
+        if (!bestand) return;
+        try {
+            const html = await leesEigenBestand(bestand);
+            if (!state.eigen.naam.trim()) zetEigenNaam(bestand.name.replace(/\.[^.]+$/, '').replace(/_/g, ' ').trim());
+            zetEigenHtml(html);
+            toast(`“${bestand.name}” omgezet naar HTML.`);
+        } catch (fout) {
+            toast(fout.message || 'Het bestand kon niet worden gelezen.');
+        }
+    });
+    $('eigenLeeg').addEventListener('click', () => {
+        zetEigenNaam('');
+        zetEigenHtml('');
     });
 
     $('downloadTxt').addEventListener('click', () => {
@@ -1748,6 +2330,11 @@ function init() {
     $('downloadWord').addEventListener('click', () => {
         if (!state.resultaat) return;
         download(maakDocx(naarBlokken(state.resultaat.body), state.resultaat.titel), veiligBestand(`${state.resultaat.bestand}.docx`));
+    });
+    $('downloadHtml').addEventListener('click', () => {
+        if (!state.resultaat) return;
+        download(new Blob([htmlCode(state.resultaat.body.innerHTML)], { type: 'text/html;charset=utf-8' }),
+            veiligBestand(`${state.resultaat.bestand}.html`));
     });
     $('kopieerHtml').addEventListener('click', async () => {
         if (!state.resultaat) return;
@@ -1759,6 +2346,12 @@ function init() {
     vulBrfFormulier();
     vulOvrFormulier();
     toonOpgeslagen();
+    $('eigenNaam').value = state.eigen.naam;
+    $('eigenInvoer').value = state.eigen.html;
+    if (state.eigen.html) {
+        const schoon = schoonmaken(isHtml(state.eigen.html) ? state.eigen.html : tekstNaarHtml(state.eigen.html));
+        $('eigenPlak').replaceChildren(...[...schoon.childNodes].map((n) => document.importNode(n, true)));
+    }
     toonSecties();
     const startId = alleKantoren().some((k) => k.id === keuzes.kantoorId) ? keuzes.kantoorId : STANDAARD_KANTOOR;
     kiesKantoor(startId);

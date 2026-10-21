@@ -234,10 +234,11 @@ Eén los HTML-bestand (geen installatie, werkt ook offline): dubbelklik om te op
 
 - **X-OVR (overgang kantoor)** – brief 1 (aankondiging), 2 (tussentijdse kennisgeving) of 3 (nieuwe polisbladen); kies kantoor (aangesloten ZekerDichtbij-kantoren), huidige maatschappij, ingangsdatum (maand + jaar), **particulier/zakelijk**, **kantoorpakket of Waerdse pakket** en **met/zonder Q&A**
 - **X-BRF (productbrief)** – kies maatschappij, type product en premiestijging
-- **Eigen** – plak HTML/tekst of kies een `.html`/`.txt` bestand en klik op *Preview laden*
+- **Eigen (Word → HTML)** – plak tekst uit Word (opmaak, lijsten, tabellen en links blijven behouden) of upload een `.docx`; de HTML-code is te bewerken en de preview werkt direct mee. Geef de brief een eigen naam
+- **Vaste kop** – briefhoofd (plaats, kenmerk, onderwerp) en aanhef voor alle brieven, aan of uit te zetten; bij X-BRF en Eigen zijn plaats en onderwerp in te vullen
 - **Uitlezen** – samenvoegvelden van het briefsysteem (`@L97020@`, `@ondertek_naam@`, …) worden herkend; ze blijven in de downloads staan
 - **Preview** – A4-weergave, optioneel met voorbeeldgegevens ingevuld
-- **Downloaden** – TXT en Word (`.docx`, gemaakt in de browser zonder externe bibliotheek), plus *HTML kopiëren*
+- **Downloaden** – TXT, Word (`.docx`) en HTML (`.html`), allemaal gemaakt in de browser zonder externe bibliotheek, plus *HTML kopiëren*
 - **Naamgeving** – `kantoornaam - maatschappij - brief (nummer)`, afwijkende opties tussen haakjes
 - **Opgeslagen brieven** – bewaar brieven in een lijst en maak met *Mail naar helpdesk* een concept-mail (`.eml`) aan helpdesk@dewaerdse.nl met alle brieven als bijlage in Word, TXT en/of HTML-code (openen in Outlook)
 
