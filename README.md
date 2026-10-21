@@ -232,7 +232,7 @@ Bestanden: `budget.html`, `assets/css/budget.css`, `assets/js/budget.js`.
 
 Eén los HTML-bestand (geen installatie, werkt ook offline): dubbelklik om te openen in de browser.
 
-- **X-OVR (overgang kantoor)** – brief 1 (aankondiging), 2 (tussentijdse kennisgeving) of 3 (nieuwe polisbladen); kies kantoor (aangesloten ZekerDichtbij-kantoren), huidige maatschappij, **particulier/zakelijk**, **kantoorpakket of Waerdse pakket** en **met/zonder Q&A**
+- **X-OVR (overgang kantoor)** – brief 1 (aankondiging), 2 (tussentijdse kennisgeving) of 3 (nieuwe polisbladen); kies kantoor (aangesloten ZekerDichtbij-kantoren), huidige maatschappij, ingangsdatum (maand + jaar), **particulier/zakelijk**, **kantoorpakket of Waerdse pakket** en **met/zonder Q&A**
 - **X-BRF (productbrief)** – kies maatschappij, type product en premiestijging
 - **Eigen** – plak HTML/tekst of kies een `.html`/`.txt` bestand en klik op *Preview laden*
 - **Uitlezen** – samenvoegvelden van het briefsysteem (`@L97020@`, `@ondertek_naam@`, …) worden herkend; ze blijven in de downloads staan

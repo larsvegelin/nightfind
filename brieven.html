@@ -80,7 +80,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
 .card h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.65rem; }
 .label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-2); margin: 0.75rem 0 0.35rem; }
-.label:first-of-type { margin-top: 0; }
+.card h2 + .label { margin-top: 0; }
 .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
 
 .segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 9px; }
@@ -107,6 +107,7 @@ details.fields summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; 
 .field.is-missing input { border-color: #c4473f; }
 .row-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
 input.extra { margin-top: 0.4rem; }
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.5rem; }
 input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .suffix { position: relative; }
 .suffix input { padding-right: 2rem; }
@@ -220,6 +221,12 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
             <label class="label" for="ovrMaatschappij">Huidige maatschappij</label>
             <select id="ovrMaatschappij"></select>
             <input type="text" id="ovrMaatschappijAnders" class="extra" placeholder="Naam maatschappij" autocomplete="off" hidden>
+            <span class="label">Ingangsdatum nieuw pakket</span>
+            <div class="duo">
+                <select id="ovrMaand" aria-label="Ingangsdatum: maand"></select>
+                <select id="ovrJaar" aria-label="Ingangsdatum: jaar"></select>
+            </div>
+            <p class="hint">Staat in de Q&amp;A: “Uw nieuwe verzekeringspakket gaat per … in.”</p>
             <span class="label">Klanttype</span>
             <div class="segmented" id="klanttypeKeuze">
                 <button type="button" data-waarde="particulier">Particulier</button>
@@ -359,7 +366,6 @@ const KANTOREN = [
     { id: 'rene-van-gameren', regio: 'Culemborg', naam: 'René van Gameren Financieel Advies', korteNaam: 'René van Gameren',
         adres: 'Irene Vorrinkstraat 1', postcode: '4105 JA', plaats: 'Culemborg',
         telefoon: '0345-549259', email: 'info@renevangameren.nl', website: 'www.renevangameren.nl',
-        ingangsdatum: 'december 2026',
         pakketParticulier: 'R. v G. Privé Pakket', pakketZakelijk: 'R. v G. Zakelijk Pakket'
     },
     // ZekerDichtbij Land van Cuijck
@@ -386,7 +392,6 @@ const KANTOOR_VELDEN = [
     { key: 'plaats', label: 'Plaats', uitleg: 'briefhoofd' },
     { key: 'telefoon', label: 'Telefoonnummer' },
     { key: 'email', label: 'E-mailadres' },
-    { key: 'ingangsdatum', label: 'Ingangsdatum nieuw pakket', uitleg: 'bijv. december 2026' },
     { key: 'pakketParticulier', label: 'Pakketnaam particulier', soort: 'particulier', kantoorpakket: true,
         standaard: (k) => (k.korteNaam ? `${k.korteNaam.trim()} Privé Pakket` : '') },
     { key: 'pakketZakelijk', label: 'Pakketnaam zakelijk', soort: 'zakelijk', kantoorpakket: true,
@@ -405,6 +410,7 @@ const MAATSCHAPPIJEN = ['Achmea', 'Allianz', 'a.s.r.', 'Avéro Achmea', 'Goudse'
 const PRODUCTEN = ['aanhanger', 'auto', 'bestelauto', 'boot', 'bromfiets', 'camper', 'caravan', 'inboedel',
     'motor', 'scooter', 'vouwwagen', 'woonhuis'];
 const ANDERS = '__anders';
+const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
 
 // Samenvoegvelden van het briefsysteem. Betekenis afgeleid uit de plek in de brief.
 const SAMENVOEGVELDEN = {
@@ -521,7 +527,7 @@ const state = {
     kantoor: {},
     klanttype: 'particulier',
     pakket: 'kantoor',
-    ovr: { brief: 2, maatschappij: 'Klaverblad', maatschappijAnders: '' },
+    ovr: { brief: 2, maatschappij: 'Klaverblad', maatschappijAnders: '', maand: 12, jaar: 2026 },
     qa: true,
     brf: { maatschappij: 'Nationale Nederlanden', maatschappijAnders: '', product: 'aanhanger', productAnders: '', stijging: '6' },
     voorbeeld: false,
@@ -591,6 +597,7 @@ function bouwBrief() {
         const waarden = {
             ...k,
             maatschappij,
+            ingangsdatum: `${MAANDEN[state.ovr.maand - 1]} ${state.ovr.jaar}`,
             pakket: pakket.naam,
             pakketFamilie: pakket.familie,
             voorwaardenUrl: VOORWAARDEN_LINK,
@@ -1311,6 +1318,13 @@ function vulKeuzelijst(select, lijst, label = (x) => x) {
 /* ---------- X-OVR maatschappij ---------- */
 
 function vulOvrFormulier() {
+    $('ovrMaand').replaceChildren(...MAANDEN.map((m, i) => new Option(m, String(i + 1))));
+    const nu = new Date().getFullYear();
+    const jaren = [];
+    for (let j = Math.min(nu, state.ovr.jaar); j <= Math.max(nu + 2, state.ovr.jaar); j++) jaren.push(j);
+    $('ovrJaar').replaceChildren(...jaren.map((j) => new Option(String(j), String(j))));
+    $('ovrMaand').value = String(state.ovr.maand);
+    $('ovrJaar').value = String(state.ovr.jaar);
     vulKeuzelijst($('ovrMaatschappij'), MAATSCHAPPIJEN);
     $('ovrMaatschappij').value = state.ovr.maatschappij;
     $('ovrMaatschappijAnders').value = state.ovr.maatschappijAnders;
@@ -1326,6 +1340,8 @@ function toonOvrVelden() {
 function wijzigOvr() {
     state.ovr.maatschappij = $('ovrMaatschappij').value;
     state.ovr.maatschappijAnders = $('ovrMaatschappijAnders').value;
+    state.ovr.maand = Number($('ovrMaand').value);
+    state.ovr.jaar = Number($('ovrJaar').value);
     toonOvrVelden();
     bewaarKeuzes();
     render();
@@ -1598,6 +1614,8 @@ function init() {
     if (['kantoor', 'waerdse'].includes(keuzes.pakket)) state.pakket = keuzes.pakket;
     if (keuzes.ovr && typeof keuzes.ovr === 'object') {
         if ([1, 2, 3].includes(keuzes.ovr.brief)) state.ovr.brief = keuzes.ovr.brief;
+        if (Number.isInteger(keuzes.ovr.maand) && keuzes.ovr.maand >= 1 && keuzes.ovr.maand <= 12) state.ovr.maand = keuzes.ovr.maand;
+        if (Number.isInteger(keuzes.ovr.jaar) && keuzes.ovr.jaar >= 2000 && keuzes.ovr.jaar <= 2100) state.ovr.jaar = keuzes.ovr.jaar;
         for (const key of ['maatschappij', 'maatschappijAnders']) {
             if (typeof keuzes.ovr[key] === 'string') state.ovr[key] = keuzes.ovr[key];
         }
@@ -1641,6 +1659,8 @@ function init() {
         if (!$('ovrMaatschappijAnders').hidden) $('ovrMaatschappijAnders').focus();
     });
     $('ovrMaatschappijAnders').addEventListener('input', wijzigOvr);
+    $('ovrMaand').addEventListener('change', wijzigOvr);
+    $('ovrJaar').addEventListener('change', wijzigOvr);
     $('bewaarBrief').addEventListener('click', bewaarBrief);
     $('mailHelpdesk').addEventListener('click', mailHelpdesk);
     $('bijlageFormaat').addEventListener('change', bewaarKeuzes);
