@@ -106,6 +106,18 @@ details.fields summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; 
 .field label em { font-style: normal; color: var(--muted); }
 .field.is-missing input { border-color: #c4473f; }
 .row-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+input.extra { margin-top: 0.4rem; }
+input.is-invalid, .field.is-missing input { border-color: #c4473f; }
+.suffix { position: relative; }
+.suffix input { padding-right: 2rem; }
+.suffix span { position: absolute; right: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+#pakketHint strong, #kantoorInfo strong, .hint strong { color: var(--text); font-weight: 600; }
+.saved { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.4rem; }
+.saved li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; background: var(--surface-2); border-radius: 7px; padding: 0.35rem 0.4rem 0.35rem 0.65rem; }
+.saved li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.saved li button { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0.15rem 0.4rem; border-radius: 5px; }
+.saved li button:hover { color: #c4473f; background: var(--surface); }
+.saved li.empty { background: transparent; padding: 0; color: var(--muted); }
 
 .btn {
     border: 1px solid var(--border); background: var(--surface); border-radius: 8px;
@@ -177,7 +189,7 @@ details.fields summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; 
             <h2>1. Brief</h2>
             <div class="segmented" id="briefKeuze">
                 <button type="button" data-waarde="X-OVR">X-OVR<small>Overgang kantoor</small></button>
-                <button type="button" data-waarde="X-BRF">X-BRF<small>Aanhanger</small></button>
+                <button type="button" data-waarde="X-BRF">X-BRF<small>Productbrief</small></button>
                 <button type="button" data-waarde="EIGEN">Eigen<small>Brief inladen</small></button>
             </div>
         </section>
@@ -185,6 +197,7 @@ details.fields summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; 
         <section class="card" data-alleen="X-OVR">
             <h2>2. Kantoor</h2>
             <select id="kantoorSelect" aria-label="Kantoor"></select>
+            <p class="hint" id="kantoorInfo"></p>
             <details class="fields" id="kantoorDetails">
                 <summary>Kantoorgegevens bekijken / aanpassen</summary>
                 <div id="kantoorVelden"></div>
@@ -198,16 +211,51 @@ details.fields summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; 
 
         <section class="card" data-alleen="X-OVR">
             <h2>3. Opties</h2>
+            <span class="label">Brief</span>
+            <div class="segmented" id="ovrBriefKeuze">
+                <button type="button" data-waarde="1">Brief 1<small>Aankondiging</small></button>
+                <button type="button" data-waarde="2">Brief 2<small>Kennisgeving</small></button>
+                <button type="button" data-waarde="3">Brief 3<small>Polisbladen</small></button>
+            </div>
+            <label class="label" for="ovrMaatschappij">Huidige maatschappij</label>
+            <select id="ovrMaatschappij"></select>
+            <input type="text" id="ovrMaatschappijAnders" class="extra" placeholder="Naam maatschappij" autocomplete="off" hidden>
             <span class="label">Klanttype</span>
             <div class="segmented" id="klanttypeKeuze">
                 <button type="button" data-waarde="particulier">Particulier</button>
                 <button type="button" data-waarde="zakelijk">Zakelijk</button>
             </div>
+            <span class="label">Pakket</span>
+            <div class="segmented" id="pakketKeuze">
+                <button type="button" data-waarde="kantoor">Kantoorpakket</button>
+                <button type="button" data-waarde="waerdse">Waerdse pakket</button>
+            </div>
+            <p class="hint" id="pakketHint"></p>
             <span class="label">Veelgestelde vragen</span>
             <div class="segmented" id="qaKeuze">
                 <button type="button" data-waarde="met">Met Q&amp;A</button>
                 <button type="button" data-waarde="zonder">Zonder Q&amp;A</button>
             </div>
+        </section>
+
+        <section class="card" data-alleen="X-BRF">
+            <h2>2. Gegevens</h2>
+            <label class="label" for="brfMaatschappij">Maatschappij</label>
+            <select id="brfMaatschappij"></select>
+            <input type="text" id="brfMaatschappijAnders" class="extra" placeholder="Naam maatschappij" autocomplete="off" hidden>
+            <label class="label" for="brfProduct">Type product</label>
+            <select id="brfProduct"></select>
+            <input type="text" id="brfProductAnders" class="extra" placeholder="bijv. paardentrailer" autocomplete="off" hidden>
+            <label class="label" for="brfStijging">Premiestijging</label>
+            <div class="suffix">
+                <input type="text" id="brfStijging" inputmode="decimal" list="brfStijgingen" autocomplete="off">
+                <span>%</span>
+            </div>
+            <datalist id="brfStijgingen">
+                <option value="0"></option><option value="2"></option><option value="3"></option><option value="4"></option>
+                <option value="5"></option><option value="6"></option><option value="8"></option><option value="10"></option>
+            </datalist>
+            <p class="hint">Typ of kies een percentage. 0 = premie blijft gelijk, negatief = premie daalt.</p>
         </section>
 
         <section class="card" data-alleen="EIGEN">
@@ -226,10 +274,27 @@ details.fields summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; 
             <div class="downloads">
                 <button type="button" class="btn btn-primary" id="downloadTxt">TXT</button>
                 <button type="button" class="btn btn-primary" id="downloadWord">Word (.docx)</button>
-                <button type="button" class="btn btn-wide" id="kopieerHtml">HTML kopiëren</button>
+                <button type="button" class="btn" id="kopieerHtml">HTML kopiëren</button>
+                <button type="button" class="btn" id="bewaarBrief">Bewaren in lijst</button>
             </div>
             <p class="filename" id="bestandsnaam"></p>
             <p class="hint">Samenvoegvelden (@…@) blijven in de download staan, zodat het briefsysteem ze kan vullen.</p>
+        </section>
+
+        <section class="card">
+            <h2>Opgeslagen brieven</h2>
+            <ul class="saved" id="opgeslagenLijst"></ul>
+            <label class="label" for="bijlageFormaat">Bijlagen als</label>
+            <select id="bijlageFormaat">
+                <option value="docx">Word (.docx)</option>
+                <option value="txt">TXT</option>
+                <option value="beide">Word + TXT</option>
+            </select>
+            <div class="row-actions">
+                <button type="button" class="btn btn-primary" id="mailHelpdesk">Mail naar helpdesk</button>
+                <button type="button" class="btn" id="lijstLeegmaken">Leegmaken</button>
+            </div>
+            <p class="hint">Maakt een concept-mail aan <strong>helpdesk@dewaerdse.nl</strong> met de opgeslagen brieven als bijlage (.eml-bestand). Open het bestand in Outlook, controleer en klik op Verzenden.</p>
         </section>
 
         <section class="card">
@@ -259,38 +324,87 @@ details.fields summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; 
    Nieuw kantoor vast toevoegen: kopieer het blok in KANTOREN en vul in.
    ===================================================================== */
 
+// Aangesloten kantoren ZekerDichtbij (bron: zekerdichtbij.nl/aangesloten-kantoren).
+// Pakketnaam is standaard "<korte naam> Privé Pakket" / "<korte naam> Zakelijk Pakket";
+// vul pakketParticulier / pakketZakelijk alleen in als een kantoor een afwijkende naam heeft.
+const POORT_WOLTJER = {
+    onderdeelVan: 'Poort & Woltjer', adres: 'M.J. Bultenastraat 6', postcode: '9981 JB', plaats: 'Uithuizen',
+    telefoon: '0595-431455', email: 'info@poortenwoltjer.nl', website: 'www.poortenwoltjer.nl'
+};
+const MARSMANSTRAAT = { adres: 'Marsmanstraat 2', postcode: '1702 GA', plaats: 'Heerhugowaard' };
+
 const KANTOREN = [
-    {
-        id: 'rene-van-gameren',
-        naam: 'René van Gameren Financieel Advies',
-        korteNaam: 'René van Gameren',
-        plaats: 'Culemborg',
-        telefoon: '(0345) 54 92 59',
-        email: 'info@renevangameren.nl',
-        vorigeVerzekeraar: 'Klaverblad',
+    // ZekerDichtbij Noord-Holland
+    { id: 'abbink', regio: 'Noord-Holland', naam: 'Abbink Adviesgroep', korteNaam: 'Abbink', onderdeelVan: 'Wil Stoop', ...MARSMANSTRAAT,
+        telefoon: '072-5712378', email: 'hypotheken@zekerdichtbij.nl', website: 'www.abbink-adviesgroep.nl' },
+    { id: 'groot', regio: 'Noord-Holland', naam: 'Groot Assurantiën', korteNaam: 'Groot Assurantiën', onderdeelVan: 'Wil Stoop', ...MARSMANSTRAAT,
+        telefoon: '0224-296000', email: 'info@grootassurantien.nl', website: 'www.grootassurantien.nl' },
+    { id: 'wil-stoop', regio: 'Noord-Holland', naam: 'Wil Stoop Assurantiën', korteNaam: 'Wil Stoop', ...MARSMANSTRAAT,
+        telefoon: '072-5712378', email: 'info@wilstoop.nl', website: 'www.wilstoop.nl' },
+    // ZekerDichtbij Groningen
+    { id: 'bert-kruijer', regio: 'Groningen', naam: 'Bert Kruijer Financiële Diensten', korteNaam: 'Bert Kruijer', ...POORT_WOLTJER },
+    { id: 'hesseling', regio: 'Groningen', naam: 'Hesseling Advies', korteNaam: 'Hesseling', ...POORT_WOLTJER },
+    { id: 'kloosterboer', regio: 'Groningen', naam: 'Assurantiekantoor J.T. Kloosterboer', korteNaam: 'Kloosterboer',
+        adres: 'Diepswal 1', postcode: '9679 AM', plaats: 'Scheemda',
+        telefoon: '0597-591528', email: 'info@zekerheidzonderzorgen.nl', website: 'www.zekerheidzonderzorgen.nl' },
+    { id: 'meijer-drenth', regio: 'Groningen', naam: 'Meijer & Drenth', korteNaam: 'Meijer & Drenth', ...POORT_WOLTJER },
+    { id: 'poort-woltjer', regio: 'Groningen', naam: 'Poort & Woltjer', korteNaam: 'Poort & Woltjer', ...POORT_WOLTJER, onderdeelVan: '' },
+    { id: 'schonewille', regio: 'Groningen', naam: 'Schonewille & Ter Harkel', korteNaam: 'Schonewille & Ter Harkel',
+        adres: 'Sint Annastraat 6', postcode: '9901 AW', plaats: 'Appingedam', telefoon: '0596-238000',
+        email: 'verzekeringen@schonewille-terharkelverzekeringen.nl', website: 'www.schonewille-terharkelverzekeringen.nl' },
+    // ZekerDichtbij Culemborg
+    { id: 'oliekan', regio: 'Culemborg', naam: 'Oliekan', korteNaam: 'Oliekan',
+        adres: 'Rijkstraatweg 43A', postcode: '4103 NH', plaats: 'Culemborg',
+        telefoon: '0345-523366', email: 'contact@oliekan.nl', website: 'www.oliekan.nl' },
+    { id: 'rene-van-gameren', regio: 'Culemborg', naam: 'René van Gameren Financieel Advies', korteNaam: 'René van Gameren',
+        adres: 'Irene Vorrinkstraat 1', postcode: '4105 JA', plaats: 'Culemborg',
+        telefoon: '0345-549259', email: 'info@renevangameren.nl', website: 'www.renevangameren.nl',
         ingangsdatum: 'december 2026',
-        pakketParticulier: 'R. v G. Privé Pakket',
-        voorwaardenParticulier: 'www.dewaerdse.nl/polisvoorwaarden-63',
-        // Zakelijk: aanname, nog bevestigen bij het kantoor
-        pakketZakelijk: 'R. v G. Zakelijk Pakket',
-        voorwaardenZakelijk: 'www.dewaerdse.nl/polisvoorwaarden-63'
-    }
+        pakketParticulier: 'R. v G. Privé Pakket', pakketZakelijk: 'R. v G. Zakelijk Pakket'
+    },
+    // ZekerDichtbij Land van Cuijck
+    { id: 'verheijen', regio: 'Land van Cuijck', naam: 'Assurantiekantoor W. Verheijen', korteNaam: 'Verheijen',
+        adres: 'Raamweg 4', postcode: '5446 BE', plaats: 'Wanroij',
+        telefoon: '', // website toont 0385-451040, link belt 0345-451040: nummer nog bevestigen
+        email: 'info@verheijen-wanroij.nl', website: 'www.verheijen-wanroij.nl' }
 ];
 
-// Velden van een kantoor. 'soort' = alleen tonen bij dat klanttype.
+// De Waerdse eigen pakketten (keuze "Waerdse pakket" bij X-OVR)
+const WAERDSE_PAKKETTEN = {
+    particulier: 'Waerdse Verzekeringspakket',
+    zakelijk: 'Waerdse Zakelijk Pakket'
+};
+
+// Polisvoorwaarden: zelfde link voor alle kantoren en pakketten
+const VOORWAARDEN_LINK = 'www.dewaerdse.nl/polisvoorwaarden';
+
+// Velden van een kantoor. 'soort' = alleen bij dat klanttype, 'kantoorpakket' = alleen bij Kantoorpakket,
+// 'standaard' = waarde als het veld leeg is.
 const KANTOOR_VELDEN = [
     { key: 'naam', label: 'Kantoornaam', uitleg: 'ondertekening' },
-    { key: 'korteNaam', label: 'Korte naam', uitleg: '“Wij blijven …”' },
+    { key: 'korteNaam', label: 'Korte naam', uitleg: '“Wij blijven …” en pakketnaam' },
     { key: 'plaats', label: 'Plaats', uitleg: 'briefhoofd' },
     { key: 'telefoon', label: 'Telefoonnummer' },
     { key: 'email', label: 'E-mailadres' },
-    { key: 'vorigeVerzekeraar', label: 'Huidige verzekeraar', uitleg: 'waar de polissen nu lopen' },
     { key: 'ingangsdatum', label: 'Ingangsdatum nieuw pakket', uitleg: 'bijv. december 2026' },
-    { key: 'pakketParticulier', label: 'Pakketnaam particulier', soort: 'particulier' },
-    { key: 'voorwaardenParticulier', label: 'Link polisvoorwaarden particulier', soort: 'particulier' },
-    { key: 'pakketZakelijk', label: 'Pakketnaam zakelijk', soort: 'zakelijk' },
-    { key: 'voorwaardenZakelijk', label: 'Link polisvoorwaarden zakelijk', soort: 'zakelijk' }
+    { key: 'pakketParticulier', label: 'Pakketnaam particulier', soort: 'particulier', kantoorpakket: true,
+        standaard: (k) => (k.korteNaam ? `${k.korteNaam.trim()} Privé Pakket` : '') },
+    { key: 'pakketZakelijk', label: 'Pakketnaam zakelijk', soort: 'zakelijk', kantoorpakket: true,
+        standaard: (k) => (k.korteNaam ? `${k.korteNaam.trim()} Zakelijk Pakket` : '') }
 ];
+
+function veldWaarde(kantoor, key) {
+    const v = KANTOOR_VELDEN.find((f) => f.key === key);
+    const eigen = String(kantoor[key] || '').trim();
+    return eigen || (v && v.standaard ? v.standaard(kantoor) : '');
+}
+
+// Keuzelijsten (vrij aan te vullen). Maatschappij = huidige verzekeraar (X-OVR) of verzekeraar (X-BRF).
+const MAATSCHAPPIJEN = ['Achmea', 'Allianz', 'a.s.r.', 'Avéro Achmea', 'Goudse', 'Klaverblad',
+    'Nationale Nederlanden', 'NH1816', 'Unigarant', 'Univé', 'Voogd en Voogd'];
+const PRODUCTEN = ['aanhanger', 'auto', 'bestelauto', 'boot', 'bromfiets', 'camper', 'caravan', 'inboedel',
+    'motor', 'scooter', 'vouwwagen', 'woonhuis'];
+const ANDERS = '__anders';
 
 // Samenvoegvelden van het briefsysteem. Betekenis afgeleid uit de plek in de brief.
 const SAMENVOEGVELDEN = {
@@ -302,23 +416,49 @@ const SAMENVOEGVELDEN = {
 };
 
 /* Sjablonen
-   {{veld}}                  -> kantoorgegeven (wordt ingevuld)
+   {{veld}}                  -> wordt ingevuld (kantoorgegevens, maatschappij, pakket)
    [[naam]] … [[/naam]]      -> alleen opnemen als optie aan staat (particulier, zakelijk, qa)
    @…@                       -> samenvoegveld briefsysteem (blijft staan) */
-const SJABLONEN = {
-'X-OVR': `
+
+// Briefhoofd voor de X-OVR brieven (zelfde opbouw als in het briefsysteem)
+const OVR_KOP = (onderwerp) => `
 <table>
 <thead>
 <tr><td>{{plaats}}</td><td>:</td><td>@L97020@</td></tr>
 <tr><td>Ons Kenmerk</td><td>:</td><td>@L00084@</td></tr>
-<tr><td>Onderwerp</td><td>:</td><td>Tussentijdse kennisgeving {{pakket}}</td></tr>
+<tr><td>Onderwerp</td><td>:</td><td>${onderwerp}</td></tr>
 </thead>
 </table>
 <p>@L99906@</p>
-<p>In onze voorgaande brief hebben we aangekondigd dat wij graag uw [[zakelijk]]zakelijke [[/zakelijk]]verzekeringen onderbrengen in {{pakket}}. Dit in verband met de samenwerking die wij met De Waerdse Assuradeuren zijn aangegaan.<br><br><strong>Wees gerust: wij regelen alles voor u</strong><br>U ontvangt binnenkort van uw huidige verzekeraar een bevestiging dat uw oude {{vorigeVerzekeraar}} verzekering(en) komen te vervallen alsof de opzegging door uzelf gedaan is, maar dit hebben wij zoals eerder aangegeven dus voor u verzorgd. De verzekeringen worden aansluitend automatisch voortgezet in uw nieuwe {{pakket}}.<br>De polisvoorwaarden zijn minimaal gelijk en op sommige punten zelfs beter. Deze kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>, (keuze: Actuele polisvoorwaarden). Op verzoek wordt een papieren exemplaar verstrekt.<br><br><strong>Nieuwe polisblad(en) en premiebetaling</strong><br>Uw nieuwe polisblad(en) worden voor de ingangsdatum naar u toegestuurd. Indien uw e-mailadres bekend is ontvangt u deze digitaal. Wanneer uw premie automatisch door {{vorigeVerzekeraar}} werd afgeschreven, zal nu De Waerdse incasseren. Het kan zijn dat uw polissen tussentijds worden beëindigd, in dit geval ontvangt u een deel premierestitutie vanuit {{vorigeVerzekeraar}}, wij zullen vervolgens de premie weer bij u in rekening brengen.<br><strong>Indien u de opzegging(en) van uw huidige polis(sen) eerder ontvangt dan uw nieuwe polissen, maakt u zich geen zorgen u bent gewoon verzekerd!</strong></p>
+`;
+
+// X-OVR reeks: brief 1 (aankondiging), 2 (tussentijdse kennisgeving), 3 (nieuwe polisbladen)
+const OVR_BRIEVEN = {
+1: { titel: 'Aankondiging', onderwerp: 'Aankondiging {{pakket}}', tekst: `
+<p><strong>{{korteNaam}} en De Waerdse Assuradeuren: samen sterk!</strong><br>Wij zijn een samenwerking met De Waerdse Assuradeuren aangegaan. Hiermee breiden wij onze mogelijkheden op het gebied van verzekeringen en hypotheken verder uit en kunnen we u nog beter van dienst zijn. De Waerdse Assuradeuren voldoet aan hoge, wettelijk gewaarborgde kwaliteitseisen.</p>
+<p><strong>Wat verandert er voor u?</strong><br>Door de samenwerking met deze volmacht verzekeraar kunnen wij uw {{maatschappij}} verzekering(en) oversluiten naar ons eigen {{pakket}}. Dit pakket bestaat uit de beste verzekeringsoplossingen in de markt. Premies en polisvoorwaarden zijn minimaal gelijk of beter!</p>
+<p><strong>Het {{pakket}}</strong><br>De opzegging van uw huidige {{maatschappij}} schadeverzekering(en) verzorgen wij binnenkort voor u. Direct aansluitend start uw nieuwe verzekeringspakket. Aan deze omzetting zijn voor u geen kosten verbonden.</p>
+<p>Voor de einddatum van uw huidige verzekering(en) ontvangt u van ons uw nieuwe polis(sen). Indien uw e-mailadres bekend is ontvangt u deze digitaal. De voorwaarden kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>, (keuze: Actuele polisvoorwaarden). Op verzoek verstrekken wij u een papieren exemplaar.</p>
+<p>Stelt u geen prijs op ons aanbod, dan horen wij dat graag binnen vier weken na dagtekening van deze brief.</p>
+<p><strong>Wij blijven {{korteNaam}}</strong><br>De service die u van ons gewend bent, het meedenken, het altijd telefonisch bereikbaar zijn ({{telefoon}} of via {{email}}) tijdens kantooruren, korte lijnen, dezelfde betrokken medewerkers, daar verandert niets aan!</p>
+<p>Met vriendelijke groet,</p>
+<p>{{naam}}</p>
+` },
+2: { titel: 'Tussentijdse kennisgeving', onderwerp: 'Tussentijdse kennisgeving {{pakket}}', tekst: `
+<p>In onze voorgaande brief hebben we aangekondigd dat wij graag uw [[zakelijk]]zakelijke [[/zakelijk]]verzekeringen onderbrengen in {{pakket}}. Dit in verband met de samenwerking die wij met De Waerdse Assuradeuren zijn aangegaan.<br><br><strong>Wees gerust: wij regelen alles voor u</strong><br>U ontvangt binnenkort van uw huidige verzekeraar een bevestiging dat uw oude {{maatschappij}} verzekering(en) komen te vervallen alsof de opzegging door uzelf gedaan is, maar dit hebben wij zoals eerder aangegeven dus voor u verzorgd. De verzekeringen worden aansluitend automatisch voortgezet in uw nieuwe {{pakket}}.<br>De polisvoorwaarden zijn minimaal gelijk en op sommige punten zelfs beter. Deze kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>, (keuze: Actuele polisvoorwaarden). Op verzoek wordt een papieren exemplaar verstrekt.<br><br><strong>Nieuwe polisblad(en) en premiebetaling</strong><br>Uw nieuwe polisblad(en) worden voor de ingangsdatum naar u toegestuurd. Indien uw e-mailadres bekend is ontvangt u deze digitaal. Wanneer uw premie automatisch door {{maatschappij}} werd afgeschreven, zal nu De Waerdse incasseren. Het kan zijn dat uw polissen tussentijds worden beëindigd, in dit geval ontvangt u een deel premierestitutie vanuit {{maatschappij}}, wij zullen vervolgens de premie weer bij u in rekening brengen.<br><strong>Indien u de opzegging(en) van uw huidige polis(sen) eerder ontvangt dan uw nieuwe polissen, maakt u zich geen zorgen u bent gewoon verzekerd!</strong></p>
 <p><strong>Wij blijven {{korteNaam}}</strong><br>De service die u van ons gewend bent, het meedenken, het altijd telefonisch bereikbaar zijn tijdens kantooruren, korte lijnen, dezelfde betrokken medewerkers, daar verandert niets aan!</p>
 <p>Met vriendelijke groet,</p>
 <p>{{naam}}</p>
+` },
+3: { titel: 'Nieuwe polisbladen', onderwerp: 'Uw nieuwe polisbladen', tekst: `
+<p>In onze voorgaande brieven hebben we aangekondigd dat uw verzekering(en) worden opgemaakt in ons {{pakket}}. Dit in verband met de samenwerking die wij met De Waerdse Assuradeuren zijn aangegaan.<br><br><strong>Alstublieft: uw nieuwe polisblad(en)</strong><br>Om die reden sturen wij nu uw nieuwe polisblad(en) toe. Deze komen in de plaats van de inmiddels vervallen verzekering(en) bij uw verzekeraar. De polisvoorwaarden kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>, (keuze: Actuele polisvoorwaarden). Op verzoek wordt een papieren exemplaar verstrekt.<br><br><strong>Premiebetaling</strong><br>Wanneer uw premie automatisch door uw verzekeraar werd geïncasseerd, zal nu De Waerdse incasseren.</p>
+<p><strong>Vragen of opmerkingen: we helpen graag</strong><br>Wij willen graag dat u goed verzekerd bent, controleert u om die reden of de gegevens nog steeds juist zijn?<br>Heeft u vragen? Wij zijn en blijven uw adviseur en rechtstreeks bereikbaar voor al uw vragen.<br><br>Met vriendelijke groet,</p>
+<p>{{naam}}</p>
+` }
+};
+
+// Veelgestelde vragen (optioneel onder elke X-OVR brief)
+const OVR_QA = `
 [[qa]]
 <p>&nbsp;</p>
 <p>&nbsp;</p>
@@ -330,30 +470,32 @@ const SJABLONEN = {
 <p><strong>Vraag: “Zijn jullie nog steeds mijn tussenpersoon?"</strong></p>
 <p>Antwoord: "Natuurlijk. Wij blijven uw vaste aanspreekpunt voor al uw vragen, wijzigingen en/of schademeldingen. Het contact met ons verzekeringsteam wijzigt niet.</p>
 <p><strong>Vraag: "Wat zijn de voordelen van het nieuwe verzekeringspakket?"</strong></p>
-<p>Antwoord: "Ons nieuwe verzekeringspakket bestaat uit (één van) de beste verzekeringsoplossingen in de markt. Premies en polisvoorwaarden zijn minimaal gelijk of beter. Uw {{vorigeVerzekeraar}} verzekeringen worden opgenomen in één verzekeringspakket. "</p>
-<p><strong>Vraag:"Zijn uw {{vorigeVerzekeraar}} verzekeringen niet in één verzekeringspakket opgenomen?"</strong></p>
-<p>Antwoord: "Het is mogelijk dat u voorheen bij {{vorigeVerzekeraar}} verschillende verzekeringspakketten had en dat deze niet door één en dezelfde persoon zijn afgesloten! Voorbeeld: [[particulier]]De woonverzekeringen is door uzelf afgesloten en de autoverzekering(en) door uw partner.[[/particulier]][[zakelijk]]De bedrijfsverzekeringen zijn op naam van uw onderneming afgesloten en de autoverzekering(en) op uw eigen naam.[[/zakelijk]] Wilt u deze verzekeringen in één verzekeringspakket samenbrengen met één maandelijkse premie incasso, neemt u dan contact met ons op via {{telefoon}}. Wij kunnen dit voor u aanpassen”.</p>
+<p>Antwoord: "Ons nieuwe verzekeringspakket bestaat uit (één van) de beste verzekeringsoplossingen in de markt. Premies en polisvoorwaarden zijn minimaal gelijk of beter. Uw {{maatschappij}} verzekeringen worden opgenomen in één verzekeringspakket. "</p>
+<p><strong>Vraag:"Zijn uw {{maatschappij}} verzekeringen niet in één verzekeringspakket opgenomen?"</strong></p>
+<p>Antwoord: "Het is mogelijk dat u voorheen bij {{maatschappij}} verschillende verzekeringspakketten had en dat deze niet door één en dezelfde persoon zijn afgesloten! Voorbeeld: [[particulier]]De woonverzekeringen is door uzelf afgesloten en de autoverzekering(en) door uw partner.[[/particulier]][[zakelijk]]De bedrijfsverzekeringen zijn op naam van uw onderneming afgesloten en de autoverzekering(en) op uw eigen naam.[[/zakelijk]] Wilt u deze verzekeringen in één verzekeringspakket samenbrengen met één maandelijkse premie incasso, neemt u dan contact met ons op via {{telefoon}}. Wij kunnen dit voor u aanpassen”.</p>
 <p><strong>Vraag:"Wanneer gaat mijn nieuwe verzekeringspakket in?"</strong></p>
-<p>Antwoord: "Uw nieuwe verzekeringspakket gaat per {{ingangsdatum}} in. Uw pakket bij {{vorigeVerzekeraar}} wordt door ons beëindigd. U ontvangt van deze beëindiging vanuit {{vorigeVerzekeraar}} nog een bevestiging met opzegging uit uw naam en de datum van de beëindiging. Direct aansluitend start uw nieuwe verzekeringspakket."</p>
+<p>Antwoord: "Uw nieuwe verzekeringspakket gaat per {{ingangsdatum}} in. Uw pakket bij {{maatschappij}} wordt door ons beëindigd. U ontvangt van deze beëindiging vanuit {{maatschappij}} nog een bevestiging met opzegging uit uw naam en de datum van de beëindiging. Direct aansluitend start uw nieuwe verzekeringspakket."</p>
 <p><strong>Vraag:"Wat moet ik doen als mijn gegevens niet kloppen?"</strong></p>
 <p>Antwoord: "Controleer alstublieft uw nieuwe polisblad(en) om te bevestigen dat alle gegevens correct zijn. Als er iets niet klopt, neem dan contact met ons op via {{telefoon}} of {{email}}. Wij helpen u graag verder."</p>
 <p><strong>Vraag:"Moet ik iets doen om de overschrijving te regelen?"</strong></p>
-<p>Antwoord: "Nee, u hoeft niets te doen. Wij verzorgen de opzegging van uw huidige {{vorigeVerzekeraar}} verzekeringen en zorgen voor een naadloze overgang naar ons nieuwe verzekeringspakket. U ontvangt hiervan een bevestiging."</p>
+<p>Antwoord: "Nee, u hoeft niets te doen. Wij verzorgen de opzegging van uw huidige {{maatschappij}} verzekeringen en zorgen voor een naadloze overgang naar ons nieuwe verzekeringspakket. U ontvangt hiervan een bevestiging."</p>
 <p><strong>Vraag: "Hoe werkt de premiebetaling voortaan?"</strong></p>
-<p>Antwoord: "Als uw premie automatisch door {{vorigeVerzekeraar}} werd afgeschreven, zal nu De Waerdse de incasso overnemen. U hoeft hier niets voor te doen."</p>
+<p>Antwoord: "Als uw premie automatisch door {{maatschappij}} werd afgeschreven, zal nu De Waerdse de incasso overnemen. U hoeft hier niets voor te doen."</p>
 <p><strong>Vraag:"Hoe kan het dat mijn maandpremie toch hoger uitvalt?"</strong></p>
-<p>Antwoord: "In ons nieuwe verzekeringspakket worden alle verzekeringen in één verzekeringspakket opgenomen en wordt er per maand/kwartaal/halfjaar/jaar één premiebedrag geïncasseerd. Wanneer u bij {{vorigeVerzekeraar}} naast [[particulier]]de woonverzekeringen ook een auto-/ motor of camperverzekering had[[/particulier]][[zakelijk]]uw bedrijfsverzekeringen ook een auto- of bestelautoverzekering had[[/zakelijk]], betaalde u per verzekering een maandpremie. Dit betekent dus niet dat u meer gaat betalen dan bij {{vorigeVerzekeraar}}, maar dat de premies van al uw verzekeringen in één keer worden afgeschreven. Hierdoor krijgt u meer overzicht in uw verschillende verzekeringen en de bijbehorende premies"</p>
-<p><strong>Vraag:"De eerste termijnpremie is hoger (of lager) dan de laatste termijnpremie van {{vorigeVerzekeraar}}?"</strong></p>
-<p>Antwoord: "Dit kan bij de eerste afschrijving van uw bankrekening het geval zijn. Het is mogelijk dat vanwege het samenvoegen van verschillende {{vorigeVerzekeraar}} verzekeringen de eerste termijnpremie over een langere periode is berekend. Na deze periode zal dan de ‘normale’ termijnpremie worden afgeschreven". De door u ontvangen documenten bevat een termijnoverzicht van de eerste premie.</p>
-<p><strong>Vraag:"Van {{vorigeVerzekeraar}} heb ik een opzegging ontvangen maar ik heb nog geen nieuwe polis mogen ontvangen. Ben ik nu wel verzekerd?"</strong></p>
+<p>Antwoord: "In ons nieuwe verzekeringspakket worden alle verzekeringen in één verzekeringspakket opgenomen en wordt er per maand/kwartaal/halfjaar/jaar één premiebedrag geïncasseerd. Wanneer u bij {{maatschappij}} naast [[particulier]]de woonverzekeringen ook een auto-/ motor of camperverzekering had[[/particulier]][[zakelijk]]uw bedrijfsverzekeringen ook een auto- of bestelautoverzekering had[[/zakelijk]], betaalde u per verzekering een maandpremie. Dit betekent dus niet dat u meer gaat betalen dan bij {{maatschappij}}, maar dat de premies van al uw verzekeringen in één keer worden afgeschreven. Hierdoor krijgt u meer overzicht in uw verschillende verzekeringen en de bijbehorende premies"</p>
+<p><strong>Vraag:"De eerste termijnpremie is hoger (of lager) dan de laatste termijnpremie van {{maatschappij}}?"</strong></p>
+<p>Antwoord: "Dit kan bij de eerste afschrijving van uw bankrekening het geval zijn. Het is mogelijk dat vanwege het samenvoegen van verschillende {{maatschappij}} verzekeringen de eerste termijnpremie over een langere periode is berekend. Na deze periode zal dan de ‘normale’ termijnpremie worden afgeschreven". De door u ontvangen documenten bevat een termijnoverzicht van de eerste premie.</p>
+<p><strong>Vraag:"Van {{maatschappij}} heb ik een opzegging ontvangen maar ik heb nog geen nieuwe polis mogen ontvangen. Ben ik nu wel verzekerd?"</strong></p>
 <p>Antwoord: "Wij gaan ervan uit dat u tijdig uw nieuwe polisdocumenten ontvangt. Het kan voorkomen dat dit niet het geval is. Wij begrijpen dat u dit geen goed gevoel geeft. Maakt u zich geen zorgen. Uw polisdocumenten zijn naar u onderweg. U bent in deze korte periode gewoon verzekerd" Dit garanderen wij u! Het is ook mogelijk dat uw nieuwe polisdocumenten in de box ongewenste e-mail/spam is beland. Checkt u dit alstublieft eerst.</p>
 <p><strong>Vraag:"Wat als ik al lopende polissen bij De Waerdse Assuradeuren heb lopen?"</strong></p>
-<p>Antwoord: "Indien u al een {{korteNaam}} verzekeringspakket heeft , zullen wij deze polissen hieraan toevoegen.</p>
+<p>Antwoord: "Indien u al een {{pakketFamilie}} heeft , zullen wij deze polissen hieraan toevoegen.</p>
 [[/qa]]
-`,
+`;
+
+const SJABLONEN = {
 'X-BRF': `
-<p>Graag vragen we even uw aandacht voor de verzekering voor uw aanhanger.</p>
-<p>Uw aanhanger is verzekerd bij Nationale Nederlanden. Deze is nu omgezet naar het actuele verzekeringsproduct. U ontvangt van ons een nieuwe polis. De dekking en de voorwaarden blijven gelijk. De premie stijgt met 6%.</p>
+<p>Graag vragen we even uw aandacht voor de verzekering voor uw {{product}}.</p>
+<p>Uw {{product}} is verzekerd bij {{maatschappij}}. Deze is nu omgezet naar het actuele verzekeringsproduct. U ontvangt van ons een nieuwe polis. De dekking en de voorwaarden blijven gelijk. {{premiezin}}</p>
 <p><strong>Sluit de verzekering nog aan op uw wensen?<br></strong>Op uw nieuwe polisblad ziet u waarvoor u bent verzekerd. Dit is een goed moment om met uw verzekeringsadviseur te bepalen of uw verzekering nog steeds aansluit op uw persoonlijke wensen.</p>
 <p><strong>Heeft u nog vragen?<br></strong>Bij vragen kunt u contact opnemen met uw verzekeringsadviseur @ondertek_naam@ via telefoonnummer @ondertek_tel@. Zij kunnen u van persoonlijk advies voorzien en helpen u graag verder.</p>
 <p>Met vriendelijke groet,</p>
@@ -371,14 +513,20 @@ const ONTBREEKT_RE = /\[ONTBREEKT: [^\]]+\]/g;
    STATUS
    ===================================================================== */
 
+const STANDAARD_KANTOOR = 'rene-van-gameren';
+
 const state = {
     brief: 'X-OVR',
-    kantoorId: KANTOREN[0].id,
-    kantoor: { ...KANTOREN[0] },
+    kantoorId: STANDAARD_KANTOOR,
+    kantoor: {},
     klanttype: 'particulier',
+    pakket: 'kantoor',
+    ovr: { brief: 2, maatschappij: 'Klaverblad', maatschappijAnders: '' },
     qa: true,
+    brf: { maatschappij: 'Nationale Nederlanden', maatschappijAnders: '', product: 'aanhanger', productAnders: '', stijging: '6' },
     voorbeeld: false,
     eigen: { html: '', naam: '' },
+    brieven: [],
     resultaat: null
 };
 
@@ -388,7 +536,7 @@ function lees(key, standaard) {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : standaard; } catch { return standaard; }
 }
 function schrijf(key, waarde) {
-    try { localStorage.setItem(key, JSON.stringify(waarde)); } catch { /* opslag niet beschikbaar */ }
+    try { localStorage.setItem(key, JSON.stringify(waarde)); return true; } catch { return false; }
 }
 const bewaardeKantoren = () => lees(OPSLAG_KANTOREN, []);
 const alleKantoren = () => [...KANTOREN, ...bewaardeKantoren()];
@@ -397,10 +545,13 @@ const isBewaard = (id) => bewaardeKantoren().some((k) => k.id === id);
 function escHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-function slug(s) {
-    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'brief';
+// Bestandsnaam leesbaar houden, zonder tekens die Windows niet toestaat
+function schoneNaam(s) {
+    return String(s || '').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 150);
 }
+// Bestandsnaam zonder accenten (René -> Rene): voorkomt naamloze downloads op sommige systemen
+const veiligBestand = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const gekozen = (keuze, anders) => String(keuze === ANDERS ? anders : keuze || '').trim();
 function maakHref(url) {
     const u = String(url || '').trim();
     if (!u) return '';
@@ -434,35 +585,78 @@ function bouwBrief() {
     if (state.brief === 'X-OVR') {
         const k = state.kantoor;
         const zakelijk = state.klanttype === 'zakelijk';
-        const voorwaarden = zakelijk ? k.voorwaardenZakelijk : k.voorwaardenParticulier;
+        const pakket = huidigPakket();
+        const ovr = OVR_BRIEVEN[state.ovr.brief];
+        const maatschappij = gekozen(state.ovr.maatschappij, state.ovr.maatschappijAnders);
         const waarden = {
             ...k,
-            pakket: zakelijk ? k.pakketZakelijk : k.pakketParticulier,
-            voorwaardenUrl: voorwaarden,
-            voorwaardenHref: maakHref(voorwaarden)
+            maatschappij,
+            pakket: pakket.naam,
+            pakketFamilie: pakket.familie,
+            voorwaardenUrl: VOORWAARDEN_LINK,
+            voorwaardenHref: maakHref(VOORWAARDEN_LINK)
         };
         const labels = Object.fromEntries(KANTOOR_VELDEN.map((v) => [v.key, v.label]));
-        labels.pakket = zakelijk ? 'Pakketnaam zakelijk' : 'Pakketnaam particulier';
-        labels.voorwaardenUrl = zakelijk ? 'Link polisvoorwaarden zakelijk' : 'Link polisvoorwaarden particulier';
-        const { html, ontbrekend } = vulSjabloon(SJABLONEN['X-OVR'],
+        labels.maatschappij = 'Huidige maatschappij';
+        labels.pakket = pakket.naamLabel;
+        labels.pakketFamilie = 'Korte naam';
+        const { html, ontbrekend } = vulSjabloon(OVR_KOP(ovr.onderwerp) + ovr.tekst + OVR_QA,
             { qa: state.qa, particulier: !zakelijk, zakelijk }, waarden, labels);
-        const kantoorNaam = k.korteNaam || k.naam || 'nieuw kantoor';
-        return {
-            html, ontbrekend,
-            titel: `X-OVR · ${kantoorNaam} · ${zakelijk ? 'Zakelijk' : 'Particulier'} · ${state.qa ? 'met' : 'zonder'} Q&A`,
-            bestand: `X-OVR_${slug(kantoorNaam)}_${state.klanttype}_${state.qa ? 'met-QA' : 'zonder-QA'}`
-        };
+        // Naam: kantoornaam - maatschappij - brief (nummer), met afwijkende opties tussen haakjes
+        const kantoorNaam = String(k.korteNaam || k.naam || '').trim() || 'Nieuw kantoor';
+        const varianten = [zakelijk && 'zakelijk', state.pakket === 'waerdse' && 'Waerdse pakket', state.qa && 'met Q&A'].filter(Boolean);
+        const naam = schoneNaam(`${kantoorNaam} - ${maatschappij || 'Algemeen'} - brief ${state.ovr.brief}`
+            + (varianten.length ? ` (${varianten.join(', ')})` : ''));
+        return { html, ontbrekend, titel: `X-OVR · ${naam}`, bestand: naam };
     }
     if (state.brief === 'X-BRF') {
-        return { html: SJABLONEN['X-BRF'], ontbrekend: [], titel: 'X-BRF · Aanhanger (De Waerdse)', bestand: 'X-BRF_aanhanger' };
+        const b = state.brf;
+        const maatschappij = gekozen(b.maatschappij, b.maatschappijAnders);
+        const product = gekozen(b.product, b.productAnders);
+        const pct = leesPercentage(b.stijging);
+        let premiezin = '';
+        let stijgingKort = '';
+        if (pct !== null) {
+            const getal = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 }).format(Math.abs(pct));
+            if (pct > 0) { premiezin = `De premie stijgt met ${getal}%.`; stijgingKort = `+${getal}%`; }
+            else if (pct < 0) { premiezin = `De premie daalt met ${getal}%.`; stijgingKort = `-${getal}%`; }
+            else { premiezin = 'De premie blijft gelijk.'; stijgingKort = 'premie gelijk'; }
+        }
+        const { html, ontbrekend } = vulSjabloon(SJABLONEN['X-BRF'], {}, { maatschappij, product, premiezin },
+            { maatschappij: 'Maatschappij', product: 'Type product', premiezin: 'Premiestijging' });
+        // Naam: De Waerdse - maatschappij - X-BRF (product, stijging)
+        const naam = schoneNaam(`De Waerdse - ${maatschappij || 'Maatschappij'} - X-BRF (${[product || 'product', stijgingKort].filter(Boolean).join(', ')})`);
+        return { html, ontbrekend, titel: naam, bestand: naam };
     }
     const invoer = state.eigen.html.trim();
     const html = /<[a-z][\s\S]*>/i.test(invoer) ? invoer : tekstNaarHtml(invoer);
     return {
         html, ontbrekend: [],
         titel: state.eigen.naam ? `Eigen brief · ${state.eigen.naam}` : 'Eigen brief',
-        bestand: state.eigen.naam ? slug(state.eigen.naam.replace(/\.[^.]+$/, '')) : 'eigen-brief'
+        bestand: schoneNaam(state.eigen.naam.replace(/\.[^.]+$/, '')) || 'Eigen brief'
     };
+}
+
+// Pakket in de brief: kantoorpakket of Waerdse pakket, per klanttype
+function huidigPakket() {
+    const soort = state.klanttype;
+    const zakelijk = soort === 'zakelijk';
+    if (state.pakket === 'waerdse') {
+        return { naam: WAERDSE_PAKKETTEN[soort], familie: 'Waerdse verzekeringspakket', naamLabel: 'Pakketnaam' };
+    }
+    const k = state.kantoor;
+    const korte = String(k.korteNaam || '').trim();
+    return {
+        naam: veldWaarde(k, zakelijk ? 'pakketZakelijk' : 'pakketParticulier'),
+        familie: korte ? `${korte} verzekeringspakket` : '',
+        naamLabel: zakelijk ? 'Pakketnaam zakelijk' : 'Pakketnaam particulier'
+    };
+}
+
+function leesPercentage(invoer) {
+    const s = String(invoer ?? '').trim().replace('%', '').replace(',', '.').replace(/\s+/g, '');
+    if (!/^[-+]?\d+(\.\d+)?$/.test(s)) return null;
+    return Number(s);
 }
 
 function tekstNaarHtml(tekst) {
@@ -896,12 +1090,13 @@ function render() {
     state.resultaat = leeg ? null : { ...brief, body };
 
     $('previewTitel').textContent = brief.titel;
+    if (state.brief === 'X-OVR') toonKantoorInfo();
     toonPreview();
     toonVelden();
     toonMeldingen(brief, leeg);
 
-    for (const id of ['downloadTxt', 'downloadWord', 'kopieerHtml']) $(id).disabled = leeg;
-    $('bestandsnaam').textContent = leeg ? '' : `${brief.bestand}.txt / .docx`;
+    for (const id of ['downloadTxt', 'downloadWord', 'kopieerHtml', 'bewaarBrief']) $(id).disabled = leeg;
+    $('bestandsnaam').textContent = leeg ? '' : veiligBestand(`${brief.bestand}.txt / .docx`);
 }
 
 function toonPreview() {
@@ -995,9 +1190,9 @@ function toonMeldingen(brief, leeg) {
         div.textContent = tekst;
         box.append(div);
     };
-    if (brief.ontbrekend.length) melding(`Nog invullen bij kantoorgegevens: ${brief.ontbrekend.join(', ')}.`, 'warn');
+    if (brief.ontbrekend.length) melding(`Nog invullen: ${brief.ontbrekend.join(', ')}.`, 'warn');
     if (state.brief === 'X-OVR' && state.klanttype === 'zakelijk') {
-        melding('Zakelijke variant is een eerste concept (pakketnaam en een paar zinnen in de Q&A). Laat de tekst controleren voor gebruik.', 'info');
+        melding('Zakelijke tekst is een eerste concept (een paar zinnen in de inleiding en de Q&A). Laat de tekst controleren voor gebruik.', 'info');
     }
     if (leeg) melding('Nog geen brief ingeladen.', 'info');
 }
@@ -1014,7 +1209,9 @@ function vulKantoorSelect() {
         for (const k of kantoren) og.append(new Option(k.naam || k.korteNaam || '(naamloos)', k.id));
         select.append(og);
     };
-    groep('Kantoren', KANTOREN);
+    for (const regio of new Set(KANTOREN.map((k) => k.regio))) {
+        groep(`ZekerDichtbij ${regio}`, KANTOREN.filter((k) => k.regio === regio));
+    }
     groep('Bewaard in deze browser', bewaardeKantoren());
     select.append(new Option('+ Nieuw kantoor (zelf invullen)', NIEUW));
     select.value = state.kantoorId;
@@ -1023,10 +1220,10 @@ function vulKantoorSelect() {
 function kiesKantoor(id) {
     if (id === NIEUW) {
         state.kantoorId = NIEUW;
-        state.kantoor = { vorigeVerzekeraar: 'Klaverblad' };
+        state.kantoor = {};
         $('kantoorDetails').open = true;
     } else {
-        const k = alleKantoren().find((x) => x.id === id) || KANTOREN[0];
+        const k = alleKantoren().find((x) => x.id === id) || KANTOREN.find((x) => x.id === STANDAARD_KANTOOR);
         state.kantoorId = k.id;
         state.kantoor = { ...k };
     }
@@ -1042,8 +1239,10 @@ function vulKantoorVelden() {
     box.replaceChildren();
     for (const v of KANTOOR_VELDEN) {
         if (v.soort && v.soort !== state.klanttype) continue;
+        if (v.kantoorpakket && state.pakket !== 'kantoor') continue;
         const wrap = document.createElement('div');
         wrap.className = 'field';
+        wrap.dataset.key = v.key;
         const id = `veld-${v.key}`;
         const label = document.createElement('label');
         label.htmlFor = id;
@@ -1056,17 +1255,253 @@ function vulKantoorVelden() {
         const input = document.createElement('input');
         input.type = 'text';
         input.id = id;
-        input.value = state.kantoor[v.key] || '';
-        const markeerLeeg = () => wrap.classList.toggle('is-missing', !input.value.trim());
-        markeerLeeg();
+        input.autocomplete = 'off';
+        input.value = veldWaarde(state.kantoor, v.key);
         input.addEventListener('input', () => {
             state.kantoor[v.key] = input.value;
-            markeerLeeg();
+            syncKantoorVelden(input);
             render();
         });
         wrap.append(label, input);
         box.append(wrap);
     }
+    syncKantoorVelden(null);
+}
+
+// Afgeleide velden (pakketnaam uit korte naam) bijwerken en lege velden markeren
+function syncKantoorVelden(actief) {
+    for (const wrap of $('kantoorVelden').querySelectorAll('.field')) {
+        const key = wrap.dataset.key;
+        const v = KANTOOR_VELDEN.find((f) => f.key === key);
+        const input = wrap.querySelector('input');
+        if (input !== actief && v.standaard && !String(state.kantoor[key] || '').trim()) input.value = v.standaard(state.kantoor);
+        wrap.classList.toggle('is-missing', !veldWaarde(state.kantoor, key));
+    }
+}
+
+function toonKantoorInfo() {
+    const k = state.kantoor;
+    const box = $('kantoorInfo');
+    box.replaceChildren();
+    const delen = [
+        [k.adres, [k.postcode, k.plaats].filter(Boolean).join(' ')].filter(Boolean).join(', '),
+        k.telefoon, k.email, k.website, k.onderdeelVan ? `onderdeel van ${k.onderdeelVan}` : ''
+    ].filter(Boolean);
+    box.textContent = delen.join(' · ');
+    box.hidden = !delen.length;
+
+    const pakket = huidigPakket();
+    const hint = $('pakketHint');
+    hint.replaceChildren();
+    if (pakket.naam) {
+        const strong = document.createElement('strong');
+        strong.textContent = pakket.naam;
+        hint.append('In de brief: ', strong);
+    } else {
+        hint.append('Pakketnaam ontbreekt: vul de korte naam van het kantoor in.');
+    }
+}
+
+/* ---------- X-BRF ---------- */
+
+function vulKeuzelijst(select, lijst, label = (x) => x) {
+    select.replaceChildren(...lijst.map((x) => new Option(label(x), x)), new Option('Anders (zelf invullen)…', ANDERS));
+}
+
+/* ---------- X-OVR maatschappij ---------- */
+
+function vulOvrFormulier() {
+    vulKeuzelijst($('ovrMaatschappij'), MAATSCHAPPIJEN);
+    $('ovrMaatschappij').value = state.ovr.maatschappij;
+    $('ovrMaatschappijAnders').value = state.ovr.maatschappijAnders;
+    toonOvrVelden();
+}
+
+function toonOvrVelden() {
+    const anders = state.ovr.maatschappij === ANDERS;
+    $('ovrMaatschappijAnders').hidden = !anders;
+    $('ovrMaatschappijAnders').classList.toggle('is-invalid', anders && !state.ovr.maatschappijAnders.trim());
+}
+
+function wijzigOvr() {
+    state.ovr.maatschappij = $('ovrMaatschappij').value;
+    state.ovr.maatschappijAnders = $('ovrMaatschappijAnders').value;
+    toonOvrVelden();
+    bewaarKeuzes();
+    render();
+}
+
+/* ---------- Opgeslagen brieven + mail naar helpdesk ---------- */
+
+const OPSLAG_BRIEVEN = 'brieventool.brieven';
+const HELPDESK = 'helpdesk@dewaerdse.nl';
+const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+function bewaarBrievenLijst() {
+    if (!schrijf(OPSLAG_BRIEVEN, state.brieven)) toast('Let op: deze browser bewaart de lijst niet na sluiten.');
+}
+
+function bewaarBrief() {
+    if (!state.resultaat) return;
+    const r = state.resultaat;
+    const record = { naam: r.bestand, titel: r.titel, html: r.body.innerHTML.trim(), datum: new Date().toISOString() };
+    const i = state.brieven.findIndex((b) => b.naam === record.naam);
+    if (i >= 0) state.brieven[i] = record; else state.brieven.push(record);
+    bewaarBrievenLijst();
+    toonOpgeslagen();
+    if (r.ontbrekend.length) toast('Bewaard, maar let op: er ontbreken nog gegevens in deze brief.');
+    else toast(i >= 0 ? 'Brief bijgewerkt in de lijst.' : 'Brief bewaard in de lijst.');
+}
+
+function toonOpgeslagen() {
+    const lijst = $('opgeslagenLijst');
+    lijst.replaceChildren();
+    if (!state.brieven.length) {
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.textContent = 'Nog geen brieven bewaard. Kies een brief en klik op “Bewaren in lijst”.';
+        lijst.append(li);
+    }
+    state.brieven.forEach((b, i) => {
+        const li = document.createElement('li');
+        const naam = document.createElement('span');
+        naam.textContent = b.naam;
+        const weg = document.createElement('button');
+        weg.type = 'button';
+        weg.textContent = '×';
+        weg.title = 'Verwijderen uit de lijst';
+        weg.setAttribute('aria-label', `${b.naam} verwijderen`);
+        weg.addEventListener('click', () => {
+            state.brieven.splice(i, 1);
+            bewaarBrievenLijst();
+            toonOpgeslagen();
+        });
+        li.append(naam, weg);
+        lijst.append(li);
+    });
+    $('mailHelpdesk').disabled = !state.brieven.length;
+    $('lijstLeegmaken').disabled = !state.brieven.length;
+}
+
+async function mailHelpdesk() {
+    const brieven = state.brieven;
+    if (!brieven.length) return;
+    const formaat = $('bijlageFormaat').value;
+    const bijlagen = [];
+    for (const b of brieven) {
+        const blokken = naarBlokken(schoonmaken(b.html));
+        if (formaat !== 'txt') bijlagen.push({ naam: veiligBestand(`${b.naam}.docx`), type: DOCX_TYPE, blob: maakDocx(blokken, b.titel) });
+        if (formaat !== 'docx') bijlagen.push({ naam: veiligBestand(`${b.naam}.txt`), type: 'text/plain; charset=utf-8', blob: maakTxt(blokken) });
+    }
+    const tekst = [
+        'Beste helpdesk,',
+        '',
+        brieven.length === 1 ? 'Bijgaand de volgende brief:' : `Bijgaand de volgende ${brieven.length} brieven:`,
+        ...brieven.map((b) => `- ${b.naam}`),
+        '',
+        'Met vriendelijke groet,',
+        ''
+    ].join('\r\n');
+    const eml = await maakEml({
+        aan: HELPDESK,
+        onderwerp: brieven.length === 1 ? `Brief: ${brieven[0].naam}` : `Brieven ter verwerking (${brieven.length})`,
+        tekst,
+        bijlagen
+    });
+    download(eml, 'Mail aan helpdesk De Waerdse.eml');
+    toast('Concept-mail gedownload. Open het bestand in Outlook en klik op Verzenden.');
+}
+
+// Concept-mail (.eml). X-Unsent zorgt dat Outlook hem opent als nieuw, nog te verzenden bericht.
+async function maakEml({ aan, onderwerp, tekst, bijlagen }) {
+    const grens = `----=_Brieventool_${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+    const regels = [
+        `To: ${aan}`,
+        `Subject: ${mimeWoord(onderwerp)}`,
+        'X-Unsent: 1',
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/mixed; boundary="${grens}"`,
+        '',
+        `--${grens}`,
+        'Content-Type: text/plain; charset="utf-8"',
+        'Content-Transfer-Encoding: base64',
+        '',
+        await naarBase64(new Blob([tekst]))
+    ];
+    for (const b of bijlagen) {
+        const naam = mimeWoord(b.naam);
+        regels.push(
+            `--${grens}`,
+            `Content-Type: ${b.type}; name="${naam}"`,
+            'Content-Transfer-Encoding: base64',
+            `Content-Disposition: attachment; filename="${naam}"`,
+            '',
+            await naarBase64(b.blob)
+        );
+    }
+    regels.push(`--${grens}--`, '');
+    return new Blob([regels.join('\r\n')], { type: 'message/rfc822' });
+}
+
+async function naarBase64(blob) {
+    return bytesNaarBase64(new Uint8Array(await blob.arrayBuffer())).replace(/.{76}(?=.)/g, '$&\r\n');
+}
+function bytesNaarBase64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+}
+// Kopregel met niet-ASCII tekens (bijv. é) coderen volgens RFC 2047
+function mimeWoord(s) {
+    if (/^[\x20-\x7e]*$/.test(s) && !s.includes('"')) return s;
+    const enc = new TextEncoder();
+    const stukken = [];
+    let stuk = '';
+    for (const teken of s) {
+        if (enc.encode(stuk + teken).length > 45) { stukken.push(stuk); stuk = ''; }
+        stuk += teken;
+    }
+    if (stuk) stukken.push(stuk);
+    return stukken.map((x) => `=?UTF-8?B?${bytesNaarBase64(enc.encode(x))}?=`).join(' ');
+}
+
+/* ---------- X-BRF ---------- */
+
+function vulBrfFormulier() {
+    const b = state.brf;
+    const vul = vulKeuzelijst;
+    vul($('brfMaatschappij'), MAATSCHAPPIJEN);
+    vul($('brfProduct'), PRODUCTEN, (x) => x[0].toUpperCase() + x.slice(1));
+    $('brfMaatschappij').value = b.maatschappij;
+    $('brfMaatschappijAnders').value = b.maatschappijAnders;
+    $('brfProduct').value = b.product;
+    $('brfProductAnders').value = b.productAnders;
+    $('brfStijging').value = b.stijging;
+    toonBrfVelden();
+}
+
+function toonBrfVelden() {
+    const b = state.brf;
+    const mAnders = b.maatschappij === ANDERS;
+    const pAnders = b.product === ANDERS;
+    $('brfMaatschappijAnders').hidden = !mAnders;
+    $('brfProductAnders').hidden = !pAnders;
+    $('brfMaatschappijAnders').classList.toggle('is-invalid', mAnders && !b.maatschappijAnders.trim());
+    $('brfProductAnders').classList.toggle('is-invalid', pAnders && !b.productAnders.trim());
+    $('brfStijging').classList.toggle('is-invalid', leesPercentage(b.stijging) === null);
+}
+
+function wijzigBrf() {
+    Object.assign(state.brf, {
+        maatschappij: $('brfMaatschappij').value,
+        maatschappijAnders: $('brfMaatschappijAnders').value,
+        product: $('brfProduct').value,
+        productAnders: $('brfProductAnders').value,
+        stijging: $('brfStijging').value
+    });
+    toonBrfVelden();
+    bewaarKeuzes();
+    render();
 }
 
 function bewaarKantoor() {
@@ -1089,7 +1524,7 @@ function verwijderKantoor() {
     if (!confirm(`“${state.kantoor.naam}” verwijderen uit deze browser?`)) return;
     schrijf(OPSLAG_KANTOREN, bewaardeKantoren().filter((k) => k.id !== state.kantoorId));
     vulKantoorSelect();
-    kiesKantoor(KANTOREN[0].id);
+    kiesKantoor(STANDAARD_KANTOOR);
     toast('Kantoor verwijderd.');
 }
 
@@ -1103,13 +1538,16 @@ function toonSecties() {
     document.querySelectorAll('[data-alleen]').forEach((el) => { el.hidden = el.dataset.alleen !== state.brief; });
     zetSegment('briefKeuze', state.brief);
     zetSegment('klanttypeKeuze', state.klanttype);
+    zetSegment('pakketKeuze', state.pakket);
     zetSegment('qaKeuze', state.qa ? 'met' : 'zonder');
+    zetSegment('ovrBriefKeuze', String(state.ovr.brief));
 }
 
 function bewaarKeuzes() {
     schrijf(OPSLAG_KEUZES, {
-        brief: state.brief, kantoorId: state.kantoorId === NIEUW ? KANTOREN[0].id : state.kantoorId,
-        klanttype: state.klanttype, qa: state.qa, voorbeeld: state.voorbeeld
+        brief: state.brief, kantoorId: state.kantoorId === NIEUW ? STANDAARD_KANTOOR : state.kantoorId,
+        klanttype: state.klanttype, pakket: state.pakket, ovr: state.ovr,
+        qa: state.qa, brf: state.brf, bijlagen: $('bijlageFormaat').value, voorbeeld: state.voorbeeld
     });
 }
 
@@ -1157,6 +1595,26 @@ function init() {
     if (['X-OVR', 'X-BRF', 'EIGEN'].includes(keuzes.brief)) state.brief = keuzes.brief;
     if (['particulier', 'zakelijk'].includes(keuzes.klanttype)) state.klanttype = keuzes.klanttype;
     if (typeof keuzes.qa === 'boolean') state.qa = keuzes.qa;
+    if (['kantoor', 'waerdse'].includes(keuzes.pakket)) state.pakket = keuzes.pakket;
+    if (keuzes.ovr && typeof keuzes.ovr === 'object') {
+        if ([1, 2, 3].includes(keuzes.ovr.brief)) state.ovr.brief = keuzes.ovr.brief;
+        for (const key of ['maatschappij', 'maatschappijAnders']) {
+            if (typeof keuzes.ovr[key] === 'string') state.ovr[key] = keuzes.ovr[key];
+        }
+        const o = state.ovr;
+        if (o.maatschappij !== ANDERS && !MAATSCHAPPIJEN.includes(o.maatschappij)) { o.maatschappijAnders = o.maatschappij; o.maatschappij = ANDERS; }
+    }
+    if (keuzes.brf && typeof keuzes.brf === 'object') {
+        for (const key of Object.keys(state.brf)) {
+            if (typeof keuzes.brf[key] === 'string') state.brf[key] = keuzes.brf[key];
+        }
+        const b = state.brf;
+        if (b.maatschappij !== ANDERS && !MAATSCHAPPIJEN.includes(b.maatschappij)) { b.maatschappijAnders = b.maatschappij; b.maatschappij = ANDERS; }
+        if (b.product !== ANDERS && !PRODUCTEN.includes(b.product)) { b.productAnders = b.product; b.product = ANDERS; }
+    }
+    if (['docx', 'txt', 'beide'].includes(keuzes.bijlagen)) $('bijlageFormaat').value = keuzes.bijlagen;
+    const opgeslagen = lees(OPSLAG_BRIEVEN, []);
+    if (Array.isArray(opgeslagen)) state.brieven = opgeslagen.filter((b) => b && typeof b.naam === 'string' && typeof b.html === 'string');
     state.voorbeeld = keuzes.voorbeeld === true;
     $('voorbeeldToggle').checked = state.voorbeeld;
 
@@ -1172,6 +1630,40 @@ function init() {
         state.klanttype = b.dataset.waarde;
         toonSecties(); vulKantoorVelden(); bewaarKeuzes(); render();
     });
+    $('ovrBriefKeuze').addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        state.ovr.brief = Number(b.dataset.waarde);
+        toonSecties(); bewaarKeuzes(); render();
+    });
+    $('ovrMaatschappij').addEventListener('change', () => {
+        wijzigOvr();
+        if (!$('ovrMaatschappijAnders').hidden) $('ovrMaatschappijAnders').focus();
+    });
+    $('ovrMaatschappijAnders').addEventListener('input', wijzigOvr);
+    $('bewaarBrief').addEventListener('click', bewaarBrief);
+    $('mailHelpdesk').addEventListener('click', mailHelpdesk);
+    $('bijlageFormaat').addEventListener('change', bewaarKeuzes);
+    $('lijstLeegmaken').addEventListener('click', () => {
+        if (!confirm('Alle opgeslagen brieven uit de lijst verwijderen?')) return;
+        state.brieven = [];
+        bewaarBrievenLijst();
+        toonOpgeslagen();
+    });
+    $('pakketKeuze').addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        state.pakket = b.dataset.waarde;
+        toonSecties(); vulKantoorVelden(); bewaarKeuzes(); render();
+    });
+    for (const id of ['brfMaatschappij', 'brfProduct']) {
+        $(id).addEventListener('change', () => {
+            wijzigBrf();
+            const anders = $(`${id}Anders`);
+            if (!anders.hidden) anders.focus();
+        });
+    }
+    for (const id of ['brfMaatschappijAnders', 'brfProductAnders', 'brfStijging']) $(id).addEventListener('input', wijzigBrf);
     $('qaKeuze').addEventListener('click', (e) => {
         const b = e.target.closest('button');
         if (!b) return;
@@ -1206,11 +1698,11 @@ function init() {
 
     $('downloadTxt').addEventListener('click', () => {
         if (!state.resultaat) return;
-        download(maakTxt(naarBlokken(state.resultaat.body)), `${state.resultaat.bestand}.txt`);
+        download(maakTxt(naarBlokken(state.resultaat.body)), veiligBestand(`${state.resultaat.bestand}.txt`));
     });
     $('downloadWord').addEventListener('click', () => {
         if (!state.resultaat) return;
-        download(maakDocx(naarBlokken(state.resultaat.body), state.resultaat.titel), `${state.resultaat.bestand}.docx`);
+        download(maakDocx(naarBlokken(state.resultaat.body), state.resultaat.titel), veiligBestand(`${state.resultaat.bestand}.docx`));
     });
     $('kopieerHtml').addEventListener('click', async () => {
         if (!state.resultaat) return;
@@ -1219,8 +1711,11 @@ function init() {
     });
 
     vulKantoorSelect();
+    vulBrfFormulier();
+    vulOvrFormulier();
+    toonOpgeslagen();
     toonSecties();
-    const startId = alleKantoren().some((k) => k.id === keuzes.kantoorId) ? keuzes.kantoorId : KANTOREN[0].id;
+    const startId = alleKantoren().some((k) => k.id === keuzes.kantoorId) ? keuzes.kantoorId : STANDAARD_KANTOOR;
     kiesKantoor(startId);
 }
 

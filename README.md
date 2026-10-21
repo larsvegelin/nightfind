@@ -232,10 +232,14 @@ Bestanden: `budget.html`, `assets/css/budget.css`, `assets/js/budget.js`.
 
 Eén los HTML-bestand (geen installatie, werkt ook offline): dubbelklik om te openen in de browser.
 
-- **Brieven** – `X-OVR` (overgang kantoor naar De Waerdse), `X-BRF` (aanhanger) en **Eigen**: plak HTML/tekst of kies een `.html`/`.txt` bestand en klik op *Preview laden*
-- **X-OVR opties** – kantoor kiezen, **particulier/zakelijk** en **met/zonder Q&A**; kantoorgegevens zijn aan te passen en in de browser te bewaren
-- **Uitlezen** – samenvoegvelden van het briefsysteem (`@L97020@`, `@ondertek_naam@`, …) worden herkend en getoond; ze blijven in de downloads staan
+- **X-OVR (overgang kantoor)** – brief 1 (aankondiging), 2 (tussentijdse kennisgeving) of 3 (nieuwe polisbladen); kies kantoor (aangesloten ZekerDichtbij-kantoren), huidige maatschappij, **particulier/zakelijk**, **kantoorpakket of Waerdse pakket** en **met/zonder Q&A**
+- **X-BRF (productbrief)** – kies maatschappij, type product en premiestijging
+- **Eigen** – plak HTML/tekst of kies een `.html`/`.txt` bestand en klik op *Preview laden*
+- **Uitlezen** – samenvoegvelden van het briefsysteem (`@L97020@`, `@ondertek_naam@`, …) worden herkend; ze blijven in de downloads staan
 - **Preview** – A4-weergave, optioneel met voorbeeldgegevens ingevuld
-- **Downloaden** – TXT (UTF-8) en Word (`.docx`, gemaakt in de browser zonder externe bibliotheek), plus *HTML kopiëren*
+- **Downloaden** – TXT en Word (`.docx`, gemaakt in de browser zonder externe bibliotheek), plus *HTML kopiëren*
+- **Naamgeving** – `kantoornaam - maatschappij - brief (nummer)`, afwijkende opties tussen haakjes
+- **Opgeslagen brieven** – bewaar brieven in een lijst en maak met *Mail naar helpdesk* een concept-mail (`.eml`) aan helpdesk@dewaerdse.nl met alle brieven als bijlage (openen in Outlook)
 
-Kantoor vast toevoegen: kopieer het blok in `KANTOREN` bovenin het script van `brieven.html`. Sjablonen staan in `SJABLONEN` (`{{veld}}` = kantoorgegeven, `[[zakelijk]]…[[/zakelijk]]` = alleen bij die optie).
+Pakketnaam is standaard `<korte naam> Privé Pakket` / `<korte naam> Zakelijk Pakket`; de Waerdse pakketten heten `Waerdse Verzekeringspakket` / `Waerdse Zakelijk Pakket`.
+Kantoren staan in `KANTOREN`, sjablonen in `OVR_BRIEVEN`, `OVR_QA` en `SJABLONEN` bovenin het script (`{{veld}}` = wordt ingevuld, `[[zakelijk]]…[[/zakelijk]]` = alleen bij die optie).
