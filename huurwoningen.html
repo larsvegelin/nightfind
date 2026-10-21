@@ -74,6 +74,26 @@
         .brand { display: flex; align-items: center; gap: 0.6rem; color: var(--text); text-decoration: none; font-weight: 700; font-size: 1.1rem; }
         .brand-icon { width: 30px; height: 30px; flex: none; }
         .topbar-meta { color: var(--muted); font-size: 0.85rem; text-align: right; }
+        .topbar-right { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+        .live-pill {
+            display: inline-flex; align-items: center; gap: 0.4rem; font: inherit; font-size: 0.8rem; font-weight: 600;
+            color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+            padding: 0.3rem 0.7rem; cursor: pointer; white-space: nowrap;
+        }
+        .live-pill .dot { color: var(--muted); }
+        .live-pill.is-live { color: var(--text); border-color: color-mix(in srgb, var(--st-available) 50%, transparent); }
+        .live-pill.is-live .dot { color: var(--st-available); box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-available) 25%, transparent); }
+        .live-pill.is-error .dot { color: var(--st-rented); }
+        .live-pill:hover { border-color: var(--purple); }
+        .code-dialog {
+            margin: auto; width: min(440px, calc(100vw - 2rem)); background: var(--surface); color: var(--text);
+            border: 1px solid var(--border); border-radius: 18px; padding: 0;
+        }
+        .code-dialog::backdrop { background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); }
+        .code-form { display: grid; gap: 0.85rem; padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); }
+        .code-form h2 { font-size: 1.15rem; }
+        .code-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .code-actions .spacer { flex: 1; }
 
         /* Buttons & inputs */
         .btn {
@@ -366,7 +386,10 @@
             h1 { font-size: 1.35rem; }
             .intro p { font-size: 0.85rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
             td:first-child { max-width: 46vw; overflow: hidden; text-overflow: ellipsis; }
-            .topbar-meta { font-size: 0.72rem; max-width: 55%; }
+            .topbar-meta { display: none; }
+            .code-dialog { width: 100vw; max-width: 100vw; margin: auto 0 0; border-radius: 18px 18px 0 0; border-bottom: 0; }
+            .code-actions .btn { flex: 1; justify-content: center; }
+            .code-actions .spacer { display: none; }
             .brand { font-size: 1rem; }
             .brand-icon { width: 26px; height: 26px; }
 
@@ -419,7 +442,12 @@
             <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#7C3AED"/><path d="M6 11.5 12 6l6 5.5V18h-4v-4h-4v4H6z" fill="#fff"/></svg>
             <span>Huurwoningen</span>
         </div>
-        <span class="topbar-meta" id="updatedAt"></span>
+        <div class="topbar-right">
+            <span class="topbar-meta" id="updatedAt"></span>
+            <button type="button" class="live-pill" id="liveBtn" aria-haspopup="dialog" title="Live gegevens uit Supabase">
+                <i class="dot"></i><span id="liveLabel">Koppelen</span>
+            </button>
+        </div>
     </header>
 
     <main class="app">
@@ -551,12 +579,14 @@
 
                 <div class="empty card" id="emptyNoData" hidden>
                     <h2>Nog geen woningen ingeladen</h2>
-                    <p class="muted">Draai eerst de scraper vanuit de map van dit project:</p>
+                    <p class="muted">Vul je toegangscode in om de woningen live uit Supabase te zien (ook op je telefoon).</p>
+                    <button type="button" class="btn btn-primary file-btn" id="emptyCodeBtn">Toegangscode invullen</button>
+                    <p class="muted" style="margin-top:0.75rem">Of draai de scraper zelf vanuit de map van dit project:</p>
                     <pre><code>pip install -r scraper/requirements.txt
 python -m scraper</code></pre>
                     <p class="muted">Die schrijft <code>data/huurwoningen.json</code> en <code>data/huurwoningen.js</code> naast deze pagina. Ververs daarna de pagina.</p>
                     <p class="muted">Staat deze pagina ergens anders (bijv. op je telefoon)? Open dan het gegevensbestand:</p>
-                    <label class="btn btn-primary file-btn">
+                    <label class="btn btn-ghost file-btn">
                         Open huurwoningen.json
                         <input type="file" id="dataFile" accept=".json,application/json" hidden>
                     </label>
@@ -571,6 +601,24 @@ python -m scraper</code></pre>
     </main>
 
     <dialog class="detail" id="detail" aria-labelledby="detailTitle"></dialog>
+
+    <dialog class="code-dialog" id="codeDialog" aria-labelledby="codeTitle">
+        <form class="code-form" id="codeForm">
+            <h2 id="codeTitle">Live gegevens uit Supabase</h2>
+            <p class="muted">Vul je toegangscode in. Die wordt alleen op dit apparaat bewaard.</p>
+            <label class="field">Toegangscode
+                <input type="password" id="codeInput" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required minlength="16">
+            </label>
+            <label class="check"><input type="checkbox" id="codeShow"> Code tonen</label>
+            <p class="form-msg" id="codeMsg" role="status"></p>
+            <div class="code-actions">
+                <button type="button" class="btn btn-ghost" id="codeForget">Vergeet code</button>
+                <span class="spacer"></span>
+                <button type="button" class="btn btn-ghost" id="codeCancel">Annuleren</button>
+                <button type="submit" class="btn btn-primary" id="codeSubmit">Laden</button>
+            </div>
+        </form>
+    </dialog>
 
     <!-- Gegevens van de scraper (python -m scraper). Ontbreekt dit bestand, dan kun je via de knop een JSON-bestand openen. -->
     <script src="data/huurwoningen.js"></script>
@@ -608,7 +656,7 @@ python -m scraper</code></pre>
         const MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
         const HOUSE_SVG = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>';
 
-        const state = { data: null, groups: [], visible: [], filters: loadFilters() };
+        const state = { data: null, groups: [], visible: [], filters: loadFilters(), liveError: '', loadedAt: 0 };
         const $ = (id) => document.getElementById(id);
 
         // ---------- Hulpjes ----------
@@ -686,7 +734,51 @@ python -m scraper</code></pre>
         }
 
         // ---------- Data ----------
-        async function loadData() {
+        // Supabase-project "scraper". De publishable key mag openbaar zijn: lezen kan alleen met de toegangscode.
+        const SUPABASE = { url: 'https://gpkohiyzdjyehqdkgpdb.supabase.co', key: 'sb_publishable_Dtsp2Q9T8svTU3DmYCzzVg_hGDaztE2' };
+        const CODE_KEY = 'huurwoningen.code.v1';
+        const REFRESH_AFTER_MS = 10 * 60 * 1000;
+
+        function getCode() {
+            try { return localStorage.getItem(CODE_KEY) || ''; } catch { return ''; }
+        }
+        function setCode(code) {
+            try {
+                if (code) localStorage.setItem(CODE_KEY, code);
+                else localStorage.removeItem(CODE_KEY);
+            } catch { /* geen opslag beschikbaar */ }
+        }
+
+        async function sbFetch(path, code, options = {}) {
+            const headers = { apikey: SUPABASE.key, 'x-huur-code': code, Accept: 'application/json' };
+            if (SUPABASE.key.startsWith('eyJ')) headers.Authorization = `Bearer ${SUPABASE.key}`;
+            if (options.body) headers['Content-Type'] = 'application/json';
+            const r = await fetch(`${SUPABASE.url}/rest/v1/${path}`, { ...options, headers, cache: 'no-store' });
+            if (!r.ok) throw new Error(`Supabase antwoordde ${r.status}`);
+            return r.json();
+        }
+
+        async function loadFromSupabase(code) {
+            const ok = await sbFetch('rpc/huur_toegang', code, { method: 'POST', body: '{}' });
+            if (ok !== true) {
+                const err = new Error('Deze toegangscode klopt niet');
+                err.kind = 'code';
+                throw err;
+            }
+            const [info, sources] = await Promise.all([
+                sbFetch('rpc/huur_info', code, { method: 'POST', body: '{}' }),
+                sbFetch('huur_bronnen?select=*&order=id', code)
+            ]);
+            const listings = [];
+            for (let offset = 0; ; offset += 1000) {
+                const rows = await sbFetch(`huur_woningen?select=*&order=id&limit=1000&offset=${offset}`, code);
+                listings.push(...rows);
+                if (rows.length < 1000) break;
+            }
+            return { generated_at: info?.bijgewerkt || null, region: { plaatsen: info?.regio || {} }, sources, listings, live: true };
+        }
+
+        async function loadLocalData() {
             if (window.HUURWONINGEN_DATA) return window.HUURWONINGEN_DATA;
             try {
                 const r = await fetch('data/huurwoningen.json', { cache: 'no-store' });
@@ -694,6 +786,94 @@ python -m scraper</code></pre>
             } catch {
                 return null;
             }
+        }
+
+        async function loadData() {
+            const code = getCode();
+            state.liveError = '';
+            if (code) {
+                try {
+                    const data = await loadFromSupabase(code);
+                    state.loadedAt = Date.now();
+                    return data;
+                } catch (err) {
+                    state.liveError = err.kind === 'code' ? 'Toegangscode klopt niet meer' : `Supabase niet bereikbaar: ${err.message}`;
+                }
+            }
+            return loadLocalData();
+        }
+
+        function applyData(data) {
+            state.data = data || { generated_at: null, sources: [], listings: [] };
+            state.groups = buildGroups(state.data.listings || [], state.filters.merge);
+            renderHeader();
+            renderSources();
+            renderLive();
+            render();
+        }
+
+        function renderLive() {
+            const btn = $('liveBtn');
+            const live = Boolean(state.data?.live);
+            btn.classList.toggle('is-live', live);
+            btn.classList.toggle('is-error', !live && Boolean(state.liveError));
+            $('liveLabel').textContent = live ? 'Live' : state.liveError ? 'Fout' : 'Koppelen';
+            btn.title = live ? 'Live gegevens uit Supabase' : state.liveError || 'Koppel met Supabase via je toegangscode';
+        }
+
+        function openCodeDialog() {
+            $('codeInput').value = getCode();
+            $('codeInput').type = 'password';
+            $('codeShow').checked = false;
+            $('codeMsg').textContent = state.liveError || '';
+            $('codeMsg').classList.toggle('error', Boolean(state.liveError));
+            $('codeDialog').showModal();
+            setTimeout(() => $('codeInput').focus(), 50);
+        }
+
+        async function submitCode(e) {
+            e.preventDefault();
+            const code = $('codeInput').value.trim();
+            const msg = $('codeMsg');
+            if (code.length < 16) {
+                msg.textContent = 'Een toegangscode heeft minstens 16 tekens.';
+                msg.classList.add('error');
+                return;
+            }
+            $('codeSubmit').disabled = true;
+            msg.classList.remove('error');
+            msg.textContent = 'Woningen laden…';
+            try {
+                const data = await loadFromSupabase(code);
+                setCode(code);
+                state.liveError = '';
+                state.loadedAt = Date.now();
+                applyData(data);
+                $('codeDialog').close();
+            } catch (err) {
+                msg.textContent = err.kind === 'code' ? 'Deze toegangscode klopt niet.' : `Kon Supabase niet bereiken: ${err.message}`;
+                msg.classList.add('error');
+            } finally {
+                $('codeSubmit').disabled = false;
+            }
+        }
+
+        async function forgetCode() {
+            setCode('');
+            state.liveError = '';
+            applyData(await loadLocalData());
+            $('codeDialog').close();
+        }
+
+        // Op de telefoon: na een tijdje terugkomen in de app -> stil opnieuw laden
+        async function refreshIfStale() {
+            if (document.visibilityState !== 'visible' || !state.data?.live || !state.loadedAt) return;
+            if (Date.now() - state.loadedAt < REFRESH_AFTER_MS) return;
+            try {
+                const data = await loadFromSupabase(getCode());
+                state.loadedAt = Date.now();
+                applyData(data);
+            } catch { /* volgende keer opnieuw */ }
         }
 
         function priority(l) {
@@ -1269,6 +1449,14 @@ python -m scraper</code></pre>
                 if (!MOBILE.matches) setFiltersOpen(false);
             });
             $('dataFile').addEventListener('change', loadDataFile);
+            $('liveBtn').addEventListener('click', openCodeDialog);
+            $('emptyCodeBtn').addEventListener('click', openCodeDialog);
+            $('codeForm').addEventListener('submit', submitCode);
+            $('codeCancel').addEventListener('click', () => $('codeDialog').close());
+            $('codeForget').addEventListener('click', forgetCode);
+            $('codeShow').addEventListener('change', (e) => { $('codeInput').type = e.target.checked ? 'text' : 'password'; });
+            $('codeDialog').addEventListener('click', (e) => { if (e.target === e.currentTarget) $('codeDialog').close(); });
+            document.addEventListener('visibilitychange', refreshIfStale);
 
             $('kpis').addEventListener('click', (e) => {
                 const b = e.target.closest('[data-kpi]');
@@ -1323,13 +1511,9 @@ python -m scraper</code></pre>
             try {
                 const data = JSON.parse(await file.text());
                 if (!data || !Array.isArray(data.listings)) throw new Error('geen huurwoningen-bestand');
-                state.data = data;
-                state.groups = buildGroups(data.listings, state.filters.merge);
                 msg.textContent = '';
                 msg.classList.remove('error');
-                renderHeader();
-                renderSources();
-                render();
+                applyData(data);
             } catch (err) {
                 msg.textContent = `Kon het bestand niet lezen: ${err.message}`;
                 msg.classList.add('error');
@@ -1349,12 +1533,8 @@ python -m scraper</code></pre>
         }
 
         async function init() {
-            state.data = (await loadData()) || { generated_at: null, sources: [], listings: [] };
-            state.groups = buildGroups(state.data.listings || [], state.filters.merge);
             bindEvents();
-            renderHeader();
-            renderSources();
-            render();
+            applyData(await loadData());
         }
 
         init();

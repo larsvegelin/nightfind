@@ -46,6 +46,36 @@ Een makelaar toevoegen is één blok in `scraper/sites.py`:
 
 Optioneel: `"zoek_url": "https://site.nl/huren/{slug}/"` (één pagina per zoekplaats), `"detail": r"regex"` als de automatische herkenning de verkeerde links pakt, en `"render": True` voor sites die JavaScript nodig hebben.
 
+## Supabase (live op je telefoon)
+
+De gegevens staan in het Supabase-project **scraper** (`gpkohiyzdjyehqdkgpdb`), in eigen tabellen naast ParseLab:
+
+| Tabel | Inhoud |
+|---|---|
+| `huur_woningen` | één rij per advertentie (zelfde velden als `data/huurwoningen.json`) |
+| `huur_bronnen` | resultaat van de laatste scan per bron |
+| `huur_instellingen` | hash van de toegangscode, regio en tijdstip laatste scan |
+
+- **Lezen** kan alleen met de **toegangscode** (header `x-huur-code`). `huurwoningen.html` vraagt die één keer en bewaart hem op dat apparaat (knop *Koppelen* / *Live* rechtsboven).
+- **Schrijven** doet alleen de scraper, met de geheime service-role-sleutel. Die staat nooit in de pagina of in git.
+- Schema en uitleg: `scraper/supabase/huurwoningen.sql`.
+
+Zelf naar Supabase schrijven vanaf je computer: maak in de projectmap een bestand `.env` (staat in `.gitignore`):
+
+```
+SUPABASE_SERVICE_ROLE_KEY=<service_role- of secret-sleutel uit Supabase → Project Settings → API Keys>
+```
+
+en draai `python -m scraper`. Met een sleutel schrijft hij automatisch naar Supabase (`--supabase uit` om dat over te slaan, `--supabase aan` om te stoppen als de sleutel ontbreekt). Zonder lokaal `data/huurwoningen.json` gaat hij verder met de stand in Supabase, zodat "eerst gezien" en "offline sinds" kloppen.
+
+### Automatisch scrapen (GitHub Actions)
+
+`.github/workflows/huurwoningen.yml` draait de scraper elke 3 uur (± 6:40–21:40) en schrijft naar Supabase. Eenmalig nodig: repository secret **`SUPABASE_SERVICE_ROLE_KEY`** (GitHub → Settings → Secrets and variables → Actions). Het schema draait vanaf `main`; op deze branch start hij bij een push van de scraper of workflow.
+
+### SVNK
+
+SVNK staat standaard **uit** en wordt niet automatisch gescrapet. Alleen `python -m scraper --bronnen svnk` haalt het op.
+
 ## Installeren en draaien
 
 Vanuit de hoofdmap van het project:

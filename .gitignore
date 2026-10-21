@@ -40,3 +40,7 @@ clubs_old.html
 __pycache__/
 *.pyc
 scraper/.cache/
+
+# Geheime sleutels (Supabase service-role key)
+.env
+*.env

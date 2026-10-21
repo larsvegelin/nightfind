@@ -118,6 +118,8 @@ BRONNEN: dict[str, dict] = {
         "type": "corporatie",
         "base": "https://www.svnk.nl",
         "omschrijving": "Woonwaard, Van Alckmaer, Kennemer Wonen e.a. (Alkmaar, Dijk en Waard)",
+        # Staat standaard uit (op verzoek): draait alleen met `--bronnen svnk`.
+        "standaard_aan": False,
     },
     "woonmatch_wf": {
         "naam": "Woonmatch West-Friesland",

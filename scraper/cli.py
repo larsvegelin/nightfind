@@ -8,7 +8,7 @@ import traceback
 from datetime import date
 from pathlib import Path
 
-from . import config, model, store
+from . import config, model, store, supabase_sync
 from .fetch import FetchError, Fetcher
 from .sources import REGISTRY
 from .sources.generic import GenericSite
@@ -31,6 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--vertraging", type=float, default=config.VERTRAGING_SEC, help="seconden pauze tussen verzoeken per site")
     ap.add_argument("--dump", action="store_true", help="ruwe HTML/JSON bewaren in scraper/.cache/raw (voor debuggen)")
     ap.add_argument("--uitvoer", type=Path, default=config.OUTPUT_JSON, help="pad van het JSON-bestand")
+    ap.add_argument("--supabase", choices=["auto", "aan", "uit"], default="auto",
+                    help="naar Supabase schrijven: auto = als SUPABASE_SERVICE_ROLE_KEY is ingesteld (standaard)")
     ap.add_argument("-v", "--verbose", action="store_true", help="volledige foutmeldingen tonen")
     return ap
 
@@ -41,6 +43,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.lijst:
         for sid, cfg in config.BRONNEN.items():
             mark = "" if cfg.get("url_gezien", True) else "  (url nog controleren)"
+            if not cfg.get("standaard_aan", True):
+                mark += f"  (staat uit; alleen met --bronnen {sid})"
             print(f"{sid:20} {cfg['naam']:32} {cfg['type']:11} {cfg['base']}{mark}")
         counts = {}
         for cfg in config.BRONNEN.values():
@@ -48,7 +52,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{len(config.BRONNEN)} bronnen: " + ", ".join(f"{v} {k}" for k, v in counts.items()))
         return 0
 
-    wanted = list(config.BRONNEN) if not args.bronnen else [s.strip() for s in args.bronnen.split(",") if s.strip()]
+    if args.bronnen:
+        wanted = [s.strip() for s in args.bronnen.split(",") if s.strip()]
+    else:
+        # bronnen met standaard_aan=False (zoals SVNK) alleen als je ze expliciet noemt
+        wanted = [s for s, c in config.BRONNEN.items() if c.get("standaard_aan", True)]
     unknown = [s for s in wanted if s not in config.BRONNEN]
     if unknown:
         print(f"Onbekende bron(nen): {', '.join(unknown)}. Zie: python -m scraper --lijst", file=sys.stderr)
@@ -62,7 +70,22 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     today = date.today()
+    client = None
+    if args.supabase != "uit":
+        client = supabase_sync.Supabase.from_env()
+        if client is None and args.supabase == "aan":
+            print("SUPABASE_SERVICE_ROLE_KEY ontbreekt (omgevingsvariabele of .env in de projectmap).", file=sys.stderr)
+            return 2
+
     previous = store.load(args.uitvoer)
+    if client is not None and not previous.get("listings"):
+        # Geen lokale gegevens (bijv. in GitHub Actions): ga verder met de stand in Supabase
+        try:
+            previous = supabase_sync.load_previous(client)
+            print(f"Vorige stand uit Supabase geladen: {len(previous['listings'])} woningen")
+        except supabase_sync.SupabaseError as e:
+            print(f"Kon vorige stand niet uit Supabase laden: {e}", file=sys.stderr)
+            return 1
     known = {l["id"]: l for l in previous.get("listings", [])}
     opts = Options(details=not args.geen_details, max_pages=args.max_paginas, known=known, refresh_details=args.details_opnieuw, today=today)
     fetcher = Fetcher(browser=args.browser, delay=args.vertraging, dump_dir=(config.CACHE_DIR / "raw") if args.dump else None)
@@ -113,6 +136,14 @@ def main(argv: list[str] | None = None) -> int:
     data = store.build_output(merged, all_runs)
     store.write(args.uitvoer, data)
 
+    sync_failed = False
+    if client is not None:
+        try:
+            supabase_sync.sync(data, client)
+        except supabase_sync.SupabaseError as e:
+            sync_failed = True
+            print(f"✗ Supabase niet bijgewerkt: {e}", file=sys.stderr)
+
     counts: dict[str, int] = {}
     for l in data["listings"]:
         counts[l["status"]] = counts.get(l["status"], 0) + 1
@@ -121,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
     print("  " + ", ".join([f"{k}: {v}" for k, v in sorted(counts.items())] + [f"nieuw: {nieuw}"]))
     print(f"  {fetcher.requests_made} verzoeken. Open huurwoningen.html om ze te bekijken.")
     failed = [r for r in runs.values() if r["status"] == "fout"]
-    return 1 if failed and len(failed) == len(runs) else 0
+    return 1 if sync_failed or (failed and len(failed) == len(runs)) else 0
 
 
 if __name__ == "__main__":
