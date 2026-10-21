@@ -114,11 +114,14 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .suffix span { position: absolute; right: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 #pakketHint strong, #kantoorInfo strong, .hint strong { color: var(--text); font-weight: 600; }
 .saved { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.4rem; }
-.saved li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; background: var(--surface-2); border-radius: 7px; padding: 0.35rem 0.4rem 0.35rem 0.65rem; }
-.saved li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.saved li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.35rem 0.5rem; font-size: 0.85rem; background: var(--surface-2); border-radius: 7px; padding: 0.4rem 0.4rem 0.45rem 0.65rem; }
+.saved li span { min-width: 0; overflow-wrap: anywhere; }
+.saved li .sys { grid-column: 1 / -1; display: grid; grid-template-columns: 8.2rem minmax(0, 1fr); gap: 0.4rem; padding-right: 0.25rem; }
+.saved li .sys select, .saved li .sys input { padding: 0.3rem 0.45rem; font-size: 0.8rem; }
+.scheiding { border: 0; border-top: 1px solid var(--border); margin: 0.9rem 0 0.7rem; }
 .saved li button { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0.15rem 0.4rem; border-radius: 5px; }
 .saved li button:hover { color: #c4473f; background: var(--surface); }
-.saved li.empty { background: transparent; padding: 0; color: var(--muted); }
+.saved li.empty { display: block; background: transparent; padding: 0; color: var(--muted); }
 
 .btn {
     border: 1px solid var(--border); background: var(--surface); border-radius: 8px;
@@ -327,8 +330,7 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
                 <button type="button" class="btn btn-primary" id="downloadWord">Word (.docx)</button>
                 <button type="button" class="btn btn-primary" id="downloadHtml">HTML (.html)</button>
                 <button type="button" class="btn btn-primary" id="downloadBron" title="De HTML-code als tekstbestand: bij openen zie je de code, niet de opgemaakte brief">Broncode (.txt)</button>
-                <button type="button" class="btn" id="kopieerHtml">HTML kopiëren</button>
-                <button type="button" class="btn" id="bewaarBrief">Bewaren in lijst</button>
+                <button type="button" class="btn btn-wide" id="kopieerHtml">HTML kopiëren</button>
             </div>
             <p class="filename" id="bestandsnaam"></p>
             <p class="hint">Samenvoegvelden (@…@) blijven in de download staan, zodat het briefsysteem ze kan vullen. <strong>Broncode</strong> is de HTML-code als tekstbestand: bij openen zie je de code zelf, klaar om te kopiëren.</p>
@@ -336,6 +338,19 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 
         <section class="card">
             <h2>Opgeslagen brieven</h2>
+            <span class="label">Deze brief in het briefsysteem</span>
+            <div class="segmented" id="systeemKeuze">
+                <button type="button" data-waarde="nieuw">Nieuwe brief</button>
+                <button type="button" data-waarde="bestaat">Bestaat al</button>
+            </div>
+            <div class="field">
+                <label for="briefcode" id="briefcodeLabel">Gewenste briefcode (optioneel)</label>
+                <input type="text" id="briefcode" autocomplete="off" placeholder="bijv. X-OVR">
+            </div>
+            <div class="row-actions">
+                <button type="button" class="btn btn-primary" id="bewaarBrief">Bewaren in lijst</button>
+            </div>
+            <hr class="scheiding">
             <ul class="saved" id="opgeslagenLijst"></ul>
             <span class="label">Bijlagen per brief</span>
             <div class="checks" id="bijlageFormaten">
@@ -348,7 +363,7 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
                 <button type="button" class="btn btn-primary" id="mailHelpdesk">Mail naar helpdesk</button>
                 <button type="button" class="btn" id="lijstLeegmaken">Leegmaken</button>
             </div>
-            <p class="hint">Maakt een concept-mail aan <strong>helpdesk@dewaerdse.nl</strong> met de opgeslagen brieven als bijlage in de aangevinkte formaten (.eml-bestand). Open het bestand in Outlook, controleer en klik op Verzenden.</p>
+            <p class="hint">Maakt een concept-mail aan <strong>helpdesk@dewaerdse.nl</strong> met de opgeslagen brieven als bijlage in de aangevinkte formaten (.eml-bestand). Per brief staat in de mail of hij nieuw is of al bestaat, met de briefcode. Open het bestand in Outlook, controleer en klik op Verzenden.</p>
         </section>
 
         <section class="card">
@@ -586,6 +601,7 @@ const state = {
     brf: { maatschappij: 'Nationale Nederlanden', maatschappijAnders: '', product: 'aanhanger', productAnders: '', stijging: '6' },
     voorbeeld: false,
     broncode: false,
+    systeem: {},
     eigen: { html: '', naam: '' },
     kop: { 'X-OVR': true, 'X-BRF': true, EIGEN: true },
     kopTekst: { 'X-BRF': { plaats: '', onderwerp: '' }, EIGEN: { plaats: '', onderwerp: '' } },
@@ -1172,6 +1188,7 @@ function render() {
     $('previewTitel').textContent = brief.titel;
     if (state.brief === 'X-OVR') toonKantoorInfo();
     toonKop();
+    toonSysteem();
     toonPreview();
     toonVelden();
     toonMeldingen(brief, leeg);
@@ -1438,16 +1455,43 @@ function bewaarBrievenLijst() {
     if (!schrijf(OPSLAG_BRIEVEN, state.brieven)) toast('Let op: deze browser bewaart de lijst niet na sluiten.');
 }
 
+// Bestaat de brief al in het briefsysteem, en onder welke briefcode? (per soort brief onthouden)
+const systeemSleutel = () => (state.brief === 'X-OVR' ? `X-OVR-${state.ovr.brief}` : state.brief);
+function huidigSysteem() {
+    const k = systeemSleutel();
+    if (!state.systeem[k]) state.systeem[k] = { bestaat: false, code: '' };
+    return state.systeem[k];
+}
+function toonSysteem() {
+    const sys = huidigSysteem();
+    zetSegment('systeemKeuze', sys.bestaat ? 'bestaat' : 'nieuw');
+    $('briefcodeLabel').textContent = sys.bestaat ? 'Briefcode in het briefsysteem' : 'Gewenste briefcode (optioneel)';
+    if (document.activeElement !== $('briefcode')) $('briefcode').value = sys.code;
+    $('briefcode').classList.toggle('is-invalid', sys.bestaat && !sys.code.trim());
+}
+const systeemTekst = (sys) => (sys && sys.bestaat
+    ? `Bestaat al in het briefsysteem, briefcode: ${sys.code.trim()}`
+    : `Nieuwe brief${sys && sys.code.trim() ? ` (gewenste briefcode: ${sys.code.trim()})` : ''}`);
+
 function bewaarBrief() {
     if (!state.resultaat) return;
     const r = state.resultaat;
-    const record = { naam: r.bestand, titel: r.titel, html: r.body.innerHTML.trim(), datum: new Date().toISOString() };
+    const sys = huidigSysteem();
+    if (sys.bestaat && !sys.code.trim()) {
+        toast('Vul de briefcode in waaronder deze brief al bestaat.');
+        $('briefcode').focus();
+        return;
+    }
+    const record = {
+        naam: r.bestand, titel: r.titel, html: r.body.innerHTML.trim(), datum: new Date().toISOString(),
+        systeem: { bestaat: sys.bestaat, code: sys.code.trim() }
+    };
     const i = state.brieven.findIndex((b) => b.naam === record.naam);
     if (i >= 0) state.brieven[i] = record; else state.brieven.push(record);
     bewaarBrievenLijst();
     toonOpgeslagen();
     if (r.ontbrekend.length) toast('Bewaard, maar let op: er ontbreken nog gegevens in deze brief.');
-    else toast(i >= 0 ? 'Brief bijgewerkt in de lijst.' : 'Brief bewaard in de lijst.');
+    else toast(`${i >= 0 ? 'Bijgewerkt' : 'Bewaard'} in de lijst: ${systeemTekst(record.systeem).replace(/^./, (c) => c.toLowerCase())}.`);
 }
 
 function toonOpgeslagen() {
@@ -1473,7 +1517,38 @@ function toonOpgeslagen() {
             bewaarBrievenLijst();
             toonOpgeslagen();
         });
-        li.append(naam, weg);
+        // Briefsysteem per opgeslagen brief aanpasbaar
+        if (!b.systeem) b.systeem = { bestaat: false, code: '' };
+        const sys = b.systeem;
+        const rij = document.createElement('div');
+        rij.className = 'sys';
+        const keuze = document.createElement('select');
+        keuze.setAttribute('aria-label', `${b.naam}: nieuw of bestaand`);
+        keuze.append(new Option('Nieuwe brief', 'nieuw'), new Option('Bestaat al', 'bestaat'));
+        keuze.value = sys.bestaat ? 'bestaat' : 'nieuw';
+        const code = document.createElement('input');
+        code.type = 'text';
+        code.autocomplete = 'off';
+        code.value = sys.code;
+        code.setAttribute('aria-label', `${b.naam}: briefcode`);
+        const markeerCode = () => {
+            code.placeholder = sys.bestaat ? 'Briefcode (verplicht)' : 'Gewenste briefcode';
+            code.classList.toggle('is-invalid', sys.bestaat && !sys.code.trim());
+        };
+        markeerCode();
+        keuze.addEventListener('change', () => {
+            sys.bestaat = keuze.value === 'bestaat';
+            markeerCode();
+            bewaarBrievenLijst();
+            if (sys.bestaat && !sys.code.trim()) code.focus();
+        });
+        code.addEventListener('input', () => {
+            sys.code = code.value;
+            markeerCode();
+            bewaarBrievenLijst();
+        });
+        rij.append(keuze, code);
+        li.append(naam, weg, rij);
         lijst.append(li);
     });
     $('mailHelpdesk').disabled = !state.brieven.length || !gekozenFormaten().length;
@@ -1485,6 +1560,11 @@ async function mailHelpdesk() {
     if (!brieven.length) return;
     const formaten = gekozenFormaten();
     if (!formaten.length) { toast('Vink minstens één formaat aan voor de bijlagen.'); return; }
+    const zonderCode = brieven.filter((b) => b.systeem && b.systeem.bestaat && !b.systeem.code.trim());
+    if (zonderCode.length) {
+        toast(`Vul de briefcode in bij: ${zonderCode.map((b) => b.naam).join(', ')}`);
+        return;
+    }
     const bijlagen = [];
     for (const b of brieven) {
         const blokken = naarBlokken(schoonmaken(b.html));
@@ -1499,14 +1579,17 @@ async function mailHelpdesk() {
         'Beste helpdesk,',
         '',
         brieven.length === 1 ? `Bijgaand de volgende brief (${soorten}):` : `Bijgaand de volgende ${brieven.length} brieven (${soorten}):`,
-        ...brieven.map((b) => `- ${b.naam}`),
+        '',
+        ...brieven.map((b, i) => `${i + 1}. ${b.naam}\r\n   ${systeemTekst(b.systeem)}`),
         '',
         'Met vriendelijke groet,',
         ''
     ].join('\r\n');
     const eml = await maakEml({
         aan: HELPDESK,
-        onderwerp: brieven.length === 1 ? `Brief: ${brieven[0].naam}` : `Brieven ter verwerking (${brieven.length})`,
+        onderwerp: brieven.length === 1
+            ? `Brief: ${brieven[0].naam}${brieven[0].systeem && brieven[0].systeem.bestaat ? ` (briefcode ${brieven[0].systeem.code.trim()})` : ''}`
+            : `Brieven ter verwerking (${brieven.length})`,
         tekst,
         bijlagen
     });
@@ -2129,7 +2212,7 @@ function bewaarKeuzes() {
     schrijf(OPSLAG_KEUZES, {
         brief: state.brief, kantoorId: state.kantoorId === NIEUW ? STANDAARD_KANTOOR : state.kantoorId,
         klanttype: state.klanttype, pakket: state.pakket, ovr: state.ovr,
-        qa: state.qa, brf: state.brf, kop: state.kop, kopTekst: state.kopTekst,
+        qa: state.qa, brf: state.brf, kop: state.kop, kopTekst: state.kopTekst, systeem: state.systeem,
         bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld, broncode: state.broncode
     });
 }
@@ -2213,9 +2296,19 @@ function init() {
         for (const i of $('bijlageFormaten').querySelectorAll('input')) i.checked = keuzes.bijlagen.includes(i.value);
     }
     const opgeslagen = lees(OPSLAG_BRIEVEN, []);
-    if (Array.isArray(opgeslagen)) state.brieven = opgeslagen.filter((b) => b && typeof b.naam === 'string' && typeof b.html === 'string');
+    if (Array.isArray(opgeslagen)) {
+        state.brieven = opgeslagen.filter((b) => b && typeof b.naam === 'string' && typeof b.html === 'string');
+        for (const b of state.brieven) {
+            if (!b.systeem || typeof b.systeem.bestaat !== 'boolean' || typeof b.systeem.code !== 'string') b.systeem = { bestaat: false, code: '' };
+        }
+    }
     state.voorbeeld = keuzes.voorbeeld === true;
     state.broncode = keuzes.broncode === true;
+    if (keuzes.systeem && typeof keuzes.systeem === 'object') {
+        for (const [k, v] of Object.entries(keuzes.systeem)) {
+            if (v && typeof v.bestaat === 'boolean' && typeof v.code === 'string') state.systeem[k] = { bestaat: v.bestaat, code: v.code };
+        }
+    }
     $('broncodeToggle').checked = state.broncode;
     $('voorbeeldToggle').checked = state.voorbeeld;
 
@@ -2245,6 +2338,19 @@ function init() {
     $('ovrMaand').addEventListener('change', wijzigOvr);
     $('ovrJaar').addEventListener('change', wijzigOvr);
     $('bewaarBrief').addEventListener('click', bewaarBrief);
+    $('systeemKeuze').addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        huidigSysteem().bestaat = b.dataset.waarde === 'bestaat';
+        bewaarKeuzes(); toonSysteem();
+        if (huidigSysteem().bestaat && !huidigSysteem().code.trim()) $('briefcode').focus();
+    });
+    $('briefcode').addEventListener('input', (e) => {
+        huidigSysteem().code = e.target.value;
+        bewaarKeuzes();
+        $('briefcode').classList.toggle('is-invalid', huidigSysteem().bestaat && !e.target.value.trim());
+    });
+    $('briefcode').addEventListener('blur', toonSysteem);
     $('mailHelpdesk').addEventListener('click', mailHelpdesk);
     $('bijlageFormaten').addEventListener('change', () => { bewaarKeuzes(); toonOpgeslagen(); });
     $('lijstLeegmaken').addEventListener('click', () => {
