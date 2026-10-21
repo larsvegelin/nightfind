@@ -227,3 +227,15 @@ Persoonlijke tool om inkomsten en uitgaven bij te houden, gekoppeld aan Supabase
 
 Schema: `supabase/migrations/20261002_budget_tracker.sql` (al toegepast op het `nightvibe-production` project).
 Bestanden: `budget.html`, `assets/css/budget.css`, `assets/js/budget.js`.
+
+## 🏠 Huurwoningen Noord-Holland Noord (`huurwoningen.html`)
+
+Overzicht van alle huurwoningen in Alkmaar, Dijk en Waard (Heerhugowaard, Sint Pancras, …), Schagen, Tuitjenhorn, Obdam en Ursem – van woningcorporaties (SVNK, Woonmatch West-Friesland, Woonmatch Kop van NH) en van Funda, Pararius, Huurwoningen.nl en Kamernet.
+
+- **Per woning**: huur (totaal/kaal/servicekosten), m², kamers, energielabel, type, **datum van plaatsing**, reageren tot, beschikbaar per, toewijzing (loting/inschrijfduur), verhuurder, foto's en link
+- **Status**: Nieuw, Beschikbaar, Onder optie, Verhuurd onder voorbehoud, Verhuurd, Reageren gesloten, Offline (verdwenen → waarschijnlijk verhuurd), met statusgeschiedenis
+- **Filters**: zoeken, status, geplaatst sinds, plaats per gemeente, bron, segment, type, huur, m², kamers; kaarten- of tabelweergave; CSV-export
+- Dezelfde woning op meerdere sites wordt samengevoegd ("Ook op Funda + Pararius")
+
+Data vullen: `pip install -r scraper/requirements.txt` en daarna `python -m scraper` (zie [`scraper/README.md`](scraper/README.md)). Nog niet gekoppeld aan Supabase.
+Bestanden: `huurwoningen.html`, `assets/css/huurwoningen.css`, `assets/js/huurwoningen.js`, `data/huurwoningen.json`, `scraper/`.

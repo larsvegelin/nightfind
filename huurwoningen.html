@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Huurwoningen NHN</title>
+    <meta name="description" content="Alle huurwoningen van woningcorporaties (SVNK, Woonmatch) en Funda, Pararius e.a. in Alkmaar, Dijk en Waard, Schagen, Obdam en Ursem.">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <link rel="stylesheet" href="assets/css/huurwoningen.css">
+</head>
+<body>
+    <header class="topbar">
+        <a href="index.html" class="brand">
+            <img src="assets/logo.svg" alt="">
+            <span>Huurwoningen</span>
+        </a>
+        <span class="topbar-meta" id="updatedAt"></span>
+    </header>
+
+    <main class="app">
+        <section class="intro">
+            <h1>Huurwoningen Noord-Holland Noord</h1>
+            <p class="muted" id="regionLine">Alkmaar · Dijk en Waard · Schagen · Obdam · Ursem</p>
+        </section>
+
+        <section class="kpis" id="kpis" aria-label="Samenvatting"></section>
+
+        <section class="sources" id="sources" aria-label="Bronnen"></section>
+
+        <div class="layout">
+            <aside class="filters card" id="filters" aria-label="Filters">
+                <div class="filters-head">
+                    <h2>Filters</h2>
+                    <button class="btn btn-ghost btn-sm" id="resetBtn" type="button">Wissen</button>
+                </div>
+
+                <label class="field">Zoeken
+                    <input type="search" id="q" placeholder="Straat, postcode, makelaar…" autocomplete="off">
+                </label>
+
+                <fieldset class="field">
+                    <legend>Status</legend>
+                    <div class="chips" id="statusChips"></div>
+                </fieldset>
+
+                <fieldset class="field">
+                    <legend>Geplaatst</legend>
+                    <select id="since">
+                        <option value="">Altijd</option>
+                        <option value="0">Vandaag</option>
+                        <option value="3">Laatste 3 dagen</option>
+                        <option value="7">Laatste week</option>
+                        <option value="30">Laatste maand</option>
+                    </select>
+                </fieldset>
+
+                <fieldset class="field">
+                    <legend>Plaats</legend>
+                    <div id="placeChips" class="place-groups"></div>
+                </fieldset>
+
+                <fieldset class="field">
+                    <legend>Bron</legend>
+                    <div class="chips" id="sourceChips"></div>
+                </fieldset>
+
+                <fieldset class="field">
+                    <legend>Segment</legend>
+                    <div class="chips" id="segmentChips"></div>
+                </fieldset>
+
+                <label class="field">Type woning
+                    <select id="type"><option value="">Alle types</option></select>
+                </label>
+
+                <fieldset class="field">
+                    <legend>Huur per maand</legend>
+                    <div class="row-2">
+                        <input type="number" id="rentMin" inputmode="numeric" min="0" step="50" placeholder="Min €" aria-label="Minimale huur">
+                        <input type="number" id="rentMax" inputmode="numeric" min="0" step="50" placeholder="Max €" aria-label="Maximale huur">
+                    </div>
+                </fieldset>
+
+                <div class="row-2">
+                    <label class="field">Min. m²
+                        <input type="number" id="areaMin" inputmode="numeric" min="0" step="5" placeholder="0">
+                    </label>
+                    <label class="field">Kamers
+                        <select id="roomsMin">
+                            <option value="">Alle</option>
+                            <option value="1">1+</option>
+                            <option value="2">2+</option>
+                            <option value="3">3+</option>
+                            <option value="4">4+</option>
+                            <option value="5">5+</option>
+                        </select>
+                    </label>
+                </div>
+
+                <label class="check">
+                    <input type="checkbox" id="mergeDupes" checked>
+                    Dubbele advertenties samenvoegen
+                </label>
+            </aside>
+
+            <section class="results" aria-label="Resultaten">
+                <div class="results-bar">
+                    <button class="btn btn-ghost btn-sm filters-toggle" id="filtersToggle" type="button" aria-controls="filters" aria-expanded="false">Filters</button>
+                    <p class="result-count" id="resultCount" aria-live="polite"></p>
+                    <div class="results-actions">
+                        <label class="sr-only" for="sort">Sorteren</label>
+                        <select id="sort">
+                            <option value="published:desc">Nieuwste plaatsing</option>
+                            <option value="rent:asc">Huur laag → hoog</option>
+                            <option value="rent:desc">Huur hoog → laag</option>
+                            <option value="area:desc">Grootste oppervlakte</option>
+                            <option value="ppm:asc">Laagste prijs per m²</option>
+                            <option value="closing:asc">Reageren tot (eerst)</option>
+                            <option value="city:asc">Plaats A → Z</option>
+                        </select>
+                        <div class="segmented" role="group" aria-label="Weergave">
+                            <button type="button" data-view="cards" class="active" aria-pressed="true">Kaarten</button>
+                            <button type="button" data-view="table" aria-pressed="false">Tabel</button>
+                        </div>
+                        <button class="btn btn-ghost btn-sm" id="csvBtn" type="button">CSV</button>
+                    </div>
+                </div>
+
+                <div id="results"></div>
+
+                <div class="empty card" id="emptyNoData" hidden>
+                    <h2>Nog geen woningen ingeladen</h2>
+                    <p class="muted">Draai eerst de scraper vanuit de map van dit project:</p>
+                    <pre><code>pip install -r scraper/requirements.txt
+python -m scraper</code></pre>
+                    <p class="muted">Die schrijft <code>data/huurwoningen.json</code> en <code>data/huurwoningen.js</code>. Ververs daarna deze pagina.</p>
+                </div>
+                <div class="empty card" id="emptyFiltered" hidden>
+                    <h2>Geen woningen gevonden</h2>
+                    <p class="muted">Pas de filters aan of wis ze om alles te zien.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <dialog class="detail" id="detail" aria-labelledby="detailTitle"></dialog>
+
+    <script src="data/huurwoningen.js"></script>
+    <script src="assets/js/huurwoningen.js"></script>
+</body>
+</html>

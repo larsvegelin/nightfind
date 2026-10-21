@@ -1,0 +1,42 @@
+// Automatisch gegenereerd door `python -m scraper` – niet met de hand aanpassen.
+window.HUURWONINGEN_DATA = {
+ "generated_at": null,
+ "region": {
+  "plaatsen": {
+   "Alkmaar": "Alkmaar",
+   "Koedijk": "Alkmaar",
+   "Oudorp": "Alkmaar",
+   "Heerhugowaard": "Dijk en Waard",
+   "Sint Pancras": "Dijk en Waard",
+   "Broek op Langedijk": "Dijk en Waard",
+   "Noord-Scharwoude": "Dijk en Waard",
+   "Zuid-Scharwoude": "Dijk en Waard",
+   "Oudkarspel": "Dijk en Waard",
+   "Dijk en Waard": "Dijk en Waard",
+   "Schagen": "Schagen",
+   "Tuitjenhorn": "Schagen",
+   "Warmenhuizen": "Schagen",
+   "Waarland": "Schagen",
+   "Dirkshorn": "Schagen",
+   "Sint Maarten": "Schagen",
+   "Schagerbrug": "Schagen",
+   "Callantsoog": "Schagen",
+   "'t Zand": "Schagen",
+   "Petten": "Schagen",
+   "Obdam": "Koggenland",
+   "Ursem": "Koggenland"
+  },
+  "gemeenten": [
+   "Alkmaar",
+   "Dijk en Waard",
+   "Koggenland",
+   "Schagen"
+  ]
+ },
+ "settings": {
+  "nieuw_dagen": 3,
+  "offline_bewaren_dagen": 60
+ },
+ "sources": [],
+ "listings": []
+};

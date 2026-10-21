@@ -35,3 +35,8 @@ Temporary Items
 # Old files
 *_old.html
 clubs_old.html
+
+# Huurwoningen-scraper
+__pycache__/
+*.pyc
+scraper/.cache/

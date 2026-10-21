@@ -1,0 +1,5 @@
+requests>=2.31
+beautifulsoup4>=4.12
+lxml>=5.0
+# Optioneel, voor sites die gewone verzoeken blokkeren (Funda) of JavaScript nodig hebben:
+#   pip install playwright && playwright install chromium
