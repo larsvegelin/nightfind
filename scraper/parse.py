@@ -498,6 +498,8 @@ KV_MAP: list[tuple[str, str]] = [
     (r"toewijzing|selectiemodel|verdeelmodel|woonruimteverdeling|wijze van|verdeling|advertentiemodel", "allocation_model"),
     (r"verhuurder|corporatie|aangeboden door|makelaar|eigenaar|woningcorporatie", "landlord"),
     (r"^wijk|^buurt", "neighbourhood"),
+    (r"^(woon)?plaats$|^stad$|^gemeente$", "city"),
+    (r"^adres$|^straat( en huisnummer)?$", "street_raw"),
     (r"aantal reacties|^reacties", "reactions"),
     (r"minimale huurperiode|huurperiode|contractduur|looptijd", "contract"),
 ]

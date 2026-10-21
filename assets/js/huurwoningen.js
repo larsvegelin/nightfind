@@ -13,7 +13,11 @@ const STATUS_HINT = {
     gesloten: 'Reactietermijn voorbij – woning wordt toegewezen',
     offline: 'Advertentie verdwenen – waarschijnlijk verhuurd'
 };
-const SOURCE_PRIORITY = ['svnk', 'woonmatch_wf', 'woonmatch_kopnh', 'funda', 'pararius', 'huurwoningen', 'kamernet'];
+// Bij dubbele advertenties wint: corporatie > makelaar/verhuurder zelf > Funda > Pararius > rest
+const TYPE_RANK = { corporatie: 0, makelaar: 1, verhuurder: 1, platform: 2 };
+const PLATFORM_ORDER = ['funda', 'pararius', 'huurwoningen', 'kamernet'];
+const TYPE_LABELS = { corporatie: 'Woningcorporaties', platform: 'Huurplatforms', makelaar: 'Makelaars', verhuurder: 'Verhuurders & beleggers' };
+const TYPE_ORDER = ['corporatie', 'platform', 'makelaar', 'verhuurder'];
 const GEMEENTE_ORDER = ['Alkmaar', 'Dijk en Waard', 'Schagen', 'Koggenland'];
 const SEGMENTS = ['Sociale huur', 'Middenhuur', 'Vrije sector'];
 const DEFAULT_STATUSES = ['beschikbaar', 'onder_optie', 'verhuurd_ovb', 'gesloten', 'verhuurd'];
@@ -114,8 +118,15 @@ async function loadData() {
 }
 
 function priority(l) {
-    const i = SOURCE_PRIORITY.indexOf(l.source);
-    return i < 0 ? 99 : i;
+    const i = PLATFORM_ORDER.indexOf(l.source);
+    return (TYPE_RANK[l.source_type] ?? 3) * 100 + (i < 0 ? 50 : i);
+}
+
+function byType(items, typeOf) {
+    const groups = {};
+    for (const it of items) (groups[typeOf(it)] = groups[typeOf(it)] || []).push(it);
+    const order = [...TYPE_ORDER, ...Object.keys(groups).filter((t) => !TYPE_ORDER.includes(t)).sort()];
+    return order.filter((t) => groups[t]).map((t) => [t, groups[t]]);
 }
 
 // Zelfde adres op meerdere sites -> één woning met "Ook op"
@@ -375,12 +386,31 @@ function renderSources() {
         $('sources').innerHTML = '';
         return;
     }
-    $('sources').innerHTML = runs.map((r) => {
+    const pill = (r) => {
         const cls = r.status === 'ok' ? 'ok' : r.status === 'fout' ? 'fout' : 'leeg';
         const detail = r.status === 'ok' ? `${r.count}` : r.status === 'fout' ? 'fout' : 'leeg';
         const title = [r.description, r.error, ...(r.notes || []), r.scraped_at ? `Gescand: ${fmtDateTime(r.scraped_at)}` : ''].filter(Boolean).join('\n');
-        return `<span class="source-pill ${cls}" title="${escapeHtml(title)}"><i class="dot"></i><strong>${escapeHtml(r.name)}</strong> ${escapeHtml(detail)}</span>`;
-    }).join('');
+        const url = safeUrl(r.url);
+        const name = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(r.name)}</a>` : escapeHtml(r.name);
+        return `<span class="source-pill ${cls}" title="${escapeHtml(title)}"><i class="dot"></i><strong>${name}</strong> ${escapeHtml(detail)}</span>`;
+    };
+    const ok = runs.filter((r) => r.status === 'ok').length;
+    const err = runs.filter((r) => r.status === 'fout').length;
+    const empty = runs.length - ok - err;
+    const summary = [
+        `<span class="source-pill ok"><i class="dot"></i>${ok} werken</span>`,
+        err ? `<span class="source-pill fout"><i class="dot"></i>${err} met fout</span>` : '',
+        empty ? `<span class="source-pill leeg"><i class="dot"></i>${empty} leeg</span>` : ''
+    ].join('');
+    $('sources').innerHTML = `
+        <details class="sources-box">
+            <summary><strong>${runs.length} bronnen</strong>${summary}<span class="muted">Toon alle bronnen</span></summary>
+            ${byType(runs, (r) => r.type).map(([t, list]) => `
+                <div class="source-group">
+                    <h3>${escapeHtml(TYPE_LABELS[t] || t)} <span class="muted">(${list.length})</span></h3>
+                    <div class="sources-pills">${list.map(pill).join('')}</div>
+                </div>`).join('')}
+        </details>`;
 }
 
 function chip(attrs, label, count, pressed, dotCls = '') {
@@ -420,9 +450,14 @@ function renderFilterControls() {
     const baseSource = all.filter((v) => matches(v, f, 'source'));
     const sc = {};
     for (const v of baseSource) for (const s of new Set(v.members.map((m) => m.source))) sc[s] = (sc[s] || 0) + 1;
-    const sources = (state.data?.sources || []).map((r) => ({ id: r.id, name: r.name }));
+    const sources = (state.data?.sources || []).filter((r) => sc[r.id] || f.sources.includes(r.id));
     $('sourceChips').innerHTML = sources.length
-        ? sources.map((s) => chip(`data-source="${escapeHtml(s.id)}"`, s.name, sc[s.id] || 0, f.sources.includes(s.id))).join('')
+        ? byType(sources, (r) => r.type).map(([t, list]) => `
+            <div class="place-group">
+                <h3><button type="button" data-sourcetype="${escapeHtml(t)}" title="Alle ${escapeHtml((TYPE_LABELS[t] || t).toLowerCase())} aan/uit">${escapeHtml(TYPE_LABELS[t] || t)}</button></h3>
+                <div class="chips">${list.sort((a, b) => (sc[b.id] || 0) - (sc[a.id] || 0) || a.name.localeCompare(b.name, 'nl'))
+                    .map((r) => chip(`data-source="${escapeHtml(r.id)}"`, r.name, sc[r.id] || 0, f.sources.includes(r.id))).join('')}</div>
+            </div>`).join('')
         : '<p class="muted">Nog geen bronnen</p>';
 
     const baseSeg = all.filter((v) => matches(v, f, 'segment'));
@@ -594,6 +629,11 @@ function bindEvents() {
         else if (b.dataset.status) update({ statuses: toggleIn(f.statuses, b.dataset.status) });
         else if (b.dataset.place) update({ places: toggleIn(f.places, b.dataset.place) });
         else if (b.dataset.source) update({ sources: toggleIn(f.sources, b.dataset.source) });
+        else if (b.dataset.sourcetype) {
+            const ids = [...b.closest('.place-group').querySelectorAll('[data-source]')].map((x) => x.dataset.source);
+            const allOn = ids.every((id) => f.sources.includes(id));
+            update({ sources: allOn ? f.sources.filter((id) => !ids.includes(id)) : [...new Set([...f.sources, ...ids])] });
+        }
         else if (b.dataset.segment) update({ segments: toggleIn(f.segments, b.dataset.segment) });
         else if (b.dataset.gemeente) {
             const g = b.dataset.gemeente;

@@ -104,8 +104,9 @@ WOONMATCH_SUBDOMEINEN: dict[str, str] = {
 }
 
 # ---------------------------------------------------------------------------
-# Bronnen. 'type' is "corporatie" (sociale huur via woonruimteverdeling) of
-# "commercieel" (vrije sector / particulier).
+# Bronnen. 'type' is "corporatie" (sociale huur via woonruimteverdeling),
+# "platform" (huursites), "makelaar" of "verhuurder" (belegger/verhuurorganisatie).
+# Makelaars en verhuurders staan in scraper/sites.py.
 # ---------------------------------------------------------------------------
 BRONNEN: dict[str, dict] = {
     "svnk": {
@@ -131,30 +132,34 @@ BRONNEN: dict[str, dict] = {
     },
     "funda": {
         "naam": "Funda",
-        "type": "commercieel",
+        "type": "platform",
         "base": "https://www.funda.nl",
         "omschrijving": "Makelaars en particuliere verhuurders",
     },
     "pararius": {
         "naam": "Pararius",
-        "type": "commercieel",
+        "type": "platform",
         "base": "https://www.pararius.nl",
         "omschrijving": "Verhuurmakelaars",
     },
     "huurwoningen": {
         "naam": "Huurwoningen.nl",
-        "type": "commercieel",
+        "type": "platform",
         "base": "https://www.huurwoningen.nl",
         "omschrijving": "Verhuurmakelaars en particulieren",
     },
     "kamernet": {
         "naam": "Kamernet",
-        "type": "commercieel",
+        "type": "platform",
         "base": "https://kamernet.nl",
         "zoekplaatsen": ["Alkmaar", "Heerhugowaard", "Schagen"],
         "omschrijving": "Kamers, studio's en appartementen",
     },
 }
+
+from .sites import EXTRA_BRONNEN  # noqa: E402  (makelaars, verhuurders, extra platforms)
+
+BRONNEN.update(EXTRA_BRONNEN)
 
 # Volgorde waarin dubbele advertenties (zelfde adres) als hoofdadvertentie gelden
 BRON_PRIORITEIT = ["svnk", "woonmatch_wf", "woonmatch_kopnh", "funda", "pararius", "huurwoningen", "kamernet"]

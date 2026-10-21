@@ -18,6 +18,24 @@ Nog niet gekoppeld aan Supabase: de veldnamen zijn wel al zo gekozen dat ze 1-op
 
 De corporaties zelf (Woonwaard, Van Alckmaer, Kennemer Wonen, Wooncompagnie) adverteren hun sociale huurwoningen verplicht via SVNK of Woonmatch, dus die worden daar meegenomen.
 
+### Makelaars, verhuurders en extra platforms
+
+Lokale makelaars, verhuurorganisaties/beleggers en kleinere huursites staan in `scraper/sites.py` en gebruiken de generieke scraper (`scraper/sources/generic.py`). Die herkent zelf de woningkaarten op een overzichtspagina (links op dezelfde site met een huurprijs), slaat koopwoningen over, volgt volgende pagina's en leest daarna de detailpagina's.
+
+Een makelaar toevoegen is één blok in `scraper/sites.py`:
+
+```python
+"mijnmakelaar": {
+    "naam": "Mijn Makelaar",
+    "type": "makelaar",                      # of "verhuurder" / "platform"
+    "base": "https://www.mijnmakelaar.nl",
+    "lijst": ["https://www.mijnmakelaar.nl/aanbod/woningaanbod/huur/"],
+    "plaatsen": ["Alkmaar"],
+},
+```
+
+Optioneel: `"zoek_url": "https://site.nl/huren/{slug}/"` (één pagina per zoekplaats), `"detail": r"regex"` als de automatische herkenning de verkeerde links pakt, en `"render": True` voor sites die JavaScript nodig hebben.
+
 ## Installeren en draaien
 
 Vanuit de hoofdmap van het project:
@@ -26,6 +44,7 @@ Vanuit de hoofdmap van het project:
 pip install -r scraper/requirements.txt
 python -m scraper                      # alle bronnen
 python -m scraper --bronnen svnk,funda # alleen deze bronnen
+python -m scraper --soort makelaars    # alleen makelaars (ook: corporatie, platform, verhuurder)
 python -m scraper --lijst              # toon bron-id's
 ```
 

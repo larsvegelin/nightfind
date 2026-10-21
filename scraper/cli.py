@@ -11,6 +11,7 @@ from pathlib import Path
 from . import config, model, store
 from .fetch import FetchError, Fetcher
 from .sources import REGISTRY
+from .sources.generic import GenericSite
 from .sources.base import Options
 
 
@@ -20,6 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Scrapet huurwoningen in Alkmaar, Dijk en Waard, Schagen, Obdam en Ursem naar data/huurwoningen.json",
     )
     ap.add_argument("--bronnen", help="komma-gescheiden bron-id's, bijv. svnk,funda (standaard: alle). Zie --lijst")
+    ap.add_argument("--soort", help="alleen bronnen van dit type: corporatie, platform, makelaar, verhuurder (komma-gescheiden)")
     ap.add_argument("--lijst", action="store_true", help="toon beschikbare bronnen en stop")
     ap.add_argument("--browser", choices=["auto", "altijd", "nooit"], default="auto",
                     help="Playwright gebruiken: auto = alleen bij blokkade/JS-pagina's (standaard)")
@@ -38,14 +40,22 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.lijst:
         for sid, cfg in config.BRONNEN.items():
-            print(f"{sid:16} {cfg['naam']:26} {cfg['type']:12} {cfg['base']}")
+            print(f"{sid:28} {cfg['naam']:34} {cfg['type']:11} {cfg['base']}")
+        print(f"\n{len(config.BRONNEN)} bronnen")
         return 0
 
     wanted = list(config.BRONNEN) if not args.bronnen else [s.strip() for s in args.bronnen.split(",") if s.strip()]
     unknown = [s for s in wanted if s not in config.BRONNEN]
     if unknown:
-        print(f"Onbekende bron(nen): {', '.join(unknown)}. Kies uit: {', '.join(config.BRONNEN)}", file=sys.stderr)
+        print(f"Onbekende bron(nen): {', '.join(unknown)}. Zie: python -m scraper --lijst", file=sys.stderr)
         return 2
+    if args.soort:
+        # 'makelaars' en 'makelaar' werken allebei
+        types = {t.strip().lower().rstrip("s") for t in args.soort.split(",") if t.strip()}
+        wanted = [s for s in wanted if config.BRONNEN[s]["type"].rstrip("s") in types]
+        if not wanted:
+            print("Geen bronnen van dat type. Kies uit: corporatie, platform, makelaar, verhuurder", file=sys.stderr)
+            return 2
 
     today = date.today()
     previous = store.load(args.uitvoer)
@@ -63,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
             run = {"id": sid, "name": cfg["naam"], "type": cfg["type"], "url": cfg["base"], "description": cfg.get("omschrijving"),
                    "status": "ok", "count": 0, "found": 0, "complete": True, "error": None, "notes": [], "scraped_at": store.now_iso()}
             try:
-                source = REGISTRY[sid](cfg, fetcher, opts, log=print)
+                source = REGISTRY.get(sid, GenericSite)(cfg, fetcher, opts, log=print)
                 result = source.scrape()
                 kept, skipped_no_city = [], 0
                 for listing in result.listings:

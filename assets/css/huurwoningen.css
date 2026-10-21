@@ -115,6 +115,19 @@ button.kpi[aria-pressed="true"] { border-color: var(--purple); background: #160f
 .source-pill.fout .dot { color: var(--st-rented); }
 .source-pill.leeg .dot { color: var(--st-option); }
 .source-pill.niet .dot { color: var(--st-offline); }
+.source-pill a { color: inherit; text-decoration: none; }
+.source-pill a:hover { text-decoration: underline; }
+.sources-box { width: 100%; }
+.sources-box summary {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; cursor: pointer; list-style: none;
+    font-size: 0.9rem;
+}
+.sources-box summary::-webkit-details-marker { display: none; }
+.sources-box summary .muted { font-size: 0.8rem; text-decoration: underline; text-underline-offset: 3px; }
+.sources-box[open] summary .muted { display: none; }
+.source-group { margin-top: 0.85rem; }
+.source-group h3 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); font-weight: 600; margin-bottom: 0.4rem; }
+.sources-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 /* Filters */
 .filters { display: grid; gap: 1.1rem; position: sticky; top: 76px; max-height: calc(100vh - 92px); overflow-y: auto; }
