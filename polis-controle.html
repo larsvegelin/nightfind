@@ -104,6 +104,11 @@
   .banner.info{background:var(--dwa-goud-60);border-color:var(--dwa-goud)}
   .banner.fail{background:var(--fail-soft);border-color:var(--fail);color:var(--fail-tekst,#96302f)}
   .banner.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+  .proefsectie{border:1px solid var(--fail);border-radius:var(--radius);background:var(--wit);margin-bottom:14px;overflow:hidden}
+  .proefsectie>summary{cursor:pointer;font-weight:800;color:var(--fail);background:var(--fail-soft);padding:10px 14px}
+  .proefsectie .proefuitleg{margin:10px 14px;font-size:.88rem;color:var(--ink-2)}
+  .proefsectie .tablewrap{margin:0 14px 14px}
+  .proefsectie button.pa-ga{padding:4px 10px;font-size:.8rem}
   .dekkingregel{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;background:var(--warn-soft);border:1px solid var(--dwa-goud);border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:.92rem}
   .dekkingregel .lbl{font-weight:800;color:var(--dwa-groen);margin-right:4px}
   .dekkingregel .d-nieuw{font-weight:700}
@@ -118,7 +123,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 22</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 23</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -155,6 +160,7 @@
   </section>
 
   <section id="samenvatting"></section>
+  <section id="proefacceptatie"></section>
   <section id="navigatie"></section>
   <section id="klant" aria-live="polite"></section>
 
@@ -185,6 +191,7 @@
     ["mij2",35,"2e maatschappij"],["oudpolisnr2",36,null],
     ["tekst1",37,"tekst 1"],["tekst2",38,"tekst 2"],["tekst3",39,"tekst 3"],["tekst4",40,"tekst 4"],["tekst5",41,"tekst 5"],
     ["clausule",43,"clausule 10"],
+    ["clausule1",null,/clausule ?1(?!\d)/],
     ["verzbedraga",44,"verzekerd bedrag a"],["agentprov",45,"agent 1 provisie"]
   ];
   var PRODUCTEN = [
@@ -268,13 +275,15 @@
     "8\t3602\t\tN200\tNationale-Nederlanden Schadeverz My\t6503\tAansprakelijkheid Bedrijven\t#0376\t801058468\t2\t1-1-2027\t1-1-2027\t1-1-2027\t1-1-2027\t\t1\t\t35,86\t800743121\tJ\t1\t48994\t0\tN\tN\tN\tN\tN\tN\t500\t2500000\tJ\t2028\t23\tPRO23\tW740\t800743121\t\t\t\t\t\t\tO2602\t0\t23"
   ].join("\n");
   // Voorbeeld uitbreiden met de dekkingkolom (rijen eerst aanvullen tot de koplengte).
-  function metDekking(text,waarden){
+  function metKolom(text,kop,waarden){
     var L=text.split("\n"), n=L[0].split("\t").length;
-    L[0]+="\tDekking+WachtOms->Dekking";
+    L[0]+="\t"+kop;
     for(var i=1;i<L.length;i++){ var c=L[i].split("\t"); while(c.length<n) c.push(""); c.length=n; c.push(waarden[i-1]||""); L[i]=c.join("\t"); }
     return L.join("\n");
   }
-  SAMPLE_AVB = metDekking(SAMPLE_AVB,["Bedrijfsaansprakelijkheid","AVB standaard","Bedrijfsaansprakelijkheid"]);
+  SAMPLE_AVB = metKolom(SAMPLE_AVB,"Dekking+WachtOms->Dekking",["Bedrijfsaansprakelijkheid","AVB standaard","Bedrijfsaansprakelijkheid"]);
+  // Clausule 1 (proefacceptatie) als laatste kolom: rel 982 nog leeg, rel 3602 gevuld.
+  SAMPLE_AVB = metKolom(SAMPLE_AVB,"Polis+Wacht->Clausule 1",["","","PA01"]);
   var SAMPLES = { avb: SAMPLE_AVB };
 
   /* ================= Helpers ================= */
@@ -283,11 +292,14 @@
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];}); }
   function dash(v){ return String(v==null?"":v).trim()===""?"—":v; }
 
+  // Een zoekterm is tekst (komt voor in de kop) of een RegExp (exacte match,
+  // bijv. 'Clausule 1' zonder 'Clausule 10' te raken).
+  function kopPast(h,needle){ return needle instanceof RegExp ? needle.test(h) : h.indexOf(needle)!==-1; }
   function mapColumns(header, cols){
     var map={}, used={}, heads=header.map(norm);
     cols.forEach(function(c){
       var key=c[0], fallback=c[1], needle=c[2], idx=-1;
-      if(needle){ for(var i=0;i<heads.length;i++){ if(heads[i].indexOf(needle)!==-1 && !used[i]){ idx=i; break; } } }
+      if(needle){ for(var i=0;i<heads.length;i++){ if(kopPast(heads[i],needle) && !used[i]){ idx=i; break; } } }
       if(idx===-1 && key==="oudpolisnr2"){ for(var j=heads.length-1;j>=0;j--){ if(heads[j].indexOf("polisnr. oude mij")!==-1 && !used[j]){ idx=j; break; } } }
       if(idx===-1) idx=fallback;
       used[idx]=true; map[key]=idx;
@@ -537,7 +549,25 @@
       c.push({label:"Dekkingen (oud en nieuw controleren)", oud:"—", nieuw:"—", status:"warn",
           note:"Kolom 'Dekking' ontbreekt in deze export — voeg hem toe aan de selectie"});
     }
+    // 15. Proefacceptatie (laatste controle, alle producten): Clausule 1 van de
+    // nieuwe polis moet gevuld zijn; leeg = proefacceptatie niet uitgevoerd.
+    var pa=proefStatus(nieuw);
+    if(pa==="geenkolom"){
+      c.push({label:"Proefacceptatie (Clausule 1)", oud:"—", nieuw:"—", status:"warn",
+          note:"Kolom 'Clausule 1' ontbreekt in deze export — voeg hem toe aan de selectie"});
+    } else {
+      c.push({label:"Proefacceptatie (Clausule 1)", oud:txt(oud.row,oud.map,"clausule1"), nieuw:txt(nieuw.row,nieuw.map,"clausule1"),
+          status:pa==="ok"?"ok":"fail",
+          note:pa==="ok"?"Clausule 1 gevuld — proefacceptatie uitgevoerd":"Clausule 1 is leeg — proefacceptatie niet uitgevoerd"});
+    }
     return c;
+  }
+
+  // Proefacceptatie op een (nieuwe) polis: "ok" (Clausule 1 gevuld), "niet"
+  // (leeg) of "geenkolom" (de export heeft geen kolom Clausule 1).
+  function proefStatus(rec){
+    if(!rec || rec.map.clausule1==null || rec.map.clausule1<0) return "geenkolom";
+    return txt(rec.row,rec.map,"clausule1")!=="" ? "ok" : "niet";
   }
 
   /* ================= State per product ================= */
@@ -606,6 +636,8 @@
       var status=checks.some(function(c){return c.status==="fail";})?"fail":(checks.some(function(c){return c.status==="warn";})?"warn":"ok");
       return {pair:pr,status:status,checks:checks,orphan:false};
     });
+    // Proefacceptatie per nieuwe polis (ook bij 'nog invoeren').
+    results.forEach(function(r){ r.proef=proefStatus(r.pair.nieuw); });
     // Meerdere AVB's per klant: nummer ze per relatienummer (AVB 1 van 2, ...).
     var relTot={}, relSeen={};
     results.forEach(function(r){ var rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr"); relTot[rel]=(relTot[rel]||0)+1; });
@@ -631,7 +663,7 @@
     // Ruimte voor toekomstige producten (uitgeschakeld tot ze zijn toegevoegd).
     var toekomst=document.createElement("button");
     toekomst.textContent="Meer producten volgen";
-    toekomst.disabled=true; toekomst.title="AVB, Eigen vervoer en Bedrijfsgebouw zijn beschikbaar. Andere producten worden later toegevoegd.";
+    toekomst.disabled=true; toekomst.title="Alle producten met een eigen selectie staan hierboven. Nieuwe producten worden later toegevoegd.";
     bar.appendChild(toekomst);
   }
 
@@ -644,16 +676,17 @@
       $("selectiehint").innerHTML = (p.selectie
         ? ('Upload de export van <strong>'+esc(p.naam)+'</strong> &middot; selectie <code>'+esc(p.selectie)+'</code>')
         : ('Upload de export van <strong>'+esc(p.naam)+'</strong>'))+
-        ' &middot; inclusief kolom <code>Dekking</code>';
+        ' &middot; inclusief kolommen <code>Dekking</code> en <code>Clausule 1</code>';
     }
   }
 
   function renderAll(){
     var s=st();
     renderProductTabs(); // markering 'actief' moet meelopen met het gekozen tabblad
+    $("proefacceptatie").innerHTML="";
     if(!s.results){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner info">Upload een export voor <strong>'+esc(prod().naam)+'</strong> (of klik op &laquo;Voorbeeld laden&raquo;) om te beginnen.</div>'; renderFooter(); return; }
     if(s.results.error){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner fail">'+esc(s.results.error)+'</div>'; renderFooter(); return; }
-    renderSamenvatting(); renderNavigatie(); renderKlant(); renderFooter();
+    renderSamenvatting(); renderProefacceptatie(); renderNavigatie(); renderKlant(); renderFooter();
     $("export").disabled=false;
   }
 
@@ -663,12 +696,53 @@
     var failN=res.filter(function(r){return r.status==="fail";}).length;
     var warnN=res.filter(function(r){return r.status==="warn";}).length;
     var los=d.losseOud.length+d.onbekend.length;
+    var geenPa=res.filter(function(r){return r.proef==="niet";}).length;
+    var paKolom=res.some(function(r){return r.proef!=="geenkolom";});
     var html="";
     if(s.isSample) html+='<div class="banner info"><strong>Voorbeeldgegevens.</strong> Upload je eigen export om je eigen bestand te controleren.</div>';
     html+='<h2>Samenvatting — '+esc(prod().naam)+' ('+esc(prod().titel)+')</h2><div class="tiles">'+
       tile(res.length,"polisparen","")+tile(okN,"akkoord","ok")+tile(warnN,"let op",warnN?"warn":"")+
-      tile(failN,"met afwijking",failN?"fail":"")+tile(los,"losse regels",los?"warn":"")+'</div>';
+      tile(failN,"met afwijking",failN?"fail":"")+tile(los,"losse regels",los?"warn":"")+
+      (paKolom?tile(geenPa,"proefacceptatie niet uitgevoerd",geenPa?"fail":"ok"):"")+'</div>';
     $("samenvatting").innerHTML=html;
+  }
+
+  // Aparte sectie per product: alle nieuwe polissen waarvan Clausule 1 leeg is
+  // (proefacceptatie niet uitgevoerd), met een knop om naar de klant te springen.
+  function renderProefacceptatie(){
+    var s=st(), res=s.results.results, box=$("proefacceptatie");
+    if(!res.length){ box.innerHTML=""; return; }
+    if(!res.some(function(r){return r.proef!=="geenkolom";})){
+      box.innerHTML='<div class="banner warn"><strong>Proefacceptatie niet te controleren.</strong> De kolom <code>Clausule 1</code> ontbreekt in deze export &mdash; voeg hem toe aan de selectie'+(prod().selectie?' <code>'+esc(prod().selectie)+'</code>':'')+'.</div>';
+      return;
+    }
+    var lijst=[]; res.forEach(function(r,i){ if(r.proef==="niet") lijst.push(i); });
+    if(!lijst.length){
+      box.innerHTML='<div class="banner ok">&#10003; Proefacceptatie &mdash; '+esc(prod().naam)+': bij alle '+res.length+' nieuwe polissen is Clausule 1 gevuld.</div>';
+      return;
+    }
+    var rijen=lijst.map(function(i,nr){
+      var r=res[i], n=r.pair.nieuw, o=r.pair.oud;
+      return '<tr class="r-fail"><td class="val">'+(nr+1)+'</td><td>'+esc(klantNaam(r))+'</td>'+
+        '<td class="val">'+esc(dash(txt(n.row,n.map,"polisnr")))+'</td>'+
+        '<td class="val">'+esc(o?dash(txt(o.row,o.map,"polisnr")):"— (nog invoeren)")+'</td>'+
+        '<td class="val">'+esc(dash(txt(n.row,n.map,"kantoor")))+'</td>'+
+        '<td class="val">'+esc(dash(txt(n.row,n.map,"hvd")))+'</td>'+
+        '<td><span class="badge '+r.status+'">'+esc(statusWoord(r))+'</span></td>'+
+        '<td><button type="button" class="ghost pa-ga" data-idx="'+i+'">Bekijk</button></td></tr>';
+    }).join("");
+    box.innerHTML='<details class="proefsectie" open><summary>&#10007; Proefacceptatie niet uitgevoerd &mdash; '+esc(prod().naam)+' ('+lijst.length+' van '+res.length+')</summary>'+
+      '<p class="proefuitleg">Bij deze nieuwe polissen is <code>Clausule 1</code> leeg: de proefacceptatie is nog niet gedaan.</p>'+
+      '<div class="tablewrap"><table><thead><tr><th>#</th><th>Klant</th><th>Polisnr nieuw</th><th>Polisnr oud</th><th>Kantoor</th><th>Hoofdvervaldatum</th><th>Status</th><th></th></tr></thead><tbody>'+
+      rijen+'</tbody></table></div></details>';
+    box.querySelectorAll(".pa-ga").forEach(function(b){
+      b.onclick=function(){
+        // Filters die deze klant zouden verbergen uitzetten en erheen springen.
+        s.filterTermijn=""; s.filterKantoor=""; s.idx=parseInt(this.getAttribute("data-idx"),10)||0;
+        renderNavigatie(); renderKlant();
+        var k=$("navigatie"); if(k&&k.scrollIntoView) k.scrollIntoView({behavior:"smooth",block:"start"});
+      };
+    });
   }
 
   function statusWoord(r){
@@ -790,6 +864,10 @@
       // Clausule O2602 wordt ook op deze losse nieuwe polis gecontroleerd.
       var oCode=n.row.some(function(cell){ return String(cell==null?"":cell).toUpperCase().indexOf("O2602")!==-1; });
       html+='<div class="banner '+(oCode?"ok":"fail")+'">Clausule O2602 op de nieuwe polis: '+(oCode?"aanwezig &#10003;":"ontbreekt &#10007;")+'</div>';
+      // Proefacceptatie (Clausule 1) ook op deze losse nieuwe polis.
+      html+=r.proef==="geenkolom"
+        ? '<div class="banner warn">Proefacceptatie: kolom <code>Clausule 1</code> ontbreekt in deze export.</div>'
+        : '<div class="banner '+(r.proef==="ok"?"ok":"fail")+'">Proefacceptatie (Clausule 1): '+(r.proef==="ok"?"uitgevoerd &#10003;":"niet uitgevoerd &#10007; &mdash; Clausule 1 is leeg")+'</div>';
       $("klant").innerHTML=html; return;
     }
     // Bij 'Alleen afwijkingen' tonen we alleen de afwijkende regels (fout/let op),
@@ -840,6 +918,14 @@
       });
     });
     d.losseOud.forEach(function(r){ lines.push("Regel "+r.line+": oude polis "+txt(r.row,r.map,"polisnr")+" zonder nieuwe polis"); });
+    var geenPa=d.results.filter(function(r){ return r.proef==="niet"; });
+    if(geenPa.length){
+      lines.push("","PROEFACCEPTATIE NIET UITGEVOERD (Clausule 1 leeg) — "+geenPa.length);
+      geenPa.forEach(function(r){
+        var n=r.pair.nieuw,o=r.pair.oud;
+        lines.push("   Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+(o?" | oud "+txt(o.row,o.map,"polisnr"):" | nog invoeren"));
+      });
+    }
     return lines.join("\n");
   }
 
