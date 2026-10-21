@@ -592,6 +592,11 @@ python -m scraper</code></pre>
                     </label>
                     <p class="form-msg" id="dataFileMsg" role="status"></p>
                 </div>
+                <div class="empty card" id="emptyLive" hidden>
+                    <h2>Gekoppeld met Supabase – nog geen woningen</h2>
+                    <p class="muted">De verbinding werkt, maar de scraper heeft nog niets weggeschreven. Zodra de eerste run klaar is (GitHub Actions, elke 3 uur, of <code>python -m scraper</code> met de Supabase-sleutel) verschijnen de woningen hier vanzelf.</p>
+                    <p class="muted">Ververs de pagina of open hem later opnieuw.</p>
+                </div>
                 <div class="empty card" id="emptyFiltered" hidden>
                     <h2>Geen woningen gevonden</h2>
                     <p class="muted">Pas de filters aan of wis ze om alles te zien.</p>
@@ -737,10 +742,12 @@ python -m scraper</code></pre>
         // Supabase-project "scraper". De publishable key mag openbaar zijn: lezen kan alleen met de toegangscode.
         const SUPABASE = { url: 'https://gpkohiyzdjyehqdkgpdb.supabase.co', key: 'sb_publishable_Dtsp2Q9T8svTU3DmYCzzVg_hGDaztE2' };
         const CODE_KEY = 'huurwoningen.code.v1';
+        // Persoonlijke kopie: vul hier de toegangscode in, dan koppelt de pagina meteen. Nooit invullen in de openbare repo!
+        const PRESET_CODE = '';
         const REFRESH_AFTER_MS = 10 * 60 * 1000;
 
         function getCode() {
-            try { return localStorage.getItem(CODE_KEY) || ''; } catch { return ''; }
+            try { return localStorage.getItem(CODE_KEY) || PRESET_CODE; } catch { return PRESET_CODE; }
         }
         function setCode(code) {
             try {
@@ -823,6 +830,7 @@ python -m scraper</code></pre>
 
         function openCodeDialog() {
             $('codeInput').value = getCode();
+            $('codeForget').hidden = Boolean(PRESET_CODE);
             $('codeInput').type = 'password';
             $('codeShow').checked = false;
             $('codeMsg').textContent = state.liveError || '';
@@ -1247,7 +1255,9 @@ python -m scraper</code></pre>
             const list = sortGroups(state.groups.filter((v) => matches(v, f)), f.sort);
             state.visible = list;
             const hasData = (state.data?.listings || []).length > 0;
-            $('emptyNoData').hidden = hasData;
+            const liveEmpty = !hasData && Boolean(state.data?.live);
+            $('emptyNoData').hidden = hasData || liveEmpty;
+            $('emptyLive').hidden = !liveEmpty;
             $('emptyFiltered').hidden = !hasData || list.length > 0;
             const countText = hasData ? `${list.length} ${list.length === 1 ? 'woning' : 'woningen'}` : '';
             $('resultCount').textContent = countText;
