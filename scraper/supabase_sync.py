@@ -1,13 +1,17 @@
 """Wegschrijven naar Supabase (project "scraper"): huur_woningen, huur_bronnen en huur_instellingen.
 
-Sleutel: de service-role/secret key in de omgevingsvariabele SUPABASE_SERVICE_ROLE_KEY
-(of SUPABASE_SECRET_KEY), eventueel in een `.env`-bestand in de projectmap (staat in .gitignore).
-Deze sleutel mag NOOIT in de HTML-pagina of in git terechtkomen.
+Twee manieren:
+1. In GitHub Actions (geen sleutel nodig): via de Edge Function `huur-import`, met een kortlevend
+   OIDC-token van GitHub. Die functie accepteert alleen de workflow huurwoningen.yml van deze repo.
+2. Vanaf je eigen computer: met de service-role/secret key in SUPABASE_SERVICE_ROLE_KEY
+   (of SUPABASE_SECRET_KEY), eventueel in een `.env`-bestand in de projectmap (staat in .gitignore).
+   Deze sleutel mag NOOIT in de HTML-pagina of in git terechtkomen.
 """
 from __future__ import annotations
 
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
@@ -22,6 +26,8 @@ BRON_COLUMNS = ["id", "name", "type", "url", "description", "url_checked", "stat
                 "complete", "error", "notes", "scraped_at", "duration_s"]
 JSON_LIST_COLUMNS = {"images", "features", "status_history"}
 PAGE_SIZE = 1000
+FUNCTION_NAME = "huur-import"
+OIDC_AUDIENCE = "nightfind-huurwoningen"
 
 
 class SupabaseError(Exception):
@@ -91,6 +97,72 @@ class Supabase:
                       headers={"Prefer": "return=minimal"})
 
 
+class EdgeClient:
+    """Schrijft via de Edge Function `huur-import` met een GitHub OIDC-token (alleen binnen GitHub Actions)."""
+
+    def __init__(self, url: str, token_url: str, request_token: str, session: requests.Session | None = None, timeout: float = 150) -> None:
+        self.endpoint = f"{url.rstrip('/')}/functions/v1/{FUNCTION_NAME}"
+        self.token_url = token_url
+        self.request_token = request_token
+        self.timeout = timeout
+        self.session = session or requests.Session()
+        self._token: str | None = None
+        self._token_at = 0.0
+
+    @classmethod
+    def from_github_env(cls) -> "EdgeClient | None":
+        token_url = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL")
+        request_token = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+        if not token_url or not request_token:
+            return None
+        return cls(os.environ.get("SUPABASE_URL") or DEFAULT_URL, token_url, request_token)
+
+    def _oidc(self) -> str:
+        # GitHub-tokens leven kort: elke 4 minuten een nieuwe ophalen
+        if self._token and time.time() - self._token_at < 240:
+            return self._token
+        sep = "&" if "?" in self.token_url else "?"
+        try:
+            r = self.session.get(f"{self.token_url}{sep}audience={OIDC_AUDIENCE}",
+                                 headers={"Authorization": f"bearer {self.request_token}"}, timeout=30)
+        except requests.RequestException as e:
+            raise SupabaseError(f"GitHub-token ophalen mislukt: {e}") from e
+        if r.status_code >= 400:
+            raise SupabaseError(f"GitHub-token ophalen mislukt: HTTP {r.status_code}")
+        self._token = r.json()["value"]
+        self._token_at = time.time()
+        return self._token
+
+    def _call(self, payload: dict) -> dict:
+        body = json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8")
+        try:
+            r = self.session.post(self.endpoint, data=body, timeout=self.timeout,
+                                  headers={"Content-Type": "application/json", "x-github-oidc": self._oidc()})
+        except requests.RequestException as e:
+            raise SupabaseError(f"geen verbinding met de Edge Function: {e}") from e
+        if r.status_code >= 400:
+            raise SupabaseError(f"{payload.get('action')}: HTTP {r.status_code} {r.text[:300]}")
+        return r.json()
+
+    def select_all(self, table: str) -> list[dict]:
+        return self._call({"action": "select", "table": table})["rows"]
+
+    def upsert(self, table: str, rows: list[dict], batch: int = 200) -> None:
+        for i in range(0, len(rows), batch):
+            self._call({"action": "upsert", "table": table, "rows": rows[i:i + batch]})
+
+    def delete_where_older(self, table: str, column: str, stamp: str) -> None:
+        self._call({"action": "delete_older", "table": table, "column": column, "stamp": stamp})
+
+    def update_settings(self, fields: dict) -> None:
+        self._call({"action": "settings", "fields": fields})
+
+
+def client_from_env():
+    """Service-key (eigen computer) heeft voorrang; anders GitHub Actions via de Edge Function."""
+    return Supabase.from_env() or EdgeClient.from_github_env()
+
+
 def listing_row(listing: dict, stamp: str) -> dict:
     row: dict = {}
     for col in LISTING_COLUMNS:
@@ -114,7 +186,7 @@ def bron_row(run: dict) -> dict:
     return row
 
 
-def load_previous(client: Supabase) -> dict:
+def load_previous(client) -> dict:
     """Vorige stand uit Supabase (als er lokaal nog geen data/huurwoningen.json is, bijv. in GitHub Actions)."""
     listings = client.select_all("huur_woningen")
     for l in listings:
@@ -122,7 +194,7 @@ def load_previous(client: Supabase) -> dict:
     return {"generated_at": None, "sources": client.select_all("huur_bronnen"), "listings": listings}
 
 
-def sync(data: dict, client: Supabase, log=print) -> dict:
+def sync(data: dict, client, log=print) -> dict:
     """Schrijft de complete stand weg. Woningen die niet meer in de lijst staan (na 60 dagen offline) worden verwijderd."""
     stamp = datetime.now(timezone.utc).isoformat(timespec="microseconds")
     rows = [listing_row(l, stamp) for l in data.get("listings", [])]

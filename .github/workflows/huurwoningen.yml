@@ -3,10 +3,10 @@ name: Huurwoningen scrapen
 # Scrapet de huurwoningen (alle bronnen behalve SVNK, die staat standaard uit) en schrijft ze naar Supabase
 # (project "scraper", tabellen huur_woningen / huur_bronnen). De pagina huurwoningen.html leest daar live uit.
 #
-# Eenmalig instellen: Settings → Secrets and variables → Actions → New repository secret
-#   Naam:   SUPABASE_SERVICE_ROLE_KEY
-#   Waarde: de service_role- of secret-sleutel uit Supabase (Project Settings → API Keys)
-# Zonder die secret slaat de workflow het scrapen over (geen rode fout).
+# Geen sleutel nodig: de workflow vraagt een kortlevend OIDC-token aan bij GitHub en schrijft via de
+# Supabase Edge Function "huur-import", die alleen deze workflow uit larsvegelin/nightfind accepteert
+# (zie scraper/supabase/functions/huur-import). Een repository secret SUPABASE_SERVICE_ROLE_KEY mag ook;
+# die heeft dan voorrang.
 
 on:
   schedule:
@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write   # voor het GitHub-token waarmee de Edge Function de workflow herkent
 
 concurrency:
   group: huurwoningen-scraper
@@ -31,38 +32,24 @@ jobs:
     env:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
-      - name: Controleer Supabase-sleutel
-        id: check
-        run: |
-          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "::warning title=Supabase-sleutel ontbreekt::Voeg de repository secret SUPABASE_SERVICE_ROLE_KEY toe (Settings → Secrets and variables → Actions). Scrapen overgeslagen."
-            echo "klaar=nee" >> "$GITHUB_OUTPUT"
-          else
-            echo "klaar=ja" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/checkout@v4
-        if: steps.check.outputs.klaar == 'ja'
 
       - uses: actions/setup-python@v5
-        if: steps.check.outputs.klaar == 'ja'
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: scraper/requirements.txt
 
       - name: Installeren (incl. Chromium voor sites die gewone verzoeken blokkeren)
-        if: steps.check.outputs.klaar == 'ja'
         run: |
           pip install -r scraper/requirements.txt playwright
           python -m playwright install --with-deps chromium
 
       - name: Scrapen en naar Supabase schrijven
-        if: steps.check.outputs.klaar == 'ja'
         run: python -m scraper --supabase aan
 
       - name: Resultaat bewaren (7 dagen, voor controle)
-        if: always() && steps.check.outputs.klaar == 'ja'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: huurwoningen-${{ github.run_number }}

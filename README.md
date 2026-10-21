@@ -238,7 +238,7 @@ Overzicht van alle huurwoningen in Alkmaar, Dijk en Waard (Heerhugowaard, Sint P
 - Dezelfde woning op meerdere sites wordt samengevoegd ("Ook op Funda + Pararius")
 
 - **Live uit Supabase** (project "scraper", tabellen `huur_woningen` en `huur_bronnen`): rechtsboven op *Koppelen* tikken en de toegangscode invullen; werkt ook op je telefoon
-- **Automatisch bijgewerkt**: GitHub Actions scrapet elke 3 uur en schrijft naar Supabase (eenmalig de secret `SUPABASE_SERVICE_ROLE_KEY` toevoegen). SVNK staat standaard uit
+- **Automatisch bijgewerkt**: GitHub Actions scrapet elke 3 uur en schrijft via de Edge Function `huur-import` naar Supabase (geen sleutel nodig). SVNK staat standaard uit
 
 Zelf draaien: `pip install -r scraper/requirements.txt` en `python -m scraper` (zie [`scraper/README.md`](scraper/README.md)).
 - **Werkt op telefoon**: filters als schermvullend paneel met "Toon N woningen", vaste werkbalk (filters, sorteren, weergave), grote tikvlakken en geen inzoomen bij typen op iPhone

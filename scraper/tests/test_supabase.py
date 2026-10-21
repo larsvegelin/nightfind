@@ -225,3 +225,103 @@ class CliTests(ServerCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakeEdge(BaseHTTPRequestHandler):
+    """Nabootsing van GitHub's tokenservice (/token) en de Edge Function (/functions/v1/huur-import)."""
+
+    tables: dict = {}
+    calls: list = []
+    tokens_issued = 0
+
+    def log_message(self, *a):
+        pass
+
+    def _send(self, code, body):
+        data = json.dumps(body).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_GET(self):
+        u = urlparse(self.path)
+        ok = u.path == "/token" and parse_qs(u.query).get("audience") == ["nightfind-huurwoningen"] and self.headers.get("Authorization") == "bearer verzoek-token"
+        if not ok:
+            return self._send(403, {"error": "nee"})
+        FakeEdge.tokens_issued += 1
+        self._send(200, {"value": "github-oidc-token"})
+
+    def do_POST(self):
+        if self.path != "/functions/v1/huur-import":
+            return self._send(404, {})
+        if self.headers.get("x-github-oidc") != "github-oidc-token":
+            return self._send(401, {"error": "ongeldig GitHub-token"})
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        FakeEdge.calls.append(body)
+        t = FakeEdge.tables
+        if body["action"] == "select":
+            return self._send(200, {"rows": sorted(t.get(body["table"], {}).values(), key=lambda r: r["id"])})
+        if body["action"] == "upsert":
+            for row in body["rows"]:
+                t.setdefault(body["table"], {})[row["id"]] = row
+            return self._send(200, {"ok": True})
+        if body["action"] == "delete_older":
+            rows = t.get("huur_woningen", {})
+            for rid in [rid for rid, r in rows.items() if r["gesynchroniseerd"] < body["stamp"]]:
+                del rows[rid]
+            return self._send(200, {"ok": True})
+        if body["action"] == "settings":
+            t["huur_instellingen"] = body["fields"]
+            return self._send(200, {"ok": True})
+        self._send(400, {"error": "onbekend"})
+
+
+class EdgeClientTests(unittest.TestCase):
+    def setUp(self):
+        FakeEdge.tables, FakeEdge.calls, FakeEdge.tokens_issued = {}, [], 0
+        self.server = HTTPServer(("127.0.0.1", 0), FakeEdge)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        base = f"http://127.0.0.1:{self.server.server_port}"
+        self.client = supabase_sync.EdgeClient(base, base + "/token", "verzoek-token")
+        self.client.session.trust_env = False
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+    def test_sync_via_edge_function(self):
+        listings = [_listing(str(i)) for i in range(450)]
+        data = {"generated_at": "2026-10-21T22:00:00+02:00", "region": {"plaatsen": {"Alkmaar": "Alkmaar"}},
+                "sources": [{"id": "funda", "name": "Funda", "type": "platform", "status": "ok"}], "listings": listings}
+        supabase_sync.sync(data, self.client, log=lambda *a: None)
+        self.assertEqual(len(FakeEdge.tables["huur_woningen"]), 450)
+        upserts = [c for c in FakeEdge.calls if c["action"] == "upsert" and c["table"] == "huur_woningen"]
+        self.assertEqual([len(c["rows"]) for c in upserts], [200, 200, 50])  # in porties
+        self.assertEqual(FakeEdge.tables["huur_instellingen"]["bijgewerkt"], "2026-10-21T22:00:00+02:00")
+        self.assertEqual(FakeEdge.tokens_issued, 1)  # token wordt hergebruikt
+
+        supabase_sync.sync({**data, "listings": listings[:10]}, self.client, log=lambda *a: None)
+        self.assertEqual(len(FakeEdge.tables["huur_woningen"]), 10)
+        self.assertEqual(len(supabase_sync.load_previous(self.client)["listings"]), 10)
+
+    def test_from_github_env(self):
+        old = {k: os.environ.pop(k, None) for k in ("ACTIONS_ID_TOKEN_REQUEST_URL", "ACTIONS_ID_TOKEN_REQUEST_TOKEN")}
+        try:
+            self.assertIsNone(supabase_sync.EdgeClient.from_github_env())
+            os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"] = "https://token.example/x?api-version=2.0"
+            os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"] = "abc"
+            c = supabase_sync.EdgeClient.from_github_env()
+            self.assertEqual(c.endpoint, "https://gpkohiyzdjyehqdkgpdb.supabase.co/functions/v1/huur-import")
+        finally:
+            for k, v in old.items():
+                os.environ.pop(k, None)
+                if v is not None:
+                    os.environ[k] = v
+
+    def test_rejected_token_is_an_error(self):
+        bad = supabase_sync.EdgeClient(self.client.endpoint.rsplit("/functions", 1)[0], self.client.token_url, "fout-token")
+        bad.session.trust_env = False
+        with self.assertRaises(supabase_sync.SupabaseError):
+            bad.update_settings({"bijgewerkt": None})

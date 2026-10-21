@@ -72,9 +72,10 @@ def main(argv: list[str] | None = None) -> int:
     today = date.today()
     client = None
     if args.supabase != "uit":
-        client = supabase_sync.Supabase.from_env()
+        client = supabase_sync.client_from_env()
         if client is None and args.supabase == "aan":
-            print("SUPABASE_SERVICE_ROLE_KEY ontbreekt (omgevingsvariabele of .env in de projectmap).", file=sys.stderr)
+            print("Geen toegang tot Supabase: zet SUPABASE_SERVICE_ROLE_KEY (omgevingsvariabele of .env), "
+                  "of draai in GitHub Actions met 'permissions: id-token: write'.", file=sys.stderr)
             return 2
 
     previous = store.load(args.uitvoer)

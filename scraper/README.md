@@ -70,7 +70,9 @@ en draai `python -m scraper`. Met een sleutel schrijft hij automatisch naar Supa
 
 ### Automatisch scrapen (GitHub Actions)
 
-`.github/workflows/huurwoningen.yml` draait de scraper elke 3 uur (± 6:40–21:40) en schrijft naar Supabase. Eenmalig nodig: repository secret **`SUPABASE_SERVICE_ROLE_KEY`** (GitHub → Settings → Secrets and variables → Actions). Het schema draait vanaf `main`; op deze branch start hij bij een push van de scraper of workflow.
+`.github/workflows/huurwoningen.yml` draait de scraper elke 3 uur (± 6:40–21:40) en schrijft naar Supabase. **Geen sleutel nodig**: de workflow vraagt een kortlevend OIDC-token aan bij GitHub en schrijft via de Supabase Edge Function `huur-import` (`scraper/supabase/functions/huur-import/`). Die accepteert alleen tokens van deze workflow in `larsvegelin/nightfind` op `main` of deze branch, en schrijft met de service-sleutel die alleen binnen Supabase bestaat. Een repository secret `SUPABASE_SERVICE_ROLE_KEY` mag ook (heeft dan voorrang). Het schema draait vanaf `main`; op deze branch start hij bij een push van de scraper of workflow.
+
+Edge Function testen: `deno test scraper/supabase/functions/huur-import/lib_test.ts`.
 
 ### SVNK
 
