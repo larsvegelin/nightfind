@@ -27,6 +27,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="Playwright gebruiken: auto = alleen bij blokkade/JS-pagina's (standaard)")
     ap.add_argument("--geen-details", action="store_true", help="geen detailpagina's ophalen (sneller, minder velden)")
     ap.add_argument("--details-opnieuw", action="store_true", help="detailpagina's opnieuw ophalen, ook als ze al bekend zijn")
+    ap.add_argument("--max-details", type=int, default=0, help="max. nieuwe detailpagina's per bron per run (0 = onbeperkt)")
+    ap.add_argument("--max-minuten", type=float, default=0, help="tijdsbudget; daarna worden resterende bronnen overgeslagen (0 = geen)")
     ap.add_argument("--max-paginas", type=int, default=config.MAX_PAGINAS, help="max. zoekresultaatpagina's per zoekopdracht")
     ap.add_argument("--vertraging", type=float, default=config.VERTRAGING_SEC, help="seconden pauze tussen verzoeken per site")
     ap.add_argument("--dump", action="store_true", help="ruwe HTML/JSON bewaren in scraper/.cache/raw (voor debuggen)")
@@ -88,13 +90,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Kon vorige stand niet uit Supabase laden: {e}", file=sys.stderr)
             return 1
     known = {l["id"]: l for l in previous.get("listings", [])}
-    opts = Options(details=not args.geen_details, max_pages=args.max_paginas, known=known, refresh_details=args.details_opnieuw, today=today)
+    t0 = time.time()
+    budget_end = t0 + args.max_minuten * 60 if args.max_minuten else 0.0
+    opts = Options(details=not args.geen_details, max_pages=args.max_paginas, known=known, refresh_details=args.details_opnieuw, today=today,
+                   max_details=args.max_details, deadline=(budget_end - 120) if budget_end else 0.0)
     fetcher = Fetcher(browser=args.browser, delay=args.vertraging, dump_dir=(config.CACHE_DIR / "raw") if args.dump else None)
 
     runs: dict[str, dict] = {}
     current: list[dict] = []
     try:
         for sid in wanted:
+            if budget_end and time.time() > budget_end:
+                print(f"→ {sid}: overgeslagen (tijdsbudget op)")
+                continue  # niet gedraaid: vorige gegevens van deze bron blijven staan
             cfg = {"id": sid, **config.BRONNEN[sid]}
             print(f"→ {cfg['naam']} ({cfg['base']})")
             started = time.time()

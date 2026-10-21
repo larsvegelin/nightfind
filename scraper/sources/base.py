@@ -1,6 +1,7 @@
 """Basisklasse voor een bron (site) en gedeelde stappen zoals detailpagina's verrijken."""
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
@@ -13,6 +14,8 @@ from ..fetch import Fetcher, FetchError
 class Options:
     details: bool = True              # detailpagina's ophalen voor extra velden
     max_pages: int = 15
+    max_details: int = 0              # max. nieuwe detailpagina's per bron per run (0 = onbeperkt)
+    deadline: float = 0.0             # time.time() waarna geen detailpagina's meer worden opgehaald
     known: dict[str, dict] = field(default_factory=dict)  # vorige run: id -> listing
     refresh_details: bool = False
     today: date = field(default_factory=date.today)
@@ -61,6 +64,12 @@ class Source:
             model.merge_fields(listing, {k: v for k, v in prev.items() if k not in ("status", "status_text", "label_new", "first_seen", "last_seen", "status_history", "offline_since")})
             listing["_details_fetched"] = True
             return False
+        # Budget: de rest komt bij een volgende run (details_fetched blijft dan False)
+        if self.opts.deadline and time.time() > self.opts.deadline:
+            return False
+        if self.opts.max_details and getattr(self, "_details_done", 0) >= self.opts.max_details:
+            return False
+        self._details_done = getattr(self, "_details_done", 0) + 1
         return True
 
     def enrich_from_detail(self, listing: dict, render: bool = False) -> None:

@@ -46,7 +46,7 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Scrapen en naar Supabase schrijven
-        run: python -m scraper --supabase aan
+        run: python -m scraper --supabase aan --max-minuten 40 --max-details 40
 
       - name: Resultaat bewaren (7 dagen, voor controle)
         if: always()
