@@ -91,6 +91,8 @@
     .pf-chip { display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .75rem; border:1.5px solid var(--border-strong); border-radius:9999px; background:var(--surface); font-size:.82rem; font-weight:600; color:var(--text-sub); cursor:pointer; user-select:none; transition:all .15s; }
     .pf-chip:has(input:checked) { background:var(--green-light); border-color:var(--green-mid); color:var(--green-dark); }
     .pf-chip input { accent-color:var(--green-dark); width:15px; height:15px; margin:0; cursor:pointer; }
+    .pf-chip.pf-all { border-style:dashed; }
+    .pf-chip.pf-all.active { background:var(--green-dark); border-color:var(--green-dark); color:#fff; border-style:solid; }
     .pf-link { background:none; border:none; color:var(--green-mid); font-size:.78rem; font-weight:700; cursor:pointer; padding:0 .25rem; text-decoration:underline; }
     td.wd-filled { background:rgba(255,192,0,.22) !important; font-weight:700; }
     .wd-status { font-size:.8rem; color:var(--text-sub); margin:.25rem 0 .6rem; }
@@ -102,7 +104,7 @@
 <header class="header">
   <span class="header-logo">&#9632; Overvoer</span>
   <div class="header-divider"></div>
-  <span class="header-sub">ASR — Polis Parser <span id="appVersion" style="opacity:.6;font-size:.75em">v2026-10-16.1</span></span>
+  <span class="header-sub">ASR — Polis Parser <span id="appVersion" style="opacity:.6;font-size:.75em">v2026-10-21.1</span></span>
 </header>
 
 <main class="container">
@@ -169,21 +171,22 @@
   <div class="mapping-panel">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
       <div class="section-label" style="margin:0">Te parsen polissoorten</div>
-      <div><button type="button" class="pf-link" id="pfAll">Alles aan</button><button type="button" class="pf-link" id="pfNone">Alles uit</button></div>
+      <span style="font-size:.75rem;color:var(--text-muted)">Klik een soort aan om <strong>alleen</strong> die te parsen; klik meer soorten aan om ze toe te voegen.</span>
     </div>
     <div class="product-filter" id="productFilter">
-      <label class="pf-chip"><input type="checkbox" value="AVP" checked> AVP</label>
-      <label class="pf-chip"><input type="checkbox" value="Inboedel" checked> Inboedel</label>
-      <label class="pf-chip"><input type="checkbox" value="Woonhuis" checked> Woonhuis</label>
-      <label class="pf-chip"><input type="checkbox" value="Recreatiewoning" checked> Recreatiewoning</label>
-      <label class="pf-chip"><input type="checkbox" value="Personenauto" checked> Personenauto</label>
-      <label class="pf-chip"><input type="checkbox" value="Bromfiets" checked> Bromfiets</label>
-      <label class="pf-chip"><input type="checkbox" value="Motor" checked> Motor</label>
-      <label class="pf-chip"><input type="checkbox" value="Camper" checked> Camper</label>
-      <label class="pf-chip"><input type="checkbox" value="Caravan" checked> Caravan</label>
-      <label class="pf-chip"><input type="checkbox" value="Rechtsbijstand" checked> Rechtsbijstand</label>
-      <label class="pf-chip"><input type="checkbox" value="Doorlopende Reis" checked> Doorlopende Reis</label>
-      <label class="pf-chip"><input type="checkbox" value="__rest__" checked> Overige (rest-CSV)</label>
+      <button type="button" class="pf-chip pf-all active" id="pfAll">&#10003; Alle polissoorten</button>
+      <label class="pf-chip"><input type="checkbox" value="AVP"> AVP (Aansprakelijkheid)</label>
+      <label class="pf-chip"><input type="checkbox" value="Inboedel"> Inboedel</label>
+      <label class="pf-chip"><input type="checkbox" value="Woonhuis"> Woonhuis</label>
+      <label class="pf-chip"><input type="checkbox" value="Recreatiewoning"> Recreatiewoning</label>
+      <label class="pf-chip"><input type="checkbox" value="Personenauto"> Personenauto</label>
+      <label class="pf-chip"><input type="checkbox" value="Bromfiets"> Bromfiets</label>
+      <label class="pf-chip"><input type="checkbox" value="Motor"> Motor</label>
+      <label class="pf-chip"><input type="checkbox" value="Camper"> Camper</label>
+      <label class="pf-chip"><input type="checkbox" value="Caravan"> Caravan</label>
+      <label class="pf-chip"><input type="checkbox" value="Rechtsbijstand"> Rechtsbijstand</label>
+      <label class="pf-chip"><input type="checkbox" value="Doorlopende Reis"> Doorlopende Reis</label>
+      <label class="pf-chip"><input type="checkbox" value="__rest__"> Overige (rest-CSV)</label>
     </div>
     <div id="pfStatus" style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem">Alle polissoorten worden geparsed.</div>
   </div>
@@ -2178,31 +2181,52 @@ const resultsLabel  = $('resultsLabel');
 // Maatschappijcode ASR — altijd A059
 const MAATSCHAPPIJ_ASR = 'A059';
 
-// ── Polissoort-filter (standaard alles aan; keuze wordt per browser onthouden) ──
+// ── Polissoort-filter ──────────────────────────────────────────────────────
+// Standaard "Alle polissoorten". Eén soort aanklikken = alleen die soort parsen;
+// meer soorten aanklikken = die soorten erbij. Niets meer geselecteerd → weer "Alle".
 const pfInputs = () => [...document.querySelectorAll('#productFilter input[type=checkbox]')];
-function selectedProducts() { return new Set(pfInputs().filter(i => i.checked).map(i => i.value)); }
+let pfAllMode = true;
+function selectedProducts() {
+  const all = pfInputs();
+  return new Set((pfAllMode ? all : all.filter(i => i.checked)).map(i => i.value));
+}
 function productSelected(product, sel) {
   return ASRSchema.CANONICAL.includes(product) ? sel.has(product) : sel.has('__rest__');
 }
 function updatePfStatus() {
-  const sel = selectedProducts(), all = pfInputs();
-  const names = all.filter(i => i.checked).map(i => i.parentElement.textContent.trim());
-  $('pfStatus').textContent = sel.size === all.length ? 'Alle polissoorten worden geparsed.'
-    : sel.size === 0 ? '⚠ Geen polissoort gekozen — er worden geen polisrijen geparsed.'
-    : 'Alleen geparsed: ' + names.join(', ') + '. Andere polissen in het polisscherm worden overgeslagen.';
-  try { localStorage.setItem('asr.productFilter', JSON.stringify({ sel: [...sel], known: all.map(i => i.value) })); } catch (_) {}
+  const chosen = pfInputs().filter(i => i.checked);
+  if (!chosen.length) pfAllMode = true;
+  if (pfAllMode) pfInputs().forEach(i => { i.checked = false; });
+  $('pfAll').classList.toggle('active', pfAllMode);
+  $('pfStatus').innerHTML = pfAllMode ? 'Alle polissoorten worden geparsed.'
+    : `<strong>Alleen</strong> geparsed: ${esc(chosen.map(i => i.parentElement.textContent.trim()).join(', '))}. Alle andere polissen worden overgeslagen.`;
+  try { localStorage.setItem('asr.productFilter.v2', JSON.stringify(pfAllMode ? { all: true } : { sel: chosen.map(i => i.value) })); } catch (_) {}
+}
+// Opnieuw verwerken na een filterwijziging (PDF-tekst is gebufferd, dus snel)
+let pfRerunTimer = null;
+function pfChanged() {
+  updatePfStatus();
+  if (!queue.some(q => q._text != null)) return;
+  clearTimeout(pfRerunTimer);
+  pfRerunTimer = setTimeout(() => { if (!processBtn.disabled) processQueue(); }, 250);
 }
 (() => {
   try {
-    const saved = JSON.parse(localStorage.getItem('asr.productFilter') || 'null');
-    // Nieuw toegevoegde polissoorten (nog niet in de opgeslagen keuze) staan standaard aan
-    const sel = Array.isArray(saved) ? saved : saved && saved.sel;
-    const known = saved && saved.known ? saved.known : sel;
-    if (Array.isArray(sel)) pfInputs().forEach(i => { i.checked = sel.includes(i.value) || !known.includes(i.value); });
+    const saved = JSON.parse(localStorage.getItem('asr.productFilter.v2') || 'null');
+    if (saved && Array.isArray(saved.sel) && saved.sel.length) {
+      pfAllMode = false;
+      pfInputs().forEach(i => { i.checked = saved.sel.includes(i.value); });
+    }
   } catch (_) {}
-  pfInputs().forEach(i => i.addEventListener('change', updatePfStatus));
-  $('pfAll').addEventListener('click', () => { pfInputs().forEach(i => { i.checked = true; }); updatePfStatus(); });
-  $('pfNone').addEventListener('click', () => { pfInputs().forEach(i => { i.checked = false; }); updatePfStatus(); });
+  pfInputs().forEach(i => i.addEventListener('change', () => {
+    if (pfAllMode && i.checked) {
+      // Vanuit "Alle": de aangeklikte soort wordt de enige selectie
+      pfAllMode = false;
+      pfInputs().forEach(o => { o.checked = o === i; });
+    }
+    pfChanged();
+  }));
+  $('pfAll').addEventListener('click', () => { pfAllMode = true; pfChanged(); });
   updatePfStatus();
 })();
 
@@ -2541,7 +2565,8 @@ async function processQueue() {
     progressFill.style.width = `${(i / queue.length) * 100}%`;
     renderQueue();
     try {
-      const text = isPDF(item.file) ? await extractTextFromPDF(item.file) : await readTxt(item.file);
+      const text = item._text != null ? item._text : (isPDF(item.file) ? await extractTextFromPDF(item.file) : await readTxt(item.file));
+      item._text = text;
       const base = ASRParser.parse(text);
       const { rows, debug } = ASRParser.extract_policy_rows_asr(text, base);
       // Globale schermen zonder herkenbaar product leveren alleen NAW, geen row
