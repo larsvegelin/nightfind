@@ -238,4 +238,7 @@ Overzicht van alle huurwoningen in Alkmaar, Dijk en Waard (Heerhugowaard, Sint P
 - Dezelfde woning op meerdere sites wordt samengevoegd ("Ook op Funda + Pararius")
 
 Data vullen: `pip install -r scraper/requirements.txt` en daarna `python -m scraper` (zie [`scraper/README.md`](scraper/README.md)). Nog niet gekoppeld aan Supabase.
-Bestanden: `huurwoningen.html`, `assets/css/huurwoningen.css`, `assets/js/huurwoningen.js`, `data/huurwoningen.json`, `scraper/`.
+- **Werkt op telefoon**: filters als schermvullend paneel met "Toon N woningen", vaste werkbalk (filters, sorteren, weergave), grote tikvlakken en geen inzoomen bij typen op iPhone
+- **Eén bestand**: `huurwoningen.html` bevat alle opmaak en code. Naast `data/huurwoningen.js` toont hij de gescrapete woningen; los gebruikt (bijv. op je telefoon) open je `huurwoningen.json` via de knop
+
+Bestanden: `huurwoningen.html`, `data/huurwoningen.json` (+ `.js`), `scraper/`.
