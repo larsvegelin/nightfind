@@ -238,9 +238,9 @@ Eén los HTML-bestand (geen installatie, werkt ook offline): dubbelklik om te op
 - **Vaste kop** – briefhoofd (plaats, kenmerk, onderwerp) en aanhef voor alle brieven, aan of uit te zetten; bij X-BRF en Eigen zijn plaats en onderwerp in te vullen
 - **Uitlezen** – samenvoegvelden van het briefsysteem (`@L97020@`, `@ondertek_naam@`, …) worden herkend; ze blijven in de downloads staan
 - **Preview** – A4-weergave, optioneel met voorbeeldgegevens ingevuld
-- **Downloaden** – TXT, Word (`.docx`) en HTML (`.html`), allemaal gemaakt in de browser zonder externe bibliotheek, plus *HTML kopiëren*
+- **Downloaden** – TXT, Word (`.docx`), HTML (`.html`) en **Broncode** (de HTML-code als `.txt`, zodat je bij openen de code ziet), allemaal gemaakt in de browser zonder externe bibliotheek, plus *HTML kopiëren* en *Broncode tonen* in de preview
 - **Naamgeving** – `kantoornaam - maatschappij - brief (nummer)`, afwijkende opties tussen haakjes
-- **Opgeslagen brieven** – bewaar brieven in een lijst en maak met *Mail naar helpdesk* een concept-mail (`.eml`) aan helpdesk@dewaerdse.nl met alle brieven als bijlage in Word, TXT en/of HTML-code (openen in Outlook)
+- **Opgeslagen brieven** – bewaar brieven in een lijst en maak met *Mail naar helpdesk* een concept-mail (`.eml`) aan helpdesk@dewaerdse.nl met alle brieven als bijlage in Word, TXT, HTML en/of broncode (openen in Outlook)
 
 Pakketnaam is standaard `<korte naam> Privé Pakket` / `<korte naam> Zakelijk Pakket`; de Waerdse pakketten heten `Waerdse Verzekeringspakket` / `Waerdse Zakelijk Pakket`.
 Kantoren staan in `KANTOREN`, sjablonen in `OVR_BRIEVEN`, `OVR_QA` en `SJABLONEN` bovenin het script (`{{veld}}` = wordt ingevuld, `[[zakelijk]]…[[/zakelijk]]` = alleen bij die optie).

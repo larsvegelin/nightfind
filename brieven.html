@@ -182,6 +182,10 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .paper .merge.filled { background: #dff0e3; color: #1b4d2a; font-family: inherit; font-size: inherit; }
 .paper .missing { background: #fde0de; color: #a1261f; border-radius: 4px; padding: 0 4px; font-weight: 600; }
 .paper-empty { color: #8a8a85; text-align: center; padding-top: 120px; }
+.paper pre.broncode {
+    margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #1a1a1a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.55;
+}
 
 .toast {
     position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%);
@@ -322,11 +326,12 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
                 <button type="button" class="btn btn-primary" id="downloadTxt">TXT</button>
                 <button type="button" class="btn btn-primary" id="downloadWord">Word (.docx)</button>
                 <button type="button" class="btn btn-primary" id="downloadHtml">HTML (.html)</button>
+                <button type="button" class="btn btn-primary" id="downloadBron" title="De HTML-code als tekstbestand: bij openen zie je de code, niet de opgemaakte brief">Broncode (.txt)</button>
                 <button type="button" class="btn" id="kopieerHtml">HTML kopiëren</button>
-                <button type="button" class="btn btn-wide" id="bewaarBrief">Bewaren in lijst</button>
+                <button type="button" class="btn" id="bewaarBrief">Bewaren in lijst</button>
             </div>
             <p class="filename" id="bestandsnaam"></p>
-            <p class="hint">Samenvoegvelden (@…@) blijven in de download staan, zodat het briefsysteem ze kan vullen.</p>
+            <p class="hint">Samenvoegvelden (@…@) blijven in de download staan, zodat het briefsysteem ze kan vullen. <strong>Broncode</strong> is de HTML-code als tekstbestand: bij openen zie je de code zelf, klaar om te kopiëren.</p>
         </section>
 
         <section class="card">
@@ -336,7 +341,8 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
             <div class="checks" id="bijlageFormaten">
                 <label class="switch"><input type="checkbox" value="docx" checked> Word (.docx)</label>
                 <label class="switch"><input type="checkbox" value="txt"> TXT</label>
-                <label class="switch"><input type="checkbox" value="html" checked> HTML-code (.html)</label>
+                <label class="switch"><input type="checkbox" value="html"> HTML (.html)</label>
+                <label class="switch"><input type="checkbox" value="bron" checked> Broncode (.txt)</label>
             </div>
             <div class="row-actions">
                 <button type="button" class="btn btn-primary" id="mailHelpdesk">Mail naar helpdesk</button>
@@ -354,7 +360,10 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
     <section class="preview-col">
         <div class="preview-bar">
             <span class="preview-title" id="previewTitel">Preview</span>
-            <label class="switch"><input type="checkbox" id="voorbeeldToggle"> Voorbeeldgegevens invullen</label>
+            <div class="checks">
+                <label class="switch"><input type="checkbox" id="voorbeeldToggle"> Voorbeeldgegevens invullen</label>
+                <label class="switch"><input type="checkbox" id="broncodeToggle"> Broncode tonen</label>
+            </div>
         </div>
         <div class="notes" id="meldingen"></div>
         <article class="paper" id="papier" aria-label="Preview van de brief"></article>
@@ -576,6 +585,7 @@ const state = {
     qa: true,
     brf: { maatschappij: 'Nationale Nederlanden', maatschappijAnders: '', product: 'aanhanger', productAnders: '', stijging: '6' },
     voorbeeld: false,
+    broncode: false,
     eigen: { html: '', naam: '' },
     kop: { 'X-OVR': true, 'X-BRF': true, EIGEN: true },
     kopTekst: { 'X-BRF': { plaats: '', onderwerp: '' }, EIGEN: { plaats: '', onderwerp: '' } },
@@ -1166,8 +1176,8 @@ function render() {
     toonVelden();
     toonMeldingen(brief, leeg);
 
-    for (const id of ['downloadTxt', 'downloadWord', 'downloadHtml', 'kopieerHtml', 'bewaarBrief']) $(id).disabled = leeg;
-    $('bestandsnaam').textContent = leeg ? '' : veiligBestand(`${brief.bestand}.txt / .docx / .html`);
+    for (const id of ['downloadTxt', 'downloadWord', 'downloadHtml', 'downloadBron', 'kopieerHtml', 'bewaarBrief']) $(id).disabled = leeg;
+    $('bestandsnaam').textContent = leeg ? '' : `Bestandsnaam: ${veiligBestand(brief.bestand)}`;
 }
 
 function toonPreview() {
@@ -1178,6 +1188,13 @@ function toonPreview() {
         p.className = 'paper-empty';
         p.textContent = 'Plak een brief of kies een bestand en klik op “Preview laden”.';
         papier.append(p);
+        return;
+    }
+    if (state.broncode) {
+        const pre = document.createElement('pre');
+        pre.className = 'broncode';
+        pre.textContent = htmlCode(state.resultaat.body.innerHTML);
+        papier.append(pre);
         return;
     }
     const kloon = document.importNode(state.resultaat.body, true);
@@ -1474,8 +1491,9 @@ async function mailHelpdesk() {
         if (formaten.includes('docx')) bijlagen.push({ naam: veiligBestand(`${b.naam}.docx`), type: DOCX_TYPE, blob: maakDocx(blokken, b.titel) });
         if (formaten.includes('txt')) bijlagen.push({ naam: veiligBestand(`${b.naam}.txt`), type: 'text/plain; charset=utf-8', blob: maakTxt(blokken) });
         if (formaten.includes('html')) bijlagen.push({ naam: veiligBestand(`${b.naam}.html`), type: 'text/html; charset=utf-8', blob: new Blob([htmlCode(b.html)]) });
+        if (formaten.includes('bron')) bijlagen.push({ naam: veiligBestand(`${b.naam} - broncode.txt`), type: 'text/plain; charset=utf-8', blob: broncodeBlob(b.html) });
     }
-    const formaatNamen = { docx: 'Word', txt: 'TXT', html: 'HTML' };
+    const formaatNamen = { docx: 'Word', txt: 'TXT', html: 'HTML', bron: 'broncode' };
     const soorten = formaten.map((f) => formaatNamen[f]).join(', ').replace(/, ([^,]*)$/, ' en $1');
     const tekst = [
         'Beste helpdesk,',
@@ -1513,6 +1531,9 @@ function htmlCode(html) {
     }
     return uit + '\r\n';
 }
+
+// Broncode: dezelfde HTML-code als tekstbestand, zodat je bij openen de code ziet
+const broncodeBlob = (html) => new Blob([htmlCode(html).replace(/\r?\n/g, '\r\n')], { type: 'text/plain;charset=utf-8' });
 
 // Concept-mail (.eml). X-Unsent zorgt dat Outlook hem opent als nieuw, nog te verzenden bericht.
 async function maakEml({ aan, onderwerp, tekst, bijlagen }) {
@@ -2109,7 +2130,7 @@ function bewaarKeuzes() {
         brief: state.brief, kantoorId: state.kantoorId === NIEUW ? STANDAARD_KANTOOR : state.kantoorId,
         klanttype: state.klanttype, pakket: state.pakket, ovr: state.ovr,
         qa: state.qa, brf: state.brf, kop: state.kop, kopTekst: state.kopTekst,
-        bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld
+        bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld, broncode: state.broncode
     });
 }
 
@@ -2194,6 +2215,8 @@ function init() {
     const opgeslagen = lees(OPSLAG_BRIEVEN, []);
     if (Array.isArray(opgeslagen)) state.brieven = opgeslagen.filter((b) => b && typeof b.naam === 'string' && typeof b.html === 'string');
     state.voorbeeld = keuzes.voorbeeld === true;
+    state.broncode = keuzes.broncode === true;
+    $('broncodeToggle').checked = state.broncode;
     $('voorbeeldToggle').checked = state.voorbeeld;
 
     $('briefKeuze').addEventListener('click', (e) => {
@@ -2249,6 +2272,10 @@ function init() {
         if (!b) return;
         state.qa = b.dataset.waarde === 'met';
         toonSecties(); bewaarKeuzes(); render();
+    });
+    $('broncodeToggle').addEventListener('change', (e) => {
+        state.broncode = e.target.checked;
+        bewaarKeuzes(); toonPreview();
     });
     $('voorbeeldToggle').addEventListener('change', (e) => {
         state.voorbeeld = e.target.checked;
@@ -2335,6 +2362,10 @@ function init() {
         if (!state.resultaat) return;
         download(new Blob([htmlCode(state.resultaat.body.innerHTML)], { type: 'text/html;charset=utf-8' }),
             veiligBestand(`${state.resultaat.bestand}.html`));
+    });
+    $('downloadBron').addEventListener('click', () => {
+        if (!state.resultaat) return;
+        download(broncodeBlob(state.resultaat.body.innerHTML), veiligBestand(`${state.resultaat.bestand} - broncode.txt`));
     });
     $('kopieerHtml').addEventListener('click', async () => {
         if (!state.resultaat) return;
