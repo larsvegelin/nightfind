@@ -104,7 +104,7 @@
 <header class="header">
   <span class="header-logo">&#9632; Overvoer</span>
   <div class="header-divider"></div>
-  <span class="header-sub">ASR — Polis Parser <span id="appVersion" style="opacity:.6;font-size:.75em">v2026-10-21.1</span></span>
+  <span class="header-sub">ASR — Polis Parser <span id="appVersion" style="opacity:.6;font-size:.75em">v2026-10-21.2</span></span>
 </header>
 
 <main class="container">
@@ -231,7 +231,7 @@
     <div class="section-label">Wachtrij</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Bestand</th><th>Map</th><th>Grootte</th><th>Type</th><th>Bron</th><th>Status</th><th>Rijen</th><th>Opmerking</th></tr></thead>
+        <thead><tr><th>Bestand</th><th>Map</th><th>Product</th><th>Grootte</th><th>Type</th><th>Bron</th><th>Status</th><th>Rijen</th><th>Opmerking</th></tr></thead>
         <tbody id="queueBody"></tbody>
       </table>
     </div>
@@ -2206,6 +2206,7 @@ function updatePfStatus() {
 let pfRerunTimer = null;
 function pfChanged() {
   updatePfStatus();
+  if (queue.length) renderQueue();
   if (!queue.some(q => q._text != null)) return;
   clearTimeout(pfRerunTimer);
   pfRerunTimer = setTimeout(() => { if (!processBtn.disabled) processQueue(); }, 250);
@@ -2425,6 +2426,7 @@ function handleFileItems(items) {
   queue = ASRBundle.sortBundle([...queue, ...newItems]);
   allRows = [];
   renderQueue();
+  prescanQueue();
   emptyState.style.display    = 'none';
   queueSection.style.display  = 'block';
   resultsSection.style.display = 'none';
@@ -2438,9 +2440,20 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replac
 function fmtSize(b) { return b<1024?`${b} B`:b<1048576?`${(b/1024).toFixed(1)} KB`:`${(b/1048576).toFixed(1)} MB`; }
 function isPDF(f) { return f.name.toLowerCase().endsWith('.pdf'); }
 
+// Een bestand hoort bij de selectie als het minstens één geselecteerde polissoort bevat.
+// Globale schermen (pakketscherm e.d.) en nog niet ingelezen bestanden blijven altijd zichtbaar.
+let showHiddenQueue = false;
+function queueItemVisible(item, sel) {
+  if (item.isGlobal || !item.products || !item.products.length) return true;
+  return item.products.some(p => productSelected(p, sel));
+}
 function renderQueue() {
   queueBody.innerHTML = '';
+  const sel = selectedProducts();
+  const hidden = queue.filter(it => !queueItemVisible(it, sel));
   for (const item of queue) {
+    const isHidden = hidden.includes(item);
+    if (isHidden && !showHiddenQueue) continue;
     const badge = {
       pending:    `<span class="badge badge-pending">&#9203; Wachten</span>`,
       processing: `<span class="badge badge-processing"><span class="spin">&#9881;</span> Verwerken&hellip;</span>`,
@@ -2454,18 +2467,52 @@ function renderQueue() {
     const bron = item.isGlobal ? `<span class="src-tag">globaal</span>` : `<span class="src-tag weak">product</span>`;
     const note = item.error ? esc(item.error)
       : item.warnings && item.warnings.length ? `<span class="warn-list" title="${esc(item.warnings.join('\n'))}">&#9888; ${item.warnings.length} waarschuwing(en): ${esc(item.warnings.slice(0, 2).join('; '))}${item.warnings.length > 2 ? '&hellip;' : ''}</span>` : '';
+    const prodDisplay = item.products === undefined ? `<span style="color:var(--text-muted);font-size:.8rem"><span class="spin">&#9881;</span> lezen&hellip;</span>`
+      : item.products.length ? item.products.map(p => `<span class="src-tag${productSelected(p, sel) ? '' : ' weak'}">${esc(p)}</span>`).join(' ')
+      : `<span style="color:var(--text-muted);font-size:.8rem">${item.isGlobal ? 'NAW-bron' : '&mdash;'}</span>`;
     const tr = document.createElement('tr');
+    if (isHidden) tr.style.opacity = '.45';
     tr.innerHTML = `
       <td style="font-weight:600">${esc(item.file.name)}</td>
       <td>${mapDisplay}</td>
+      <td>${prodDisplay}</td>
       <td style="color:var(--text-muted)">${fmtSize(item.file.size)}</td>
       <td style="color:var(--text-muted)">${isPDF(item.file)?'PDF':'TXT'}</td>
       <td>${bron}</td>
       <td>${badge}</td>
       <td style="color:var(--text-muted)">${item.status==='done'||item.status==='empty'?item.rows:'&mdash;'}</td>
-      <td style="color:var(--text-muted);font-size:.8rem">${note}</td>`;
+      <td style="color:var(--text-muted);font-size:.8rem">${isHidden ? 'Niet geselecteerde polissoort — wordt overgeslagen' : note}</td>`;
     queueBody.appendChild(tr);
   }
+  if (hidden.length) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="9" style="font-size:.8rem;color:var(--text-muted);background:var(--surface2)">
+      ${hidden.length} bestand(en) met een niet-geselecteerde polissoort ${showHiddenQueue ? 'grijs weergegeven' : 'verborgen'} en overgeslagen.
+      <button type="button" class="pf-link" id="toggleHiddenQueue">${showHiddenQueue ? 'Verbergen' : 'Toon toch'}</button></td>`;
+    queueBody.appendChild(tr);
+    tr.querySelector('#toggleHiddenQueue').addEventListener('click', () => { showHiddenQueue = !showHiddenQueue; renderQueue(); });
+  }
+}
+
+// Bij toevoegen meteen inlezen en het product bepalen, zodat de wachtrij direct op de selectie filtert
+let prescanBusy = false;
+async function prescanQueue() {
+  if (prescanBusy) return;
+  prescanBusy = true;
+  try {
+    for (const item of queue) {
+      if (item.products !== undefined) continue;
+      try {
+        if (item._text == null) item._text = isPDF(item.file) ? await extractTextFromPDF(item.file) : await readTxt(item.file);
+        const base = ASRParser.parse(item._text);
+        const { rows } = ASRParser.extract_policy_rows_asr(item._text, base);
+        item.products = [...new Set(rows.map(r => r['Productomschrijving'] || 'Onbekend')
+          .filter(p => !(item.isGlobal && p === 'Onbekend')))];
+      } catch (_) { item.products = []; }
+      renderQueue();
+      await tick();
+    }
+  } finally { prescanBusy = false; }
 }
 
 processBtn.addEventListener('click', processQueue);
@@ -2561,6 +2608,7 @@ async function processQueue() {
   // 1. Per bestand: ordered text → parse() → extract_policy_rows_asr() → _post_process()
   for (let i = 0; i < queue.length; i++) {
     const item = queue[i];
+    if (!queueItemVisible(item, sel)) { item.status = 'pending'; item.rows = 0; item.error = null; item.warnings = []; continue; }
     item.status = 'processing'; item.rows = 0; item.error = null; item.warnings = [];
     progressFill.style.width = `${(i / queue.length) * 100}%`;
     renderQueue();
@@ -2571,6 +2619,7 @@ async function processQueue() {
       const { rows, debug } = ASRParser.extract_policy_rows_asr(text, base);
       // Globale schermen zonder herkenbaar product leveren alleen NAW, geen row
       const recognized = rows.filter(r => !(item.isGlobal && (!r['Productomschrijving'] || r['Productomschrijving'] === 'Onbekend')));
+      item.products = [...new Set(recognized.map(r => r['Productomschrijving'] || 'Onbekend'))];
       // Polissoort-filter: alleen de aangevinkte producten uit het polisscherm overhouden
       const kept = recognized.filter(r => productSelected(r['Productomschrijving'], sel));
       const skippedPolis = recognized.filter(r => !kept.includes(r));
@@ -2707,7 +2756,8 @@ async function processQueue() {
 }
 
 function showSummary() {
-  $('statFiles').textContent = queue.filter(q => q.status === 'done').length;
+  const sel = selectedProducts();
+  $('statFiles').textContent = queue.filter(q => q.status === 'done' && queueItemVisible(q, sel)).length;
   $('statRows').textContent = allRows.length;
   $('statProducts').textContent = new Set(allRows.map(r => r['Productomschrijving']).filter(Boolean)).size;
   $('statWarnings').textContent = allRows.reduce((n, r) => n + ((r._warnings || []).length), 0);
