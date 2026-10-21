@@ -165,30 +165,39 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .note-warn { background: var(--warn-bg); color: var(--warn-text); }
 .note-info { background: var(--info-bg); color: var(--info-text); }
 
-/* Brief-preview: altijd wit papier, ongeacht thema */
-.paper {
-    background: #ffffff; color: #1a1a1a; width: 100%; max-width: 794px; margin: 0 auto; min-height: 600px;
-    padding: 56px 64px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.08);
-    font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere;
+/* Brief-preview op A4: zelfde maten als de Word-download (A4, marges 2,5 cm, Arial 10 pt).
+   1 cm = 37,8 px bij 96 dpi: pagina 794 x 1123 px, marge 94 px, tekstbreedte 606 px. */
+.pages { width: 794px; margin: 0 auto; }
+.page {
+    width: 794px; height: 1123px; padding: 94px; background: #ffffff; color: #1a1a1a; overflow: hidden;
+    border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.08);
 }
-@media (max-width: 600px) { .paper { padding: 24px 18px; font-size: 13px; } }
-.paper p, .paper ul, .paper ol { margin: 0 0 1em; }
-.paper ul, .paper ol { padding-left: 1.5em; }
-.paper table { border-collapse: collapse; margin: 0 0 1.4em; }
-.paper td, .paper th { padding: 0 10px 0 0; vertical-align: top; text-align: left; }
-.paper td:first-child { white-space: nowrap; }
-.paper a { color: #0563c1; }
-.paper .merge {
-    background: #fff1b8; color: #5c4300; border-radius: 4px; padding: 0 4px;
+.page.page-vrij { height: auto; min-height: 500px; }
+.page-nr { text-align: center; color: var(--muted); font-size: 13px; margin: 8px 0 22px; }
+.brieftekst { font-family: Arial, Helvetica, sans-serif; font-size: 13.333px; line-height: 1.265; overflow-wrap: anywhere; color: #1a1a1a; }
+.brieftekst p, .brieftekst ul, .brieftekst ol { margin: 0 0 13.333px; }
+.brieftekst .vervolg { margin-bottom: 0; }
+.brieftekst ul, .brieftekst ol { padding-left: 24px; }
+.brieftekst li > ul, .brieftekst li > ol { margin-bottom: 0; }
+.brieftekst h1, .brieftekst h2, .brieftekst h3, .brieftekst h4 { margin: 0 0 8px; line-height: 1.2; }
+.brieftekst h1 { font-size: 18.7px; } .brieftekst h2 { font-size: 16px; } .brieftekst h3 { font-size: 14.7px; } .brieftekst h4 { font-size: 13.333px; }
+.brieftekst table { border-collapse: collapse; margin: 0 0 16px; }
+.brieftekst td, .brieftekst th { padding: 0 8px 0 0; vertical-align: top; text-align: left; }
+.brieftekst td:first-child { white-space: nowrap; }
+.brieftekst a { color: #0563c1; }
+.brieftekst .merge {
+    background: #fff1b8; color: #5c4300; border-radius: 3px; padding: 0 3px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; cursor: help;
 }
-.paper .merge.filled { background: #dff0e3; color: #1b4d2a; font-family: inherit; font-size: inherit; }
-.paper .missing { background: #fde0de; color: #a1261f; border-radius: 4px; padding: 0 4px; font-weight: 600; }
+.brieftekst .merge.filled { background: #dff0e3; color: #1b4d2a; font-family: inherit; font-size: inherit; }
+.brieftekst .missing { background: #fde0de; color: #a1261f; border-radius: 3px; padding: 0 3px; font-weight: 600; }
+.meetvak { position: absolute; left: -10000px; top: 0; width: 606px; visibility: hidden; pointer-events: none; }
 .paper-empty { color: #8a8a85; text-align: center; padding-top: 120px; }
-.paper pre.broncode {
+pre.broncode {
     margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #1a1a1a;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.55;
 }
+.paginainfo { color: var(--muted); font-weight: 400; font-size: 0.85rem; margin-left: 0.4rem; }
 
 .toast {
     position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%);
@@ -374,18 +383,19 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 
     <section class="preview-col">
         <div class="preview-bar">
-            <span class="preview-title" id="previewTitel">Preview</span>
+            <span class="preview-title"><span id="previewTitel">Preview</span><span class="paginainfo" id="paginaInfo"></span></span>
             <div class="checks">
                 <label class="switch"><input type="checkbox" id="voorbeeldToggle"> Voorbeeldgegevens invullen</label>
                 <label class="switch"><input type="checkbox" id="broncodeToggle"> Broncode tonen</label>
             </div>
         </div>
         <div class="notes" id="meldingen"></div>
-        <article class="paper" id="papier" aria-label="Preview van de brief"></article>
+        <div class="pages" id="papier" aria-label="Preview van de brief op A4"></div>
     </section>
 </main>
 
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="meetvak brieftekst" id="meetvak" aria-hidden="true"></div>
 
 <script>
 (() => {
@@ -1075,7 +1085,7 @@ function maakDocx(blokken, titel) {
     const stylesXml = `${kop}<w:styles xmlns:w="${W}">`
         + '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>'
         + '<w:sz w:val="20"/><w:szCs w:val="20"/><w:lang w:val="nl-NL"/></w:rPr></w:rPrDefault>'
-        + '<w:pPrDefault><w:pPr><w:spacing w:after="200" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
+        + '<w:pPrDefault><w:pPr><w:widowControl/><w:spacing w:after="200" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
         + '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>'
         + '<w:style w:type="character" w:default="1" w:styleId="DefaultParagraphFont"><w:name w:val="Default Paragraph Font"/><w:uiPriority w:val="1"/><w:semiHidden/></w:style>'
         + '<w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:semiHidden/>'
@@ -1197,27 +1207,187 @@ function render() {
     $('bestandsnaam').textContent = leeg ? '' : `Bestandsnaam: ${veiligBestand(brief.bestand)}`;
 }
 
+const A4 = { hoogte: 1123, marge: 94 };
+const INHOUD_HOOGTE = A4.hoogte - 2 * A4.marge;
+
 function toonPreview() {
     const papier = $('papier');
     papier.replaceChildren();
+    $('paginaInfo').textContent = '';
+    const vrijePagina = (inhoud) => {
+        const pagina = document.createElement('div');
+        pagina.className = 'page page-vrij';
+        pagina.append(inhoud);
+        papier.append(pagina);
+        schaalPreview();
+    };
     if (!state.resultaat) {
         const p = document.createElement('p');
         p.className = 'paper-empty';
         p.textContent = 'Plak een brief of kies een bestand en klik op “Preview laden”.';
-        papier.append(p);
+        vrijePagina(p);
         return;
     }
     if (state.broncode) {
         const pre = document.createElement('pre');
         pre.className = 'broncode';
         pre.textContent = htmlCode(state.resultaat.body.innerHTML);
-        papier.append(pre);
+        vrijePagina(pre);
         return;
     }
     const kloon = document.importNode(state.resultaat.body, true);
     markeer(kloon);
     kloon.querySelectorAll('a[href]').forEach((a) => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
-    papier.append(...kloon.childNodes);
+    const paginas = pagineer(kloon);
+    paginas.forEach((blokken, i) => {
+        const pagina = document.createElement('div');
+        pagina.className = 'page';
+        const inhoud = document.createElement('div');
+        inhoud.className = 'brieftekst';
+        inhoud.append(...blokken);
+        pagina.append(inhoud);
+        const nr = document.createElement('p');
+        nr.className = 'page-nr';
+        nr.textContent = `Pagina ${i + 1} van ${paginas.length}`;
+        papier.append(pagina, nr);
+    });
+    $('paginaInfo').textContent = `· ${paginas.length} ${paginas.length === 1 ? 'pagina' : "pagina's"} A4`;
+    schaalPreview();
+}
+
+// A4-pagina's passend maken in de previewkolom (alleen verkleinen)
+function schaalPreview() {
+    const papier = $('papier');
+    const beschikbaar = papier.parentElement.clientWidth;
+    papier.style.zoom = beschikbaar && beschikbaar < 794 ? String(beschikbaar / 794) : '';
+}
+
+/* ---------- Paginering: verdeel de brief over A4-pagina's ---------- */
+
+// Blokken één voor één meten in een onzichtbaar vak met de tekstbreedte van A4;
+// past een blok niet meer, dan wordt het gesplitst (alinea per regel, lijst/tabel per rij)
+function pagineer(root) {
+    const meet = $('meetvak');
+    const blokken = [];
+    let los = null;
+    for (const n of [...root.childNodes]) {
+        const isBlok = n.nodeType === Node.ELEMENT_NODE && BLOK.has(n.tagName);
+        if (isBlok) { los = null; blokken.push(n); continue; }
+        if (n.nodeType === Node.TEXT_NODE && !n.nodeValue.trim() && !los) continue;
+        if (!los) { los = document.createElement('div'); blokken.push(los); }
+        los.append(n);
+    }
+    const paginas = [[]];
+    let gebruikt = 0;
+    let vorigeMarge = 0;
+    const nieuwePagina = () => { paginas.push([]); gebruikt = 0; vorigeMarge = 0; };
+    while (blokken.length) {
+        const blok = blokken.shift();
+        meet.replaceChildren(blok);
+        const stijl = getComputedStyle(blok);
+        const mt = parseFloat(stijl.marginTop) || 0;
+        const mb = parseFloat(stijl.marginBottom) || 0;
+        const hoogte = blok.getBoundingClientRect().height;
+        const boven = gebruikt ? Math.max(0, mt - vorigeMarge) : 0;
+        if (gebruikt + boven + hoogte <= INHOUD_HOOGTE + 0.5) {
+            paginas[paginas.length - 1].push(blok);
+            gebruikt += boven + hoogte + mb;
+            vorigeMarge = mb;
+            continue;
+        }
+        const delen = splitsBlok(blok, INHOUD_HOOGTE - gebruikt - boven);
+        if (delen) {
+            paginas[paginas.length - 1].push(delen[0]);
+            nieuwePagina();
+            blokken.unshift(delen[1]);
+        } else if (!gebruikt) {
+            // groter dan een hele pagina en niet te splitsen: toch plaatsen
+            paginas[paginas.length - 1].push(blok);
+            nieuwePagina();
+        } else {
+            nieuwePagina();
+            blokken.unshift(blok);
+        }
+    }
+    meet.replaceChildren();
+    while (paginas.length > 1 && !paginas[paginas.length - 1].length) paginas.pop();
+    return paginas;
+}
+
+function splitsBlok(blok, ruimte) {
+    if (ruimte < 12) return null;
+    const tag = blok.tagName;
+    if (tag === 'UL' || tag === 'OL') return splitsOpKinderen(blok, [...blok.children], ruimte, (deel, start) => {
+        if (tag === 'OL') deel.setAttribute('start', String((parseInt(blok.getAttribute('start'), 10) || 1) + start));
+    });
+    if (tag === 'TABLE') return splitsTabel(blok, ruimte);
+    return splitsTekst(blok, ruimte);
+}
+
+// Alinea splitsen op de eerste regel die niet meer past
+function splitsTekst(blok, ruimte) {
+    const boven = blok.getBoundingClientRect().top;
+    const regelHoogte = parseFloat(getComputedStyle(blok).lineHeight) || 17;
+    const posities = [];
+    const walker = document.createTreeWalker(blok, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+        const t = walker.currentNode;
+        for (let i = 0; i < t.length; i++) {
+            if (!/\s/.test(t.data[i]) && (i === 0 || /\s/.test(t.data[i - 1]))) posities.push({ node: t, offset: i });
+        }
+    }
+    if (posities.length < 2) return null;
+    const range = document.createRange();
+    const regelOnder = (pos) => {
+        range.setStart(pos.node, pos.offset);
+        range.setEnd(pos.node, pos.offset + 1);
+        const r = range.getBoundingClientRect();
+        return r.top - boven + (r.height + regelHoogte) / 2;
+    };
+    // regels bepalen: eerste woord van elke regel
+    const regels = [];
+    let vorige = -Infinity;
+    for (const pos of posities) {
+        const onder = regelOnder(pos);
+        if (onder > vorige + regelHoogte / 2) { regels.push({ pos, onder }); vorige = onder; }
+    }
+    let knipRegel = regels.findIndex((r) => r.onder > ruimte + 0.5);
+    if (knipRegel < 0) return null;
+    // zoals Word (zwevende regels voorkomen): minstens 2 regels onderaan en 2 regels bovenaan de volgende pagina
+    if (regels.length - knipRegel < 2) knipRegel = regels.length - 2;
+    if (knipRegel < 2) return null;
+    const knip = regels[knipRegel].pos;
+    const deel1 = blok.cloneNode(false);
+    const deel2 = blok.cloneNode(false);
+    range.setStart(blok, 0);
+    range.setEnd(knip.node, knip.offset);
+    deel1.append(range.cloneContents());
+    range.setStart(knip.node, knip.offset);
+    range.setEnd(blok, blok.childNodes.length);
+    deel2.append(range.cloneContents());
+    deel1.classList.add('vervolg');
+    return [deel1, deel2];
+}
+
+// Lijst of tabel splitsen tussen items/rijen
+function splitsOpKinderen(blok, kinderen, ruimte, aanpassen) {
+    const boven = blok.getBoundingClientRect().top;
+    let aantal = 0;
+    while (aantal < kinderen.length && kinderen[aantal].getBoundingClientRect().bottom - boven <= ruimte + 0.5) aantal++;
+    if (aantal === 0 || aantal === kinderen.length) return null;
+    const deel1 = blok.cloneNode(false);
+    const deel2 = blok.cloneNode(false);
+    deel1.append(...kinderen.slice(0, aantal).map((k) => k.cloneNode(true)));
+    deel2.append(...kinderen.slice(aantal).map((k) => k.cloneNode(true)));
+    deel1.classList.add('vervolg');
+    if (aanpassen) aanpassen(deel2, aantal);
+    return [deel1, deel2];
+}
+
+function splitsTabel(tabel, ruimte) {
+    const rijen = [...tabel.rows];
+    const delen = splitsOpKinderen(tabel, rijen, ruimte);
+    return delen;
 }
 
 function markeer(root) {
@@ -2478,6 +2648,9 @@ function init() {
         await kopieer(state.resultaat.body.innerHTML.trim());
         toast('HTML gekopieerd naar het klembord.');
     });
+
+    let schaalTimer;
+    window.addEventListener('resize', () => { clearTimeout(schaalTimer); schaalTimer = setTimeout(schaalPreview, 100); });
 
     vulKantoorSelect();
     vulBrfFormulier();
