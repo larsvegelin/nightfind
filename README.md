@@ -230,10 +230,10 @@ Bestanden: `budget.html`, `assets/css/budget.css`, `assets/js/budget.js`.
 
 ## 🏠 Huurwoningen Noord-Holland Noord (`huurwoningen.html`)
 
-Overzicht van alle huurwoningen in Alkmaar, Dijk en Waard (Heerhugowaard, Sint Pancras, …), Schagen, Tuitjenhorn, Obdam en Ursem – van woningcorporaties (SVNK, Woonmatch West-Friesland, Woonmatch Kop van NH) en van Funda, Pararius, Huurwoningen.nl en Kamernet.
+Overzicht van alle huurwoningen in Alkmaar, Dijk en Waard (Heerhugowaard, Sint Pancras, …), Schagen, Tuitjenhorn, Obdam en Ursem uit 38 bronnen: woningcorporaties (SVNK, Woonmatch West-Friesland, Woonmatch Kop van NH), huurplatforms (Funda, Pararius, Huurwoningen.nl, Kamernet, Directwonen, Huurstunt, …), lokale makelaars (Pinedo, 123Wonen, 072wonen, Van der Borden, SC Bakker, VLIEG, …) en verhuurders (Vesteda, Ik wil huren/MVGM, …).
 
 - **Per woning**: huur (totaal/kaal/servicekosten), m², kamers, energielabel, type, **datum van plaatsing**, reageren tot, beschikbaar per, toewijzing (loting/inschrijfduur), verhuurder, foto's en link
-- **Status**: Nieuw, Beschikbaar, Onder optie, Verhuurd onder voorbehoud, Verhuurd, Reageren gesloten, Offline (verdwenen → waarschijnlijk verhuurd), met statusgeschiedenis
+- **Status**: Nieuw, Beschikbaar, Binnenkort, Onder optie, Verhuurd onder voorbehoud, Verhuurd, Reageren gesloten, Offline (verdwenen → waarschijnlijk verhuurd), met statusgeschiedenis
 - **Filters**: zoeken, status, geplaatst sinds, plaats per gemeente, bron, segment, type, huur, m², kamers; kaarten- of tabelweergave; CSV-export
 - Dezelfde woning op meerdere sites wordt samengevoegd ("Ook op Funda + Pararius")
 

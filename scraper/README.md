@@ -18,6 +18,16 @@ Nog niet gekoppeld aan Supabase: de veldnamen zijn wel al zo gekozen dat ze 1-op
 
 De corporaties zelf (Woonwaard, Van Alckmaer, Kennemer Wonen, Wooncompagnie) adverteren hun sociale huurwoningen verplicht via SVNK of Woonmatch, dus die worden daar meegenomen.
 
+Daarnaast **31 makelaars, verhuurders en extra platforms** in `scraper/sites.py` (`python -m scraper --lijst` toont ze allemaal):
+
+| Soort | Bronnen |
+|---|---|
+| Makelaars (17) | Pinedo, 072wonen/Broekman, Broekman, 123Wonen, Van der Borden Huur & Beheer, Leygraaf, SC Bakker (Schagen), VLIEG (Schagen/Heerhugowaard/Alkmaar), Rotsvast, NederWoon, vb&t Verhuurmakelaars, Hoekstra en Van Eck, Verhuurmakelaar Bas, CLIQ, Bakker Schoon, Panthera (Warmenhuizen), Demonie (Oudorp) |
+| Verhuurders & beleggers (4) | Ik wil huren (MVGM), Vesteda, Vaanpark (nieuwbouw Heerhugowaard), Heimstaden |
+| Extra platforms (10) | Directwonen, Huurstunt, Rentola, Huurportaal, Kamer.nl, HousingAnywhere, Huislijn, Vastgoed Nederland, Buurtje, Marktplaats |
+
+De lijst komt uit webonderzoek (oktober 2026). Bij bronnen met `url_gezien: False` is het adres van de aanbodpagina afgeleid en nog niet gecontroleerd; in `--lijst` staat dan "(url nog controleren)". Veel lokale makelaars plaatsen hun huurwoningen alleen op Funda/Pararius; die komen dus via die bronnen binnen. Dezelfde woning op meerdere sites wordt op de pagina samengevoegd.
+
 ### Makelaars, verhuurders en extra platforms
 
 Lokale makelaars, verhuurorganisaties/beleggers en kleinere huursites staan in `scraper/sites.py` en gebruiken de generieke scraper (`scraper/sources/generic.py`). Die herkent zelf de woningkaarten op een overzichtspagina (links op dezelfde site met een huurprijs), slaat koopwoningen over, volgt volgende pagina's en leest daarna de detailpagina's.
@@ -88,6 +98,7 @@ python -m scraper --browser altijd
 |---|---|
 | **Nieuw** (`is_new`) | Beschikbaar en minder dan 3 dagen geleden geplaatst (of door de site als "Nieuw" gemarkeerd) |
 | `beschikbaar` | Te huur / reageren mogelijk |
+| `binnenkort` | Binnenkort beschikbaar / binnenkort in de verhuur (bijv. nieuwbouw) |
 | `onder_optie` | Onder optie / in onderhandeling |
 | `verhuurd_ovb` | Verhuurd onder voorbehoud |
 | `verhuurd` | Verhuurd (Funda en Pararius tonen dit) |

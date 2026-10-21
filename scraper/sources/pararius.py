@@ -21,7 +21,8 @@ def slug(place: str) -> str:
 
 
 class Pararius(Source):
-    detail_rx = r"pararius\.nl/[a-z-]+-te-huur/[^/?#]+/[0-9a-f]{8}/[^/?#]+"
+    # klassiek: /appartement-te-huur/alkmaar/1a2b3c4d/laat ; nieuw: /listing/<uuid>
+    detail_rx = r"pararius\.(?:nl|com)/(?:[a-z]{2}/)?(?:[a-z-]+-te-huur/[^/?#]+/[0-9a-f]{8}/[^/?#]+|listing/[0-9a-f]{8}-[0-9a-f-]{27})"
 
     def search_url(self, place: str, page: int) -> str:
         url = f"{self.base}/huurwoningen/{slug(place)}"
@@ -140,7 +141,8 @@ class Pararius(Source):
             imgs = parse.image_of(card, page_url)
             if imgs:
                 f["images"] = imgs
-            f["property_type"] = f.get("property_type") or parse.detect_property_type(url.split("/")[3].replace("-te-huur", ""))
+            if "-te-huur/" in url:
+                f["property_type"] = f.get("property_type") or parse.detect_property_type(url.split("/")[3].replace("-te-huur", ""))
             out.append((url, {k: v for k, v in f.items() if v not in (None, "", [])}))
         return out
 

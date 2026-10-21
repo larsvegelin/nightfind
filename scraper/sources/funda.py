@@ -14,7 +14,9 @@ from .. import config, model, parse
 from ..fetch import FetchError
 from .base import Source, SourceResult
 
-DETAIL_RX = r"funda\.nl/(?:detail/huur/[^/?#]+/[^/?#]+/\d{6,}|huur/[^/?#]+/[a-z]+-\d{6,}-[^/?#]+)"
+# Ook verhuurde woningen: /detail/huur/verhuurd/heerhugowaard/appartement-dione-25/43275681/
+DETAIL_RX = r"funda\.nl/(?:[a-z]{2}/)?(?:detail/huur/(?:verhuurd/|onder-bod/|onder-optie/)?[^/?#]+/[^/?#]+/\d{6,}|huur/[^/?#]+/[a-z]+-\d{6,}-[^/?#]+)"
+_CANON_RX = r"funda\.nl/(?:[a-z]{2}/)?((?:detail/huur/(?:verhuurd/|onder-bod/|onder-optie/)?[^/?#]+/[^/?#]+/\d{6,}|huur/[^/?#]+/[a-z]+-\d{6,}-[^/?#]+))"
 
 
 def slug(place: str) -> str:
@@ -30,8 +32,8 @@ class Funda(Source):
 
     @staticmethod
     def canonical(url: str) -> str | None:
-        m = re.search(DETAIL_RX, url)
-        return f"https://www.{m.group(0)}/" if m else None
+        m = re.search(_CANON_RX, url)
+        return f"https://www.funda.nl/{m.group(1)}/" if m else None
 
     def scrape(self) -> SourceResult:
         found: dict[str, dict] = {}
@@ -82,9 +84,11 @@ class Funda(Source):
         for url, fields in found.items():
             listing = self.new(model.id_from_url(url), url=url)
             model.merge_fields(listing, fields)
+            if "/huur/verhuurd/" in url and listing.get("status") in (None, "beschikbaar"):
+                listing["status"] = "verhuurd"
             if not listing.get("street"):
                 # /detail/huur/alkmaar/appartement-laat-12/43912345/
-                m = re.search(r"/huur/([^/]+)/([a-z]+)-([^/]+?)/\d+", url) or re.search(r"/huur/([^/]+)/([a-z]+)-\d+-([^/]+)", url)
+                m = re.search(r"/huur/(?:verhuurd/|onder-bod/|onder-optie/)?([^/]+)/([a-z]+)-([^/]+?)/\d+", url) or re.search(r"/huur/([^/]+)/([a-z]+)-\d+-([^/]+)", url)
                 if m:
                     listing["city"] = listing.get("city") or parse.find_place_in_text(m.group(1).replace("-", " "))
                     listing["property_type"] = listing.get("property_type") or m.group(2).capitalize()

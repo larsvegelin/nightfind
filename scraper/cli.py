@@ -40,8 +40,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.lijst:
         for sid, cfg in config.BRONNEN.items():
-            print(f"{sid:28} {cfg['naam']:34} {cfg['type']:11} {cfg['base']}")
-        print(f"\n{len(config.BRONNEN)} bronnen")
+            mark = "" if cfg.get("url_gezien", True) else "  (url nog controleren)"
+            print(f"{sid:20} {cfg['naam']:32} {cfg['type']:11} {cfg['base']}{mark}")
+        counts = {}
+        for cfg in config.BRONNEN.values():
+            counts[cfg["type"]] = counts.get(cfg["type"], 0) + 1
+        print(f"\n{len(config.BRONNEN)} bronnen: " + ", ".join(f"{v} {k}" for k, v in counts.items()))
         return 0
 
     wanted = list(config.BRONNEN) if not args.bronnen else [s.strip() for s in args.bronnen.split(",") if s.strip()]
@@ -71,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"→ {cfg['naam']} ({cfg['base']})")
             started = time.time()
             run = {"id": sid, "name": cfg["naam"], "type": cfg["type"], "url": cfg["base"], "description": cfg.get("omschrijving"),
+                   "url_checked": cfg.get("url_gezien", True),
                    "status": "ok", "count": 0, "found": 0, "complete": True, "error": None, "notes": [], "scraped_at": store.now_iso()}
             try:
                 source = REGISTRY.get(sid, GenericSite)(cfg, fetcher, opts, log=print)

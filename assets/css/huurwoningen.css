@@ -17,6 +17,7 @@
     /* Statuskleuren: altijd samen met tekstlabel gebruikt */
     --st-new: #a78bfa;
     --st-available: #34c38f;
+    --st-soon: #4fc3d9;
     --st-option: #e6b422;
     --st-ovb: #f08a4b;
     --st-rented: #f06a6a;
@@ -174,6 +175,7 @@ button.kpi[aria-pressed="true"] { border-color: var(--purple); background: #160f
 }
 .badge.st-new { --c: var(--st-new); }
 .badge.st-available { --c: var(--st-available); }
+.badge.st-soon { --c: var(--st-soon); }
 .badge.st-option { --c: var(--st-option); }
 .badge.st-ovb { --c: var(--st-ovb); }
 .badge.st-rented { --c: var(--st-rented); }
@@ -182,6 +184,7 @@ button.kpi[aria-pressed="true"] { border-color: var(--purple); background: #160f
 .badge.plain { --c: var(--text-2); }
 .dot.st-new { color: var(--st-new); }
 .dot.st-available { color: var(--st-available); }
+.dot.st-soon { color: var(--st-soon); }
 .dot.st-option { color: var(--st-option); }
 .dot.st-ovb { color: var(--st-ovb); }
 .dot.st-rented { color: var(--st-rented); }

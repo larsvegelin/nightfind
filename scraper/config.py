@@ -73,8 +73,12 @@ ZOEKPLAATSEN: list[str] = [
     "Ursem",
 ]
 
+# De plaatsen uit de oorspronkelijke vraag; standaard-zoekplaatsen voor extra huursites.
+HOOFDPLAATSEN: list[str] = ["Alkmaar", "Heerhugowaard", "Sint Pancras", "Schagen", "Tuitjenhorn", "Obdam", "Ursem"]
+
 # Bekende verhuurders in de regio; worden herkend in teksten van advertenties.
 CORPORATIES: list[str] = [
+    "Woonstichting Langedijk",
     "Woonwaard",
     "Van Alckmaer",
     "Kennemer Wonen",

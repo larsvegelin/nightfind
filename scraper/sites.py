@@ -1,17 +1,364 @@
 """Makelaars, verhuurders en extra huurplatforms (generieke scraper, zie sources/generic.py).
 
 Per site:
-  naam        weergavenaam
-  type        "makelaar" | "verhuurder" | "platform"
-  base        homepage
-  lijst       overzichtspagina('s) met huuraanbod
-  zoek_url    optioneel sjabloon per zoekplaats, bijv. "https://site.nl/huren/{slug}/"
-  zoekplaatsen optioneel: plaatsen voor zoek_url (standaard config.ZOEKPLAATSEN)
-  detail      optioneel regex voor detail-links (anders automatisch herkend)
-  render      True als de site JavaScript nodig heeft (Playwright)
-  plaatsen    waar de makelaar vooral actief is (informatief)
-  omschrijving korte toelichting
+  naam          weergavenaam
+  type          "makelaar" | "verhuurder" | "platform"
+  base          homepage
+  lijst         overzichtspagina('s) met huuraanbod
+  zoek_url      optioneel sjabloon (of lijst sjablonen) per zoekplaats, bijv. "https://site.nl/huren/{slug}/"
+                ({slug} = alkmaar / sint-pancras, {plaats} = Sint Pancras, {plaats_url} = Sint%20Pancras)
+  zoekplaatsen  plaatsen voor zoek_url (standaard config.HOOFDPLAATSEN)
+  detail        optioneel regex voor links naar woningen (anders automatisch herkend)
+  gemengd       True als de overzichtspagina ook koopwoningen toont (dan alleen kaarten met huurprijs)
+  render        True als de site JavaScript nodig heeft (Playwright)
+  alleen_eigen_plaats  alle woningen liggen in de ene plaats uit `plaatsen` (bijv. één nieuwbouwproject)
+  url_gezien    True = overzichts-URL gezien in zoekresultaten (okt 2026); False = afgeleid, nog controleren
+  plaatsen      waar de aanbieder actief is (informatief)
+
+Gevonden via webonderzoek in oktober 2026. Een URL die niet meer werkt (404) geeft geen fout,
+de bron blijft dan 'leeg'. Pas URL's hier aan als een site verandert.
 """
 from __future__ import annotations
 
-EXTRA_BRONNEN: dict[str, dict] = {}
+HOOFD = ["Alkmaar", "Heerhugowaard", "Schagen"]
+
+EXTRA_BRONNEN: dict[str, dict] = {
+    # ------------------------------------------------------------------
+    # Lokale makelaars en verhuurmakelaars
+    # ------------------------------------------------------------------
+    "pinedo": {
+        "naam": "Pinedo Makelaardij",
+        "type": "makelaar",
+        "base": "https://pinedo.nl",
+        "lijst": ["https://pinedo.nl/huurwoningen/"],
+        "detail": r"pinedo\.nl/woningaanbod/[a-z0-9-]+",
+        "plaatsen": ["Alkmaar", "Heerhugowaard", "Sint Pancras", "Obdam"],
+        "url_gezien": True,
+        "omschrijving": "Verhuurspecialist Alkmaar (Oudegracht); ook Heerhugowaard, Sint Pancras, Obdam",
+    },
+    "072wonen": {
+        "naam": "072wonen | Broekman Makelaars",
+        "type": "makelaar",
+        "base": "https://www.072wonen.nl",
+        "lijst": [
+            "https://www.072wonen.nl/woningaanbod/huur",
+            "https://www.072wonen.nl/woningaanbod/huur/alkmaar",
+            "https://www.072wonen.nl/woningaanbod/huur/heerhugowaard",
+        ],
+        "detail": r"072wonen\.nl/woningaanbod/huur/[^/?#]+/(?!type-)[^/?#]+/[^/?#]+/?(?:[?#]|$)",
+        "plaatsen": ["Alkmaar", "Heerhugowaard"],
+        "url_gezien": False,
+        "omschrijving": "Voorheen Rotsvast Alkmaar / 072huren, nu samen met Broekman Makelaars",
+    },
+    "broekman": {
+        "naam": "Broekman Makelaars",
+        "type": "makelaar",
+        "base": "https://www.broekmanmakelaars.nl",
+        "lijst": ["https://www.broekmanmakelaars.nl/aanbod/woningaanbod/huur/"],
+        "gemengd": True,
+        "plaatsen": ["Alkmaar", "Heerhugowaard"],
+        "url_gezien": False,
+        "omschrijving": "Kantoren Alkmaar, Heerhugowaard en De Rijp; verhuur en beheer",
+    },
+    "123wonen": {
+        "naam": "123Wonen",
+        "type": "makelaar",
+        "base": "https://www.123wonen.nl",
+        "zoek_url": "https://www.123wonen.nl/huurwoningen/in/{slug}",
+        "zoekplaatsen": ["Alkmaar", "Heerhugowaard", "Zuid-Scharwoude", "Schagen"],
+        "detail": r"123wonen\.nl/huur/[^/?#]+/[^/?#]+/[^/?#]+-\d+-\d+",
+        "plaatsen": ["Alkmaar", "Heerhugowaard", "Schagen"],
+        "url_gezien": True,
+        "omschrijving": "Verhuurmakelaar, kantoor Alkmaar (Korte Vondelstraat)",
+    },
+    "vanderborden": {
+        "naam": "Van der Borden Huur & Beheer",
+        "type": "makelaar",
+        "base": "https://www.vanderborden.nl",
+        "lijst": ["https://www.vanderborden.nl/aanbod/huur/"],
+        "detail": r"vanderborden\.nl/(?:aanbod/huur/(?!page/)[a-z0-9-]+|woning/[a-z0-9-]+)",
+        "plaatsen": ["Alkmaar", "Heerhugowaard"],
+        "url_gezien": False,
+        "omschrijving": "Verhuur en beheer, Alkmaar (Kennemerstraatweg)",
+    },
+    "leygraaf": {
+        "naam": "Leygraaf Makelaars",
+        "type": "makelaar",
+        "base": "https://leygraafmakelaars.nl",
+        "lijst": ["https://leygraafmakelaars.nl/huurwoningen/"],
+        "detail": r"leygraafmakelaars\.nl/woningen/[a-z0-9-]+",
+        "plaatsen": ["Alkmaar"],
+        "url_gezien": True,
+        "omschrijving": "Makelaar Alkmaar (Kennemerstraatweg)",
+    },
+    "scbakker": {
+        "naam": "SC Bakker Makelaardij",
+        "type": "makelaar",
+        "base": "https://www.scbakker.nl",
+        "lijst": [
+            "https://www.scbakker.nl/aanbod/woningaanbod/SCHAGEN/huur/",
+            "https://www.scbakker.nl/aanbod/woningaanbod/huur/",
+        ],
+        "detail": r"scbakker\.nl/woningen/[a-z0-9-]+",
+        "plaatsen": ["Schagen"],
+        "url_gezien": True,
+        "omschrijving": "Makelaar Schagen; ook Kolhorn en Wieringerwerf",
+    },
+    "vlieg": {
+        "naam": "VLIEG Makelaars",
+        "type": "makelaar",
+        "base": "https://www.vlieg.nl",
+        "lijst": ["https://www.vlieg.nl/woningen/"],
+        "detail": r"vlieg\.nl/(?:en/)?woning/[a-z0-9-]+",
+        "gemengd": True,
+        "plaatsen": ["Schagen", "Heerhugowaard", "Alkmaar"],
+        "url_gezien": True,
+        "omschrijving": "Kantoren Schagen, Heerhugowaard, Alkmaar; koop en huur op één pagina",
+    },
+    "rotsvast": {
+        "naam": "Rotsvast",
+        "type": "makelaar",
+        "base": "https://www.rotsvast.nl",
+        "lijst": [
+            "https://www.rotsvast.nl/en/renting-apartment-alkmaar/",
+            "https://www.rotsvast.nl/woningaanbod/?city=Alkmaar",
+            "https://www.rotsvast.nl/woningaanbod/?city=Heerhugowaard",
+        ],
+        "detail": r"rotsvast\.nl/(?:[a-z]{2}/)?(?:huren/)?[a-z0-9-]+-h\d{6,}",
+        "plaatsen": ["Alkmaar", "Heerhugowaard"],
+        "url_gezien": False,
+        "omschrijving": "Verhuurmakelaar (landelijk); woningen in Alkmaar en Heerhugowaard gezien",
+    },
+    "nederwoon": {
+        "naam": "NederWoon",
+        "type": "makelaar",
+        "base": "https://www.nederwoon.nl",
+        "zoek_url": "https://www.nederwoon.nl/search?city={plaats_url}",
+        "zoekplaatsen": HOOFD,
+        "detail": r"nederwoon\.nl/huurwoning/[a-z-]+/\d+/[a-z0-9-]+",
+        "plaatsen": ["Alkmaar"],
+        "url_gezien": False,
+        "omschrijving": "Verhuurmakelaar en beheerder (landelijk)",
+    },
+    "vbt": {
+        "naam": "vb&t Verhuurmakelaars",
+        "type": "makelaar",
+        "base": "https://vbtverhuurmakelaars.nl",
+        "lijst": ["https://vbtverhuurmakelaars.nl/woningen"],
+        "detail": r"vbtverhuurmakelaars\.nl/woning/[a-z0-9-]+",
+        "plaatsen": ["Heerhugowaard"],
+        "url_gezien": True,
+        "omschrijving": "Verhuurt voor beleggers (o.a. Lapis Lazuli Heerhugowaard, Bouwinvest vanaf 2026)",
+    },
+    "hoekstra": {
+        "naam": "Hoekstra en Van Eck (huren)",
+        "type": "makelaar",
+        "base": "https://www.hurenbijhoekstra.nl",
+        "lijst": ["https://www.hurenbijhoekstra.nl/"],
+        "plaatsen": ["Heerhugowaard", "Alkmaar"],
+        "url_gezien": True,
+        "omschrijving": "Aanmeldsite voor huurwoningen van Hoekstra en Van Eck (Heerhugowaard)",
+    },
+    "verhuurmakelaarbas": {
+        "naam": "Verhuurmakelaar Bas",
+        "type": "makelaar",
+        "base": "https://verhuurmakelaarbas.nl",
+        "lijst": ["https://verhuurmakelaarbas.nl/aanbod/", "https://verhuurmakelaarbas.nl/"],
+        "plaatsen": ["Alkmaar"],
+        "url_gezien": False,
+        "omschrijving": "Verhuurmakelaar Alkmaar e.o.",
+    },
+    "cliq": {
+        "naam": "CLIQ makelaars",
+        "type": "makelaar",
+        "base": "https://www.cliqmakelaars.nl",
+        "lijst": ["https://www.cliqmakelaars.nl/aanbod/woningaanbod/huur/"],
+        "gemengd": True,
+        "plaatsen": ["Heerhugowaard", "Alkmaar", "Langedijk"],
+        "url_gezien": False,
+        "omschrijving": "Makelaar Heerhugowaard; doet ook verhuur",
+    },
+    "bakkerschoon": {
+        "naam": "Bakker Schoon Makelaardij",
+        "type": "makelaar",
+        "base": "https://www.bakkerschoon.nl",
+        "lijst": ["https://www.bakkerschoon.nl/aanbod/woningaanbod/huur/"],
+        "gemengd": True,
+        "plaatsen": ["Noord-Scharwoude", "Heerhugowaard", "Tuitjenhorn"],
+        "url_gezien": False,
+        "omschrijving": "Makelaar Noord-Scharwoude (Dijk en Waard); doet ook verhuur",
+    },
+    "panthera": {
+        "naam": "Panthera Makelaars",
+        "type": "makelaar",
+        "base": "https://www.pantheramakelaars.nl",
+        "lijst": ["https://www.pantheramakelaars.nl/aanbod/woningaanbod/huur/"],
+        "gemengd": True,
+        "plaatsen": ["Warmenhuizen"],
+        "url_gezien": False,
+        "omschrijving": "Makelaar Warmenhuizen (gem. Schagen); verhuurt ook",
+    },
+    "demonie": {
+        "naam": "Demonie Makelaardij",
+        "type": "makelaar",
+        "base": "https://www.demoniemakelaardij.nl",
+        "lijst": ["https://www.demoniemakelaardij.nl/aanbod/woningaanbod/huur/"],
+        "gemengd": True,
+        "plaatsen": ["Oudorp", "Alkmaar"],
+        "url_gezien": False,
+        "omschrijving": "Makelaar Oudorp (Alkmaar); doet ook verhuur",
+    },
+    # ------------------------------------------------------------------
+    # Verhuurders, beleggers en nieuwbouwprojecten
+    # ------------------------------------------------------------------
+    "ikwilhuren": {
+        "naam": "Ik wil huren (MVGM)",
+        "type": "verhuurder",
+        "base": "https://ikwilhuren.nu",
+        "zoek_url": "https://ikwilhuren.nu/aanbod/{slug}/",
+        "zoekplaatsen": HOOFD,
+        "lijst": ["https://ikwilhuren.nu/aanbod/binnenkort-beschikbaar/"],
+        "detail": r"ikwilhuren\.nu/(?:object/[a-z0-9-]+|[a-z-]+/[^/?#]+/[^/?#]+/\d{6,})",
+        "plaatsen": ["Alkmaar", "Heerhugowaard"],
+        "url_gezien": True,
+        "omschrijving": "Woningen van beleggers via MVGM (o.a. Bouwinvest vanaf 2026); toont onder optie/verhuurd",
+    },
+    "vesteda": {
+        "naam": "Vesteda",
+        "type": "verhuurder",
+        "base": "https://www.vesteda.com",
+        "lijst": [
+            "https://www.vesteda.com/nl/huurwoningen-alkmaar",
+            "https://www.vesteda.com/nl/huurwoningen-heerhugowaard",
+            "https://www.vesteda.com/nl/dampkring",
+            "https://www.vesteda.com/nl/daalderstraat",
+            "https://www.vesteda.com/nl/braspenningstraat",
+        ],
+        "detail": r"vesteda\.com/(?:nl|en)/[a-z0-9-]+/[a-z0-9-]+-\d{4,}",
+        "plaatsen": ["Alkmaar", "Heerhugowaard"],
+        "url_gezien": True,
+        "omschrijving": "Belegger; complexen Dampkring (Heerhugowaard), Daalderstraat en Braspenningstraat (Alkmaar)",
+    },
+    "vaanpark": {
+        "naam": "Vaanpark (nieuwbouw)",
+        "type": "verhuurder",
+        "base": "https://www.hureninvaanpark.nl",
+        "lijst": ["https://www.hureninvaanpark.nl/"],
+        "plaatsen": ["Heerhugowaard"],
+        "alleen_eigen_plaats": True,
+        "url_gezien": False,
+        "omschrijving": "146 middenhuurappartementen in Heerhugowaard, oplevering vanaf eind 2026",
+    },
+    "heimstaden": {
+        "naam": "Heimstaden",
+        "type": "verhuurder",
+        "base": "https://heimstaden.com",
+        "lijst": ["https://heimstaden.com/nl/huurwoning-alkmaar/", "https://heimstaden.com/nl/huurwoning-heerhugowaard/"],
+        "plaatsen": ["Alkmaar", "Heerhugowaard"],
+        "url_gezien": False,
+        "omschrijving": "Belegger met ruim 400 woningen in Alkmaar en Heerhugowaard",
+    },
+    # ------------------------------------------------------------------
+    # Extra huurplatforms (deels doorgeplaatst van makelaars: dubbelen worden samengevoegd)
+    # ------------------------------------------------------------------
+    "directwonen": {
+        "naam": "Directwonen",
+        "type": "platform",
+        "base": "https://directwonen.nl",
+        "zoek_url": "https://directwonen.nl/en/rentals-for-rent/{slug}",
+        "zoekplaatsen": HOOFD,
+        "detail": r"directwonen\.nl/(?:en/)?[a-z-]+/[a-z-]+/[^/?#]+/[a-z-]+-\d{5,}",
+        "url_gezien": True,
+        "omschrijving": "Vooral particuliere verhuurders; toont plaatsingsdatum",
+    },
+    "huurstunt": {
+        "naam": "Huurstunt",
+        "type": "platform",
+        "base": "https://www.huurstunt.nl",
+        "zoek_url": "https://www.huurstunt.nl/huren/{slug}",
+        "zoekplaatsen": ["Alkmaar", "Heerhugowaard", "Noord-Scharwoude", "Schagen", "Obdam"],
+        "lijst": ["https://www.huurstunt.nl/huurwoning/huren/gemeente-schagen"],
+        "detail": r"huurstunt\.nl/[a-z-]+/huren/in/[a-z-]+/[^/?#]+/[a-z0-9]{4,8}",
+        "url_gezien": True,
+        "omschrijving": "Huurplatform; labels verhuurd en gereserveerd",
+    },
+    "rentola": {
+        "naam": "Rentola",
+        "type": "platform",
+        "base": "https://rentola.nl",
+        "zoek_url": "https://rentola.nl/huren/{slug}",
+        "detail": r"rentola\.nl/(?:en/)?listings/[a-z0-9-]+",
+        "url_gezien": True,
+        "omschrijving": "Verzamelsite (betaald); veel doorgeplaatst aanbod",
+    },
+    "huurportaal": {
+        "naam": "Huurportaal",
+        "type": "platform",
+        "base": "https://huurportaal.nl",
+        "zoek_url": "https://huurportaal.nl/huurwoningen/{slug}",
+        "detail": r"huurportaal\.nl/(?:en/)?listings/[a-z0-9-]+",
+        "url_gezien": True,
+        "omschrijving": "Verzamelsite (betaald); veel doorgeplaatst aanbod",
+    },
+    "kamer_nl": {
+        "naam": "Kamer.nl",
+        "type": "platform",
+        "base": "https://www.kamer.nl",
+        "zoek_url": ["https://www.kamer.nl/huren/appartement-{slug}/", "https://www.kamer.nl/huren/huis-{slug}/"],
+        "zoekplaatsen": ["Alkmaar", "Heerhugowaard", "Zuid-Scharwoude", "Schagen"],
+        "detail": r"kamer\.nl/(?:en/)?huren/[a-z]+-[a-z-]+/[^/?#]+/\d{4,}",
+        "url_gezien": True,
+        "omschrijving": "Kamers en appartementen",
+    },
+    "housinganywhere": {
+        "naam": "HousingAnywhere",
+        "type": "platform",
+        "base": "https://housinganywhere.com",
+        "zoek_url": "https://housinganywhere.com/s/{plaats_url}--Netherlands",
+        "zoekplaatsen": ["Alkmaar", "Heerhugowaard"],
+        "detail": r"housinganywhere\.com/room/ut\d+",
+        "render": True,
+        "url_gezien": True,
+        "omschrijving": "Gemeubileerde (mid-term) verhuur",
+    },
+    "huislijn": {
+        "naam": "Huislijn",
+        "type": "platform",
+        "base": "https://www.huislijn.nl",
+        "zoek_url": "https://www.huislijn.nl/huurwoning/nederland/noord-holland/{slug}",
+        "zoekplaatsen": HOOFD,
+        "detail": r"huislijn\.nl/huurwoning/nederland/noord-holland/\d+/[a-z0-9-]+",
+        "url_gezien": False,
+        "omschrijving": "Woningsite van makelaars",
+    },
+    "vastgoednederland": {
+        "naam": "Vastgoed Nederland",
+        "type": "platform",
+        "base": "https://www.vastgoednederland.nl",
+        "zoek_url": "https://www.vastgoednederland.nl/huurwoningen/{slug}",
+        "zoekplaatsen": HOOFD,
+        "detail": r"vastgoednederland\.nl/huurwoningen/[a-z-]+/woning-\d+-[a-z0-9-]+",
+        "url_gezien": True,
+        "omschrijving": "Aanbod van makelaars aangesloten bij Vastgoed Nederland",
+    },
+    "buurtje": {
+        "naam": "Buurtje",
+        "type": "platform",
+        "base": "https://buurtje.nl",
+        "zoek_url": "https://buurtje.nl/huurwoningen/{slug}/",
+        "zoekplaatsen": HOOFD,
+        "url_gezien": True,
+        "omschrijving": "Verzamelsite huurwoningen",
+    },
+    "marktplaats": {
+        "naam": "Marktplaats",
+        "type": "platform",
+        "base": "https://www.marktplaats.nl",
+        "zoek_url": "https://www.marktplaats.nl/l/huizen-en-kamers/huizen-te-huur/q/{slug}+huur/",
+        "zoekplaatsen": HOOFD,
+        "detail": r"marktplaats\.nl/v/huizen-en-kamers/[^/?#]+/m\d+",
+        "render": True,
+        "url_gezien": True,
+        "omschrijving": "Particuliere advertenties – let op oplichting, nooit vooraf betalen",
+    },
+}

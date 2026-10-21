@@ -2,13 +2,15 @@
 
 const STATUS = {
     beschikbaar: { label: 'Beschikbaar', cls: 'st-available', rank: 0 },
-    onder_optie: { label: 'Onder optie', cls: 'st-option', rank: 1 },
-    verhuurd_ovb: { label: 'Verhuurd o.v.b.', cls: 'st-ovb', rank: 2 },
-    gesloten: { label: 'Reageren gesloten', cls: 'st-closed', rank: 3 },
-    verhuurd: { label: 'Verhuurd', cls: 'st-rented', rank: 4 },
-    offline: { label: 'Offline', cls: 'st-offline', rank: 5 }
+    binnenkort: { label: 'Binnenkort', cls: 'st-soon', rank: 1 },
+    onder_optie: { label: 'Onder optie', cls: 'st-option', rank: 2 },
+    verhuurd_ovb: { label: 'Verhuurd o.v.b.', cls: 'st-ovb', rank: 3 },
+    gesloten: { label: 'Reageren gesloten', cls: 'st-closed', rank: 4 },
+    verhuurd: { label: 'Verhuurd', cls: 'st-rented', rank: 5 },
+    offline: { label: 'Offline', cls: 'st-offline', rank: 6 }
 };
 const STATUS_HINT = {
+    binnenkort: 'Binnenkort beschikbaar / binnenkort in de verhuur',
     verhuurd_ovb: 'Verhuurd onder voorbehoud',
     gesloten: 'Reactietermijn voorbij – woning wordt toegewezen',
     offline: 'Advertentie verdwenen – waarschijnlijk verhuurd'
@@ -20,7 +22,7 @@ const TYPE_LABELS = { corporatie: 'Woningcorporaties', platform: 'Huurplatforms'
 const TYPE_ORDER = ['corporatie', 'platform', 'makelaar', 'verhuurder'];
 const GEMEENTE_ORDER = ['Alkmaar', 'Dijk en Waard', 'Schagen', 'Koggenland'];
 const SEGMENTS = ['Sociale huur', 'Middenhuur', 'Vrije sector'];
-const DEFAULT_STATUSES = ['beschikbaar', 'onder_optie', 'verhuurd_ovb', 'gesloten', 'verhuurd'];
+const DEFAULT_STATUSES = ['beschikbaar', 'binnenkort', 'onder_optie', 'verhuurd_ovb', 'gesloten', 'verhuurd'];
 const DEFAULT_FILTERS = {
     q: '', statuses: DEFAULT_STATUSES, onlyNew: false, since: '', places: [], sources: [], segments: [],
     type: '', rentMin: '', rentMax: '', areaMin: '', roomsMin: '', merge: true, sort: 'published:desc', view: 'cards'
@@ -365,7 +367,7 @@ function renderKpis(base) {
     const tiles = [
         { id: 'all', label: 'Woningen', value: state.groups.filter((v) => matches(v, f)).length, pressed: same(DEFAULT_STATUSES) },
         { id: 'new', label: 'Nieuw', dot: 'st-new', value: nNew, pressed: f.onlyNew },
-        { id: 'beschikbaar', label: 'Beschikbaar', dot: 'st-available', value: st.beschikbaar || 0, pressed: same(['beschikbaar']) },
+        { id: 'beschikbaar', label: 'Beschikbaar', dot: 'st-available', value: (st.beschikbaar || 0) + (st.binnenkort || 0), pressed: same(['beschikbaar', 'binnenkort']) },
         { id: 'optie', label: 'Onder optie', dot: 'st-option', value: (st.onder_optie || 0) + (st.verhuurd_ovb || 0), pressed: same(['onder_optie', 'verhuurd_ovb']) },
         { id: 'verhuurd', label: 'Verhuurd', dot: 'st-rented', value: st.verhuurd || 0, pressed: same(['verhuurd']) }
     ];
@@ -389,7 +391,7 @@ function renderSources() {
     const pill = (r) => {
         const cls = r.status === 'ok' ? 'ok' : r.status === 'fout' ? 'fout' : 'leeg';
         const detail = r.status === 'ok' ? `${r.count}` : r.status === 'fout' ? 'fout' : 'leeg';
-        const title = [r.description, r.error, ...(r.notes || []), r.scraped_at ? `Gescand: ${fmtDateTime(r.scraped_at)}` : ''].filter(Boolean).join('\n');
+        const title = [r.description, r.url_checked === false ? 'Adres van de aanbodpagina is afgeleid – nog niet gecontroleerd' : '', r.error, ...(r.notes || []), r.scraped_at ? `Gescand: ${fmtDateTime(r.scraped_at)}` : ''].filter(Boolean).join('\n');
         const url = safeUrl(r.url);
         const name = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(r.name)}</a>` : escapeHtml(r.name);
         return `<span class="source-pill ${cls}" title="${escapeHtml(title)}"><i class="dot"></i><strong>${name}</strong> ${escapeHtml(detail)}</span>`;
@@ -668,7 +670,7 @@ function bindEvents() {
     $('kpis').addEventListener('click', (e) => {
         const b = e.target.closest('[data-kpi]');
         if (!b) return;
-        const sets = { all: DEFAULT_STATUSES, beschikbaar: ['beschikbaar'], optie: ['onder_optie', 'verhuurd_ovb'], verhuurd: ['verhuurd'] };
+        const sets = { all: DEFAULT_STATUSES, beschikbaar: ['beschikbaar', 'binnenkort'], optie: ['onder_optie', 'verhuurd_ovb'], verhuurd: ['verhuurd'] };
         if (b.dataset.kpi === 'new') update({ onlyNew: !state.filters.onlyNew });
         else update({ statuses: sets[b.dataset.kpi], onlyNew: false });
     });

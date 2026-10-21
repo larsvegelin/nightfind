@@ -135,7 +135,7 @@ def write(path: Path, data: dict) -> None:
 
 
 def build_output(listings: list[dict], runs: list[dict]) -> dict[str, Any]:
-    status_order = {"beschikbaar": 0, "onder_optie": 1, "verhuurd_ovb": 2, "gesloten": 3, "verhuurd": 4, "offline": 5}
+    status_order = {"beschikbaar": 0, "binnenkort": 1, "onder_optie": 2, "verhuurd_ovb": 3, "gesloten": 4, "verhuurd": 5, "offline": 6}
     listings = sorted(
         (ordered(l) for l in listings),
         key=lambda l: (status_order.get(l.get("status"), 9), -(int((l.get("published_at") or l.get("first_seen") or "0000-00-00")[:10].replace("-", "")))),

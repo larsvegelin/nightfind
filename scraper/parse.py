@@ -33,6 +33,7 @@ MAANDEN = {
 
 STATUS_LABELS = {
     "beschikbaar": "Beschikbaar",
+    "binnenkort": "Binnenkort beschikbaar",
     "onder_optie": "Onder optie",
     "verhuurd_ovb": "Verhuurd o.v.b.",
     "verhuurd": "Verhuurd",
@@ -239,10 +240,13 @@ def detect_status(text: Any) -> str | None:
         return "verhuurd"
     if re.search(
         r"geadverteerd geweest|niet meer (?:mogelijk|beschikbaar)|reactietermijn (?:is )?(?:verlopen|gesloten)"
-        r"|reageren (?:is )?gesloten|advertentie is verlopen|in behandeling|wordt toegewezen",
+        r"|reageren (?:is )?gesloten|advertentie is verlopen|in behandeling|wordt toegewezen"
+        r"|kan niet meer (?:inschrijven|reageren)|inschrijving (?:is )?gesloten|no longer available",
         t,
     ):
         return "gesloten"
+    if re.search(r"binnenkort (?:beschikbaar|in (?:de )?verhuur|te huur|online)|coming soon|in voorbereiding", t):
+        return "binnenkort"
     if re.search(r"\bbeschikbaar\b|\bavailable\b|direct te huur|nu te huur|reageer nu|reageren kan", t):
         return "beschikbaar"
     return None
@@ -586,13 +590,13 @@ def fields_from_text(text: str, today: date | None = None) -> dict:
     if pc:
         out["postcode"] = pc
 
-    date_tail = r"((?:[a-z]+dag\s+)?\d{1,2}[\s/.-]+(?:[a-z]{3,9}\.?|\d{1,2})(?:[\s/.-]+\d{2,4})?|vandaag|gisteren|\d+\+?\s*(?:dagen|dag|weken|week|maanden|maand))"
+    date_tail = r"((?:[a-z]+dag\s+)?\d{1,2}[\s/.-]+(?:[a-z]{3,9}\.?|\d{1,2})(?:[\s/.-]+\d{2,4})?|vandaag|gisteren|today|yesterday|\d+\+?\s*(?:dagen|dag|weken|week|maanden|maand|days|day|weeks|week|months|month))"
     m = re.search(r"geadverteerd(?: geweest)? van\s+" + date_tail + r"\s+(?:tot(?: en met)?|t/m)\s+" + date_tail, t, re.I)
     if m:
         out["published_at"] = parse_date(m.group(1), today, past=True)
         out["closing_date"] = parse_date(m.group(2), today, past=None)
     if "published_at" not in out:
-        m = re.search(r"(?:geplaatst|aangeboden sinds|gepubliceerd|online sinds|publicatiedatum|datum plaatsing|aangeboden op)\s*(?:op)?\s*:?\s*" + date_tail, t, re.I)
+        m = re.search(r"(?:geplaatst|aangeboden sinds|gepubliceerd|online sinds|publicatiedatum|datum plaatsing|aangeboden op|posted|listed|placed|offered since)\s*(?:op|on)?\s*:?\s*" + date_tail, t, re.I)
         if m:
             out["published_at"] = parse_date(m.group(1), today, past=True)
     if "closing_date" not in out:
@@ -602,7 +606,10 @@ def fields_from_text(text: str, today: date | None = None) -> dict:
     m = re.search(r"(?:beschikbaar (?:per|vanaf)|ingangsdatum|aanvaarding|huuringangsdatum)\s*:?\s*" + date_tail, t, re.I)
     if m:
         out["available_from"] = parse_date(m.group(1), today, past=False)
-    elif re.search(r"beschikbaar per direct|direct beschikbaar|aanvaarding:? direct", t, re.I):
+    elif re.search(r"\bper\s+(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}\s+[a-z]{3,9}\.?(?:\s+\d{4})?)\s+beschikbaar", t, re.I):
+        m = re.search(r"\bper\s+(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}\s+[a-z]{3,9}\.?(?:\s+\d{4})?)\s+beschikbaar", t, re.I)
+        out["available_from"] = parse_date(m.group(1), today, past=False)
+    elif re.search(r"beschikbaar per direct|direct beschikbaar|aanvaarding:? direct|available (?:immediately|directly)", t, re.I):
         out["available_text"] = "Direct"
     m = re.search(r"(\d+)\s*reacties", t, re.I)
     if m:

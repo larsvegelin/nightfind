@@ -119,9 +119,11 @@ def auto_detail_cards(soup, page_url: str, extra_hosts: tuple[str, ...] = ()) ->
 class GenericSite(Source):
     def list_urls(self) -> list[str]:
         urls = list(self.cfg.get("lijst", []))
-        tpl = self.cfg.get("zoek_url")
-        if tpl:
-            for place in self.cfg.get("zoekplaatsen") or config.ZOEKPLAATSEN:
+        templates = self.cfg.get("zoek_url") or []
+        if isinstance(templates, str):
+            templates = [templates]
+        for tpl in templates:
+            for place in self.cfg.get("zoekplaatsen") or config.HOOFDPLAATSEN:
                 slug = re.sub(r"[^a-z0-9]+", "-", place.lower().replace("'t ", "t-")).strip("-")
                 urls.append(tpl.format(slug=slug, plaats=place, plaats_url=place.replace(" ", "%20")))
         return list(dict.fromkeys(urls))
@@ -140,6 +142,8 @@ class GenericSite(Source):
         if is_sale_text(text):
             return None
         f = parse.fields_from_text(text, self.opts.today)
+        if self.cfg.get("gemengd") and not f.get("rent_total") and parse.detect_status(text) not in ("verhuurd", "verhuurd_ovb", "onder_optie"):
+            return None  # pagina met koop én huur: zonder huurprijs overslaan
         f.update({k: v for k, v in parse.address_from_segments(text).items() if v})
         heading = card.find(["h2", "h3", "h4", "h5"]) or card.find("strong")
         if heading is not None:
