@@ -143,6 +143,7 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .preview-col { min-width: 0; display: flex; flex-direction: column; gap: 0.75rem; }
 .preview-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
 .preview-title { font-weight: 600; font-size: 0.95rem; }
+.checks { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
 .switch { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.88rem; cursor: pointer; user-select: none; }
 .switch input { width: 1rem; height: 1rem; accent-color: var(--accent); }
 .notes { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -291,17 +292,17 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
         <section class="card">
             <h2>Opgeslagen brieven</h2>
             <ul class="saved" id="opgeslagenLijst"></ul>
-            <label class="label" for="bijlageFormaat">Bijlagen als</label>
-            <select id="bijlageFormaat">
-                <option value="docx">Word (.docx)</option>
-                <option value="txt">TXT</option>
-                <option value="beide">Word + TXT</option>
-            </select>
+            <span class="label">Bijlagen per brief</span>
+            <div class="checks" id="bijlageFormaten">
+                <label class="switch"><input type="checkbox" value="docx" checked> Word (.docx)</label>
+                <label class="switch"><input type="checkbox" value="txt"> TXT</label>
+                <label class="switch"><input type="checkbox" value="html" checked> HTML-code (.html)</label>
+            </div>
             <div class="row-actions">
                 <button type="button" class="btn btn-primary" id="mailHelpdesk">Mail naar helpdesk</button>
                 <button type="button" class="btn" id="lijstLeegmaken">Leegmaken</button>
             </div>
-            <p class="hint">Maakt een concept-mail aan <strong>helpdesk@dewaerdse.nl</strong> met de opgeslagen brieven als bijlage (.eml-bestand). Open het bestand in Outlook, controleer en klik op Verzenden.</p>
+            <p class="hint">Maakt een concept-mail aan <strong>helpdesk@dewaerdse.nl</strong> met de opgeslagen brieven als bijlage in de aangevinkte formaten (.eml-bestand). Open het bestand in Outlook, controleer en klik op Verzenden.</p>
         </section>
 
         <section class="card">
@@ -1395,24 +1396,28 @@ function toonOpgeslagen() {
         li.append(naam, weg);
         lijst.append(li);
     });
-    $('mailHelpdesk').disabled = !state.brieven.length;
+    $('mailHelpdesk').disabled = !state.brieven.length || !gekozenFormaten().length;
     $('lijstLeegmaken').disabled = !state.brieven.length;
 }
 
 async function mailHelpdesk() {
     const brieven = state.brieven;
     if (!brieven.length) return;
-    const formaat = $('bijlageFormaat').value;
+    const formaten = gekozenFormaten();
+    if (!formaten.length) { toast('Vink minstens één formaat aan voor de bijlagen.'); return; }
     const bijlagen = [];
     for (const b of brieven) {
         const blokken = naarBlokken(schoonmaken(b.html));
-        if (formaat !== 'txt') bijlagen.push({ naam: veiligBestand(`${b.naam}.docx`), type: DOCX_TYPE, blob: maakDocx(blokken, b.titel) });
-        if (formaat !== 'docx') bijlagen.push({ naam: veiligBestand(`${b.naam}.txt`), type: 'text/plain; charset=utf-8', blob: maakTxt(blokken) });
+        if (formaten.includes('docx')) bijlagen.push({ naam: veiligBestand(`${b.naam}.docx`), type: DOCX_TYPE, blob: maakDocx(blokken, b.titel) });
+        if (formaten.includes('txt')) bijlagen.push({ naam: veiligBestand(`${b.naam}.txt`), type: 'text/plain; charset=utf-8', blob: maakTxt(blokken) });
+        if (formaten.includes('html')) bijlagen.push({ naam: veiligBestand(`${b.naam}.html`), type: 'text/html; charset=utf-8', blob: new Blob([htmlCode(b.html)]) });
     }
+    const formaatNamen = { docx: 'Word', txt: 'TXT', html: 'HTML' };
+    const soorten = formaten.map((f) => formaatNamen[f]).join(', ').replace(/, ([^,]*)$/, ' en $1');
     const tekst = [
         'Beste helpdesk,',
         '',
-        brieven.length === 1 ? 'Bijgaand de volgende brief:' : `Bijgaand de volgende ${brieven.length} brieven:`,
+        brieven.length === 1 ? `Bijgaand de volgende brief (${soorten}):` : `Bijgaand de volgende ${brieven.length} brieven (${soorten}):`,
         ...brieven.map((b) => `- ${b.naam}`),
         '',
         'Met vriendelijke groet,',
@@ -1426,6 +1431,24 @@ async function mailHelpdesk() {
     });
     download(eml, 'Mail aan helpdesk De Waerdse.eml');
     toast('Concept-mail gedownload. Open het bestand in Outlook en klik op Verzenden.');
+}
+
+const gekozenFormaten = () => [...$('bijlageFormaten').querySelectorAll('input:checked')].map((i) => i.value);
+
+// HTML-code voor het briefsysteem: alleen ASCII, bijzondere tekens als entiteit (é -> &eacute;),
+// zoals in de oorspronkelijke sjablonen. Zo opent het bestand overal met de juiste tekens.
+const ENTITEITEN = {
+    'é': 'eacute', 'è': 'egrave', 'ë': 'euml', 'ê': 'ecirc', 'É': 'Eacute', 'á': 'aacute', 'à': 'agrave', 'ä': 'auml',
+    'ï': 'iuml', 'í': 'iacute', 'ó': 'oacute', 'ö': 'ouml', 'ü': 'uuml', 'ú': 'uacute', 'ç': 'ccedil',
+    '“': 'ldquo', '”': 'rdquo', '‘': 'lsquo', '’': 'rsquo', '–': 'ndash', '—': 'mdash', '…': 'hellip', '€': 'euro', '\u00a0': 'nbsp'
+};
+function htmlCode(html) {
+    let uit = '';
+    for (const teken of html.trim()) {
+        const cp = teken.codePointAt(0);
+        uit += cp < 128 ? teken : (ENTITEITEN[teken] ? `&${ENTITEITEN[teken]};` : `&#${cp};`);
+    }
+    return uit + '\r\n';
 }
 
 // Concept-mail (.eml). X-Unsent zorgt dat Outlook hem opent als nieuw, nog te verzenden bericht.
@@ -1563,7 +1586,7 @@ function bewaarKeuzes() {
     schrijf(OPSLAG_KEUZES, {
         brief: state.brief, kantoorId: state.kantoorId === NIEUW ? STANDAARD_KANTOOR : state.kantoorId,
         klanttype: state.klanttype, pakket: state.pakket, ovr: state.ovr,
-        qa: state.qa, brf: state.brf, bijlagen: $('bijlageFormaat').value, voorbeeld: state.voorbeeld
+        qa: state.qa, brf: state.brf, bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld
     });
 }
 
@@ -1630,7 +1653,9 @@ function init() {
         if (b.maatschappij !== ANDERS && !MAATSCHAPPIJEN.includes(b.maatschappij)) { b.maatschappijAnders = b.maatschappij; b.maatschappij = ANDERS; }
         if (b.product !== ANDERS && !PRODUCTEN.includes(b.product)) { b.productAnders = b.product; b.product = ANDERS; }
     }
-    if (['docx', 'txt', 'beide'].includes(keuzes.bijlagen)) $('bijlageFormaat').value = keuzes.bijlagen;
+    if (Array.isArray(keuzes.bijlagen)) {
+        for (const i of $('bijlageFormaten').querySelectorAll('input')) i.checked = keuzes.bijlagen.includes(i.value);
+    }
     const opgeslagen = lees(OPSLAG_BRIEVEN, []);
     if (Array.isArray(opgeslagen)) state.brieven = opgeslagen.filter((b) => b && typeof b.naam === 'string' && typeof b.html === 'string');
     state.voorbeeld = keuzes.voorbeeld === true;
@@ -1663,7 +1688,7 @@ function init() {
     $('ovrJaar').addEventListener('change', wijzigOvr);
     $('bewaarBrief').addEventListener('click', bewaarBrief);
     $('mailHelpdesk').addEventListener('click', mailHelpdesk);
-    $('bijlageFormaat').addEventListener('change', bewaarKeuzes);
+    $('bijlageFormaten').addEventListener('change', () => { bewaarKeuzes(); toonOpgeslagen(); });
     $('lijstLeegmaken').addEventListener('click', () => {
         if (!confirm('Alle opgeslagen brieven uit de lijst verwijderen?')) return;
         state.brieven = [];
