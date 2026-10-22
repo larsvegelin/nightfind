@@ -1,4 +1,29 @@
-# NightFind Website
+# ParseLab website
+
+Website van **ParseLab**: verzamel data en automatiseer wat je in je browser doet. Neem een taak één keer op of beschrijf hem, en ParseLab herhaalt hem voor elke regel uit je lijst, op elke website, in je eigen browser.
+
+## Status
+
+- `index.html` is de nieuwe homepage (donker thema: navy `#0c0e1b` met groen `#02d678`).
+  - Navigatie-tabs: Hoe het werkt, Toepassingen, Prijzen, FAQ, Help, Inloggen en Gratis starten.
+  - Hero met een geanimeerde demo (hero-loop) van een flow die zichzelf opbouwt.
+  - Sjablonen, planning en wachtrij, privacy, prijzen, FAQ en installatie-hulp.
+- De homepage ziet of de ParseLab-extensie geïnstalleerd is (via `bridge.js` in de extensie, op `larsvegelin.github.io`, `*.parselab.nl` en localhost). Dan verandert de knop en staat er een melding met de versie.
+- `downloads/parselab-extension.zip` is de huidige extensie (versie 1.47), te downloaden vanaf de Help-sectie.
+- `assets/parselab/logo.svg` is het logo en favicon.
+- De overige pagina's (`bars.html`, `clubs.html`, `events.html`, `budget.html`, juridische pagina's) zijn nog van het vorige project (NightFind) en worden hierna vervangen.
+
+## Lokaal bekijken
+
+Open `index.html` in de browser, of start een simpele server in deze map:
+
+```
+python3 -m http.server 8080
+```
+
+---
+
+# Vorig project: NightFind
 
 Professional website for NightFind - an international nightlife discovery app.
 
