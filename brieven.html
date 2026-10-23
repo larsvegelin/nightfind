@@ -223,6 +223,7 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 }
 .brieftekst .pe-code.pe-na::before { top: auto; bottom: -3px; border-top: 0; border-bottom: 1.5px dashed #c4473f; padding: 0 0 2px; }
 .brieftekst .pe-leeg { height: 0; margin: 0 !important; }
+.brieftekst .pe-leeg::before { top: -18px; }
 .brieftekst .vervolg { margin-bottom: 0; }
 .brieftekst ul, .brieftekst ol { padding-left: 24px; }
 .brieftekst li > ul, .brieftekst li > ol { margin-bottom: 0; }
@@ -320,11 +321,11 @@ pre.broncode {
             </div>
             <label class="label" for="qaScheiding">Q&amp;A op nieuwe pagina via</label>
             <select id="qaScheiding">
-                <option value="leeg">4 lege regels (zoals de oorspronkelijke brief)</option>
+                <option value="pb2">&lt;div style=&quot;break-before: page;&quot;&gt;&lt;/div&gt; – Nieuwere schrijfwijze van hetzelfde (standaard)</option>
                 <option value="pb1">&lt;div style=&quot;page-break-before: always;&quot;&gt;&lt;/div&gt; – Meest gebruikt; mijn eerste keus om te testen</option>
-                <option value="pb2">&lt;div style=&quot;break-before: page;&quot;&gt;&lt;/div&gt; – Nieuwere schrijfwijze van hetzelfde</option>
                 <option value="pb3">&lt;p style=&quot;page-break-after: always;&quot;&gt;&lt;/p&gt; – Breekt ná het element in plaats van ervoor</option>
                 <option value="pb4">&lt;div style=&quot;break-after: page;&quot;&gt;&lt;/div&gt; – Nieuwere schrijfwijze van de vorige</option>
+                <option value="leeg">4 lege regels (zoals de oorspronkelijke brief)</option>
             </select>
         </section>
 
@@ -644,30 +645,54 @@ const OVR_QA = `
 [[/qaPb2]][[qaPb3]]<p style="page-break-after: always;"></p>
 [[/qaPb3]][[qaPb4]]<div style="break-after: page;"></div>
 [[/qaPb4]]<p><strong><u>Veelgestelde Vragen en Antwoorden</u></strong></p>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag: "Wat houdt de samenwerking met De Waerdse Assuradeuren in?"</strong></p>
 <p>Antwoord: "We zijn een samenwerking aangegaan met De Waerdse Assuradeuren om onze mogelijkheden op het gebied van verzekeringen verder uit te breiden. Dit stelt ons in staat om u betere bescherming en ondersteuning te bieden."</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag: “Zijn jullie nog steeds mijn tussenpersoon?"</strong></p>
 <p>Antwoord: "Natuurlijk. Wij blijven uw vaste aanspreekpunt voor al uw vragen, wijzigingen en/of schademeldingen. Het contact met ons verzekeringsteam wijzigt niet.</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag: "Wat zijn de voordelen van het nieuwe verzekeringspakket?"</strong></p>
 <p>Antwoord: "Ons nieuwe verzekeringspakket bestaat uit (één van) de beste verzekeringsoplossingen in de markt. [[particulier]]Premies en polisvoorwaarden zijn minimaal gelijk of beter.[[/particulier]][[zakelijk]]U behoudt minimaal dezelfde scherpe premie of profiteert van een nog beter tarief, terwijl de polisvoorwaarden nauwkeurig zijn afgestemd op de huidige situatie.[[/zakelijk]] Uw {{maatschappij}} verzekeringen worden opgenomen in één verzekeringspakket. "</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag:"Zijn uw {{maatschappij}} verzekeringen niet in één verzekeringspakket opgenomen?"</strong></p>
 <p>Antwoord: "Het is mogelijk dat u voorheen bij {{maatschappij}} verschillende verzekeringspakketten had en dat deze niet door één en dezelfde persoon zijn afgesloten! Voorbeeld: [[particulier]]De woonverzekeringen is door uzelf afgesloten en de autoverzekering(en) door uw partner.[[/particulier]][[zakelijk]]De bedrijfsverzekeringen zijn op naam van uw onderneming afgesloten en de autoverzekering(en) op uw eigen naam.[[/zakelijk]] Wilt u deze verzekeringen in één verzekeringspakket samenbrengen met één maandelijkse premie incasso, neemt u dan contact met ons op via {{telefoon}}. Wij kunnen dit voor u aanpassen”.</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag:"Wanneer gaat mijn nieuwe verzekeringspakket in?"</strong></p>
 <p>Antwoord: "Uw nieuwe verzekeringspakket gaat per {{ingangsdatum}} in. Uw pakket bij {{maatschappij}} wordt door ons beëindigd. U ontvangt van deze beëindiging vanuit {{maatschappij}} nog een bevestiging met opzegging uit uw naam en de datum van de beëindiging. Direct aansluitend start uw nieuwe verzekeringspakket."</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag:"Wat moet ik doen als mijn gegevens niet kloppen?"</strong></p>
 <p>Antwoord: "Controleer alstublieft uw nieuwe polisblad(en) om te bevestigen dat alle gegevens correct zijn. Als er iets niet klopt, neem dan contact met ons op via {{telefoon}} of {{email}}. Wij helpen u graag verder."</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag:"Moet ik iets doen om de overschrijving te regelen?"</strong></p>
 <p>Antwoord: "Nee, u hoeft niets te doen. Wij verzorgen de opzegging van uw huidige {{maatschappij}} verzekeringen en zorgen voor een naadloze overgang naar ons nieuwe verzekeringspakket. U ontvangt hiervan een bevestiging."</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag: "Hoe werkt de premiebetaling voortaan?"</strong></p>
 <p>Antwoord: "Als uw premie automatisch door {{maatschappij}} werd afgeschreven, zal nu De Waerdse de incasso overnemen. U hoeft hier niets voor te doen."</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag:"Hoe kan het dat mijn maandpremie toch hoger uitvalt?"</strong></p>
 <p>Antwoord: "In ons nieuwe verzekeringspakket worden alle verzekeringen in één verzekeringspakket opgenomen en wordt er per maand/kwartaal/halfjaar/jaar één premiebedrag geïncasseerd. Wanneer u bij {{maatschappij}} naast [[particulier]]de woonverzekeringen ook een auto-/ motor of camperverzekering had[[/particulier]][[zakelijk]]uw bedrijfsverzekeringen ook een auto- of bestelautoverzekering had[[/zakelijk]], betaalde u per verzekering een maandpremie. Dit betekent dus niet dat u meer gaat betalen dan bij {{maatschappij}}, maar dat de premies van al uw verzekeringen in één keer worden afgeschreven. Hierdoor krijgt u meer overzicht in uw verschillende verzekeringen en de bijbehorende premies"</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag:"De eerste termijnpremie is hoger (of lager) dan de laatste termijnpremie van {{maatschappij}}?"</strong></p>
 <p>Antwoord: "Dit kan bij de eerste afschrijving van uw bankrekening het geval zijn. Het is mogelijk dat vanwege het samenvoegen van verschillende {{maatschappij}} verzekeringen de eerste termijnpremie over een langere periode is berekend. Na deze periode zal dan de ‘normale’ termijnpremie worden afgeschreven". De door u ontvangen documenten bevat een termijnoverzicht van de eerste premie.</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag:"Van {{maatschappij}} heb ik een opzegging ontvangen maar ik heb nog geen nieuwe polis mogen ontvangen. Ben ik nu wel verzekerd?"</strong></p>
 <p>Antwoord: "Wij gaan ervan uit dat u tijdig uw nieuwe polisdocumenten ontvangt. Het kan voorkomen dat dit niet het geval is. Wij begrijpen dat u dit geen goed gevoel geeft. Maakt u zich geen zorgen. Uw polisdocumenten zijn naar u onderweg. U bent in deze korte periode gewoon verzekerd" Dit garanderen wij u! Het is ook mogelijk dat uw nieuwe polisdocumenten in de box ongewenste e-mail/spam is beland. Checkt u dit alstublieft eerst.</p>
+</div>
+<div style="page-break-inside: avoid; break-inside: avoid;">
 <p><strong>Vraag:"Wat als ik al lopende polissen bij De Waerdse Assuradeuren heb lopen?"</strong></p>
 <p>Antwoord: "Indien u al een {{pakketFamilie}} heeft , zullen wij deze polissen hieraan toevoegen.</p>
+</div>
 [[/qa]]
 `;
 
@@ -707,7 +732,7 @@ const state = {
     broncode: false,
     weergave: 'pagina',
     lettergrootte: '10',
-    qaScheiding: 'leeg',
+    qaScheiding: 'pb2',
     systeem: {},
     eigen: { html: '', naam: '' },
     kop: { 'X-OVR': true, 'X-BRF': true, EIGEN: true },
@@ -889,9 +914,11 @@ const WEG = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'HEAD', 'TI
 // Pagina-einde in de code: alleen deze stijlregels blijven staan (rest van style wordt weggehaald)
 function alleenPaginaEinde(stijl) {
     return String(stijl || '').split(';').map((d) => d.trim().replace(/\s*:\s*/, ': '))
-        .filter((d) => /^(page-break-(before|after): always|break-(before|after): page)$/i.test(d))
+        .filter((d) => /^(page-break-(before|after): always|break-(before|after): page|(page-break-inside|break-inside): avoid)$/i.test(d))
         .map((d) => `${d};`).join(' ');
 }
+// Blok dat niet over twee pagina's verdeeld mag worden (bijv. vraag + antwoord)
+const bijeen = (el) => !!(el && el.getAttribute && /(page-break-inside|break-inside):\s*avoid/i.test(el.getAttribute('style') || ''));
 function paginaEinde(el) {
     const st = el && el.getAttribute ? (el.getAttribute('style') || '') : '';
     return {
@@ -954,6 +981,7 @@ function naarBlokken(container) {
             afsluiten();
             const pe = paginaEinde(kind);
             if (pe.voor) blokken.push({ type: 'pagina' });
+            const startBijeen = blokken.length;
             const tag = kind.tagName;
             if (tag === 'TABLE') {
                 blokken.push(tabelBlok(kind));
@@ -979,6 +1007,12 @@ function naarBlokken(container) {
                 doorloop(kind, { ...ctx, kop });
             }
             afsluiten();
+            if (bijeen(kind)) {
+                for (let b = startBijeen; b < blokken.length; b++) {
+                    blokken[b].bijeenRegels = true;
+                    if (b < blokken.length - 1) blokken[b].bijeenVolgende = true;
+                }
+            }
             if (pe.na) blokken.push({ type: 'pagina' });
         }
     };
@@ -1139,6 +1173,8 @@ function maakDocx(blokken, titel) {
         }
         let ppr = '';
         if (b.kop) ppr += `<w:pStyle w:val="Kop${b.kop}"/>`;
+        if (b.bijeenVolgende) ppr += '<w:keepNext/>';
+        if (b.bijeenRegels) ppr += '<w:keepLines/>';
         if (inTabel || naTabel) ppr += `<w:spacing w:before="${naTabel ? 200 : 30}"${inTabel ? ' w:after="30"' : ''}/>`;
         let voor = '';
         if (b.lijst) {
@@ -1574,7 +1610,8 @@ function pagineer(root) {
         meet.replaceChildren(blok);
         const stijl = getComputedStyle(blok);
         const mt = parseFloat(stijl.marginTop) || 0;
-        const mb = parseFloat(stijl.marginBottom) || 0;
+        let mb = parseFloat(stijl.marginBottom) || 0;
+        if (blok.tagName === 'DIV' && blok.lastElementChild) mb = Math.max(mb, parseFloat(getComputedStyle(blok.lastElementChild).marginBottom) || 0);
         const hoogte = blok.getBoundingClientRect().height;
         const boven = gebruikt ? Math.max(0, mt - vorigeMarge) : 0;
         const ruimte = paginaRuimte(paginas.length - 1);
@@ -1605,7 +1642,7 @@ function pagineer(root) {
 }
 
 function splitsBlok(blok, ruimte) {
-    if (ruimte < 12) return null;
+    if (ruimte < 12 || bijeen(blok)) return null;
     const tag = blok.tagName;
     if (tag === 'UL' || tag === 'OL') return splitsOpKinderen(blok, [...blok.children], ruimte, (deel, start) => {
         if (tag === 'OL') deel.setAttribute('start', String((parseInt(blok.getAttribute('start'), 10) || 1) + start));
@@ -2244,7 +2281,7 @@ function netteHtml(html) {
             el.replaceWith(nieuw);
         } else if (el.tagName === 'SPAN') {
             el.replaceWith(...el.childNodes);
-        } else if (paginaEinde(el).voor || paginaEinde(el).na) {
+        } else if (el.hasAttribute('style')) {
             continue;
         } else if ([...el.children].some((c) => BLOK.has(c.tagName))) {
             el.replaceWith(...el.childNodes);
@@ -2698,7 +2735,7 @@ function bewaarKeuzes() {
         klanttype: state.klanttype, pakket: state.pakket, ovr: state.ovr,
         qa: state.qa, brf: state.brf, kop: state.kop, kopTekst: state.kopTekst, systeem: state.systeem,
         bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld, broncode: state.broncode, weergave: state.weergave,
-        lettergrootte: state.lettergrootte, qaScheiding: state.qaScheiding
+        lettergrootte: state.lettergrootte, qaScheiding: state.qaScheiding, qaVersie: 2
     });
 }
 
@@ -2792,7 +2829,8 @@ function init() {
     state.broncode = keuzes.broncode === true;
     if (['pagina', 'overzicht'].includes(keuzes.weergave)) state.weergave = keuzes.weergave;
     zetLettergrootte(keuzes.lettergrootte === '11' ? '11' : '10');
-    if (['leeg', 'pb1', 'pb2', 'pb3', 'pb4'].includes(keuzes.qaScheiding)) state.qaScheiding = keuzes.qaScheiding;
+    // vanaf versie 2 is <div style="break-before: page;"> de standaard; oudere bewaarde keuze niet overnemen
+    if (keuzes.qaVersie === 2 && ['leeg', 'pb1', 'pb2', 'pb3', 'pb4'].includes(keuzes.qaScheiding)) state.qaScheiding = keuzes.qaScheiding;
     $('qaScheiding').value = state.qaScheiding;
     zetSegment('weergaveKeuze', state.weergave);
     if (keuzes.systeem && typeof keuzes.systeem === 'object') {
