@@ -165,14 +165,28 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .note-warn { background: var(--warn-bg); color: var(--warn-text); }
 .note-info { background: var(--info-bg); color: var(--info-text); }
 
-/* Brief-preview op A4: zelfde maten als de Word-download (A4, marges 2,5 cm, Arial 10 pt).
-   1 cm = 37,8 px bij 96 dpi: pagina 794 x 1123 px, marge 94 px, tekstbreedte 606 px. */
+/* Brief-preview op A4, ingedeeld zoals de echte brief uit het briefsysteem:
+   briefpapier-kop bovenaan, adresvenster op pagina 1, voettekst onderaan.
+   Tekst: Arial 10 pt, regelafstand 12 pt, 10 pt tussen alinea's, marges links/rechts 2 cm.
+   1 pt = 4/3 px bij 96 dpi: pagina 794 x 1123 px, tekstvak 642,5 px breed vanaf 75,6 px. */
 .pages { width: 794px; margin: 0 auto; }
 .page {
-    width: 794px; height: 1123px; padding: 94px; background: #ffffff; color: #1a1a1a; overflow: hidden;
+    position: relative; width: 794px; height: 1123px; padding: 0; background: #ffffff; color: #1a1a1a; overflow: hidden;
     border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.08);
 }
-.page.page-vrij { height: auto; min-height: 500px; }
+.page > .brieftekst { position: absolute; left: 75.6px; width: 642.5px; }
+.page.eerste > .brieftekst { top: 370px; height: 650px; }
+.page.volgende > .brieftekst { top: 170px; height: 850px; }
+.page.page-vrij { height: auto; min-height: 500px; padding: 75.6px; }
+.briefpapier {
+    position: absolute; display: flex; align-items: center; justify-content: center; text-align: center;
+    border: 1.5px dashed #d9d8d0; background: #f6f6f3; color: #9a9991; border-radius: 6px;
+    font: 13px/1.4 Arial, Helvetica, sans-serif; padding: 6px 10px;
+}
+.briefpapier-kop { left: 33px; right: 33px; top: 30px; height: 100px; }
+.briefpapier-adres { left: 75.6px; top: 178px; width: 340px; height: 92px; justify-content: flex-start; text-align: left; }
+.briefpapier-adres.gevuld { display: block; background: transparent; border-color: transparent; color: #1a1a1a; font-size: 13.333px; line-height: 16px; padding: 4px 0 0; }
+.briefpapier-voet { left: 33px; right: 33px; top: 1045px; height: 62px; }
 .page-nr { text-align: center; color: var(--muted); font-size: 13px; margin: 8px 0 22px; }
 /* Overzicht: alle pagina's verkleind naast elkaar */
 .pages.overzicht { width: auto; display: flex; flex-wrap: wrap; gap: 18px; zoom: 1 !important; }
@@ -192,24 +206,25 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .indeling .kopjes { color: var(--text); overflow-wrap: anywhere; }
 .indeling .grens { color: var(--muted); font-size: 0.78rem; overflow-wrap: anywhere; }
 .segmented.klein button { padding: 0.3rem 0.6rem; font-size: 0.82rem; }
-.brieftekst { font-family: Arial, Helvetica, sans-serif; font-size: 13.333px; line-height: 1.265; overflow-wrap: anywhere; color: #1a1a1a; }
+/* 13,12 px i.p.v. 13,33 px (10 pt): het briefsysteem zet tekst ca. 1,5% smaller dan de browser; zo vallen de regels gelijk */
+.brieftekst { font-family: Arial, Helvetica, sans-serif; font-size: 13.12px; line-height: 16px; overflow-wrap: anywhere; color: #1a1a1a; }
 .brieftekst p, .brieftekst ul, .brieftekst ol { margin: 0 0 13.333px; }
 .brieftekst .vervolg { margin-bottom: 0; }
 .brieftekst ul, .brieftekst ol { padding-left: 24px; }
 .brieftekst li > ul, .brieftekst li > ol { margin-bottom: 0; }
 .brieftekst h1, .brieftekst h2, .brieftekst h3, .brieftekst h4 { margin: 0 0 8px; line-height: 1.2; }
 .brieftekst h1 { font-size: 18.7px; } .brieftekst h2 { font-size: 16px; } .brieftekst h3 { font-size: 14.7px; } .brieftekst h4 { font-size: 13.333px; }
-.brieftekst table { border-collapse: collapse; margin: 0 0 16px; }
-.brieftekst td, .brieftekst th { padding: 0 8px 0 0; vertical-align: top; text-align: left; }
+.brieftekst table { border-collapse: collapse; margin: 0 0 14.2px; }
+.brieftekst td, .brieftekst th { padding: 2px 8px 2px 0; vertical-align: top; text-align: left; }
 .brieftekst td:first-child { white-space: nowrap; }
 .brieftekst a { color: #0563c1; }
 .brieftekst .merge {
-    background: #fff1b8; color: #5c4300; border-radius: 3px; padding: 0 3px;
+    background: #fff1b8; color: #5c4300; border-radius: 3px; padding: 0 1px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; cursor: help;
 }
 .brieftekst .merge.filled { background: #dff0e3; color: #1b4d2a; font-family: inherit; font-size: inherit; }
-.brieftekst .missing { background: #fde0de; color: #a1261f; border-radius: 3px; padding: 0 3px; font-weight: 600; }
-.meetvak { position: absolute; left: -10000px; top: 0; width: 606px; visibility: hidden; pointer-events: none; }
+.brieftekst .missing { background: #fde0de; color: #a1261f; border-radius: 3px; padding: 0 1px; font-weight: 600; }
+.meetvak { position: absolute; left: -10000px; top: 0; width: 642.5px; visibility: hidden; pointer-events: none; }
 .paper-empty { color: #8a8a85; text-align: center; padding-top: 120px; }
 pre.broncode {
     margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #1a1a1a;
@@ -999,7 +1014,7 @@ function maakTxt(blokken) {
 
 /* ---------- Word (.docx), zonder externe bibliotheek ---------- */
 
-const PAGINA_BREEDTE = 9070; // A4 (11906) min marges 2,5 cm (2 x 1418), in twips
+const PAGINA_BREEDTE = 9638; // A4 (11906) min marges links/rechts 2 cm (2 x 1134), in twips
 
 function xmlEsc(s) {
     return String(s)
@@ -1040,7 +1055,7 @@ function maakDocx(blokken, titel) {
         }
         let ppr = '';
         if (b.kop) ppr += `<w:pStyle w:val="Kop${b.kop}"/>`;
-        if (inTabel || naTabel) ppr += `<w:spacing${naTabel ? ' w:before="240"' : ''}${inTabel ? ' w:after="0"' : ''}/>`;
+        if (inTabel || naTabel) ppr += `<w:spacing w:before="${naTabel ? 200 : 30}"${inTabel ? ' w:after="30"' : ''}/>`;
         let voor = '';
         if (b.lijst) {
             ppr += `<w:ind w:left="${360 * (b.lijst.niveau + 1)}" w:hanging="360"/>`;
@@ -1111,17 +1126,17 @@ function maakDocx(blokken, titel) {
 
     const documentXml = `${kop}<w:document xmlns:w="${W}" xmlns:r="${R}"><w:body>${body}`
         + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>'
-        + '<w:pgMar w:top="1418" w:right="1418" w:bottom="1418" w:left="1418" w:header="709" w:footer="709" w:gutter="0"/>'
+        + '<w:pgMar w:top="1418" w:right="1134" w:bottom="1418" w:left="1134" w:header="709" w:footer="709" w:gutter="0"/>'
         + '</w:sectPr></w:body></w:document>';
 
     const kopStijl = (n, sz) => `<w:style w:type="paragraph" w:styleId="Kop${n}"><w:name w:val="heading ${n}"/>`
         + '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>'
-        + `<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/></w:pPr><w:rPr><w:b/><w:bCs/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr></w:style>`;
+        + `<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120" w:line="276" w:lineRule="auto"/></w:pPr><w:rPr><w:b/><w:bCs/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr></w:style>`;
 
     const stylesXml = `${kop}<w:styles xmlns:w="${W}">`
         + '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>'
         + '<w:sz w:val="20"/><w:szCs w:val="20"/><w:lang w:val="nl-NL"/></w:rPr></w:rPrDefault>'
-        + '<w:pPrDefault><w:pPr><w:widowControl/><w:spacing w:after="200" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
+        + '<w:pPrDefault><w:pPr><w:widowControl/><w:spacing w:after="200" w:line="240" w:lineRule="exact"/></w:pPr></w:pPrDefault></w:docDefaults>'
         + '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>'
         + '<w:style w:type="character" w:default="1" w:styleId="DefaultParagraphFont"><w:name w:val="Default Paragraph Font"/><w:uiPriority w:val="1"/><w:semiHidden/></w:style>'
         + '<w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:semiHidden/>'
@@ -1243,8 +1258,13 @@ function render() {
     $('bestandsnaam').textContent = leeg ? '' : `Bestandsnaam: ${veiligBestand(brief.bestand)}`;
 }
 
-const A4 = { hoogte: 1123, marge: 94 };
-const INHOUD_HOOGTE = A4.hoogte - 2 * A4.marge;
+// Indeling van de echte brief (voorbeeld uit het briefsysteem), in px bij 96 dpi (1 pt = 4/3 px)
+const BRIEF = {
+    bovenEerste: 370,    // 9,8 cm: tekst begint onder briefpapier-kop en adresvenster
+    bovenVolgende: 170,  // 4,5 cm: vervolgpagina's hebben alleen de briefpapier-kop (aanname)
+    onder: 1020          // 27 cm: daaronder staat de voettekst
+};
+const paginaRuimte = (index) => BRIEF.onder - (index === 0 ? BRIEF.bovenEerste : BRIEF.bovenVolgende);
 
 function toonPreview() {
     const papier = $('papier');
@@ -1283,7 +1303,8 @@ function toonPreview() {
         blok.className = 'page-blok';
         blok.id = `pagina-${i + 1}`;
         const pagina = document.createElement('div');
-        pagina.className = 'page';
+        pagina.className = `page ${i === 0 ? 'eerste' : 'volgende'}`;
+        pagina.append(...briefpapier(i === 0));
         const inhoud = document.createElement('div');
         inhoud.className = 'brieftekst';
         inhoud.append(...blokken);
@@ -1300,6 +1321,32 @@ function toonPreview() {
     toonIndeling(samenvattingen);
     $('paginaInfo').textContent = `· ${paginas.length} ${paginas.length === 1 ? 'pagina' : "pagina's"} A4`;
     schaalPreview();
+}
+
+// Plaatshouders voor wat het briefsysteem zelf toevoegt: briefpapier-kop, adresvenster (pagina 1) en voettekst
+function briefpapier(eerste) {
+    const vak = (klasse, tekst) => {
+        const div = document.createElement('div');
+        div.className = `briefpapier ${klasse}`;
+        div.textContent = tekst;
+        return div;
+    };
+    const delen = [vak('briefpapier-kop', 'Briefpapier: logo en naam van het kantoor')];
+    if (eerste) {
+        const adres = vak('briefpapier-adres', 'Naam en adres geadresseerde (venster envelop)');
+        if (state.voorbeeld) {
+            adres.classList.add('gevuld');
+            adres.replaceChildren();
+            for (const regel of ['De heer J. Jansen', 'Voorbeeldstraat 1', '1234 AB VOORBEELDSTAD']) {
+                const r = document.createElement('div');
+                r.textContent = regel;
+                adres.append(r);
+            }
+        }
+        delen.push(adres);
+    }
+    delen.push(vak('briefpapier-voet', 'Voettekst: adres, telefoon, e-mail, KvK en AFM-gegevens van het kantoor'));
+    return delen;
 }
 
 // Wat staat er op een pagina: kopjes (vetgedrukte regels), begin en eind
@@ -1393,7 +1440,7 @@ function schaalPreview() {
 
 /* ---------- Paginering: verdeel de brief over A4-pagina's ---------- */
 
-// Blokken één voor één meten in een onzichtbaar vak met de tekstbreedte van A4;
+// Blokken één voor één meten in een onzichtbaar vak met de tekstbreedte van de brief (17 cm);
 // past een blok niet meer, dan wordt het gesplitst (alinea per regel, lijst/tabel per rij)
 function pagineer(root) {
     const meet = $('meetvak');
@@ -1418,13 +1465,14 @@ function pagineer(root) {
         const mb = parseFloat(stijl.marginBottom) || 0;
         const hoogte = blok.getBoundingClientRect().height;
         const boven = gebruikt ? Math.max(0, mt - vorigeMarge) : 0;
-        if (gebruikt + boven + hoogte <= INHOUD_HOOGTE + 0.5) {
+        const ruimte = paginaRuimte(paginas.length - 1);
+        if (gebruikt + boven + hoogte <= ruimte + 0.5) {
             paginas[paginas.length - 1].push(blok);
             gebruikt += boven + hoogte + mb;
             vorigeMarge = mb;
             continue;
         }
-        const delen = splitsBlok(blok, INHOUD_HOOGTE - gebruikt - boven);
+        const delen = splitsBlok(blok, ruimte - gebruikt - boven);
         if (delen) {
             paginas[paginas.length - 1].push(delen[0]);
             nieuwePagina();
