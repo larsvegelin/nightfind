@@ -122,6 +122,13 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .saved li button { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0.15rem 0.4rem; border-radius: 5px; }
 .saved li button:hover { color: #c4473f; background: var(--surface); }
 .saved li.empty { display: block; background: transparent; padding: 0; color: var(--muted); }
+.codetabel { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.codetabel th { text-align: left; color: var(--muted); font-weight: 600; padding: 0 0.4rem 0.35rem 0; }
+.codetabel td { padding: 0.4rem 0.4rem 0.4rem 0; border-top: 1px solid var(--border); vertical-align: top; }
+.codetabel td:first-child { width: 48%; }
+.codetabel code { font-size: 0.74rem; overflow-wrap: anywhere; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+.codetabel td:last-child { padding-right: 0; text-align: right; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .btn {
     border: 1px solid var(--border); background: var(--surface); border-radius: 8px;
@@ -314,9 +321,10 @@ pre.broncode {
             <label class="label" for="qaScheiding">Q&amp;A op nieuwe pagina via</label>
             <select id="qaScheiding">
                 <option value="leeg">4 lege regels (zoals de oorspronkelijke brief)</option>
-                <option value="pb1">Pagina-einde: &lt;div style="page-break-before: always;"&gt;</option>
-                <option value="pb2">Pagina-einde: &lt;div style="break-before: page;"&gt;</option>
-                <option value="pb3">Pagina-einde: &lt;p style="page-break-after: always;"&gt;</option>
+                <option value="pb1">&lt;div style=&quot;page-break-before: always;&quot;&gt;&lt;/div&gt; – Meest gebruikt; mijn eerste keus om te testen</option>
+                <option value="pb2">&lt;div style=&quot;break-before: page;&quot;&gt;&lt;/div&gt; – Nieuwere schrijfwijze van hetzelfde</option>
+                <option value="pb3">&lt;p style=&quot;page-break-after: always;&quot;&gt;&lt;/p&gt; – Breekt ná het element in plaats van ervoor</option>
+                <option value="pb4">&lt;div style=&quot;break-after: page;&quot;&gt;&lt;/div&gt; – Nieuwere schrijfwijze van de vorige</option>
             </select>
         </section>
 
@@ -359,15 +367,29 @@ pre.broncode {
             </div>
             <label class="label" for="peCode">Pagina-einde invoegen (op de plek van de cursor in de HTML-code)</label>
             <select id="peCode">
-                <option value='<div style="page-break-before: always;"></div>'>&lt;div style="page-break-before: always;"&gt;&lt;/div&gt;</option>
-                <option value='<div style="break-before: page;"></div>'>&lt;div style="break-before: page;"&gt;&lt;/div&gt;</option>
-                <option value='<p style="page-break-after: always;"></p>'>&lt;p style="page-break-after: always;"&gt;&lt;/p&gt;</option>
-                <option value='<div style="break-after: page;"></div>'>&lt;div style="break-after: page;"&gt;&lt;/div&gt;</option>
+                <option value='<div style="page-break-before: always;"></div>'>&lt;div style=&quot;page-break-before: always;&quot;&gt;&lt;/div&gt; – Meest gebruikt; mijn eerste keus om te testen</option>
+                <option value='<div style="break-before: page;"></div>'>&lt;div style=&quot;break-before: page;&quot;&gt;&lt;/div&gt; – Nieuwere schrijfwijze van hetzelfde</option>
+                <option value='<p style="page-break-after: always;"></p>'>&lt;p style=&quot;page-break-after: always;&quot;&gt;&lt;/p&gt; – Breekt ná het element in plaats van ervoor</option>
+                <option value='<div style="break-after: page;"></div>'>&lt;div style=&quot;break-after: page;&quot;&gt;&lt;/div&gt; – Nieuwere schrijfwijze van de vorige</option>
             </select>
             <div class="row-actions">
                 <button type="button" class="btn" id="peInvoegen">Pagina-einde invoegen</button>
             </div>
             <p class="hint">Vet, cursief, onderstreept, links, tabellen en opsommingen worden overgenomen; lettertypes en kleuren niet. Samenvoegvelden zoals <code>@L99906@</code> worden herkend.</p>
+        </section>
+
+        <section class="card">
+            <h2>Codes voor pagina-einde</h2>
+            <table class="codetabel">
+                <thead><tr><th>Code</th><th>Toelichting</th><th><span class="sr-only">Kopiëren</span></th></tr></thead>
+                <tbody>
+                    <tr><td><code>&lt;div style=&quot;page-break-before: always;&quot;&gt;&lt;/div&gt;</code></td><td>Meest gebruikt; mijn eerste keus om te testen</td><td><button type="button" class="btn btn-small" data-kopieer='<div style="page-break-before: always;"></div>'>Kopieer</button></td></tr>
+                    <tr><td><code>&lt;div style=&quot;break-before: page;&quot;&gt;&lt;/div&gt;</code></td><td>Nieuwere schrijfwijze van hetzelfde</td><td><button type="button" class="btn btn-small" data-kopieer='<div style="break-before: page;"></div>'>Kopieer</button></td></tr>
+                    <tr><td><code>&lt;p style=&quot;page-break-after: always;&quot;&gt;&lt;/p&gt;</code></td><td>Breekt ná het element in plaats van ervoor</td><td><button type="button" class="btn btn-small" data-kopieer='<p style="page-break-after: always;"></p>'>Kopieer</button></td></tr>
+                    <tr><td><code>&lt;div style=&quot;break-after: page;&quot;&gt;&lt;/div&gt;</code></td><td>Nieuwere schrijfwijze van de vorige</td><td><button type="button" class="btn btn-small" data-kopieer='<div style="break-after: page;"></div>'>Kopieer</button></td></tr>
+                </tbody>
+            </table>
+            <p class="hint">Alle vier worden in de preview, Word en TXT als pagina-einde getoond. Test in het briefsysteem welke werkt; bij X-OVR kies je er een onder “Q&amp;A op nieuwe pagina via”.</p>
         </section>
 
         <section class="card">
@@ -620,7 +642,8 @@ const OVR_QA = `
 [[/qaLeeg]][[qaPb1]]<div style="page-break-before: always;"></div>
 [[/qaPb1]][[qaPb2]]<div style="break-before: page;"></div>
 [[/qaPb2]][[qaPb3]]<p style="page-break-after: always;"></p>
-[[/qaPb3]]<p><strong><u>Veelgestelde Vragen en Antwoorden</u></strong></p>
+[[/qaPb3]][[qaPb4]]<div style="break-after: page;"></div>
+[[/qaPb4]]<p><strong><u>Veelgestelde Vragen en Antwoorden</u></strong></p>
 <p><strong>Vraag: "Wat houdt de samenwerking met De Waerdse Assuradeuren in?"</strong></p>
 <p>Antwoord: "We zijn een samenwerking aangegaan met De Waerdse Assuradeuren om onze mogelijkheden op het gebied van verzekeringen verder uit te breiden. Dit stelt ons in staat om u betere bescherming en ondersteuning te bieden."</p>
 <p><strong>Vraag: “Zijn jullie nog steeds mijn tussenpersoon?"</strong></p>
@@ -767,7 +790,7 @@ function bouwBrief() {
         const kop = state.kop['X-OVR'] ? VASTE_KOP('{{plaats}}', ovr.onderwerp) : '';
         const { html, ontbrekend } = vulSjabloon(kop + ovr.tekst + OVR_QA,
             { qa: state.qa, particulier: !zakelijk, zakelijk, qaLeeg: state.qaScheiding === 'leeg',
-                qaPb1: state.qaScheiding === 'pb1', qaPb2: state.qaScheiding === 'pb2', qaPb3: state.qaScheiding === 'pb3' }, waarden, labels);
+                qaPb1: state.qaScheiding === 'pb1', qaPb2: state.qaScheiding === 'pb2', qaPb3: state.qaScheiding === 'pb3', qaPb4: state.qaScheiding === 'pb4' }, waarden, labels);
         // Naam: kantoornaam - maatschappij - brief (nummer), met afwijkende opties tussen haakjes
         const kantoorNaam = String(k.korteNaam || k.naam || '').trim() || 'Nieuw kantoor';
         const varianten = [zakelijk && 'zakelijk', state.pakket === 'waerdse' && 'Waerdse pakket', state.qa && 'met Q&A'].filter(Boolean);
@@ -866,7 +889,8 @@ const WEG = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'HEAD', 'TI
 // Pagina-einde in de code: alleen deze stijlregels blijven staan (rest van style wordt weggehaald)
 function alleenPaginaEinde(stijl) {
     return String(stijl || '').split(';').map((d) => d.trim().replace(/\s*:\s*/, ': '))
-        .filter((d) => /^(page-break-(before|after): always|break-(before|after): page)$/i.test(d)).join('; ');
+        .filter((d) => /^(page-break-(before|after): always|break-(before|after): page)$/i.test(d))
+        .map((d) => `${d};`).join(' ');
 }
 function paginaEinde(el) {
     const st = el && el.getAttribute ? (el.getAttribute('style') || '') : '';
@@ -2768,7 +2792,7 @@ function init() {
     state.broncode = keuzes.broncode === true;
     if (['pagina', 'overzicht'].includes(keuzes.weergave)) state.weergave = keuzes.weergave;
     zetLettergrootte(keuzes.lettergrootte === '11' ? '11' : '10');
-    if (['leeg', 'pb1', 'pb2', 'pb3'].includes(keuzes.qaScheiding)) state.qaScheiding = keuzes.qaScheiding;
+    if (['leeg', 'pb1', 'pb2', 'pb3', 'pb4'].includes(keuzes.qaScheiding)) state.qaScheiding = keuzes.qaScheiding;
     $('qaScheiding').value = state.qaScheiding;
     zetSegment('weergaveKeuze', state.weergave);
     if (keuzes.systeem && typeof keuzes.systeem === 'object') {
@@ -2848,6 +2872,10 @@ function init() {
     });
     $('lettergrootte').addEventListener('change', (e) => { zetLettergrootte(e.target.value); bewaarKeuzes(); toonPreview(); });
     $('qaScheiding').addEventListener('change', (e) => { state.qaScheiding = e.target.value; bewaarKeuzes(); render(); });
+    document.querySelectorAll('[data-kopieer]').forEach((b) => b.addEventListener('click', async () => {
+        await kopieer(b.dataset.kopieer);
+        toast(`Gekopieerd: ${b.dataset.kopieer}`);
+    }));
     $('peInvoegen').addEventListener('click', () => {
         const ta = $('eigenInvoer');
         const code = $('peCode').value;

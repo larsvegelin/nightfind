@@ -245,3 +245,14 @@ Eén los HTML-bestand (geen installatie, werkt ook offline): dubbelklik om te op
 
 Pakketnaam is standaard `<korte naam> Privé Pakket` / `<korte naam> Zakelijk Pakket`; de Waerdse pakketten heten `Waerdse Verzekeringspakket` / `Waerdse Zakelijk Pakket`.
 Kantoren staan in `KANTOREN`, sjablonen in `OVR_BRIEVEN`, `OVR_QA` en `SJABLONEN` bovenin het script (`{{veld}}` = wordt ingevuld, `[[zakelijk]]…[[/zakelijk]]` = alleen bij die optie).
+
+### Codes voor pagina-einde
+
+| Code | Toelichting |
+|---|---|
+| `<div style="page-break-before: always;"></div>` | Meest gebruikt; mijn eerste keus om te testen |
+| `<div style="break-before: page;"></div>` | Nieuwere schrijfwijze van hetzelfde |
+| `<p style="page-break-after: always;"></p>` | Breekt ná het element in plaats van ervoor |
+| `<div style="break-after: page;"></div>` | Nieuwere schrijfwijze van de vorige |
+
+Alle vier worden in de tool herkend (preview, Word, TXT). Welke het briefsysteem oppakt, test je via X-OVR → *Q&A op nieuwe pagina via* of de knop *Pagina-einde invoegen* bij Eigen.
