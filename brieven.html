@@ -174,6 +174,24 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 }
 .page.page-vrij { height: auto; min-height: 500px; }
 .page-nr { text-align: center; color: var(--muted); font-size: 13px; margin: 8px 0 22px; }
+/* Overzicht: alle pagina's verkleind naast elkaar */
+.pages.overzicht { width: auto; display: flex; flex-wrap: wrap; gap: 18px; zoom: 1 !important; }
+.pages.overzicht .page-blok { width: 254px; cursor: pointer; }
+.pages.overzicht .page { zoom: 0.32; }
+.pages.overzicht .page-blok:hover .page { outline: 6px solid var(--accent); }
+.pages.overzicht .page-nr { margin: 6px 0 0; }
+/* Pagina-indeling: wat staat op welke pagina */
+.indeling { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.4rem; }
+.indeling ol { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.indeling button {
+    width: 100%; text-align: left; border: 0; background: transparent; border-radius: 7px; cursor: pointer;
+    padding: 0.45rem 0.6rem; display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 0.15rem 0.6rem; font-size: 0.84rem;
+}
+.indeling button:hover { background: var(--surface-2); }
+.indeling .nr { font-weight: 600; grid-row: span 2; }
+.indeling .kopjes { color: var(--text); overflow-wrap: anywhere; }
+.indeling .grens { color: var(--muted); font-size: 0.78rem; overflow-wrap: anywhere; }
+.segmented.klein button { padding: 0.3rem 0.6rem; font-size: 0.82rem; }
 .brieftekst { font-family: Arial, Helvetica, sans-serif; font-size: 13.333px; line-height: 1.265; overflow-wrap: anywhere; color: #1a1a1a; }
 .brieftekst p, .brieftekst ul, .brieftekst ol { margin: 0 0 13.333px; }
 .brieftekst .vervolg { margin-bottom: 0; }
@@ -384,12 +402,17 @@ pre.broncode {
     <section class="preview-col">
         <div class="preview-bar">
             <span class="preview-title"><span id="previewTitel">Preview</span><span class="paginainfo" id="paginaInfo"></span></span>
+            <div class="segmented klein" id="weergaveKeuze" aria-label="Weergave">
+                <button type="button" data-waarde="pagina">Per A4-pagina</button>
+                <button type="button" data-waarde="overzicht">Overzicht</button>
+            </div>
             <div class="checks">
                 <label class="switch"><input type="checkbox" id="voorbeeldToggle"> Voorbeeldgegevens invullen</label>
                 <label class="switch"><input type="checkbox" id="broncodeToggle"> Broncode tonen</label>
             </div>
         </div>
         <div class="notes" id="meldingen"></div>
+        <nav class="indeling" id="paginaIndeling" aria-label="Pagina-indeling" hidden><ol id="indelingLijst"></ol></nav>
         <div class="pages" id="papier" aria-label="Preview van de brief op A4"></div>
     </section>
 </main>
@@ -523,20 +546,20 @@ const OVR_BRIEVEN = {
 <p><strong>{{korteNaam}} en De Waerdse Assuradeuren: samen sterk!</strong><br>Wij zijn een samenwerking met De Waerdse Assuradeuren aangegaan. Hiermee breiden wij onze mogelijkheden op het gebied van verzekeringen en hypotheken verder uit en kunnen we u nog beter van dienst zijn. De Waerdse Assuradeuren voldoet aan hoge, wettelijk gewaarborgde kwaliteitseisen.</p>
 <p><strong>Wat verandert er voor u?</strong><br>Door de samenwerking met deze volmacht verzekeraar kunnen wij uw {{maatschappij}} verzekering(en) oversluiten naar ons eigen {{pakket}}. Dit pakket bestaat uit de beste verzekeringsoplossingen in de markt. Premies en polisvoorwaarden zijn minimaal gelijk of beter!</p>
 <p><strong>Het {{pakket}}</strong><br>De opzegging van uw huidige {{maatschappij}} schadeverzekering(en) verzorgen wij binnenkort voor u. Direct aansluitend start uw nieuwe verzekeringspakket. Aan deze omzetting zijn voor u geen kosten verbonden.</p>
-<p>Voor de einddatum van uw huidige verzekering(en) ontvangt u van ons uw nieuwe polis(sen). Indien uw e-mailadres bekend is ontvangt u deze digitaal. De voorwaarden kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>, (keuze: Actuele polisvoorwaarden). Op verzoek verstrekken wij u een papieren exemplaar.</p>
+<p>Voor de einddatum van uw huidige verzekering(en) ontvangt u van ons uw nieuwe polis(sen). Indien uw e-mailadres bekend is ontvangt u deze digitaal. De voorwaarden kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>. Op verzoek verstrekken wij u een papieren exemplaar.</p>
 <p>Stelt u geen prijs op ons aanbod, dan horen wij dat graag binnen vier weken na dagtekening van deze brief.</p>
 <p><strong>Wij blijven {{korteNaam}}</strong><br>De service die u van ons gewend bent, het meedenken, het altijd telefonisch bereikbaar zijn ({{telefoon}} of via {{email}}) tijdens kantooruren, korte lijnen, dezelfde betrokken medewerkers, daar verandert niets aan!</p>
 <p>Met vriendelijke groet,</p>
 <p>{{naam}}</p>
 ` },
 2: { titel: 'Tussentijdse kennisgeving', onderwerp: 'Tussentijdse kennisgeving {{pakket}}', tekst: `
-<p>In onze voorgaande brief hebben we aangekondigd dat wij graag uw [[zakelijk]]zakelijke [[/zakelijk]]verzekeringen onderbrengen in {{pakket}}. Dit in verband met de samenwerking die wij met De Waerdse Assuradeuren zijn aangegaan.<br><br><strong>Wees gerust: wij regelen alles voor u</strong><br>U ontvangt binnenkort van uw huidige verzekeraar een bevestiging dat uw oude {{maatschappij}} verzekering(en) komen te vervallen alsof de opzegging door uzelf gedaan is, maar dit hebben wij zoals eerder aangegeven dus voor u verzorgd. De verzekeringen worden aansluitend automatisch voortgezet in uw nieuwe {{pakket}}.<br>De polisvoorwaarden zijn minimaal gelijk en op sommige punten zelfs beter. Deze kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>, (keuze: Actuele polisvoorwaarden). Op verzoek wordt een papieren exemplaar verstrekt.<br><br><strong>Nieuwe polisblad(en) en premiebetaling</strong><br>Uw nieuwe polisblad(en) worden voor de ingangsdatum naar u toegestuurd. Indien uw e-mailadres bekend is ontvangt u deze digitaal. Wanneer uw premie automatisch door {{maatschappij}} werd afgeschreven, zal nu De Waerdse incasseren. Het kan zijn dat uw polissen tussentijds worden beëindigd, in dit geval ontvangt u een deel premierestitutie vanuit {{maatschappij}}, wij zullen vervolgens de premie weer bij u in rekening brengen.<br><strong>Indien u de opzegging(en) van uw huidige polis(sen) eerder ontvangt dan uw nieuwe polissen, maakt u zich geen zorgen u bent gewoon verzekerd!</strong></p>
+<p>In onze voorgaande brief hebben we aangekondigd dat wij graag uw [[zakelijk]]zakelijke [[/zakelijk]]verzekeringen onderbrengen in {{pakket}}. Dit in verband met de samenwerking die wij met De Waerdse Assuradeuren zijn aangegaan.<br><br><strong>Wees gerust: wij regelen alles voor u</strong><br>U ontvangt binnenkort van uw huidige verzekeraar een bevestiging dat uw oude {{maatschappij}} verzekering(en) komen te vervallen alsof de opzegging door uzelf gedaan is, maar dit hebben wij zoals eerder aangegeven dus voor u verzorgd. De verzekeringen worden aansluitend automatisch voortgezet in uw nieuwe {{pakket}}.<br>De polisvoorwaarden zijn minimaal gelijk en op sommige punten zelfs beter. Deze kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>. Op verzoek wordt een papieren exemplaar verstrekt.<br><br><strong>Nieuwe polisblad(en) en premiebetaling</strong><br>Uw nieuwe polisblad(en) worden voor de ingangsdatum naar u toegestuurd. Indien uw e-mailadres bekend is ontvangt u deze digitaal. Wanneer uw premie automatisch door {{maatschappij}} werd afgeschreven, zal nu De Waerdse incasseren. Het kan zijn dat uw polissen tussentijds worden beëindigd, in dit geval ontvangt u een deel premierestitutie vanuit {{maatschappij}}, wij zullen vervolgens de premie weer bij u in rekening brengen.<br><strong>Indien u de opzegging(en) van uw huidige polis(sen) eerder ontvangt dan uw nieuwe polissen, maakt u zich geen zorgen u bent gewoon verzekerd!</strong></p>
 <p><strong>Wij blijven {{korteNaam}}</strong><br>De service die u van ons gewend bent, het meedenken, het altijd telefonisch bereikbaar zijn tijdens kantooruren, korte lijnen, dezelfde betrokken medewerkers, daar verandert niets aan!</p>
 <p>Met vriendelijke groet,</p>
 <p>{{naam}}</p>
 ` },
 3: { titel: 'Nieuwe polisbladen', onderwerp: 'Uw nieuwe polisbladen', tekst: `
-<p>In onze voorgaande brieven hebben we aangekondigd dat uw verzekering(en) worden opgemaakt in ons {{pakket}}. Dit in verband met de samenwerking die wij met De Waerdse Assuradeuren zijn aangegaan.<br><br><strong>Alstublieft: uw nieuwe polisblad(en)</strong><br>Om die reden sturen wij nu uw nieuwe polisblad(en) toe. Deze komen in de plaats van de inmiddels vervallen verzekering(en) bij uw verzekeraar. De polisvoorwaarden kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>, (keuze: Actuele polisvoorwaarden). Op verzoek wordt een papieren exemplaar verstrekt.<br><br><strong>Premiebetaling</strong><br>Wanneer uw premie automatisch door uw verzekeraar werd geïncasseerd, zal nu De Waerdse incasseren.</p>
+<p>In onze voorgaande brieven hebben we aangekondigd dat uw verzekering(en) worden opgemaakt in ons {{pakket}}. Dit in verband met de samenwerking die wij met De Waerdse Assuradeuren zijn aangegaan.<br><br><strong>Alstublieft: uw nieuwe polisblad(en)</strong><br>Om die reden sturen wij nu uw nieuwe polisblad(en) toe. Deze komen in de plaats van de inmiddels vervallen verzekering(en) bij uw verzekeraar. De polisvoorwaarden kunt u raadplegen op <a href="{{voorwaardenHref}}">{{voorwaardenUrl}}</a>. Op verzoek wordt een papieren exemplaar verstrekt.<br><br><strong>Premiebetaling</strong><br>Wanneer uw premie automatisch door uw verzekeraar werd geïncasseerd, zal nu De Waerdse incasseren.</p>
 <p><strong>Vragen of opmerkingen: we helpen graag</strong><br>Wij willen graag dat u goed verzekerd bent, controleert u om die reden of de gegevens nog steeds juist zijn?<br>Heeft u vragen? Wij zijn en blijven uw adviseur en rechtstreeks bereikbaar voor al uw vragen.<br><br>Met vriendelijke groet,</p>
 <p>{{naam}}</p>
 ` }
@@ -611,6 +634,7 @@ const state = {
     brf: { maatschappij: 'Nationale Nederlanden', maatschappijAnders: '', product: 'aanhanger', productAnders: '', stijging: '6' },
     voorbeeld: false,
     broncode: false,
+    weergave: 'pagina',
     systeem: {},
     eigen: { html: '', naam: '' },
     kop: { 'X-OVR': true, 'X-BRF': true, EIGEN: true },
@@ -722,12 +746,13 @@ function bouwBrief() {
         return { html, ontbrekend, titel: naam, bestand: naam };
     }
     const invoer = state.eigen.html.trim();
-    const romp = /<[a-z][\s\S]*>/i.test(invoer) ? invoer : tekstNaarHtml(invoer);
+    const correctie = standaardCorrecties(/<[a-z][\s\S]*>/i.test(invoer) ? invoer : tekstNaarHtml(invoer));
+    const romp = correctie.html;
     const kop = state.kop.EIGEN
         ? vulSjabloon(VASTE_KOP('{{kopPlaats}}', '{{kopOnderwerp}}'), {}, kopWaarden('EIGEN'), KOP_LABELS)
         : { html: '', ontbrekend: [] };
     const naam = schoneNaam(state.eigen.naam) || 'Eigen brief';
-    return { html: kop.html + romp, ontbrekend: kop.ontbrekend, titel: naam, bestand: naam };
+    return { html: kop.html + romp, ontbrekend: kop.ontbrekend, titel: naam, bestand: naam, correcties: correctie.wat };
 }
 
 // Plaats en onderwerp voor de vaste kop van X-BRF en Eigen (leeg veld = standaard)
@@ -763,6 +788,17 @@ function leesPercentage(invoer) {
     const s = String(invoer ?? '').trim().replace('%', '').replace(',', '.').replace(/\s+/g, '');
     if (!/^[-+]?\d+(\.\d+)?$/.test(s)) return null;
     return Number(s);
+}
+
+// Vaste tekstcorrecties die overal gelden (ook in ingeladen Word-brieven en opgeslagen brieven)
+function standaardCorrecties(html) {
+    let keuze = false;
+    let link = false;
+    const uit = String(html)
+        .replace(/,?\s*\(keuze:\s*Actuele polisvoorwaarden\)/gi, () => { keuze = true; return ''; })
+        .replace(/polisvoorwaarden-63/gi, () => { link = true; return 'polisvoorwaarden'; });
+    const wat = [keuze && '“(keuze: Actuele polisvoorwaarden)” weggehaald', link && 'link polisvoorwaarden-63 vervangen door polisvoorwaarden'].filter(Boolean);
+    return { html: uit, wat };
 }
 
 function tekstNaarHtml(tekst) {
@@ -1213,7 +1249,9 @@ const INHOUD_HOOGTE = A4.hoogte - 2 * A4.marge;
 function toonPreview() {
     const papier = $('papier');
     papier.replaceChildren();
+    papier.classList.remove('overzicht');
     $('paginaInfo').textContent = '';
+    $('paginaIndeling').hidden = true;
     const vrijePagina = (inhoud) => {
         const pagina = document.createElement('div');
         pagina.className = 'page page-vrij';
@@ -1239,7 +1277,11 @@ function toonPreview() {
     markeer(kloon);
     kloon.querySelectorAll('a[href]').forEach((a) => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
     const paginas = pagineer(kloon);
+    const samenvattingen = [];
     paginas.forEach((blokken, i) => {
+        const blok = document.createElement('div');
+        blok.className = 'page-blok';
+        blok.id = `pagina-${i + 1}`;
         const pagina = document.createElement('div');
         pagina.className = 'page';
         const inhoud = document.createElement('div');
@@ -1249,15 +1291,102 @@ function toonPreview() {
         const nr = document.createElement('p');
         nr.className = 'page-nr';
         nr.textContent = `Pagina ${i + 1} van ${paginas.length}`;
-        papier.append(pagina, nr);
+        blok.append(pagina, nr);
+        blok.addEventListener('click', () => { if (state.weergave === 'overzicht') naarPagina(i + 1); });
+        papier.append(blok);
+        samenvattingen.push(paginaSamenvatting(inhoud));
     });
+    papier.classList.toggle('overzicht', state.weergave === 'overzicht');
+    toonIndeling(samenvattingen);
     $('paginaInfo').textContent = `· ${paginas.length} ${paginas.length === 1 ? 'pagina' : "pagina's"} A4`;
     schaalPreview();
+}
+
+// Wat staat er op een pagina: kopjes (vetgedrukte regels), begin en eind
+function paginaSamenvatting(inhoud) {
+    const kort = (t, n) => { const s = t.replace(/\s+/g, ' ').trim(); return s.length > n ? `${s.slice(0, n - 1).trim()}…` : s; };
+    const kopjes = [];
+    if ([...inhoud.querySelectorAll('table')].some((t) => /@L00084@|Ons Kenmerk/i.test(t.textContent))) kopjes.push('Briefhoofd');
+    for (const el of inhoud.querySelectorAll('h1, h2, h3, h4, strong')) {
+        if (el.closest('table') || (el.tagName === 'STRONG' && el.parentElement.closest('strong'))) continue;
+        let vorige = el.previousSibling;
+        while (vorige && vorige.nodeType === Node.TEXT_NODE && !vorige.nodeValue.trim()) vorige = vorige.previousSibling;
+        const begin = !vorige || (vorige.nodeType === Node.ELEMENT_NODE && vorige.tagName === 'BR');
+        const tekst = kort(el.textContent, 48);
+        if ((el.tagName !== 'STRONG' || begin) && tekst && kopjes[kopjes.length - 1] !== tekst) kopjes.push(tekst);
+    }
+    // tekst met spaties tussen alinea's en tabelcellen
+    let ruw = '';
+    const lees = (n) => {
+        for (const c of n.childNodes) {
+            if (c.nodeType === Node.TEXT_NODE) { ruw += c.nodeValue; continue; }
+            if (c.nodeType !== Node.ELEMENT_NODE) continue;
+            const scheiding = BLOK.has(c.tagName) || c.tagName === 'BR';
+            if (scheiding) ruw += ' ';
+            lees(c);
+            if (scheiding) ruw += ' ';
+        }
+    };
+    lees(inhoud);
+    const tekst = ruw.replace(/\s+/g, ' ').trim();
+    const eerste = inhoud.firstElementChild;
+    const laatste = inhoud.lastElementChild;
+    return {
+        kopjes,
+        begin: kort(tekst, 60),
+        eind: tekst.length > 60 ? `…${tekst.slice(-55).trim()}` : '',
+        vervolg: !!(eerste && eerste.dataset.doorloop),
+        looptDoor: !!(laatste && laatste.classList.contains('vervolg'))
+    };
+}
+
+function toonIndeling(samenvattingen) {
+    const lijst = $('indelingLijst');
+    lijst.replaceChildren();
+    samenvattingen.forEach((s, i) => {
+        const li = document.createElement('li');
+        const knop = document.createElement('button');
+        knop.type = 'button';
+        knop.title = `Ga naar pagina ${i + 1}`;
+        const nr = document.createElement('span');
+        nr.className = 'nr';
+        nr.textContent = `Pagina ${i + 1}`;
+        const kopjes = document.createElement('span');
+        kopjes.className = 'kopjes';
+        const toon = s.kopjes.slice(0, 6);
+        kopjes.textContent = toon.length
+            ? toon.join(' · ') + (s.kopjes.length > toon.length ? ` · +${s.kopjes.length - toon.length} meer` : '')
+            : 'Alleen lopende tekst';
+        const grens = document.createElement('span');
+        grens.className = 'grens';
+        grens.textContent = `Begint${s.vervolg ? ' (vervolg alinea)' : ''}: “${s.begin}”`
+            + (s.eind ? `  ·  Eindigt${s.looptDoor ? ' (loopt door)' : ''}: “${s.eind}”` : '');
+        knop.append(nr, kopjes, grens);
+        knop.addEventListener('click', () => naarPagina(i + 1));
+        li.append(knop);
+        lijst.append(li);
+    });
+    $('paginaIndeling').hidden = !samenvattingen.length;
+}
+
+function naarPagina(nr) {
+    if (state.weergave === 'overzicht') zetWeergave('pagina');
+    const doel = $(`pagina-${nr}`);
+    if (doel) doel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function zetWeergave(weergave) {
+    state.weergave = weergave;
+    zetSegment('weergaveKeuze', weergave);
+    $('papier').classList.toggle('overzicht', weergave === 'overzicht');
+    schaalPreview();
+    bewaarKeuzes();
 }
 
 // A4-pagina's passend maken in de previewkolom (alleen verkleinen)
 function schaalPreview() {
     const papier = $('papier');
+    if (state.weergave === 'overzicht') { papier.style.zoom = ''; return; }
     const beschikbaar = papier.parentElement.clientWidth;
     papier.style.zoom = beschikbaar && beschikbaar < 794 ? String(beschikbaar / 794) : '';
 }
@@ -1366,6 +1495,7 @@ function splitsTekst(blok, ruimte) {
     range.setEnd(blok, blok.childNodes.length);
     deel2.append(range.cloneContents());
     deel1.classList.add('vervolg');
+    deel2.dataset.doorloop = '1';
     return [deel1, deel2];
 }
 
@@ -1380,6 +1510,7 @@ function splitsOpKinderen(blok, kinderen, ruimte, aanpassen) {
     deel1.append(...kinderen.slice(0, aantal).map((k) => k.cloneNode(true)));
     deel2.append(...kinderen.slice(aantal).map((k) => k.cloneNode(true)));
     deel1.classList.add('vervolg');
+    deel2.dataset.doorloop = '1';
     if (aanpassen) aanpassen(deel2, aantal);
     return [deel1, deel2];
 }
@@ -1469,6 +1600,7 @@ function toonMeldingen(brief, leeg) {
     if (state.brief === 'X-OVR' && state.klanttype === 'zakelijk') {
         melding('Zakelijke tekst is een eerste concept (een paar zinnen in de inleiding en de Q&A). Laat de tekst controleren voor gebruik.', 'info');
     }
+    if (brief.correcties && brief.correcties.length) melding(`Automatisch aangepast in preview en downloads: ${brief.correcties.join('; ')}.`, 'info');
     if (leeg) melding('Nog geen brief ingeladen.', 'info');
 }
 
@@ -2383,7 +2515,7 @@ function bewaarKeuzes() {
         brief: state.brief, kantoorId: state.kantoorId === NIEUW ? STANDAARD_KANTOOR : state.kantoorId,
         klanttype: state.klanttype, pakket: state.pakket, ovr: state.ovr,
         qa: state.qa, brf: state.brf, kop: state.kop, kopTekst: state.kopTekst, systeem: state.systeem,
-        bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld, broncode: state.broncode
+        bijlagen: gekozenFormaten(), voorbeeld: state.voorbeeld, broncode: state.broncode, weergave: state.weergave
     });
 }
 
@@ -2468,12 +2600,15 @@ function init() {
     const opgeslagen = lees(OPSLAG_BRIEVEN, []);
     if (Array.isArray(opgeslagen)) {
         state.brieven = opgeslagen.filter((b) => b && typeof b.naam === 'string' && typeof b.html === 'string');
+        for (const b of state.brieven) b.html = standaardCorrecties(b.html).html;
         for (const b of state.brieven) {
             if (!b.systeem || typeof b.systeem.bestaat !== 'boolean' || typeof b.systeem.code !== 'string') b.systeem = { bestaat: false, code: '' };
         }
     }
     state.voorbeeld = keuzes.voorbeeld === true;
     state.broncode = keuzes.broncode === true;
+    if (['pagina', 'overzicht'].includes(keuzes.weergave)) state.weergave = keuzes.weergave;
+    zetSegment('weergaveKeuze', state.weergave);
     if (keuzes.systeem && typeof keuzes.systeem === 'object') {
         for (const [k, v] of Object.entries(keuzes.systeem)) {
             if (v && typeof v.bestaat === 'boolean' && typeof v.code === 'string') state.systeem[k] = { bestaat: v.bestaat, code: v.code };
@@ -2549,6 +2684,10 @@ function init() {
         state.qa = b.dataset.waarde === 'met';
         toonSecties(); bewaarKeuzes(); render();
     });
+    $('weergaveKeuze').addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (b) zetWeergave(b.dataset.waarde);
+    });
     $('broncodeToggle').addEventListener('change', (e) => {
         state.broncode = e.target.checked;
         bewaarKeuzes(); toonPreview();
@@ -2585,7 +2724,7 @@ function init() {
     $('eigenPlak').addEventListener('paste', (e) => {
         e.preventDefault();
         const html = e.clipboardData.getData('text/html');
-        const schoon = html ? wordHtmlOpschonen(html) : tekstNaarHtml(e.clipboardData.getData('text/plain'));
+        const schoon = standaardCorrecties(html ? wordHtmlOpschonen(html) : tekstNaarHtml(e.clipboardData.getData('text/plain'))).html;
         if (!schoon.trim()) return;
         const vak = $('eigenPlak');
         if (!vak.textContent.trim()) zetEigenHtml(schoon);
@@ -2613,7 +2752,7 @@ function init() {
         e.target.value = '';
         if (!bestand) return;
         try {
-            const html = await leesEigenBestand(bestand);
+            const html = standaardCorrecties(await leesEigenBestand(bestand)).html;
             if (!state.eigen.naam.trim()) zetEigenNaam(bestand.name.replace(/\.[^.]+$/, '').replace(/_/g, ' ').trim());
             zetEigenHtml(html);
             toast(`“${bestand.name}” omgezet naar HTML.`);
