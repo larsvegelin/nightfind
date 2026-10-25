@@ -1,0 +1,17 @@
+<!-- ParsePDF — het enige blok dat je in Webflow plaatst. Zet het onder de lege
+     container <div id="pl-parsepdf-root"></div>. Vervang het adres door de plek
+     waar parsepdf.js staat (GitHub Pages, je eigen server, een CDN). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+window.PARSELAB = {
+  supabaseUrl: "https://wgmwpwviqhcsyvfrwual.supabase.co",
+  supabaseKey: "sb_publishable_3NaKuKqUgGfvF2q772MwIw_hfHdklwo",
+  dashboardPath: "/dashboard",
+  loginPath: "/inloggen",
+  aiEndpoint: "/api/parsepdf/velden",
+  prices: { pro: "", business: "" }
+};
+window.PARSELAB.client = window.supabase.createClient(window.PARSELAB.supabaseUrl, window.PARSELAB.supabaseKey,
+  { auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
+</script>
+<script src="https://larsvegelin.github.io/nightfind/parselab/dist/parsepdf.js" defer></script>

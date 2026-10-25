@@ -1,0 +1,220 @@
+<!-- ParsePDF — embed 7 van 12: velden voorstellen. Gebruikt de cellen uit embed 6. -->
+<script>
+(function(){
+var ST=window.PLP_ST;if(!ST)return;
+var PAT=ST.patronen,STOP=ST.STOP;
+var labelachtig=ST.labelachtig,bruikbaar=ST.bruikbaar,eigenPaar=ST.eigenPaar,vind=ST.vind,re=ST.re;
+var schoonLabel=ST.schoonLabel,overlapt=ST.overlapt,perRij=ST.perRij;
+// Een formulier heeft een kolom met labels en er rechts van de waarden. Vinden we zo'n
+// kolom, dan hoort elke regel daar bij elkaar, ook als de waarde op een label lijkt.
+function labelKolom(rijen){
+  var tel={};
+  rijen.forEach(function(rij){
+    if(rij.length!==2||!labelachtig(rij[0].t))return;
+    var k=Math.round(rij[0].x/4)*4+":"+(Math.round(rij[1].x/4)*4);
+    tel[k]=(tel[k]||0)+1;
+  });
+  var beste=null;
+  Object.keys(tel).forEach(function(k){if(tel[k]>=3&&(beste===null||tel[k]>tel[beste]))beste=k;});
+  if(beste===null)return null;
+  var d=beste.split(":");
+  return {x:Number(d[0]),waardeX:Number(d[1])};
+}
+
+// Staat er onder deze cel, in dezelfde kolom, een waarde? Dan is het een kolomkop
+// en hoort hij niet bij het label links van hem.
+function waardeOnder(c,rijen){
+  for(var i=0;i<rijen.length-1;i++){
+    if(rijen[i][0].pagina!==c.pagina||rijen[i][0].rij!==c.rij)continue;
+    var onder=rijen[i+1];
+    if(!onder||onder[0].pagina!==c.pagina||onder[0].rij!==c.rij+1)return false;
+    return onder.some(function(x){return overlapt(c,x)&&(!labelachtig(x.t)||!!ST.vind(x.t));});
+  }
+  return false;
+}
+function kandidaat(naam,waarde,score,vak,vindregel,label){
+  return {naam:naam,waarde:String(waarde).trim(),score:score,vak:vak,vindregel:vindregel,labelvak:label||null};
+}
+function analyse(doc){
+  var cellen=doc.cellen||[],rijen=perRij(cellen),uit=[],labKol=labelKolom(rijen);
+
+  // 1. Kolomkop boven de waarde: dezelfde x-posities op twee rijen.
+  for(var r=0;r<rijen.length-1;r++){
+    var kop=rijen[r],waardeRij=rijen[r+1];
+    if(kop.length<2||kop[0].pagina!==waardeRij[0].pagina)continue;
+    // Een regel uit de labelkolom is geen kolomkop; die hoort met de cel ernaast bij elkaar.
+    if(labKol&&kop.length===2&&Math.abs(kop[0].x-labKol.x)<=4&&Math.abs(kop[1].x-labKol.waardeX)<=4)continue;
+    if(waardeRij[0].rij!==kop[0].rij+1)continue;
+    var labels=kop.filter(function(c){return labelachtig(c.t);});
+    if(labels.length<2)continue;
+    labels.forEach(function(lab){
+      var w=waardeRij.filter(function(c){return overlapt(lab,c)&&bruikbaar(c.t)&&!eigenPaar(c.t);});
+      if(w.length!==1)return;
+      uit.push(kandidaat(schoonLabel(lab.t),w[0].t,0.9,w[0],{type:"kolomkop",label:schoonLabel(lab.t)},lab));
+    });
+  }
+
+  // 2. Label links, waarde rechts op dezelfde rij. Staat er op een regel niets anders
+  // dan een label en één waarde ("Geboortedatum   01-01-1990"), dan hoort dat bij elkaar,
+  // ook als die waarde op een label lijkt ("Voorletters   J.M.").
+  rijen.forEach(function(rij){
+    for(var i=0;i<rij.length-1;i++){
+      var lab=rij[i],w=rij[i+1];
+      if(!labelachtig(lab.t)||eigenPaar(w.t))continue;
+      if(w.x-(lab.x+lab.b)>260)continue;
+      var alleen=rij.length===2&&labKol&&Math.abs(lab.x-labKol.x)<=4&&Math.abs(w.x-labKol.waardeX)<=4;
+      if(!alleen&&labelachtig(w.t))continue;
+      uit.push(kandidaat(schoonLabel(lab.t),w.t,alleen?0.95:0.85,w,{type:"rechts",label:schoonLabel(lab.t)},lab));
+    }
+  });
+
+  // 3. Label en waarde in dezelfde cel.
+  cellen.forEach(function(c){
+    for(var i=0;i<PAT.length;i++){
+      var m=c.t.match(new RegExp("^(.{2,36}?)[\\s:\\-–]+("+PAT[i].re+")$","i"));
+      if(!m)continue;
+      var lab=schoonLabel(m[1]);
+      if(!labelachtig(lab)||STOP.test(lab))break;
+      uit.push(kandidaat(lab,m[2],0.8,c,{type:"inline",label:lab,patroon:PAT[i].naam},c));
+      break;
+    }
+  });
+
+  // 4. Label met de waarde eronder, in dezelfde kolom.
+  for(var q=0;q<rijen.length-1;q++){
+    var boven=rijen[q],onder=rijen[q+1];
+    if(boven.length>2||boven[0].pagina!==onder[0].pagina||onder[0].rij!==boven[0].rij+1)continue;
+    boven.forEach(function(lab){
+      if(!labelachtig(lab.t)||vind(lab.t)||/:/.test(lab.t))return;
+      var w=onder.filter(function(c){return Math.abs(c.x-lab.x)<=4&&bruikbaar(c.t)&&!/:/.test(c.t)&&!eigenPaar(c.t);});
+      if(w.length!==1)return;
+      uit.push(kandidaat(schoonLabel(lab.t),w[0].t,0.7,w[0],{type:"onder",label:schoonLabel(lab.t)},lab));
+    });
+  }
+
+  // 5. Sterke patronen mogen los een veld zijn.
+  cellen.forEach(function(c){
+    PAT.forEach(function(p){
+      if(!p.sterk)return;
+      var m=c.t.match(re(p));
+      if(!m)return;
+      uit.push(kandidaat(p.toon,m[0],0.6,c,{type:"patroon",patroon:p.naam},null));
+    });
+  });
+
+  return {velden:ontdubbel(uit),kolommen:ST.kolommen(cellen),tabel:tabel(rijen)};
+}
+
+// Zelfde waarde op dezelfde plek: de hoogste score wint. Zelfde naam: nummeren.
+function ontdubbel(lijst){
+  var perVak={};
+  lijst.forEach(function(k){
+    if(!k.naam||!k.waarde)return;
+    var sleutel=k.vak.pagina+":"+Math.round(k.vak.x)+":"+Math.round(k.vak.y);
+    if(!perVak[sleutel]||perVak[sleutel].score<k.score)perVak[sleutel]=k;
+  });
+  var perWaarde={};
+  Object.keys(perVak).forEach(function(s){
+    var k=perVak[s],w=k.vak.pagina+":"+k.waarde.toLowerCase();
+    if(!perWaarde[w]||perWaarde[w].score<k.score)perWaarde[w]=k;
+  });
+  var uit=Object.keys(perWaarde).map(function(s){return perWaarde[s];})
+    .sort(function(a,b){return b.score-a.score||a.vak.pagina-b.vak.pagina||b.vak.y-a.vak.y;});
+  var geteld={};
+  uit.forEach(function(k){
+    geteld[k.naam]=(geteld[k.naam]||0)+1;
+    if(geteld[k.naam]>1)k.naam=k.naam+" "+geteld[k.naam];
+  });
+  return uit;
+}
+
+// Regeltabel: kopregel met 3+ labels, daaronder rijen op diezelfde kolommen.
+function tabel(rijen){
+  var beste=null;
+  for(var r=0;r<rijen.length-1;r++){
+    var kop=rijen[r];
+    var labels=kop.filter(function(c){return labelachtig(c.t);});
+    if(labels.length<3)continue;
+    var rows=[],leeg=0,vorigeY=kop[0].y,stap=0;
+    for(var i=r+1;i<rijen.length;i++){
+      var rij=rijen[i];
+      if(rij[0].pagina!==kop[0].pagina)break;
+      var raak=labels.filter(function(lab){return rij.some(function(c){return overlapt(lab,c);});}).length;
+      var gat=vorigeY-rij[0].y;
+      if(rows.length&&stap&&gat>stap*2.2)break;
+      var eersteKolom=rij.some(function(c){return overlapt(labels[0],c);});
+      if(raak>=Math.ceil(labels.length/2)&&eersteKolom){
+        if(!stap||gat<stap)stap=gat;
+        vorigeY=rij[0].y;
+        rows.push(labels.map(function(lab){
+          var c=rij.filter(function(x){return overlapt(lab,x);});
+          return c.length?c.map(function(x){return x.t;}).join(" "):"";
+        }));
+        leeg=0;
+      }else if(rows.length){ if(++leeg>1)break; }
+    }
+    if(rows.length>=2){
+      var kandidaatTabel={kop:labels.map(function(c){return schoonLabel(c.t);}),rijen:rows};
+      if(!beste||labels.length>beste.kop.length||(labels.length===beste.kop.length&&rows.length>beste.rijen.length))beste=kandidaatTabel;
+    }
+  }
+  return beste;
+}
+
+// Een gevonden waarde krijgt meteen de juiste opschoning mee.
+function filterVoor(v){
+  var p=v.vindregel&&v.vindregel.patroon;
+  if(p==="bedrag"||/^\s*-?€/.test(v.waarde)||/\d,\d{2}$/.test(v.waarde))return "bedrag";
+  var g=vind(v.waarde);
+  if(p==="datum"||(g&&g.patroon.naam==="datum"))return "datum";
+  return "geen";
+}
+
+// Alles wat de slimme herkenning liet liggen: elke cel op de pagina, plus wat er
+// buiten de pagina om bekend is (bestandsnaam en de eigenschappen van het pdf-bestand).
+// De gebruiker vinkt weg wat hij niet wil.
+function alles(doc,gekozen){
+  var bezet={};
+  (gekozen||[]).forEach(function(v){
+    [v.vak,v.labelvak].forEach(function(k){if(k)bezet[k.pagina+":"+Math.round(k.x)+":"+Math.round(k.y)]=1;});
+  });
+  var uit=[],n=0,rijen=perRij(doc.cellen||[]);
+  var meta=doc.meta||{};
+  Object.keys(meta).forEach(function(k){
+    if(meta[k])uit.push(kandidaat(k,meta[k],0.5,{pagina:-1,x:0,y:0,b:0,h:0},{type:"meta",sleutel:k},null));
+  });
+  uit.push(kandidaat("Bestandsnaam",doc.naam,0.5,{pagina:-1,x:0,y:0,b:0,h:0},{type:"bestand"},null));
+  rijen.forEach(function(rij){
+    rij.forEach(function(c,i){
+      if(bezet[c.pagina+":"+Math.round(c.x)+":"+Math.round(c.y)])return;
+      n++;
+      uit.push(kandidaat(naamVoor(c,rij,i,n),c.t,0.3,c,
+        {type:"plek",pagina:c.pagina,x:Math.round(c.x),y:Math.round(c.y)},null));
+    });
+  });
+  return uit;
+}
+// Een naam voorstellen voor een losse cel: het label ervoor of erboven, anders het
+// patroon, anders geteld. Van een cel die zelf label en waarde bevat pakken we het label.
+function labelDeel(t){
+  for(var i=0;i<PAT.length;i++){
+    if(!PAT[i].sterk&&PAT[i].naam!=="bedrag")continue;
+    var m=String(t).match(new RegExp("^(.{2,36}?)[\\s:\\-–]+("+PAT[i].re+")$","i"));
+    if(m&&labelachtig(schoonLabel(m[1])))return schoonLabel(m[1]);
+  }
+  return labelachtig(t)?schoonLabel(t):"";
+}
+function naamVoor(c,rij,i,n){
+  for(var j=i-1;j>=0;j--){
+    var lab=labelDeel(rij[j].t);
+    if(lab&&lab.toLowerCase()!==String(c.t).toLowerCase())return lab;
+  }
+  var v=vind(c.t);
+  if(v&&v.waarde.length>=String(c.t).length-1)return v.patroon.toon;
+  var eigen=labelDeel(c.t);
+  if(eigen&&eigen.toLowerCase()!==String(c.t).toLowerCase())return eigen;
+  return "Tekst "+n;
+}
+ST.analyse=analyse;ST.filterVoor=filterVoor;ST.alles=alles;
+})();
+</script>

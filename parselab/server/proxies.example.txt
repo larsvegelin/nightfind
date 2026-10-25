@@ -1,0 +1,5 @@
+# Eén proxy per regel. Kopieer dit bestand naar proxies.txt (dat staat niet in git).
+# ParseLab wisselt per verzoek van proxy en slaat een proxy 10 minuten over na drie fouten.
+# http://gebruiker:wachtwoord@proxy1.example.net:8000
+# http://gebruiker:wachtwoord@proxy2.example.net:8000
+# socks5://proxy3.example.net:1080

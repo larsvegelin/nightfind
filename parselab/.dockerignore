@@ -1,0 +1,6 @@
+server/node_modules
+server/data
+server/proxies.txt
+tests/shots
+tests/qa-result.txt
+node_modules

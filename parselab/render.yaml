@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: parselab
+    runtime: docker
+    rootDir: parselab
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/scrape/status
+    disk:
+      name: parselab-data
+      mountPath: /app/server/data
+      sizeGB: 1
+    envVars:
+      - key: PARSELAB_PORT
+        value: 8080
+      - key: PARSELAB_API_TOKEN
+        sync: false
