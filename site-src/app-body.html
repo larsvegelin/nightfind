@@ -1,0 +1,75 @@
+<section class="page-head demo-head"><canvas class="net" aria-hidden="true"></canvas><div class="wrap">
+  <ol class="crumbs" aria-label="Kruimelpad"><li><a href="{R}index.html">Home</a></li><li><span aria-current="page">Demo</span></li></ol>
+  <h1>Probeer het: beschrijf een taak</h1>
+  <p class="lead">Typ wat je wilt automatiseren of kies een voorbeeld. Je ziet de flow ontstaan, test hem en bekijkt het resultaat. <strong>Demo met voorbeelddata:</strong> er wordt niets echt gescrapet of gekoppeld.</p>
+</div></section>
+
+<section class="demo-band"><div class="wrap">
+  <div class="dash" id="dash">
+    <aside class="d-side" aria-label="Onderdelen">
+      <div class="s-logo"><span class="logo-mark"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="4.4" cy="4.2" r="2.3" fill="#03140b"/><circle cx="4.4" cy="13.8" r="2.3" fill="#03140b"/><circle cx="13.8" cy="9" r="2.3" fill="#03140b"/><path d="M4.4 6.4v5.2M6.3 5.2l5.6 2.8M6.3 12.8l5.6-2.8" stroke="#03140b" stroke-width="1.7" stroke-linecap="round"/></svg></span>{B}</div>
+      <div class="d-nav" role="tablist" aria-label="Onderdelen">
+        <button type="button" role="tab" data-view="flows" aria-selected="true">Flows</button>
+        <button type="button" role="tab" data-view="tabellen" aria-selected="false">Tabellen <span class="cnt" id="cnt-tab">3</span></button>
+        <button type="button" role="tab" data-view="geschiedenis" aria-selected="false">Geschiedenis</button>
+        <button type="button" role="tab" data-view="apps" aria-selected="false">Apps</button>
+      </div>
+      <div class="s-foot"><div class="s-team"><i>T</i>Mijn team</div></div>
+    </aside>
+
+    <div class="d-main">
+      <!-- Flows -->
+      <div class="d-view" data-view="flows">
+        <div class="app-top"><b id="d-title">Nieuwe flow</b><span class="chip" id="d-chip">Concept</span><span class="sp"></span><button type="button" class="t-btn" id="d-test" disabled>Test flow</button><button type="button" class="p-btn" id="d-pub" disabled>Publiceren</button></div>
+        <div class="d-split">
+          <div class="chat">
+            <div class="chat-head"><svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.5 8.3 5.2 12 6.5 8.3 7.8 7 11.5 5.7 7.8 2 6.5l3.7-1.3L7 1.5Z" fill="currentColor"/></svg>Assistent</div>
+            <div class="msgs d-msgs" id="d-msgs" aria-live="polite">
+              <div class="msg show"><span class="av" aria-hidden="true">AI</span><p>Hoi! Vertel wat je wilt automatiseren, dan bouw ik de flow. Je kunt ook een voorbeeld kiezen.</p></div>
+            </div>
+            <div class="d-sugg" id="d-sugg">
+              <button type="button" data-q="Haal elke maandag alle producten en prijzen van shop.nl op en zet ze in Excel">Producten en prijzen naar Excel</button>
+              <button type="button" data-q="Vul voor elke regel uit mijn lijst het bestelformulier in en klik op versturen">Excel invoeren in een formulier</button>
+              <button type="button" data-q="Download elke maand alle facturen uit het leveranciersportaal als PDF">Facturen als PDF</button>
+            </div>
+            <form class="chat-in d-in" id="d-form"><label class="hp" for="d-q">Beschrijf wat je wilt automatiseren</label><input id="d-q" name="q" autocomplete="off" placeholder="Beschrijf wat je wilt automatiseren…" maxlength="300"><button class="send" type="submit" aria-label="Versturen"><svg width="12" height="12" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M5 8.5v-7M2 4.5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></form>
+          </div>
+          <div class="canvas d-canvas">
+            <span class="badge" id="d-badge">Wacht op je beschrijving</span>
+            <div class="nodes" id="d-nodes"><p class="d-empty">Hier verschijnt je flow.</p></div>
+            <div class="result" id="d-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabellen -->
+      <div class="d-view" data-view="tabellen" hidden>
+        <div class="app-top"><b>Tabellen</b><span class="chip">Voorbeelddata</span><span class="sp"></span><button type="button" class="p-btn" id="d-csv">Download CSV</button></div>
+        <div class="d-tables">
+          <div class="d-tlist" id="d-tlist" role="listbox" aria-label="Tabellen"></div>
+          <div class="d-tview" id="d-tview"></div>
+        </div>
+      </div>
+
+      <!-- Geschiedenis -->
+      <div class="d-view" data-view="geschiedenis" hidden>
+        <div class="app-top"><b>Run-geschiedenis</b><span class="chip">Voorbeelddata</span></div>
+        <div class="d-pad"><table class="r-tab d-hist"><thead><tr><th>Status</th><th>Flow</th><th>Gestart</th><th>Bron</th><th class="num">Rijen</th><th>Duur</th></tr></thead><tbody id="d-hist"></tbody></table></div>
+      </div>
+
+      <!-- Apps -->
+      <div class="d-view" data-view="apps" hidden>
+        <div class="app-top"><b>Apps en koppelingen</b></div>
+        <div class="d-pad d-apps">
+          <div class="d-app"><b>Excel en CSV</b><span>Resultaten downloaden of als lijst inlezen.</span><em class="ok">Beschikbaar</em></div>
+          <div class="d-app"><b>Webhook</b><span>Elke regel of melding naar je eigen systeem, Teams, Slack, Make of n8n.</span><em class="ok">Beschikbaar</em></div>
+          <div class="d-app"><b>Wachtrij-API</b><span>Andere systemen zetten werk klaar; resultaten komen terug.</span><em class="ok">Beschikbaar</em></div>
+          <div class="d-app"><b>Google Sheets</b><span>Resultaten direct in een sheet.</span><em>Binnenkort</em></div>
+          <div class="d-app"><b>Slack</b><span>Meldingen in een kanaal.</span><em>Binnenkort</em></div>
+          <div class="d-app"><b>Gmail</b><span>Mail als concept klaarzetten.</span><em>Binnenkort</em></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-cta" style="justify-content:center;margin-top:34px"><a class="btn btn-green" href="{R}help.html#installeren" data-cta>Gratis scraper installeren</a><a class="btn btn-ghost" href="{R}toepassingen/index.html">Bekijk de toepassingen</a></div>
+</div></section>

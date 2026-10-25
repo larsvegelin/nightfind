@@ -2,24 +2,48 @@
 
 Website van **ParseLab**: verzamel data en automatiseer wat je in je browser doet. Neem een taak één keer op of beschrijf hem, en ParseLab herhaalt hem voor elke regel uit je lijst, op elke website, in je eigen browser.
 
-## Status
+## Wat er staat
 
-- `index.html` is de nieuwe homepage (donker thema: navy `#0c0e1b` met groen `#02d678`).
-  - Navigatie-tabs: Hoe het werkt, Toepassingen, Prijzen, FAQ, Help, Inloggen en Gratis starten.
-  - Hero met een geanimeerde demo (hero-loop) van een flow die zichzelf opbouwt.
-  - Sjablonen, planning en wachtrij, privacy, prijzen, FAQ en installatie-hulp.
-- De homepage ziet of de ParseLab-extensie geïnstalleerd is (via `bridge.js` in de extensie, op `larsvegelin.github.io`, `*.parselab.nl` en localhost). Dan verandert de knop en staat er een melding met de versie.
-- `downloads/parselab-extension.zip` is de huidige extensie (versie 1.47), te downloaden vanaf de Help-sectie.
-- `assets/parselab/logo.svg` is het logo en favicon.
-- De overige pagina's (`bars.html`, `clubs.html`, `events.html`, `budget.html`, juridische pagina's) zijn nog van het vorige project (NightFind) en worden hierna vervangen.
+Eerste versie van de complete site, gebouwd volgens het projectdocument (werknaam Flowdeck). De gratis scraper in de browser is de ingang, use cases staan voorop, met eerlijke voorbeelddata en zakelijke gegevens in plaats van persoonsgegevens.
 
-## Lokaal bekijken
+| Pagina | Bestand |
+|---|---|
+| Home (hero-loop, scraper, toepassingen, flow van de week, wachtlijst) | `index.html` |
+| Hoe het werkt | `hoe-het-werkt.html` |
+| Toepassingen: hub met filters + 12 use-casepagina's | `toepassingen/` |
+| Prijzen (gratis, Pro, Business, credits) | `prijzen.html` |
+| Automation Vault | `vault.html` |
+| FAQ | `faq.html` |
+| Help en installatie (download van de extensie) | `help.html` |
+| Inloggen (via de extensie; webapp volgt) | `inloggen.html` |
+| Demo-dashboard (Copilot-chat, flow, tabellen, geschiedenis, apps) | `app.html` |
+| Privacy en voorwaarden (concept) | `privacy.html`, `voorwaarden.html` |
+| 404, sitemap, robots | `404.html`, `sitemap.xml`, `robots.txt` |
 
-Open `index.html` in de browser, of start een simpele server in deze map:
+## Bouwen
+
+Alle pagina's komen uit één script. Pas teksten, use cases of instellingen aan in `site-src/build.py` en draai:
 
 ```
-python3 -m http.server 8080
+python3 site-src/build.py
 ```
+
+- `CONFIG` bovenin: merknaam (`ParseLab`, of `Flowdeck`), domein, prijzen en credits.
+- `USE_CASES`: elke toepassing is één blok. Een blok erbij geeft een nieuwe pagina, een kaart op de hub, een sitemap-regel en interne links.
+- Gedeelde opmaak en scripts: `assets/parselab/site.css`, `site.js` (menu, wachtlijst, extensie-herkenning, filters), `hero.js` (hero-loop) en `app.js` (demo).
+
+## Koppelingen
+
+- **Wachtlijst en vragen** gaan naar de tabel `wachtlijst` in het Supabase-project `scraper` (EU). Bezoekers kunnen alleen invoegen; via de API kan niemand de lijst lezen. Bekijk de aanmeldingen in het Supabase-dashboard.
+- **Extensie:** de site ziet via `bridge.js` of ParseLab geïnstalleerd is (op `larsvegelin.github.io`, `*.parselab.nl` en localhost) en past dan de knoppen aan.
+- `downloads/parselab-extension.zip` is de huidige extensie (1.47).
+
+## Nog in te vullen
+
+- Domein (`CONFIG['DOMAIN']`, nu `https://parselab.nl`) en merknaam controleren.
+- Prijzen zijn een eerste test (€10 en €50 per maand, Vault vanaf €29).
+- Privacy en voorwaarden zijn concepten: juridisch laten toetsen.
+- Oude NightFind-pagina's (`bars.html`, `clubs.html`, `events.html`, `budget.html`, `contact.html`, `cookies.html`, `legal.html`, `terms.html`) staan er nog; ze zijn niet meer gelinkt.
 
 ---
 

@@ -3,357 +3,55 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ParseLab</title>
-<meta name="description" content="ParseLab verzamelt data en automatiseert wat je in je browser doet. Neem het één keer op of beschrijf het, en ParseLab herhaalt het voor elke regel uit je lijst. Geen code.">
+<title>ParseLab: verzamel data en automatiseer je browser</title>
+<meta name="description" content="Beschrijf wat je wilt automatiseren of wijs het aan. ParseLab haalt gegevens op, vult formulieren in en bewaart bestanden. Gratis scraper voor Chrome.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://parselab.nl/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="ParseLab">
 <meta property="og:title" content="ParseLab: verzamel data en automatiseer je browser">
-<meta property="og:description" content="Neem je taak één keer op of beschrijf hem. ParseLab herhaalt hem voor elke regel uit je lijst, op elke website, in je eigen browser.">
+<meta property="og:description" content="Beschrijf wat je wilt automatiseren of wijs het aan. ParseLab haalt gegevens op, vult formulieren in en bewaart bestanden. Gratis scraper voor Chrome.">
+<meta property="og:url" content="https://parselab.nl/">
+<meta property="og:locale" content="nl_NL">
 <meta name="theme-color" content="#0c0e1b">
 <link rel="icon" type="image/svg+xml" href="assets/parselab/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
-<style>
-/* Layout: donkere navy-werkplaats. Nav-tabs bovenaan, hero met tekst links en de levende app rechts,
-   daarna banden op een kolom van 1200px. Eén thema: donker, met groen als enige accent. */
-:root {
-  --bg: #0c0e1b; --bg-hero: #0c111a; --band: #111727; --panel: #131a2a; --panel-2: #0f1524;
-  --line: #222b3d; --line-2: #2c3750; --ink: #f5f7fb; --ink-2: #c4cbd7; --muted: #8d97a8; --dim: #5c6577;
-  --green: #02d678; --green-ink: #03140b; --green-soft: rgba(2,214,120,.12); --green-line: rgba(2,214,120,.35);
-  --c-in: #5b9bff; --c-kl: #ffa94d; --c-ui: #02d678; --c-pg: #b197fc; --c-op: #f783ac; --c-he: #3bc9db;
-  --bad: #ff6b6b;
-  --app-bg: #f7f8fa; --app-panel: #ffffff; --app-line: #e5e8ee; --app-ink: #111826; --app-muted: #6b7385; --app-dot: #d9dde5;
-  --f-display: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --f-body: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --f-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  color-scheme: dark;
-}
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
-a { color: inherit; }
-img, svg, canvas { max-width: 100%; }
-:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 8px; }
-h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -.025em; }
-p { margin: 0; }
-.wrap { max-width: 1200px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
-.eyebrow { font: 600 12px/1 var(--f-body); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-.eyebrow.green { color: var(--green); }
-.lead { color: var(--ink-2); font-size: 19px; line-height: 1.65; max-width: 34em; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 10px; padding: 15px 26px; font: 700 17px var(--f-body); text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease; }
-.btn-green { background: var(--green); color: var(--green-ink); box-shadow: 0 8px 30px -10px rgba(2,214,120,.55); }
-.btn-green:hover { transform: translateY(-1px); box-shadow: 0 12px 34px -10px rgba(2,214,120,.7); }
-.btn-ghost { border-color: var(--line-2); color: var(--ink); background: rgba(255,255,255,.02); }
-.btn-ghost:hover { border-color: var(--muted); }
-.btn-ghost .tri { width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-
-/* ---------- navigatie ---------- */
-.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: rgba(12,14,27,.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
-.nav .wrap { display: flex; align-items: center; gap: 32px; padding-block: 12px; }
-.logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 22px var(--f-display); letter-spacing: -.03em; }
-.logo-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--green); display: grid; place-items: center; flex: none; }
-.logo-mark svg { width: 18px; height: 18px; }
-.tabs { display: flex; align-items: center; gap: 4px; margin-left: auto; }
-.tabs a { text-decoration: none; color: var(--ink-2); font-size: 15.5px; font-weight: 500; padding: 8px 12px; border-radius: 8px; transition: color .15s ease, background .15s ease; }
-.tabs a:hover { color: var(--ink); background: rgba(255,255,255,.04); }
-.tabs a.on { color: var(--ink); }
-.nav-right { display: flex; align-items: center; gap: 10px; }
-.nav-login { background: none; border: 0; color: var(--ink); font: 700 15.5px var(--f-body); padding: 8px 12px; cursor: pointer; border-radius: 8px; }
-.nav-login:hover { background: rgba(255,255,255,.04); }
-.nav .btn { padding: 11px 20px; font-size: 15.5px; }
-.menu-btn { display: none; background: none; border: 1px solid var(--line-2); color: var(--ink); border-radius: 9px; width: 40px; height: 40px; cursor: pointer; }
-.login-pop { position: absolute; right: max(20px, env(safe-area-inset-right, 0px)); top: 64px; width: min(340px, calc(100vw - 40px)); background: var(--panel); border: 1px solid var(--line-2); border-radius: 14px; padding: 18px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.7); display: flex; flex-direction: column; gap: 10px; font-size: 14.5px; color: var(--ink-2); }
-.login-pop b { color: var(--ink); font-size: 16px; }
-.login-pop kbd { font: 600 12px var(--f-mono); background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
-
-/* ---------- hero ---------- */
-.hero { position: relative; overflow: hidden; background: var(--bg-hero); border-bottom: 1px solid var(--line); }
-#net { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .9; }
-.hero .wrap { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 56px; align-items: center; padding-block: 76px 84px; }
-.hero h1 { font-size: clamp(40px, 4.3vw, 62px); line-height: 1.02; font-weight: 800; }
-.hero h1 span { display: block; }
-.hero h1 .g { color: var(--green); }
-.hero .lead { margin-top: 26px; }
-.hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
-.hero-note { margin-top: 18px; color: var(--muted); font-size: 15px; }
-.ext-ok { display: none; margin-top: 12px; color: var(--green); font-size: 14.5px; font-weight: 600; }
-.has-ext .ext-ok { display: block; }
-
-/* ---------- de levende app (hero-loop) ---------- */
-.stage { position: relative; min-width: 0; }
-.app { position: relative; background: var(--app-bg); color: var(--app-ink); border-radius: 14px; border: 1px solid rgba(255,255,255,.14); box-shadow: 0 40px 100px -30px rgba(0,0,0,.8), 0 0 0 6px rgba(255,255,255,.03); overflow: hidden; display: grid; grid-template-columns: 132px minmax(0, 210px) minmax(0, 1fr); grid-template-rows: 40px minmax(0, 1fr); height: 430px; font-size: 12px; }
-.app-side { grid-row: 1 / 3; border-right: 1px solid var(--app-line); background: #fbfbfc; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
-.app-side .s-logo { display: flex; align-items: center; gap: 7px; font: 800 13px var(--f-display); margin: 0 6px 12px; letter-spacing: -.02em; }
-.app-side .s-logo .logo-mark { width: 20px; height: 20px; border-radius: 6px; } .app-side .s-logo svg { width: 12px; height: 12px; }
-.s-item { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 7px; color: var(--app-muted); font-weight: 500; }
-.s-item.on { background: #e6f9ef; color: #04a35d; font-weight: 600; }
-.s-item svg { width: 13px; height: 13px; flex: none; }
-.s-foot { margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
-.s-team { display: flex; align-items: center; gap: 7px; padding: 6px 8px; color: var(--app-ink); font-weight: 600; }
-.s-team i { width: 18px; height: 18px; border-radius: 50%; background: var(--green); color: var(--green-ink); display: grid; place-items: center; font: 800 10px var(--f-body); font-style: normal; }
-.app-top { grid-column: 2 / 4; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--app-line); background: var(--app-panel); min-width: 0; }
-.app-top b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
-.chip { font: 600 10px var(--f-body); padding: 2px 7px; border-radius: 6px; border: 1px solid var(--app-line); color: var(--app-muted); white-space: nowrap; transition: all .3s ease; }
-.chip.live { background: #e6f9ef; border-color: #b6ecd0; color: #04a35d; }
-.app-top .sp { flex: 1; }
-.app-top .t-btn { font: 600 11px var(--f-body); border: 1px solid var(--app-line); border-radius: 7px; padding: 4px 9px; white-space: nowrap; }
-.app-top .p-btn { font: 700 11px var(--f-body); background: var(--green); color: var(--green-ink); border-radius: 7px; padding: 5px 10px; white-space: nowrap; }
-.chat { border-right: 1px solid var(--app-line); background: var(--app-panel); display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.chat-head { display: flex; align-items: center; gap: 6px; padding: 9px 12px; font-weight: 700; border-bottom: 1px solid var(--app-line); }
-.chat-head svg { width: 13px; height: 13px; color: #04a35d; }
-.msgs { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; min-height: 0; }
-.msg { display: flex; gap: 7px; align-items: flex-start; line-height: 1.45; opacity: 0; transform: translateY(6px); transition: opacity .35s ease, transform .35s ease; }
-.msg.show { opacity: 1; transform: none; }
-.msg .av { width: 18px; height: 18px; border-radius: 6px; border: 1px solid var(--app-line); display: grid; place-items: center; flex: none; color: var(--app-muted); }
-.msg .av svg { width: 11px; height: 11px; }
-.msg.user { justify-content: flex-end; }
-.msg.user p { background: #f1f3f6; border-radius: 10px; padding: 7px 9px; max-width: 88%; }
-.ok-line { display: flex; align-items: center; gap: 5px; color: #04a35d; font-weight: 600; margin-top: 4px; }
-.ok-line svg { width: 12px; height: 12px; }
-.chat-in { margin: 10px; border: 1px solid var(--app-line); border-radius: 10px; padding: 8px 9px; display: flex; align-items: flex-end; gap: 6px; color: var(--app-muted); min-height: 46px; }
-.chat-in span { flex: 1; min-width: 0; }
-.chat-in .send { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--app-line); display: grid; place-items: center; flex: none; }
-.canvas { position: relative; background-color: var(--app-bg); background-image: radial-gradient(circle at 1px 1px, var(--app-dot) 1px, transparent 0); background-size: 16px 16px; min-width: 0; min-height: 0; overflow: hidden; }
-.badge { position: absolute; left: 12px; top: 12px; display: inline-flex; align-items: center; gap: 6px; background: #0f1524; color: #fff; border-radius: 999px; padding: 4px 10px 4px 8px; font: 600 10.5px var(--f-body); z-index: 3; }
-.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-.nodes { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; width: min(250px, 86%); }
-.node { width: 100%; background: var(--app-panel); border: 1px solid var(--app-line); border-radius: 9px; padding: 8px 9px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px -8px rgba(15,21,36,.25); opacity: 0; transform: translateY(8px) scale(.98); transition: opacity .35s ease, transform .35s ease; }
-.node.show { opacity: 1; transform: none; }
-.node .ic { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--sc) 16%, white); color: var(--sc); }
-.node .ic svg { width: 12px; height: 12px; }
-.node .nt { min-width: 0; flex: 1; }
-.node .nt b { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.node .nt small { display: block; color: var(--app-muted); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.node .chk { width: 15px; height: 15px; border-radius: 50%; background: #04a35d; color: #fff; display: grid; place-items: center; flex: none; opacity: 0; transform: scale(.4); transition: opacity .25s ease, transform .25s ease; }
-.node .chk svg { width: 9px; height: 9px; }
-.node.done .chk { opacity: 1; transform: none; }
-.link { width: 1.5px; height: 18px; background: var(--app-line); opacity: 0; transition: opacity .3s ease; }
-.link.show { opacity: 1; }
-.result { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: var(--app-panel); border-left: 1px solid var(--app-line); box-shadow: -18px 0 40px -24px rgba(15,21,36,.35); transform: translateX(105%); transition: transform .55s cubic-bezier(.2,.8,.2,1); padding: 14px; display: flex; flex-direction: column; gap: 10px; z-index: 4; min-width: 0; }
-.result.show { transform: none; }
-.r-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.r-head svg { width: 15px; height: 15px; flex: none; color: #04a35d; }
-.r-head b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.r-head .pill { margin-left: auto; font: 600 10px var(--f-body); background: #e6f9ef; color: #04a35d; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
-.r-tab { width: 100%; border-collapse: collapse; font-size: 11px; }
-.r-tab th { text-align: left; color: var(--app-muted); font-weight: 600; padding: 5px 6px; border-bottom: 1px solid var(--app-line); }
-.r-tab td { padding: 6px; border-bottom: 1px solid var(--app-line); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.r-tab tr.new td { background: #f0fbf5; }
-.r-tab td.num { text-align: right; }
-.prog { display: flex; flex-direction: column; gap: 6px; }
-.prog .big { font: 800 24px var(--f-display); letter-spacing: -.02em; }
-.prog .bar { height: 7px; background: #eef0f4; border-radius: 6px; overflow: hidden; }
-.prog .bar span { display: block; height: 100%; width: 0; background: var(--green); border-radius: 6px; transition: width .4s ease; }
-.logl { display: flex; flex-direction: column; gap: 4px; font: 500 10.5px var(--f-mono); color: var(--app-muted); }
-.logl div { display: flex; gap: 6px; } .logl b { color: #04a35d; font-weight: 600; }
-.files { display: flex; flex-direction: column; gap: 5px; font-size: 11px; }
-.files .fd { display: flex; align-items: center; gap: 7px; font-weight: 600; } .files .fl { display: flex; align-items: center; gap: 7px; padding-left: 18px; color: var(--app-muted); }
-.files svg { width: 12px; height: 12px; flex: none; }
-.prompt { position: absolute; left: 50%; top: 50%; width: min(520px, 84%); transform: translate(-50%, -50%) scale(.96); background: #fff; border: 2px solid var(--green); border-radius: 16px; padding: 18px 64px 18px 20px; font: 600 19px/1.4 var(--f-display); color: var(--app-ink); letter-spacing: -.01em; box-shadow: 0 0 0 8px rgba(2,214,120,.12), 0 30px 60px -20px rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; z-index: 6; min-height: 66px; }
-.prompt.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.prompt .caret { display: inline-block; width: 2px; height: 1em; background: var(--green); vertical-align: -2px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
-.prompt .go { position: absolute; right: 14px; bottom: 14px; width: 38px; height: 38px; border-radius: 10px; background: var(--green); display: grid; place-items: center; color: var(--green-ink); transition: transform .2s ease; }
-.prompt .go svg { width: 18px; height: 18px; }
-.prompt.send .go { transform: scale(.88); }
-.stage-veil { position: absolute; inset: 0; background: rgba(12,14,27,.35); opacity: 0; transition: opacity .35s ease; z-index: 5; pointer-events: none; border-radius: 14px; }
-.stage-veil.show { opacity: 1; }
-.stage-pill { position: absolute; left: 18px; bottom: -20px; z-index: 6; background: #1b2336; color: var(--ink); border: 1px solid var(--line-2); border-radius: 999px; padding: 8px 14px; font-size: 13.5px; box-shadow: 0 14px 30px -14px rgba(0,0,0,.6); }
-.stage-pill b { color: var(--green); font-weight: 700; }
-@keyframes blink { 50% { opacity: 0; } }
-
-/* ---------- kenmerken-band (zoals de cijferband) ---------- */
-.stats { background: var(--band); border-bottom: 1px solid var(--line); }
-.stats .wrap { display: flex; justify-content: center; align-items: center; gap: 0; padding-block: 50px; }
-.stat { text-align: center; padding: 6px 56px; border-left: 1px solid var(--line-2); }
-.stat:first-child { border-left: 0; }
-.stat b { display: block; font: 800 clamp(34px, 4vw, 48px)/1.05 var(--f-display); color: var(--green); letter-spacing: -.02em; }
-.stat span { display: block; margin-top: 10px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-
-/* ---------- werkt samen met ---------- */
-.works { padding-block: 60px; border-bottom: 1px solid var(--line); text-align: center; }
-.works .names { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 30px 20px; margin-top: 34px; }
-.works .names span { font: 700 21px var(--f-display); color: var(--dim); letter-spacing: -.01em; }
-
-/* ---------- secties ---------- */
-section.band { padding-block: 96px; border-bottom: 1px solid var(--line); }
-.head { display: flex; flex-direction: column; gap: 14px; margin-bottom: 48px; max-width: 760px; }
-.head.c { text-align: center; align-items: center; margin-left: auto; margin-right: auto; }
-.head h2 { font-size: clamp(32px, 3.8vw, 48px); line-height: 1.08; font-weight: 800; }
-.head p { color: var(--ink-2); font-size: 18px; }
-
-.steps3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.step3 { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 26px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.step3 .n { width: 34px; height: 34px; border-radius: 10px; background: var(--green-soft); color: var(--green); display: grid; place-items: center; font: 800 15px var(--f-display); }
-.step3 h3 { font-size: 21px; }
-.step3 p { color: var(--muted); font-size: 15.5px; }
-.step3 .mono { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); font: 500 12.5px/1.8 var(--f-mono); color: var(--ink-2); }
-
-/* sjablonen */
-.tpls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.tpl { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; transition: border-color .15s ease, transform .15s ease; }
-.tpl:hover { border-color: var(--line-2); transform: translateY(-2px); }
-.tpl-flow { background-color: var(--panel-2); background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0); background-size: 14px 14px; padding: 22px 26px; display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid var(--line); }
-.tn { width: min(230px, 100%); display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 11px; font-size: 14px; font-weight: 600; min-width: 0; }
-.ti { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; flex: none; color: var(--sc); background: color-mix(in srgb, var(--sc) 16%, transparent); }
-.ti svg { width: 14px; height: 14px; }
-.tl { width: 1.5px; height: 12px; background: var(--line-2); }
-.tpl-body { padding: 22px 24px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-.tpl-body h3 { font-size: 20px; line-height: 1.25; }
-.tpl-d { color: var(--muted); font-size: 15px; }
-.tpl-go { margin-top: auto; padding-top: 6px; color: var(--green); font-weight: 700; text-decoration: none; font-size: 15px; }
-.tpl-go:hover span { margin-left: 4px; }
-.tpl-go span { transition: margin .15s ease; }
-.s-in { --sc: var(--c-in); } .s-kl { --sc: var(--c-kl); } .s-ui { --sc: var(--c-ui); } .s-pg { --sc: var(--c-pg); } .s-op { --sc: var(--c-op); } .s-he { --sc: var(--c-he); }
-
-/* wachtrij en planning */
-.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
-.split ul { list-style: none; padding: 0; margin: 26px 0 0; display: grid; gap: 16px; }
-.split li { color: var(--ink-2); } .split li b { color: var(--ink); }
-.qcard { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.qtabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
-.qtabs span { padding: 6px 12px; border-radius: 8px; color: var(--muted); font-size: 14px; white-space: nowrap; }
-.qtabs span.on { background: var(--green-soft); color: var(--green); font-weight: 600; }
-.qnums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.qnums div { border: 1px solid var(--line); border-radius: 12px; text-align: center; padding: 12px 6px; color: var(--muted); font-size: 13px; }
-.qnums b { display: block; font: 800 26px var(--f-display); color: var(--ink); font-variant-numeric: tabular-nums; }
-.qnums .k b { color: var(--green); } .qnums .f b { color: var(--bad); } .qnums .z b { color: var(--c-in); }
-.qrow { display: flex; align-items: center; gap: 10px; font-size: 14px; min-width: 0; }
-.qrow .t { min-width: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.qrow small { color: var(--dim); font: 500 12px var(--f-mono); white-space: nowrap; }
-.st { font: 700 10.5px var(--f-body); text-transform: uppercase; letter-spacing: .06em; padding: 3px 8px; border-radius: 6px; min-width: 56px; text-align: center; border: 1px solid var(--line-2); color: var(--muted); }
-.st.k { color: var(--green); border-color: var(--green-line); } .st.f { color: var(--bad); border-color: rgba(255,107,107,.35); } .st.z { color: var(--c-in); border-color: rgba(91,155,255,.35); }
-.qplan { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
-.qplan span { font: 500 12.5px var(--f-mono); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px; padding: 4px 10px; }
-
-/* privacy */
-.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
-.trio div { border-top: 2px solid var(--green); padding-top: 18px; display: flex; flex-direction: column; gap: 10px; }
-.trio h3 { font-size: 19px; } .trio p { color: var(--muted); font-size: 15.5px; }
-
-/* prijzen */
-.prices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
-.price { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 28px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.price.top { border-color: var(--green-line); box-shadow: 0 0 0 1px var(--green-line), 0 30px 60px -30px rgba(2,214,120,.25); }
-.price .pn { font: 700 18px var(--f-display); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.price .pn em { font: 700 11px var(--f-body); font-style: normal; background: var(--green-soft); color: var(--green); border-radius: 999px; padding: 3px 9px; }
-.price .pp { font: 800 42px/1 var(--f-display); letter-spacing: -.03em; }
-.price .pp small { font: 500 15px var(--f-body); color: var(--muted); letter-spacing: 0; }
-.price ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; color: var(--ink-2); font-size: 15px; }
-.price li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; }
-.price li::before { content: "✓"; color: var(--green); font-weight: 800; }
-.price .btn { margin-top: auto; }
-
-/* FAQ */
-.faq { display: grid; gap: 12px; max-width: 860px; margin: 0 auto; }
-.faq details { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 4px 22px; }
-.faq summary { cursor: pointer; list-style: none; padding: 16px 0; font-weight: 700; font-size: 16.5px; display: flex; justify-content: space-between; gap: 16px; }
-.faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: "+"; color: var(--green); font: 700 20px var(--f-mono); line-height: 1; }
-.faq details[open] summary::after { content: "–"; }
-.faq details p { color: var(--ink-2); padding-bottom: 18px; max-width: 70ch; }
-
-/* help / installeren */
-.help { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 40px; align-items: start; }
-.dl { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
-.dl .ver { color: var(--muted); font-size: 14px; }
-.dl .found { display: none; color: var(--green); font-weight: 700; }
-.has-ext .dl .found { display: block; }
-.inst { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.inst div { border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.inst b { color: var(--green); font: 800 14px var(--f-display); }
-.inst p { color: var(--ink-2); font-size: 15px; }
-.inst code { font: 500 13px var(--f-mono); color: var(--ink); background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 1px 6px; word-break: break-all; }
-
-.final { padding-block: 96px; text-align: center; position: relative; overflow: hidden; }
-.final h2 { font-size: clamp(32px, 4vw, 52px); line-height: 1.06; font-weight: 800; }
-.final h2 span { color: var(--green); }
-.final .hero-cta { justify-content: center; }
-footer { border-top: 1px solid var(--line); color: var(--dim); font-size: 14px; }
-footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: space-between; padding-block: 30px; }
-footer nav { display: flex; flex-wrap: wrap; gap: 18px; } footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
-
-@media (max-width: 1080px) {
-  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 48px; }
-  .stage { max-width: 760px; }
-  .tabs a { padding: 8px 9px; font-size: 15px; }
-}
-@media (max-width: 900px) {
-  .tabs, .nav-login { display: none; }
-  .menu-btn { display: inline-grid; place-items: center; }
-  .nav .wrap { gap: 14px; }
-  .nav-right { margin-left: auto; }
-  .nav.open .tabs { display: flex; position: absolute; left: 0; right: 0; top: 100%; flex-direction: column; align-items: stretch; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px max(20px, env(safe-area-inset-right, 0px)) 16px max(20px, env(safe-area-inset-left, 0px)); }
-  .steps3, .trio, .prices { grid-template-columns: minmax(0, 1fr); }
-  .tpls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .split, .help { grid-template-columns: minmax(0, 1fr); }
-  .works .names { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .stats .wrap { flex-wrap: wrap; row-gap: 24px; }
-  .stat { padding: 6px 28px; }
-}
-@media (max-width: 640px) {
-  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 40px 150px minmax(0, 1fr); height: 520px; }
-  .app-side { display: none; }
-  .app-top { grid-column: 1; }
-  .chat { border-right: 0; border-bottom: 1px solid var(--app-line); }
-  .chat-in { display: none; }
-  .app-top .t-btn { display: none; }
-  .prompt { font-size: 16px; padding: 14px 56px 14px 16px; }
-  .stats .wrap { flex-direction: column; }
-  .stat { border-left: 0; padding: 4px 0; }
-  .tpls { grid-template-columns: minmax(0, 1fr); }
-  .inst { grid-template-columns: minmax(0, 1fr); }
-  .nav .btn { padding: 10px 14px; font-size: 14.5px; }
-  section.band { padding-block: 70px; }
-  .stage-pill { left: 10px; right: 10px; text-align: center; }
-}
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
-</style>
+<link rel="stylesheet" href="assets/parselab/site.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "ParseLab", "applicationCategory": "BusinessApplication", "operatingSystem": "Chrome", "description": "Verzamel data en automatiseer je browser. Beschrijf wat je wilt automatiseren; ParseLab bouwt de flow.", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}, "url": "https://parselab.nl/"}</script><script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "name": "ParseLab", "url": "https://parselab.nl/", "logo": "https://parselab.nl/assets/parselab/logo.svg"}</script>
 </head>
 <body>
-
 <header class="nav" id="nav">
   <div class="wrap">
-    <a class="logo" href="#top" aria-label="ParseLab, naar boven">
-      <span class="logo-mark" aria-hidden="true"><svg viewBox="0 0 18 18" fill="none"><circle cx="4.4" cy="4.2" r="2.3" fill="#03140b"/><circle cx="4.4" cy="13.8" r="2.3" fill="#03140b"/><circle cx="13.8" cy="9" r="2.3" fill="#03140b"/><path d="M4.4 6.4v5.2M6.3 5.2l5.6 2.8M6.3 12.8l5.6-2.8" stroke="#03140b" stroke-width="1.7" stroke-linecap="round"/></svg></span>
-      ParseLab
-    </a>
-    <nav class="tabs" aria-label="Hoofdmenu">
-      <a href="#hoe">Hoe het werkt</a>
-      <a href="#toepassingen">Toepassingen</a>
-      <a href="#prijzen">Prijzen</a>
-      <a href="#faq">FAQ</a>
-      <a href="#help">Help</a>
-    </nav>
+    <a class="logo" href="index.html" aria-label="ParseLab, naar de homepage"><span class="logo-mark"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="4.4" cy="4.2" r="2.3" fill="#03140b"/><circle cx="4.4" cy="13.8" r="2.3" fill="#03140b"/><circle cx="13.8" cy="9" r="2.3" fill="#03140b"/><path d="M4.4 6.4v5.2M6.3 5.2l5.6 2.8M6.3 12.8l5.6-2.8" stroke="#03140b" stroke-width="1.7" stroke-linecap="round"/></svg></span>ParseLab</a>
+    <nav class="tabs" aria-label="Hoofdmenu"><a href="hoe-het-werkt.html">Hoe het werkt</a><a href="toepassingen/index.html">Toepassingen</a><a href="prijzen.html">Prijzen</a><a href="faq.html">FAQ</a><a href="help.html">Help</a></nav>
     <div class="nav-right">
       <button class="nav-login" id="login-btn" type="button" aria-expanded="false" aria-controls="login-pop">Inloggen</button>
-      <a class="btn btn-green" href="#help" id="nav-cta">Gratis starten</a>
-      <button class="menu-btn" id="menu-btn" type="button" aria-label="Menu openen" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <a class="btn btn-green" href="help.html#installeren" data-cta>Gratis starten</a>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Menu openen" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
     </div>
   </div>
   <div class="login-pop" id="login-pop" hidden>
-    <b>Inloggen gaat in de extensie</b>
-    <p>Je account, flows en teamcode zitten in de ParseLab-extensie. Open hem op elke website met het ParseLab-icoon of <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>.</p>
-    <a class="btn btn-ghost" href="#help" style="padding:10px 14px;font-size:15px">Nog niet geïnstalleerd? Zo werkt het</a>
+    <b>Inloggen gaat via de extensie</b>
+    <p>Je flows, mappen en teamcode zitten in de ParseLab-extensie. Open hem op elke website met het ParseLab-icoon of <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>. Een webapp om in te loggen komt later.</p>
+    <a class="btn btn-ghost" href="inloggen.html" style="padding:10px 14px;font-size:15px">Meer over inloggen</a>
   </div>
 </header>
-
 <main id="top">
-  <section class="hero">
-    <canvas id="net" aria-hidden="true"></canvas>
+<section class="hero">
+    <canvas class="net" aria-hidden="true"></canvas>
     <div class="wrap">
       <div>
         <h1><span>Verzamel data.</span><span>Automatiseer je browser.</span><span class="g">Gewoon beschrijven.</span></h1>
-        <p class="lead">ParseLab doet na wat jij in de browser doet: gegevens ophalen, formulieren invullen, klikken en bestanden opslaan. Voor elke regel uit je lijst, op elke website. Beschrijf het of doe het één keer voor. Geen code.</p>
+        <p class="lead">Vertel wat je wilt automatiseren; wij bouwen de flow. Of wijs het aan op de pagina. ParseLab haalt gegevens op, vult formulieren in en slaat bestanden op, voor elke regel uit je lijst. Je ziet en test alles voordat het live gaat.</p>
         <div class="hero-cta">
-          <a class="btn btn-green" href="#help" id="hero-cta">Gratis starten</a>
-          <a class="btn btn-ghost" href="#demo" id="demo-btn"><span class="tri" aria-hidden="true"></span>Bekijk de demo</a>
+          <a class="btn btn-green" href="help.html#installeren" data-cta>Gratis scraper installeren</a>
+          <a class="btn btn-ghost" href="app.html"><span class="tri" aria-hidden="true"></span>Bekijk de demo</a>
         </div>
-        <p class="hero-note">Chrome-extensie · werkt in je eigen browser · je lijst blijft op je computer</p>
-        <p class="ext-ok" id="ext-ok"></p>
+        <p class="hero-note">Gratis Chrome-extensie · werkt in je eigen browser · je gegevens blijven op je computer</p>
+        <p class="ext-ok" data-ext-ok></p>
       </div>
-
       <div class="stage" id="demo">
         <div class="app" id="app" aria-label="Demo: ParseLab bouwt een flow uit een beschrijving en voert hem uit" role="img">
           <aside class="app-side" aria-hidden="true">
@@ -388,38 +86,47 @@ footer nav { display: flex; flex-wrap: wrap; gap: 18px; } footer a { text-decora
         </div>
         <div class="stage-pill"><b>Echte flows</b> · elke flow gebouwd uit één beschrijving</div>
       </div>
+
     </div>
   </section>
 
   <section class="stats" aria-label="Kenmerken">
     <div class="wrap">
       <div class="stat"><b>0</b><span>regels code nodig</span></div>
-      <div class="stat"><b>6</b><span>soorten stappen</span></div>
-      <div class="stat"><b>100%</b><span>in je eigen browser</span></div>
+      <div class="stat"><b>5 min</b><span>tot je eerste tabel</span></div>
+      <div class="stat"><b>€0</b><span>voor de scraper</span></div>
     </div>
   </section>
 
   <section class="works">
     <div class="wrap">
       <p class="eyebrow">Werkt samen met</p>
-      <div class="names">
-        <span>Excel</span><span>CSV</span><span>JSON</span><span>Chrome</span><span>Webhooks</span><span>Supabase</span>
-        <span>Power Automate</span><span>Make</span><span>Zapier</span><span>PDF</span><span>ZIP</span><span>REST API</span>
-      </div>
+      <div class="names"><span>Excel</span><span>CSV</span><span>JSON</span><span>Chrome</span><span>Webhooks</span><span>Supabase</span><span>Power Automate</span><span>Make</span><span>Zapier</span><span>n8n</span><span>PDF</span><span>ZIP</span></div>
     </div>
   </section>
 
-  <section class="band" id="hoe">
-    <div class="wrap">
-      <div class="head c">
-        <p class="eyebrow green">Hoe het werkt</p>
-        <h2>Van een klus die je honderd keer doet naar één klik</h2>
-        <p>Je hoeft niets te programmeren. ParseLab kijkt mee terwijl je het voordoet, of bouwt de flow uit je beschrijving.</p>
+  <section class="band" id="scraper">
+    <div class="wrap split">
+      <div>
+        <p class="eyebrow green">Begin gratis</p>
+        <h2 style="font-size:clamp(32px,3.8vw,48px);line-height:1.08;margin-top:14px">De scraper in je browser</h2>
+        <ul>
+          <li><b>Aanwijzen.</b> Klik op één rij of kaart; ParseLab vindt alle gelijke elementen op de pagina.</li>
+          <li><b>Velden benoemen.</b> Titel, prijs, link: elk veld wordt een kolom.</li>
+          <li><b>Volgende pagina.</b> Wijs de knop aan en kies hoeveel pagina's.</li>
+          <li><b>Voorbeeldtabel en export.</b> Zie meteen wat eruit komt en download Excel, CSV of JSON.</li>
+        </ul>
+        <div class="hero-cta"><a class="btn btn-green" href="help.html#installeren" data-cta>Gratis installeren</a><a class="btn btn-ghost" href="hoe-het-werkt.html">Hoe het werkt</a></div>
       </div>
-      <div class="steps3">
-        <div class="step3"><span class="n">1</span><h3>Beschrijf het of doe het voor</h3><p>Typ wat je wilt in gewone taal, neem op wat je doet, of wijs stappen aan op de pagina. ParseLab zet het om in een flow die je kunt lezen en aanpassen.</p><div class="mono">Open shop.nl/producten<br>Lees: naam, prijs, voorraad<br>Volgende pagina, herhaal</div></div>
-        <div class="step3"><span class="n">2</span><h3>Koppel een lijst</h3><p>Upload een Excel, CSV of TXT. Elke stap kan een kolom gebruiken: een zoekterm, een naam, een nummer. Zo wordt één handeling honderd rondes.</p><div class="mono">zoekterm · categorie<br>fietslamp · fiets<br>bidon · fiets</div></div>
-        <div class="step3"><span class="n">3</span><h3>Start, plan of laat het binnenkomen</h3><p>Draai het meteen, laat het elke ochtend vanzelf starten, of laat andere systemen werk in de wachtrij zetten. Je krijgt Excel, JSON en een ZIP met bestanden.</p><div class="mono">werkdagen 07:45 · alleen met werk<br>12 wacht · 38 klaar · 0 fout</div></div>
+      <div class="ex">
+        <div class="ex-head"><span>Voorbeeldtabel · shop.nl/fietsen</span><small>Voorbeelddata</small></div>
+        <div class="ex-scroll"><table><thead><tr><th>Product</th><th>Prijs</th><th>Voorraad</th><th>Link</th></tr></thead><tbody>
+          <tr><td>Fietslamp LED</td><td class="num">€ 24,95</td><td class="num">18</td><td>/p/fl-2041</td></tr>
+          <tr><td>Bidon 750 ml</td><td class="num">€ 7,49</td><td class="num">64</td><td>/p/bd-0750</td></tr>
+          <tr><td>Zadeltas klein</td><td class="num">€ 19,00</td><td class="num">6</td><td>/p/zt-0110</td></tr>
+          <tr><td>Fietspomp mini</td><td class="num">€ 14,95</td><td class="num">31</td><td>/p/fp-0200</td></tr>
+          <tr><td>Kettingolie</td><td class="num">€ 8,99</td><td class="num">42</td><td>/p/ko-0050</td></tr>
+        </tbody></table></div>
       </div>
     </div>
   </section>
@@ -428,35 +135,28 @@ footer nav { display: flex; flex-wrap: wrap; gap: 18px; } footer a { text-decora
     <div class="wrap">
       <div class="head">
         <p class="eyebrow green">Toepassingen</p>
-        <h2>Begin met een sjabloon dat al werkt</h2>
-        <p>Kies een sjabloon, wijs je eigen website aan en pas aan wat je wilt. Elk sjabloon is ook te maken met één beschrijving.</p>
+        <h2>Begin met je taak, niet met de tool</h2>
+        <p>Kies wat je wilt doen. Elke toepassing laat zien wat de flow doet, in drie stappen, met een voorbeeld van het resultaat.</p>
       </div>
-      <div class="tpls">
-<article class="tpl"><div class="tpl-flow"><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M7 4.2V7l2 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elke week</div><span class="tl"></span><div class="tn s-ui"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.8h10.4M5.3 5.8v5.9" stroke="currentColor" stroke-width="1.4"/></svg></span>Bedrijven uitlezen</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6.3 7 9.3l3-3M2.5 12h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Naar je sheet</div></div><div class="tpl-body"><p class="eyebrow green">Leads</p><h3>Bouw een leadlijst uit een bedrijvengids</h3><p class="tpl-d">Naam, telefoon, website en plaats van elk bedrijf in een categorie. Elke week bijgewerkt in je sheet. Geen API-sleutel.</p><a class="tpl-go" href="#help">Gebruik dit sjabloon <span aria-hidden="true">→</span></a></div></article><article class="tpl"><div class="tpl-flow"><div class="tn s-pg"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5h10.4" stroke="currentColor" stroke-width="1.4"/></svg></span>Open de categorie</div><span class="tl"></span><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M11.5 5.5A4.6 4.6 0 0 0 3 4.4M2.5 8.5A4.6 4.6 0 0 0 11 9.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 1.8v2.6h2.6M11 12.2V9.6H8.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elk product</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6.3 7 9.3l3-3M2.5 12h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Excel + afbeeldingen</div></div><div class="tpl-body"><p class="eyebrow green">Data verzamelen</p><h3>Zet een webshopcatalogus in Excel</h3><p class="tpl-d">Elk product met naam, prijs, voorraad, EAN en afbeelding, over alle pagina's en categorieën.</p><a class="tpl-go" href="#help">Gebruik dit sjabloon <span aria-hidden="true">→</span></a></div></article><article class="tpl"><div class="tpl-flow"><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M7 4.2V7l2 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Werkdagen 07:45</div><span class="tl"></span><div class="tn s-ui"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.8h10.4M5.3 5.8v5.9" stroke="currentColor" stroke-width="1.4"/></svg></span>Prijzen uitlezen</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M3.5 9.8V6.5a3.5 3.5 0 0 1 7 0v3.3l1 1.2h-9l1-1.2ZM5.8 12.3h2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Melding bij verschil</div></div><div class="tpl-body"><p class="eyebrow green">Monitoren</p><h3>Volg de prijzen van concurrenten</h3><p class="tpl-d">Elke ochtend de prijzen van je concurrenten naast die van jou. Bij een verschil krijgt je team een bericht in Teams of Slack.</p><a class="tpl-go" href="#help">Gebruik dit sjabloon <span aria-hidden="true">→</span></a></div></article><article class="tpl"><div class="tpl-flow"><div class="tn s-ui"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M2.5 3.5h9M2.5 7h9M2.5 10.5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Lijst met regels</div><span class="tl"></span><div class="tn s-in"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="3.5" width="10.4" height="7" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M4.3 7h3.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Formulier invullen</div><span class="tl"></span><div class="tn s-kl"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M3.5 2.3 10.5 6.5l-3 .8-1.6 3.2-2.4-8.2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span>Versturen</div></div><div class="tpl-body"><p class="eyebrow green">Data-invoer</p><h3>Voer een Excel-lijst in op een website</h3><p class="tpl-d">Elke regel uit je lijst in een webformulier, ook waar geen importknop is. Wat niet lukt, staat apart in je rapport.</p><a class="tpl-go" href="#help">Gebruik dit sjabloon <span aria-hidden="true">→</span></a></div></article><article class="tpl"><div class="tpl-flow"><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M7 4.2V7l2 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elke maand</div><span class="tl"></span><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M11.5 5.5A4.6 4.6 0 0 0 3 4.4M2.5 8.5A4.6 4.6 0 0 0 11 9.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 1.8v2.6h2.6M11 12.2V9.6H8.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elke factuur</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M1.8 3.6h3.6l1.2 1.4h5.6v6.2H1.8V3.6Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span>PDF per maand + ZIP</div></div><div class="tpl-body"><p class="eyebrow green">Bestanden</p><h3>Download elke factuur als PDF</h3><p class="tpl-d">Alle facturen uit een leveranciersportaal, als PDF in een map per maand. Aan het eind één ZIP.</p><a class="tpl-go" href="#help">Gebruik dit sjabloon <span aria-hidden="true">→</span></a></div></article><article class="tpl"><div class="tpl-flow"><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M7 4.2V7l2 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elk kwartier</div><span class="tl"></span><div class="tn s-ui"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.8h10.4M5.3 5.8v5.9" stroke="currentColor" stroke-width="1.4"/></svg></span>Nieuwe items vinden</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M3.5 9.8V6.5a3.5 3.5 0 0 1 7 0v3.3l1 1.2h-9l1-1.2ZM5.8 12.3h2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Melding sturen</div></div><div class="tpl-body"><p class="eyebrow green">Meldingen</p><h3>Zie nieuw aanbod als eerste</h3><p class="tpl-d">Nieuwe woningen, vacatures of producten op een site, elk kwartier gecontroleerd. Alleen wat nieuw is, komt binnen.</p><a class="tpl-go" href="#help">Gebruik dit sjabloon <span aria-hidden="true">→</span></a></div></article>
-      </div>
+      <div class="tpls"><a class="tpl" href="toepassingen/webshop-producten-naar-excel.html"><div class="tpl-flow"><div class="tn s-pg"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5h10.4" stroke="currentColor" stroke-width="1.4"/></svg></span>Open de categorie</div><span class="tl"></span><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M11.5 5.5A4.6 4.6 0 0 0 3 4.4M2.5 8.5A4.6 4.6 0 0 0 11 9.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 1.8v2.6h2.6M11 12.2V9.6H8.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elk product uitlezen</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6.3 7 9.3l3-3M2.5 12h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Naar Excel</div></div><div class="tpl-body"><p class="eyebrow green">Data verzamelen</p><h3>Producten en prijzen van een webshop naar Excel</h3><p class="tpl-d">Naam, prijs, voorraad en artikelnummer van elk product, over alle pagina&#x27;s en categorieën.</p><span class="tpl-go">Bekijk de flow <span aria-hidden="true">→</span></span></div></a><a class="tpl" href="toepassingen/concurrentieprijzen-volgen.html"><div class="tpl-flow"><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M7 4.2V7l2 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elke werkdag om 07:45</div><span class="tl"></span><div class="tn s-ui"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.8h10.4M5.3 5.8v5.9" stroke="currentColor" stroke-width="1.4"/></svg></span>Prijzen uitlezen</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M3.5 9.8V6.5a3.5 3.5 0 0 1 7 0v3.3l1 1.2h-9l1-1.2ZM5.8 12.3h2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Melding bij verschil</div></div><div class="tpl-body"><p class="eyebrow green">Monitoren</p><h3>Prijzen van concurrenten volgen</h3><p class="tpl-d">Elke ochtend de prijzen van je concurrenten naast die van jou, met een melding bij een verschil.</p><span class="tpl-go">Bekijk de flow <span aria-hidden="true">→</span></span></div></a><a class="tpl" href="toepassingen/excel-naar-webformulier.html"><div class="tpl-flow"><div class="tn s-ui"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M2.5 3.5h9M2.5 7h9M2.5 10.5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Upload je lijst</div><span class="tl"></span><div class="tn s-in"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="3.5" width="10.4" height="7" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M4.3 7h3.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Formulier invullen</div><span class="tl"></span><div class="tn s-kl"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M3.5 2.3 10.5 6.5l-3 .8-1.6 3.2-2.4-8.2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span>Versturen</div></div><div class="tpl-body"><p class="eyebrow green">Data-invoer</p><h3>Een Excel-lijst invoeren in een webformulier</h3><p class="tpl-d">Elke regel uit je lijst in een webformulier, ook waar geen importknop is.</p><span class="tpl-go">Bekijk de flow <span aria-hidden="true">→</span></span></div></a><a class="tpl" href="toepassingen/facturen-downloaden.html"><div class="tpl-flow"><div class="tn s-pg"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5h10.4" stroke="currentColor" stroke-width="1.4"/></svg></span>Open het facturenoverzicht</div><span class="tl"></span><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M11.5 5.5A4.6 4.6 0 0 0 3 4.4M2.5 8.5A4.6 4.6 0 0 0 11 9.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 1.8v2.6h2.6M11 12.2V9.6H8.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elke factuur</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M1.8 3.6h3.6l1.2 1.4h5.6v6.2H1.8V3.6Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span>PDF per maand</div></div><div class="tpl-body"><p class="eyebrow green">Bestanden</p><h3>Facturen uit een portaal downloaden als PDF</h3><p class="tpl-d">Alle facturen uit een leveranciersportaal als PDF, in een map per maand, met één ZIP.</p><span class="tpl-go">Bekijk de flow <span aria-hidden="true">→</span></span></div></a><a class="tpl" href="toepassingen/nieuw-aanbod-melding.html"><div class="tpl-flow"><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M7 4.2V7l2 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elk kwartier</div><span class="tl"></span><div class="tn s-ui"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.8h10.4M5.3 5.8v5.9" stroke="currentColor" stroke-width="1.4"/></svg></span>Nieuwe items vinden</div><span class="tl"></span><div class="tn s-op"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M3.5 9.8V6.5a3.5 3.5 0 0 1 7 0v3.3l1 1.2h-9l1-1.2ZM5.8 12.3h2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Melding sturen</div></div><div class="tpl-body"><p class="eyebrow green">Monitoren</p><h3>Een melding bij nieuw aanbod op een website</h3><p class="tpl-d">Nieuwe woningen, vacatures of producten op een site, elk kwartier gecontroleerd. Alleen wat nieuw is.</p><span class="tpl-go">Bekijk de flow <span aria-hidden="true">→</span></span></div></a><a class="tpl" href="toepassingen/website-inventariseren.html"><div class="tpl-flow"><div class="tn s-pg"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5h10.4" stroke="currentColor" stroke-width="1.4"/></svg></span>Begin bij het menu of de sitemap</div><span class="tl"></span><div class="tn s-he"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><path d="M11.5 5.5A4.6 4.6 0 0 0 3 4.4M2.5 8.5A4.6 4.6 0 0 0 11 9.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 1.8v2.6h2.6M11 12.2V9.6H8.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>Elke pagina</div><span class="tl"></span><div class="tn s-ui"><span class="ti"><svg viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.3" width="10.4" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.8h10.4M5.3 5.8v5.9" stroke="currentColor" stroke-width="1.4"/></svg></span>Titel, beschrijving, kop</div></div><div class="tpl-body"><p class="eyebrow green">Website-beheer</p><h3>Alle pagina&#x27;s van een website inventariseren</h3><p class="tpl-d">Titel, beschrijving, kop en links van elke pagina in één overzicht. Handig voor SEO en verhuizingen.</p><span class="tpl-go">Bekijk de flow <span aria-hidden="true">→</span></span></div></a></div>
+      <div class="hero-cta" style="margin-top:28px"><a class="btn btn-ghost" href="toepassingen/index.html">Alle 12 toepassingen</a></div>
     </div>
   </section>
 
   <section class="band">
-    <div class="wrap split">
+    <div class="wrap cols">
       <div>
-        <p class="eyebrow green">Planning &amp; wachtrij</p>
-        <h2 style="font-size:clamp(32px,3.8vw,48px);line-height:1.08;margin-top:14px">Flows die zelf starten als er werk is</h2>
-        <ul>
-          <li><b>Planning.</b> Elke dag, op werkdagen, wekelijks, elke paar minuten of één keer. ParseLab opent een venster, laadt de flow en sluit af als hij klaar is.</li>
-          <li><b>Wachtrij.</b> Werk komt binnen uit je lijst, van collega's of via de API. Per regel zie je klaar of fout, met het resultaat.</li>
-          <li><b>Geschiedenis.</b> Van elke run: wanneer, welke computer, hoeveel rondes, welke fouten.</li>
-          <li><b>Flows in mappen.</b> Alles wordt vanzelf bewaard, met versies om terug te gaan.</li>
-        </ul>
+        <p class="eyebrow green">Flow van de week</p>
+        <h2 style="font-size:clamp(30px,3.4vw,42px);line-height:1.1;margin:14px 0 14px">Prijzen van concurrenten volgen</h2>
+        <p class="lead" style="font-size:17px">Je wilt weten wanneer een concurrent zijn prijs verlaagt, zonder elke dag tien websites langs te gaan.</p>
+        <div class="flow3" style="margin-top:22px"><div class="f3 s-he"><span class="no">1</span><div><span class="k">Planning</span><b>Elke werkdag om 07:45</b><span>De planning start de flow vanzelf, zolang Chrome open staat.</span></div></div><div class="f3 s-ui"><span class="no">2</span><div><span class="k">Uitlezen</span><b>Prijzen uitlezen</b><span>Per product de prijs bij elke concurrent, uit je lijst met adressen.</span></div></div><div class="f3 s-op"><span class="no">3</span><div><span class="k">Melding</span><b>Melding bij verschil</b><span>Een bericht via een webhook, bijvoorbeeld naar Teams of Slack.</span></div></div></div>
+        <div class="hero-cta" style="margin-top:24px"><a class="btn btn-ghost" href="toepassingen/concurrentieprijzen-volgen.html">Bekijk deze flow</a></div>
       </div>
-      <div class="qcard" aria-label="Voorbeeld van de wachtrij">
-        <div class="qtabs"><span>Flows</span><span class="on">Wachtrij</span><span>Planning</span><span>Geschiedenis</span></div>
-        <div class="qnums"><div><b>12</b>wacht</div><div class="z"><b>1</b>bezig</div><div class="k"><b>38</b>klaar</div><div class="f"><b>2</b>fout</div></div>
-        <div class="qrow"><span class="st z">bezig</span><span class="t">fietslamp · fiets</span><small>Laptop Sanne</small></div>
-        <div class="qrow"><span class="st k">klaar</span><span class="t">bidon · fiets</span><small>09:41</small></div>
-        <div class="qrow"><span class="st f">fout</span><span class="t">zadeltas · fiets</span><small>vastgelopen bij stap 3</small></div>
-        <div class="qrow"><span class="st">wacht</span><span class="t">tentharing · kamperen</span><small>via API</small></div>
-        <div class="qplan">Gepland: <span>werkdagen 07:45</span><span>alleen met werk</span></div>
+      <div class="side-card">
+        <span class="tag pro">Pro</span>
+        <h3>Betaal pas voor gemak</h3>
+        <p>De scraper is gratis. Voor planning, opslag in de cloud, een wachtrij voor werk van collega's of andere systemen, en straks AI-stappen en een cloud-runner, kies je Pro.</p>
+        <a class="btn btn-ghost" href="prijzen.html">Bekijk de prijzen</a>
       </div>
     </div>
   </section>
@@ -464,212 +164,46 @@ footer nav { display: flex; flex-wrap: wrap; gap: 18px; } footer a { text-decora
   <section class="band">
     <div class="wrap">
       <div class="head">
-        <p class="eyebrow green">Privacy</p>
-        <h2>Je inlog en je gegevens blijven bij jou</h2>
+        <p class="eyebrow green">Eerlijk over data</p>
+        <h2>Zakelijke gegevens, in je eigen browser</h2>
       </div>
       <div class="trio">
-        <div><h3>Draait in je eigen browser</h3><p>ParseLab gebruikt de sessie waarmee je al bent ingelogd, ook met tweestapsverificatie. Er logt geen server in op jouw accounts.</p></div>
-        <div><h3>Je lijst blijft lokaal</h3><p>De lijst met je gegevens gaat standaard niet naar de cloud. Alleen de stappen en instellingen van een flow worden bewaard, in de EU.</p></div>
-        <div><h3>Alleen voor je team</h3><p>Flows, wachtrij en geschiedenis zijn alleen zichtbaar voor wie dezelfde geheime teamcode heeft. De database bewaart alleen een versleutelde vorm.</p></div>
+        <div><h3>Draait bij jou</h3><p>ParseLab leest pagina's in je eigen browser en gebruikt de sessie waarmee je al bent ingelogd. We bewaren geen wachtwoorden.</p></div>
+        <div><h3>Gemaakt voor zakelijke data</h3><p>Prijzen, producten, vacatures, bedrijfsgegevens. Persoonsgegevens verzamelen mag onder de AVG meestal niet; ParseLab is daar niet voor bedoeld.</p></div>
+        <div><h3>Je ziet alles eerst</h3><p>Een voorbeeldtabel voor je exporteert, een testronde voor je iets verstuurt, en een lijst van wat werd overgeslagen.</p></div>
       </div>
     </div>
   </section>
 
-  <section class="band" id="prijzen">
-    <div class="wrap">
-      <div class="head c">
-        <p class="eyebrow green">Prijzen</p>
-        <h2>Begin gratis, groei als je meer automatiseert</h2>
-      </div>
-      <div class="prices">
-        <div class="price"><div class="pn">Gratis</div><div class="pp">€0</div><ul><li>Opnemen, aanwijzen en beschrijven</li><li>Lijsten tot 100 regels per run</li><li>Excel, CSV, JSON en ZIP</li><li>Flows lokaal bewaard</li></ul><a class="btn btn-ghost" href="#help">Gratis starten</a></div>
-        <div class="price top"><div class="pn">Pro <em>Populair</em></div><div class="pp">€19<small> /maand</small></div><ul><li>Alles uit Gratis</li><li>Onbeperkt regels en porties</li><li>Flows in de cloud, met mappen en versies</li><li>Planning en geschiedenis</li><li>PDF's en screenshots per map</li></ul><a class="btn btn-green" href="#help">Probeer Pro</a></div>
-        <div class="price"><div class="pn">Team</div><div class="pp">€49<small> /maand</small></div><ul><li>Alles uit Pro, voor 5 gebruikers</li><li>Gedeelde flows met teamcode</li><li>Wachtrij en API voor koppelingen</li><li>Hulp bij je eerste flows</li></ul><a class="btn btn-ghost" href="#help">Start met je team</a></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="band" id="faq">
-    <div class="wrap">
-      <div class="head c"><p class="eyebrow green">FAQ</p><h2>Veelgestelde vragen</h2></div>
-      <div class="faq">
-        <details><summary>Moet ik kunnen programmeren?</summary><p>Nee. Je beschrijft wat je wilt, neemt het op of wijst de stappen aan. De flow staat daarna in gewone taal in je paneel, en je kunt elke stap aanpassen.</p></details>
-        <details><summary>Op welke websites werkt ParseLab?</summary><p>Op bijna elke website in Chrome, ook in iframes en moderne webcomponenten. Alleen pagina's van Chrome zelf en de Chrome Web Store laten geen extensies toe. Gebruik ParseLab binnen de voorwaarden van de websites waar je het inzet.</p></details>
-        <details><summary>Wat gebeurt er als een stap niet lukt?</summary><p>ParseLab probeert het één keer opnieuw vanaf het adres van de pagina. Lukt het dan nog niet, dan slaat het de rest van die ronde over, begint aan de volgende en laat aan het eind zien welke rondes zijn overgeslagen. Je bestanden worden altijd als ZIP gedownload.</p></details>
-        <details><summary>Moet mijn computer aan staan voor een planning?</summary><p>Ja. ParseLab draait in je eigen browser, dus Chrome moet open zijn en je moet op de site ingelogd zijn. Op het geplande tijdstip opent ParseLab een venster, voert de flow uit en sluit het venster weer.</p></details>
-        <details><summary>Kan ik flows delen met collega's?</summary><p>Ja. Geef je collega je teamcode. Wie dezelfde code invult, ziet dezelfde flows, mappen, wachtrij en geschiedenis.</p></details>
-      </div>
-    </div>
-  </section>
-
-  <section class="band" id="help">
-    <div class="wrap">
-      <div class="head"><p class="eyebrow green">Help</p><h2>In twee minuten klaar in Chrome</h2></div>
-      <div class="help">
-        <div class="dl">
-          <h3 style="font-size:22px">ParseLab voor Chrome</h3>
-          <p class="ver">Versie 1.47 · Chrome, Edge en andere Chromium-browsers</p>
-          <p class="found" id="ext-found"></p>
-          <a class="btn btn-green" href="downloads/parselab-extension.zip" download>Download de extensie (.zip)</a>
-          <p class="ver">Binnenkort ook in de Chrome Web Store.</p>
-        </div>
-        <div class="inst">
-          <div><b>1</b><p>Pak het zipbestand uit in een vaste map.</p></div>
-          <div><b>2</b><p>Open <code>chrome://extensions</code> en zet rechtsboven <strong>Ontwikkelaarsmodus</strong> aan.</p></div>
-          <div><b>3</b><p>Klik op <strong>Uitgepakte extensie laden</strong> en kies de map.</p></div>
-          <div><b>4</b><p>Open een website en klik op het ParseLab-icoon, of druk op <code>Alt+Shift+S</code>.</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <section class="band"><div class="wrap"><div class="wl" id="wachtlijst">
+  <div><h2>Zet je op de wachtlijst</h2><p>We bouwen ParseLab in de openbaarheid. Vertel welke taak je wilt automatiseren; daar maken we de volgende flows en pagina's over.</p></div>
+  <form class="wl-form" data-wachtlijst="wachtlijst" novalidate>
+    <div class="fld"><label for="wl-email-wachtlijst">E-mailadres</label><input id="wl-email-wachtlijst" name="email" type="email" autocomplete="email" required placeholder="naam@bedrijf.nl"></div>
+    <div class="fld"><label for="wl-taak-wachtlijst">Welke taak wil je automatiseren?</label><textarea id="wl-taak-wachtlijst" name="taak" maxlength="2000" placeholder="Bijvoorbeeld: elke maandag de prijzen van vijf webshops in Excel"></textarea></div>
+    <div class="hp" aria-hidden="true"><label for="wl-web-wachtlijst">Website</label><input id="wl-web-wachtlijst" name="website" tabindex="-1" autocomplete="off"></div>
+    <button class="btn btn-green" type="submit">Aanmelden</button>
+    <p class="form-st" role="status" aria-live="polite"></p>
+    <div class="fld"><small>We gebruiken je e-mailadres alleen hiervoor. Afmelden kan altijd. Zie <a href="privacy.html">privacy</a>.</small></div>
+  </form>
+</div></div></section>
 
   <section class="final">
     <div class="wrap">
-      <h2>Doe het één keer voor.<br><span>ParseLab doet de rest.</span></h2>
-      <div class="hero-cta"><a class="btn btn-green" href="#help">Gratis starten</a><a class="btn btn-ghost" href="#demo"><span class="tri" aria-hidden="true"></span>Bekijk de demo</a></div>
+      <h2>Vertel wat je wilt automatiseren.<br><span>Wij bouwen de flow.</span></h2>
+      <div class="hero-cta"><a class="btn btn-green" href="help.html#installeren" data-cta>Gratis starten</a><a class="btn btn-ghost" href="app.html"><span class="tri" aria-hidden="true"></span>Bekijk de demo</a></div>
     </div>
   </section>
 </main>
-
 <footer>
-  <div class="wrap">
-    <span>© ParseLab · browserautomatisering zonder code</span>
-    <nav aria-label="Voettekst"><a href="#hoe">Hoe het werkt</a><a href="#toepassingen">Toepassingen</a><a href="#prijzen">Prijzen</a><a href="#faq">FAQ</a><a href="#help">Help</a></nav>
+  <div class="wrap cols4">
+    <div><a class="logo" href="index.html"><span class="logo-mark"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="4.4" cy="4.2" r="2.3" fill="#03140b"/><circle cx="4.4" cy="13.8" r="2.3" fill="#03140b"/><circle cx="13.8" cy="9" r="2.3" fill="#03140b"/><path d="M4.4 6.4v5.2M6.3 5.2l5.6 2.8M6.3 12.8l5.6-2.8" stroke="#03140b" stroke-width="1.7" stroke-linecap="round"/></svg></span>ParseLab</a><p class="small">Vertel wat je wilt automatiseren; wij bouwen de flow. Gratis scraper in je eigen browser.</p></div>
+    <div><h4>Product</h4><ul><li><a href="hoe-het-werkt.html">Hoe het werkt</a></li><li><a href="app.html">Demo</a></li><li><a href="prijzen.html">Prijzen</a></li><li><a href="vault.html">Automation Vault</a></li></ul></div>
+    <div><h4>Toepassingen</h4><ul><li><a href="toepassingen/tabel-naar-excel.html">Een tabel van een website naar Excel</a></li><li><a href="toepassingen/webshop-producten-naar-excel.html">Producten en prijzen van een webshop naar Excel</a></li><li><a href="toepassingen/vacatures-verzamelen.html">Vacatures van een vacaturesite verzamelen</a></li><li><a href="toepassingen/concurrentieprijzen-volgen.html">Prijzen van concurrenten volgen</a></li><li><a href="toepassingen/nieuw-aanbod-melding.html">Een melding bij nieuw aanbod op een website</a></li><li><a href="toepassingen/index.html">Alle toepassingen</a></li></ul></div>
+    <div><h4>Hulp</h4><ul><li><a href="help.html">Help en installatie</a></li><li><a href="faq.html">Veelgestelde vragen</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="voorwaarden.html">Voorwaarden</a></li></ul></div>
   </div>
+  <div class="wrap base"><span>© 2026 ParseLab</span><span>Voorbeelden op deze site gebruiken voorbeelddata.</span></div>
 </footer>
-
-<script>
-(function () {
-  'use strict';
-  var stil = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var $ = function (id) { return document.getElementById(id); };
-
-  /* ---- menu, inloggen ---- */
-  var nav = $('nav'), menu = $('menu-btn'), login = $('login-btn'), pop = $('login-pop');
-  menu.addEventListener('click', function () { var o = nav.classList.toggle('open'); menu.setAttribute('aria-expanded', o ? 'true' : 'false'); });
-  nav.querySelectorAll('.tabs a').forEach(function (a) { a.addEventListener('click', function () { nav.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }); });
-  login.addEventListener('click', function (e) { e.stopPropagation(); pop.hidden = !pop.hidden; login.setAttribute('aria-expanded', pop.hidden ? 'false' : 'true'); });
-  document.addEventListener('click', function (e) { if (!pop.hidden && !pop.contains(e.target)) { pop.hidden = true; login.setAttribute('aria-expanded', 'false'); } });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { pop.hidden = true; nav.classList.remove('open'); } });
-
-  /* ---- actieve tab in de navigatie bij scrollen ---- */
-  var secties = ['hoe', 'toepassingen', 'prijzen', 'faq', 'help'].map($).filter(Boolean);
-  var links = {}; nav.querySelectorAll('.tabs a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (items) { items.forEach(function (it) { if (it.isIntersecting) { Object.keys(links).forEach(function (k) { links[k].classList.toggle('on', k === it.target.id); }); } }); }, { rootMargin: '-45% 0px -50% 0px' });
-    secties.forEach(function (s) { io.observe(s); });
-  }
-
-  /* ---- koppeling met de extensie: is ParseLab geïnstalleerd? ---- */
-  function gevonden(v) {
-    document.documentElement.classList.add('has-ext');
-    var t = 'ParseLab ' + v + ' is geïnstalleerd in deze browser.';
-    $('ext-ok').textContent = '✓ ' + t + ' Open hem met Alt+Shift+S.'; $('ext-found').textContent = '✓ ' + t;
-    ['nav-cta', 'hero-cta'].forEach(function (id) { var b = $(id); if (b) b.textContent = 'Je hebt ParseLab al'; });
-  }
-  window.addEventListener('message', function (ev) { var d = ev && ev.data; if (d && d.source === 'parselab-extension' && d.type === 'parselab:extension' && d.version) gevonden(String(d.version).slice(0, 12)); });
-  if (document.documentElement.dataset.parselabExtension) gevonden(document.documentElement.dataset.parselabExtension);
-  try { window.postMessage({ source: 'parselab-dashboard', type: 'parselab:ping' }, '*'); } catch (e) {}
-
-  /* ---- netwerk-achtergrond in de hero ---- */
-  var cv = $('net'), ctx = cv.getContext && cv.getContext('2d');
-  if (ctx) {
-    var pts = [], W = 0, H = 0, dpr = Math.min(2, window.devicePixelRatio || 1);
-    function maat() { var r = cv.getBoundingClientRect(); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); var n = Math.round(Math.min(70, W * H / 16000)); pts = []; for (var i = 0; i < n; i++) pts.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .18, vy: (Math.random() - .5) * .18 }); }
-    function teken() {
-      ctx.clearRect(0, 0, W, H);
-      for (var i = 0; i < pts.length; i++) {
-        var a = pts[i];
-        for (var j = i + 1; j < pts.length; j++) { var b = pts[j], dx = a.x - b.x, dy = a.y - b.y, d = Math.sqrt(dx * dx + dy * dy); if (d < 150) { ctx.strokeStyle = 'rgba(2,214,120,' + (0.16 * (1 - d / 150)).toFixed(3) + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } }
-        ctx.fillStyle = 'rgba(2,214,120,.55)'; ctx.beginPath(); ctx.arc(a.x, a.y, 1.6, 0, 6.283); ctx.fill();
-      }
-    }
-    function stap() { pts.forEach(function (p) { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1; }); teken(); if (!document.hidden) requestAnimationFrame(stap); }
-    maat(); teken();
-    window.addEventListener('resize', function () { maat(); teken(); });
-    if (!stil) { requestAnimationFrame(stap); document.addEventListener('visibilitychange', function () { if (!document.hidden) requestAnimationFrame(stap); }); }
-  }
-
-  /* ---- hero-loop: beschrijven → assistent → flow bouwt zich op → resultaat ---- */
-  var IC = {
-    klok: '<svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.6" stroke="currentColor" stroke-width="1.3"/><path d="M6 3.6V6l1.7 1.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
-    lees: '<svg viewBox="0 0 12 12" fill="none"><rect x="1.5" y="2" width="9" height="8" rx="1.4" stroke="currentColor" stroke-width="1.3"/><path d="M1.5 5h9M4.5 5v5" stroke="currentColor" stroke-width="1.3"/></svg>',
-    opslaan: '<svg viewBox="0 0 12 12" fill="none"><path d="M6 1.8v6M3.4 5.4 6 8l2.6-2.6M2 10.2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
-    lijst: '<svg viewBox="0 0 12 12" fill="none"><path d="M2 3h8M2 6h8M2 9h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
-    vul: '<svg viewBox="0 0 12 12" fill="none"><rect x="1.5" y="3" width="9" height="6" rx="1.4" stroke="currentColor" stroke-width="1.3"/><path d="M3.6 6h2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
-    klik: '<svg viewBox="0 0 12 12" fill="none"><path d="M3 2l6 3.6-2.6.7L5 9 3 2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
-    map: '<svg viewBox="0 0 12 12" fill="none"><path d="M1.5 3.2h3l1 1.2h5v5.2h-9V3.2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
-    doc: '<svg viewBox="0 0 12 12" fill="none"><path d="M3 1.5h4l2 2v7H3v-9Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
-    chk: '<svg viewBox="0 0 10 10" fill="none"><path d="m2.4 5.1 1.7 1.7 3.5-3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-  };
-  var SCENES = [
-    { titel: 'Productprijzen ophalen', badge: 'Verzamel data',
-      vraag: 'Haal elke maandag alle producten en prijzen van shop.nl op en zet ze in Excel',
-      antwoord: 'Komt goed! Elke maandag om 9:00 lees ik alle productpagina’s uit en schrijf ik naam, prijs en voorraad naar Excel.',
-      nodes: [['s-he', 'klok', '1. Elke maandag', 'Planning · maandag 9:00'], ['s-ui', 'lees', '2. Producten uitlezen', 'shop.nl · alle pagina’s'], ['s-op', 'opslaan', '3. Naar Excel', 'producten.xlsx · per run']],
-      result: function () { return '<div class="r-head">' + IC.lees + '<b>producten.xlsx</b><span class="pill">286 producten</span></div><table class="r-tab"><thead><tr><th>#</th><th>Product</th><th>Prijs</th><th>Voorraad</th></tr></thead><tbody>' +
-        [['1', 'Fietslamp LED', '24,95', '18'], ['2', 'Bidon 750 ml', '7,49', '64'], ['3', 'Zadeltas klein', '19,00', '6'], ['4', 'Fietspomp mini', '14,95', '31'], ['5', 'Kettingolie', '8,99', '42']].map(function (r, i) { return '<tr class="r' + i + '"><td>' + r[0] + '</td><td>' + r[1] + '</td><td class="num">€ ' + r[2] + '</td><td class="num">' + r[3] + '</td></tr>'; }).join('') + '</tbody></table>'; },
-      speel: function (res, wacht) { var rijen = res.querySelectorAll('tbody tr'); rijen.forEach(function (r) { r.style.opacity = 0; }); var k = 0; return (function volgende() { if (k >= rijen.length) return Promise.resolve(); rijen[k].style.opacity = 1; rijen[k].classList.add('new'); var vorige = rijen[k - 1]; if (vorige) vorige.classList.remove('new'); k++; return wacht(260).then(volgende); })(); } },
-    { titel: 'Aanmeldingen invoeren', badge: 'Vul formulieren',
-      vraag: 'Vul voor elke regel uit mijn lijst het aanmeldformulier in en klik op versturen',
-      antwoord: 'Klaar: ik neem aanmeldingen.csv, vul per regel naam, e-mail en datum in en klik op Versturen. Wat niet lukt, meld ik apart.',
-      nodes: [['s-ui', 'lijst', '1. Lijst', 'aanmeldingen.csv · 120 regels'], ['s-in', 'vul', '2. Formulier invullen', 'naam · e-mail · datum'], ['s-kl', 'klik', '3. Versturen', 'klik · wacht op bevestiging']],
-      result: function () { return '<div class="r-head">' + IC.vul + '<b>Aanmeldingen invoeren</b><span class="pill" id="r-pill">bezig</span></div><div class="prog"><span class="big" id="r-n">Ronde 0 van 120</span><div class="bar"><span id="r-bar"></span></div></div><div class="logl" id="r-log"></div>'; },
-      speel: function (res, wacht) { var n = 0, log = res.querySelector('#r-log'), namen = ['Sanne de Vries', 'Mehmet Yilmaz', 'Lotte Bakker', 'Noah Jansen', 'Eva Visser'];
-        return (function tik() { if (n >= 120) { res.querySelector('#r-pill').textContent = '120 klaar'; return Promise.resolve(); } n = Math.min(120, n + (n < 10 ? 2 : 11)); res.querySelector('#r-n').textContent = 'Ronde ' + n + ' van 120'; res.querySelector('#r-bar').style.width = (n / 120 * 100) + '%';
-          var regel = document.createElement('div'); regel.innerHTML = '<b>✓</b>' + namen[n % namen.length] + ' · verstuurd'; log.prepend(regel); while (log.children.length > 5) log.lastChild.remove(); return wacht(240).then(tik); })(); } },
-    { titel: 'Facturen per klant', badge: 'Bewaar bestanden',
-      vraag: 'Sla van elke klant in mijn lijst de facturen op als PDF in een eigen map',
-      antwoord: 'Doe ik: per klant zoek ik het nummer op, open ik elke factuur en sla ik hem op als PDF in een map met de klantnaam. Aan het eind krijg je één ZIP.',
-      nodes: [['s-in', 'vul', '1. Klant zoeken', 'klantnummer uit klanten.xlsx'], ['s-he', 'lijst', '2. Elke factuur', 'lus over de facturen'], ['s-op', 'map', '3. PDF per klant', '{{klant}}/{{factuur}}.pdf · ZIP']],
-      result: function () { return '<div class="r-head">' + IC.map + '<b>facturen.zip</b><span class="pill">36 PDF’s</span></div><div class="files">' +
-        [['Bakker Fietsen', ['F-2031.pdf', 'F-2044.pdf']], ['De Vries & Zn', ['F-1987.pdf', 'F-2050.pdf', 'F-2061.pdf']], ['Jansen Sport', ['F-2012.pdf']]].map(function (k) { return '<div class="fd">' + IC.map + k[0] + '</div>' + k[1].map(function (f) { return '<div class="fl">' + IC.doc + f + '</div>'; }).join(''); }).join('') + '</div>'; },
-      speel: function (res, wacht) { var regels = res.querySelectorAll('.fd, .fl'); regels.forEach(function (r) { r.style.opacity = 0; }); var k = 0; return (function volgende() { if (k >= regels.length) return Promise.resolve(); regels[k].style.transition = 'opacity .3s ease'; regels[k].style.opacity = 1; k++; return wacht(200).then(volgende); })(); } }
-  ];
-  var app = $('app'), prompt = $('prompt'), promptT = $('prompt-t'), veil = $('veil'), nodes = $('nodes'), result = $('result');
-  var mUser = $('m-user'), mUserT = $('m-user-t'), mBot = $('m-bot'), mBotT = $('m-bot-t'), mOk = $('m-ok');
-  var token = 0;
-  function wacht(ms) { var t = token; return new Promise(function (res, rej) { setTimeout(function () { t === token ? res() : rej('stop'); }, ms); }); }
-  function typ(el, tekst, snel) { var i = 0; return (function volgende() { if (i > tekst.length) return Promise.resolve(); el.textContent = tekst.slice(0, i); i += 1 + (Math.random() < .3 ? 1 : 0); return wacht(snel || 34).then(volgende); })(); }
-  function bouwNodes(sc) { nodes.innerHTML = sc.nodes.map(function (n, i) { return (i ? '<span class="link"></span>' : '') + '<div class="node ' + n[0] + '"><span class="ic">' + IC[n[1]] + '</span><span class="nt"><b>' + n[2] + '</b><small>' + n[3] + '</small></span><span class="chk">' + IC.chk + '</span></div>'; }).join(''); }
-  function leeg(sc) {
-    $('a-title').textContent = 'Nieuwe flow'; $('a-chip').textContent = 'Concept'; $('a-chip').classList.remove('live'); $('a-badge').textContent = sc.badge;
-    mUser.classList.remove('show'); mBot.classList.remove('show'); mUserT.textContent = ''; mBotT.textContent = ''; mOk.hidden = true;
-    bouwNodes(sc); result.classList.remove('show'); result.innerHTML = sc.result();
-  }
-  function eindbeeld(sc) {   // stilstaand beeld (ook voor wie geen beweging wil)
-    leeg(sc); $('a-title').textContent = sc.titel; $('a-chip').textContent = 'Live'; $('a-chip').classList.add('live');
-    mUserT.textContent = sc.vraag; mUser.classList.add('show'); mBotT.textContent = sc.antwoord; mBot.classList.add('show'); mOk.hidden = false;
-    nodes.querySelectorAll('.node, .link').forEach(function (n) { n.classList.add('show', 'done'); });
-  }
-  function scene(i) {
-    var sc = SCENES[i]; leeg(sc);
-    return wacht(500)
-      .then(function () { promptT.textContent = ''; veil.classList.add('show'); prompt.classList.add('show'); return wacht(450); })
-      .then(function () { return typ(promptT, sc.vraag); })
-      .then(function () { return wacht(500); })
-      .then(function () { prompt.classList.add('send'); return wacht(220); })
-      .then(function () { prompt.classList.remove('send', 'show'); veil.classList.remove('show'); mUserT.textContent = sc.vraag; mUser.classList.add('show'); $('a-title').textContent = sc.titel; return wacht(650); })
-      .then(function () { mBot.classList.add('show'); return typ(mBotT, sc.antwoord, 16); })
-      .then(function () { var els = Array.prototype.slice.call(nodes.children), k = 0; return (function volgende() { if (k >= els.length) return Promise.resolve(); els[k].classList.add('show'); k++; return wacht(els[k - 1].classList.contains('link') ? 120 : 380).then(volgende); })(); })
-      .then(function () { var ns = Array.prototype.slice.call(nodes.querySelectorAll('.node')), k = 0; return (function volgende() { if (k >= ns.length) return Promise.resolve(); ns[k].classList.add('done'); k++; return wacht(320).then(volgende); })(); })
-      .then(function () { mOk.hidden = false; $('a-chip').textContent = 'Live'; $('a-chip').classList.add('live'); return wacht(700); })
-      .then(function () { result.classList.add('show'); return wacht(600); })
-      .then(function () { return sc.speel(result, wacht); })
-      .then(function () { return wacht(2600); });
-  }
-  function loop(i) { scene(i).then(function () { loop((i + 1) % SCENES.length); }, function () {}); }
-  if (stil) { eindbeeld(SCENES[0]); result.classList.add('show'); }
-  else {
-    eindbeeld(SCENES[0]);
-    // Start pas als de demo in beeld is; pauzeer als hij uit beeld raakt.
-    var loopt = false;
-    function start() { if (loopt) return; loopt = true; token++; loop(0); }
-    function stop() { if (!loopt) return; loopt = false; token++; }
-    if ('IntersectionObserver' in window) new IntersectionObserver(function (it) { it[0].isIntersecting ? start() : stop(); }, { threshold: .25 }).observe(app); else start();
-    $('demo-btn').addEventListener('click', function () { stop(); setTimeout(start, 50); });
-  }
-})();
-</script>
+<script src="assets/parselab/site.js" defer></script>
+<script src="assets/parselab/hero.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Een Excel-lijst invoeren in een webformulier | ParseLab</title>
+<meta name="description" content="Voer een Excel-lijst automatisch in op een website: regel voor regel in een webformulier. Zonder importknop en zonder code.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://parselab.nl/toepassingen/excel-naar-webformulier.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ParseLab">
+<meta property="og:title" content="Een Excel-lijst invoeren in een webformulier | ParseLab">
+<meta property="og:description" content="Voer een Excel-lijst automatisch in op een website: regel voor regel in een webformulier. Zonder importknop en zonder code.">
+<meta property="og:url" content="https://parselab.nl/toepassingen/excel-naar-webformulier.html">
+<meta property="og:locale" content="nl_NL">
+<meta name="theme-color" content="#0c0e1b">
+<link rel="icon" type="image/svg+xml" href="../assets/parselab/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="../assets/parselab/site.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://parselab.nl/"}, {"@type": "ListItem", "position": 2, "name": "Toepassingen", "item": "https://parselab.nl/toepassingen/"}, {"@type": "ListItem", "position": 3, "name": "Een Excel-lijst invoeren in een webformulier", "item": "https://parselab.nl/toepassingen/excel-naar-webformulier.html"}]}</script><script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Wat als een veld een dropdown is?", "acceptedAnswer": {"@type": "Answer", "text": "ParseLab kiest de optie die past bij de waarde uit je lijst, of een vaste standaardwaarde."}}, {"@type": "Question", "name": "Kan ik controleren voor het versturen?", "acceptedAnswer": {"@type": "Answer", "text": "Ja. Met de testmodus loop je stap voor stap door de eerste regels."}}, {"@type": "Question", "name": "Wat gebeurt er bij een fout?", "acceptedAnswer": {"@type": "Answer", "text": "Die regel wordt overgeslagen en apart gemeld; de rest gaat door."}}]}</script>
+</head>
+<body>
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="ParseLab, naar de homepage"><span class="logo-mark"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="4.4" cy="4.2" r="2.3" fill="#03140b"/><circle cx="4.4" cy="13.8" r="2.3" fill="#03140b"/><circle cx="13.8" cy="9" r="2.3" fill="#03140b"/><path d="M4.4 6.4v5.2M6.3 5.2l5.6 2.8M6.3 12.8l5.6-2.8" stroke="#03140b" stroke-width="1.7" stroke-linecap="round"/></svg></span>ParseLab</a>
+    <nav class="tabs" aria-label="Hoofdmenu"><a href="../hoe-het-werkt.html">Hoe het werkt</a><a href="../toepassingen/index.html" class="on" aria-current="page">Toepassingen</a><a href="../prijzen.html">Prijzen</a><a href="../faq.html">FAQ</a><a href="../help.html">Help</a></nav>
+    <div class="nav-right">
+      <button class="nav-login" id="login-btn" type="button" aria-expanded="false" aria-controls="login-pop">Inloggen</button>
+      <a class="btn btn-green" href="../help.html#installeren" data-cta>Gratis starten</a>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Menu openen" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+  <div class="login-pop" id="login-pop" hidden>
+    <b>Inloggen gaat via de extensie</b>
+    <p>Je flows, mappen en teamcode zitten in de ParseLab-extensie. Open hem op elke website met het ParseLab-icoon of <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>. Een webapp om in te loggen komt later.</p>
+    <a class="btn btn-ghost" href="../inloggen.html" style="padding:10px 14px;font-size:15px">Meer over inloggen</a>
+  </div>
+</header>
+<main id="top">
+<section class="page-head"><canvas class="net" aria-hidden="true"></canvas><div class="wrap">
+  <ol class="crumbs" aria-label="Kruimelpad"><li><a href="../index.html">Home</a></li><li><a href="../toepassingen/index.html">Toepassingen</a></li><li><span aria-current="page">Een Excel-lijst invoeren in een webformulier</span></li></ol>
+  <p class="eyebrow green">Data-invoer</p>
+  <h1>Een Excel-lijst invoeren in een webformulier</h1>
+  <p class="lead">Je hebt honderd regels in Excel en een systeem dat alleen een formulier heeft. Overtypen kost uren en geeft fouten.</p>
+</div></section>
+  <section class="band"><div class="wrap cols">
+    <div style="display:flex;flex-direction:column;gap:28px;min-width:0">
+      <div><h2 style="font-size:28px;margin-bottom:16px">Zo werkt de flow</h2><div class="flow3"><div class="f3 s-ui"><span class="no">1</span><div><span class="k">Lijst</span><b>Upload je lijst</b><span>Excel, CSV of TXT. Elke kolom kan aan een veld gekoppeld worden.</span></div></div><div class="f3 s-in"><span class="no">2</span><div><span class="k">Invullen</span><b>Formulier invullen</b><span>Tekstvelden, dropdowns en datums, per regel uit je lijst.</span></div></div><div class="f3 s-kl"><span class="no">3</span><div><span class="k">Klikken</span><b>Versturen</b><span>ParseLab klikt op versturen en leest de bevestiging uit.</span></div></div></div></div>
+      <div><h2 style="font-size:28px;margin-bottom:16px">Wat eruit komt</h2>
+        <div class="ex"><div class="ex-head"><span>Resultaat</span><small>Voorbeelddata</small></div><div class="ex-scroll"><table><thead><tr><th>Regel</th><th>Artikel</th><th>Aantal</th><th>Status</th><th>Bevestiging</th></tr></thead><tbody><tr><td>1</td><td>BD-0750</td><td>24</td><td>verstuurd</td><td>B-10231</td></tr><tr><td>2</td><td>FL-2041</td><td>6</td><td>verstuurd</td><td>B-10232</td></tr><tr><td>3</td><td>ZT-0110</td><td>12</td><td>overgeslagen</td><td>artikel niet gevonden</td></tr><tr><td>4</td><td>KO-0050</td><td>30</td><td>verstuurd</td><td>B-10233</td></tr></tbody></table></div></div></div>
+      <div class="prose"><h2 style="margin-top:0">Tips</h2><ul><li>Test eerst de eerste 5 regels stap voor stap; daarna de rest automatisch.</li><li>Loopt een regel vast, dan gaat ParseLab door met de volgende en meldt welke het oversloeg.</li></ul></div>
+      <div class="note"><b>Let op:</b> haal alleen zakelijke gegevens op en houd je aan de voorwaarden van de website. Persoonsgegevens verzamelen mag onder de AVG in de meeste gevallen niet.</div>
+    </div>
+    <aside class="side-card"><span class="tag">Gratis</span><h3>Gratis met de scraper</h3>
+      <p>Dit doe je met de gratis extensie, in je eigen browser.</p>
+      <a class="btn btn-green" href="../help.html#installeren" data-cta>Gratis installeren</a><a class="btn btn-ghost" href="../app.html">Bekijk de demo</a></aside>
+  </div></section>
+  <section class="band"><div class="wrap">
+    <div class="head"><h2>Vragen over deze toepassing</h2></div>
+    <div class="faq" style="margin:0"><details><summary>Wat als een veld een dropdown is?</summary><p>ParseLab kiest de optie die past bij de waarde uit je lijst, of een vaste standaardwaarde.</p></details><details><summary>Kan ik controleren voor het versturen?</summary><p>Ja. Met de testmodus loop je stap voor stap door de eerste regels.</p></details><details><summary>Wat gebeurt er bij een fout?</summary><p>Die regel wordt overgeslagen en apart gemeld; de rest gaat door.</p></details></div>
+  </div></section>
+  <section class="band"><div class="wrap">
+    <div class="head"><h2>Ook handig</h2></div>
+    <div class="related"><a class="rel" href="gegevens-overzetten-tussen-systemen.html"><small>Data-invoer</small><b>Gegevens van het ene systeem in het andere zetten</b><span>Lees een overzicht uit in systeem A en vul het in systeem B, zonder koppeling of API.</span></a><a class="rel" href="voorraad-en-levertijd-controleren.html"><small>Monitoren</small><b>Voorraad en levertijden van leveranciers controleren</b><span>Elke ochtend per artikel de voorraad en levertijd bij je leveranciers, in één overzicht.</span></a><a class="rel" href="pdf-per-regel.html"><small>Bestanden</small><b>Per regel een PDF of screenshot bewaren</b><span>Voor elke regel uit je lijst een pagina opzoeken en opslaan als PDF of screenshot, met datum.</span></a></div>
+  </div></section>
+</main>
+<footer>
+  <div class="wrap cols4">
+    <div><a class="logo" href="../index.html"><span class="logo-mark"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="4.4" cy="4.2" r="2.3" fill="#03140b"/><circle cx="4.4" cy="13.8" r="2.3" fill="#03140b"/><circle cx="13.8" cy="9" r="2.3" fill="#03140b"/><path d="M4.4 6.4v5.2M6.3 5.2l5.6 2.8M6.3 12.8l5.6-2.8" stroke="#03140b" stroke-width="1.7" stroke-linecap="round"/></svg></span>ParseLab</a><p class="small">Vertel wat je wilt automatiseren; wij bouwen de flow. Gratis scraper in je eigen browser.</p></div>
+    <div><h4>Product</h4><ul><li><a href="../hoe-het-werkt.html">Hoe het werkt</a></li><li><a href="../app.html">Demo</a></li><li><a href="../prijzen.html">Prijzen</a></li><li><a href="../vault.html">Automation Vault</a></li></ul></div>
+    <div><h4>Toepassingen</h4><ul><li><a href="../toepassingen/tabel-naar-excel.html">Een tabel van een website naar Excel</a></li><li><a href="../toepassingen/webshop-producten-naar-excel.html">Producten en prijzen van een webshop naar Excel</a></li><li><a href="../toepassingen/vacatures-verzamelen.html">Vacatures van een vacaturesite verzamelen</a></li><li><a href="../toepassingen/concurrentieprijzen-volgen.html">Prijzen van concurrenten volgen</a></li><li><a href="../toepassingen/nieuw-aanbod-melding.html">Een melding bij nieuw aanbod op een website</a></li><li><a href="../toepassingen/index.html">Alle toepassingen</a></li></ul></div>
+    <div><h4>Hulp</h4><ul><li><a href="../help.html">Help en installatie</a></li><li><a href="../faq.html">Veelgestelde vragen</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../voorwaarden.html">Voorwaarden</a></li></ul></div>
+  </div>
+  <div class="wrap base"><span>© 2026 ParseLab</span><span>Voorbeelden op deze site gebruiken voorbeelddata.</span></div>
+</footer>
+<script src="../assets/parselab/site.js" defer></script>
+</body>
+</html>

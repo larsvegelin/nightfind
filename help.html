@@ -1,450 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="NightFind Help & FAQ - Get answers to common questions about using the app.">
-    <meta name="author" content="NightFind">
-    <title>Help & FAQ - NightFind</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Help en installatie | ParseLab</title>
+<meta name="description" content="ParseLab installeren in Chrome in vier stappen, je eerste tabel maken en oplossingen voor veelvoorkomende problemen.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://parselab.nl/help.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ParseLab">
+<meta property="og:title" content="Help en installatie | ParseLab">
+<meta property="og:description" content="ParseLab installeren in Chrome in vier stappen, je eerste tabel maken en oplossingen voor veelvoorkomende problemen.">
+<meta property="og:url" content="https://parselab.nl/help.html">
+<meta property="og:locale" content="nl_NL">
+<meta name="theme-color" content="#0c0e1b">
+<link rel="icon" type="image/svg+xml" href="assets/parselab/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/parselab/site.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://parselab.nl/"}, {"@type": "ListItem", "position": 2, "name": "Help", "item": "https://parselab.nl/help.html"}]}</script>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar" id="navbar">
-        <div class="nav-container">
-            <a href="index.html" class="nav-logo">
-                <img src="assets/logo.svg" alt="NightFind Logo">
-                <span>NightFind</span>
-            </a>
-            <ul class="nav-menu" id="navMenu">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="privacy.html">Privacy</a></li>
-                <li><a href="terms.html">Terms</a></li>
-                <li><a href="cookies.html">Cookies</a></li>
-                <li><a href="help.html" class="active">Help & FAQ</a></li>
-                <li><a href="contact.html">Contact</a></li>
-            </ul>
-            <button class="nav-toggle" id="navToggle">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Page Header -->
-    <div class="page-header">
-        <h1>Help & FAQ</h1>
-        <p>Find answers to frequently asked questions about NightFind</p>
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="ParseLab, naar de homepage"><span class="logo-mark"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="4.4" cy="4.2" r="2.3" fill="#03140b"/><circle cx="4.4" cy="13.8" r="2.3" fill="#03140b"/><circle cx="13.8" cy="9" r="2.3" fill="#03140b"/><path d="M4.4 6.4v5.2M6.3 5.2l5.6 2.8M6.3 12.8l5.6-2.8" stroke="#03140b" stroke-width="1.7" stroke-linecap="round"/></svg></span>ParseLab</a>
+    <nav class="tabs" aria-label="Hoofdmenu"><a href="hoe-het-werkt.html">Hoe het werkt</a><a href="toepassingen/index.html">Toepassingen</a><a href="prijzen.html">Prijzen</a><a href="faq.html">FAQ</a><a href="help.html" class="on" aria-current="page">Help</a></nav>
+    <div class="nav-right">
+      <button class="nav-login" id="login-btn" type="button" aria-expanded="false" aria-controls="login-pop">Inloggen</button>
+      <a class="btn btn-green" href="help.html#installeren" data-cta>Gratis starten</a>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Menu openen" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
     </div>
-
-    <!-- Content -->
-    <div class="container">
-        <div class="content-section">
-            <p>
-                Welcome to the NightFind Help Center. Browse common questions below or 
-                <a href="contact.html" style="color: var(--purple);">contact our support team</a> 
-                for personalized assistance.
-            </p>
-
-            <h2>Getting Started</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">What is NightFind?</div>
-                <div class="faq-answer">
-                    NightFind is your ultimate nightlife discovery app, helping you find the best clubs, 
-                    bars, lounges, and events in your city and around the world. Whether you're exploring 
-                    your hometown or traveling abroad, NightFind connects you with amazing nightlife 
-                    experiences, complete with route planning, event notifications, and personalized 
-                    recommendations.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I download and install NightFind?</div>
-                <div class="faq-answer">
-                    NightFind is available on the Apple App Store for iOS devices (iPhone and iPad). 
-                    Simply search for "NightFind" in the App Store, or 
-                    <a href="https://apps.apple.com/app/nightfind" target="_blank" style="color: var(--purple);">click here</a> 
-                    to download directly. Android support is coming soon!
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Do I need an account to use NightFind?</div>
-                <div class="faq-answer">
-                    You can browse venues and events without an account, but creating a free account unlocks 
-                    additional features like saving favorites, creating routes, receiving personalized 
-                    recommendations, and accessing your history. Sign up takes just a few seconds using your 
-                    email, Apple ID, or Google account.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Is there an age requirement?</div>
-                <div class="faq-answer">
-                    Yes, you must be at least 18 years old to use NightFind. This is because nightlife venues 
-                    typically have age restrictions, and responsible use of the app requires adult judgment. 
-                    We verify age during account creation.
-                </div>
-            </div>
-
-            <h2>Features & Functionality</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I plan a route for my night out?</div>
-                <div class="faq-answer">
-                    Planning a route is easy with NightFind's smart route planner:
-                    <ol style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li>Browse or search for venues you want to visit</li>
-                        <li>Tap the "Add to Route" button on each venue</li>
-                        <li>Open the "My Route" tab to see your planned stops</li>
-                        <li>Drag and drop to reorder venues, or let NightFind optimize the route automatically</li>
-                        <li>Tap "Start Navigation" to get turn-by-turn directions</li>
-                    </ol>
-                    The app calculates the most efficient path between venues, saving you time and maximizing 
-                    your night out.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How does location access work?</div>
-                <div class="faq-answer">
-                    NightFind uses your device's location to show nearby venues, calculate distances, and 
-                    provide navigation. Location access is optional but highly recommended for the best experience.
-                    <br><br>
-                    <strong>To enable location:</strong>
-                    <ul style="margin-left: 1.5rem;">
-                        <li><strong>iOS:</strong> Settings > NightFind > Location > "While Using the App" or "Always"</li>
-                        <li><strong>Android:</strong> Settings > Apps > NightFind > Permissions > Location</li>
-                    </ul>
-                    We respect your privacy—location data is only used to enhance your experience and is never 
-                    sold to third parties. See our <a href="privacy.html" style="color: var(--purple);">Privacy Policy</a> 
-                    for details.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Can I search for venues in other cities?</div>
-                <div class="faq-answer">
-                    Absolutely! NightFind is an international app with venues worldwide. To search in a different 
-                    city, tap the location icon at the top of the screen and enter any city name. You can explore 
-                    nightlife before traveling or plan a night out while on vacation.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I save my favorite venues?</div>
-                <div class="faq-answer">
-                    To save a venue to your favorites, simply tap the heart icon on any venue card or detail page. 
-                    Your saved venues are accessible in the "Favorites" tab of your profile, making it easy to 
-                    revisit your go-to spots or build a wish list of places to check out.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">What are premium venues?</div>
-                <div class="faq-answer">
-                    Premium venues are clubs, bars, and lounges that pay for enhanced visibility in NightFind. 
-                    They appear with a "Premium" badge and may be featured at the top of search results. Premium 
-                    listings often include special perks like exclusive deals, VIP access, or detailed event calendars.
-                    <br><br>
-                    Rest assured, premium status doesn't affect user reviews or ratings—our commitment to honest, 
-                    unbiased information remains unchanged.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I find events happening tonight?</div>
-                <div class="faq-answer">
-                    Tap the "Events" tab to see a curated list of parties, DJ performances, theme nights, and 
-                    special events happening in your area. You can filter by date, genre, venue type, and more. 
-                    Enable notifications to receive alerts about events at your favorite venues or featuring 
-                    your favorite DJs.
-                </div>
-            </div>
-
-            <h2>Account & Settings</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I edit my profile?</div>
-                <div class="faq-answer">
-                    To edit your profile:
-                    <ol style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li>Tap your profile icon in the bottom navigation</li>
-                        <li>Tap "Edit Profile"</li>
-                        <li>Update your name, photo, email, or preferences</li>
-                        <li>Tap "Save" to confirm changes</li>
-                    </ol>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I change my notification settings?</div>
-                <div class="faq-answer">
-                    To customize notifications:
-                    <ol style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li>Go to your Profile > Settings > Notifications</li>
-                        <li>Toggle on/off notifications for events, new venues, promotions, and updates</li>
-                        <li>You can also manage app notifications through your device's system settings</li>
-                    </ol>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I delete my account?</div>
-                <div class="faq-answer">
-                    We're sorry to see you go! To delete your account:
-                    <ol style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li>Go to Profile > Settings > Account</li>
-                        <li>Scroll to "Delete Account"</li>
-                        <li>Follow the confirmation steps</li>
-                    </ol>
-                    Account deletion is permanent and will remove all your data, including favorites, routes, 
-                    and history within 90 days. Alternatively, you can contact 
-                    <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a> 
-                    for assistance.
-                </div>
-            </div>
-
-            <h2>Pricing & Subscriptions</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">Is the app free?</div>
-                <div class="faq-answer">
-                    Yes! NightFind is free to download and use. The core features—discovering venues, viewing 
-                    events, creating routes, and saving favorites—are all available at no cost. We also offer 
-                    optional premium features for users who want an enhanced experience.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">What are premium features?</div>
-                <div class="faq-answer">
-                    NightFind Premium offers additional benefits, including:
-                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li><strong>Ad-Free Experience:</strong> Browse without interruptions</li>
-                        <li><strong>Advanced Route Planning:</strong> Create unlimited complex routes with multiple stops</li>
-                        <li><strong>Exclusive Deals:</strong> Access special discounts and VIP offers at partner venues</li>
-                        <li><strong>Priority Support:</strong> Get faster responses from our support team</li>
-                        <li><strong>Early Access:</strong> Be the first to try new features</li>
-                    </ul>
-                    Premium subscriptions are available monthly or annually at discounted rates.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I cancel my subscription?</div>
-                <div class="faq-answer">
-                    NightFind subscriptions are managed through your App Store account:
-                    <br><br>
-                    <strong>iOS (Apple):</strong>
-                    <ol style="margin-left: 1.5rem;">
-                        <li>Open Settings > [Your Name] > Subscriptions</li>
-                        <li>Tap on NightFind</li>
-                        <li>Tap "Cancel Subscription"</li>
-                    </ol>
-                    <strong>Android (Google Play):</strong>
-                    <ol style="margin-left: 1.5rem;">
-                        <li>Open Google Play Store > Menu > Subscriptions</li>
-                        <li>Select NightFind</li>
-                        <li>Tap "Cancel Subscription"</li>
-                    </ol>
-                    Cancellation takes effect at the end of your current billing period. You'll retain premium 
-                    access until then.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Can I get a refund?</div>
-                <div class="faq-answer">
-                    Refund requests are handled by the App Store (Apple or Google) according to their policies. 
-                    Generally, subscriptions can be refunded within a limited time window if you haven't used 
-                    premium features. Contact Apple or Google support directly, or reach out to us at 
-                    <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a> 
-                    for assistance.
-                </div>
-            </div>
-
-            <h2>Safety & Responsibility</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">How can I stay safe while using NightFind?</div>
-                <div class="faq-answer">
-                    Your safety is our top priority. Here are some tips:
-                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li><strong>Go with Friends:</strong> Always plan nights out with trusted companions</li>
-                        <li><strong>Share Your Location:</strong> Let someone know where you're going</li>
-                        <li><strong>Use Ride-Sharing:</strong> Never drink and drive—use taxis, Uber, Lyft, or public transit</li>
-                        <li><strong>Trust Your Instincts:</strong> Leave any situation that feels uncomfortable</li>
-                        <li><strong>Drink Responsibly:</strong> Know your limits and stay hydrated</li>
-                        <li><strong>Watch Your Drink:</strong> Never leave drinks unattended</li>
-                    </ul>
-                    If you encounter unsafe conditions at a venue, please report it to venue staff and local 
-                    authorities.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Does NightFind promote excessive drinking?</div>
-                <div class="faq-answer">
-                    No. NightFind is a discovery tool for nightlife experiences, which includes much more than 
-                    just drinking—live music, dancing, socializing, and exploring culture. We encourage responsible 
-                    enjoyment and always advocate for safe, legal behavior. Users must be 18+ and should follow 
-                    local laws and venue policies.
-                </div>
-            </div>
-
-            <h2>Technical Issues</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">The app isn't loading venues. What should I do?</div>
-                <div class="faq-answer">
-                    Try these troubleshooting steps:
-                    <ol style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li><strong>Check Internet Connection:</strong> Ensure you have a stable Wi-Fi or cellular connection</li>
-                        <li><strong>Enable Location:</strong> Verify location permissions are enabled in device settings</li>
-                        <li><strong>Restart the App:</strong> Close and reopen NightFind</li>
-                        <li><strong>Update the App:</strong> Make sure you're using the latest version from the App Store</li>
-                        <li><strong>Restart Your Device:</strong> A simple restart can fix many issues</li>
-                    </ol>
-                    If problems persist, contact <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a> 
-                    with details about your device and issue.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">The app keeps crashing. How can I fix it?</div>
-                <div class="faq-answer">
-                    App crashes can be frustrating. Try these solutions:
-                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li>Update NightFind to the latest version</li>
-                        <li>Restart your device</li>
-                        <li>Clear app cache (if available in settings)</li>
-                        <li>Uninstall and reinstall the app (your account data is saved in the cloud)</li>
-                        <li>Check for iOS/Android system updates</li>
-                    </ul>
-                    If crashes continue, please report the issue at 
-                    <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a> 
-                    with your device model and OS version.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I report a bug or suggest a feature?</div>
-                <div class="faq-answer">
-                    We love hearing from our users! To report bugs or suggest features:
-                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li>Use the in-app "Feedback" option (Profile > Settings > Send Feedback)</li>
-                        <li>Email us at <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a></li>
-                        <li>Visit our <a href="contact.html" style="color: var(--purple);">Contact page</a></li>
-                    </ul>
-                    Your feedback helps us improve NightFind for everyone. Thank you!
-                </div>
-            </div>
-
-            <h2>Venue & Content</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I add a venue that's not listed?</div>
-                <div class="faq-answer">
-                    If you know of a great venue that's not in NightFind, we'd love to add it! Send us the 
-                    venue details (name, address, type, website, social media) at 
-                    <a href="mailto:venues@nightfind.com" style="color: var(--purple);">venues@nightfind.com</a> 
-                    or use the "Suggest a Venue" option in the app. We review and add new venues regularly.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">How do I report incorrect venue information?</div>
-                <div class="faq-answer">
-                    We strive for accuracy, but details can change. If you notice outdated or incorrect information 
-                    (hours, address, phone number, etc.), please:
-                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                        <li>Tap "Report an Issue" on the venue's detail page</li>
-                        <li>Or email <a href="mailto:venues@nightfind.com" style="color: var(--purple);">venues@nightfind.com</a> 
-                        with the venue name and correct details</li>
-                    </ul>
-                    We'll review and update the information promptly.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">Are reviews moderated?</div>
-                <div class="faq-answer">
-                    Yes, all reviews are subject to moderation to ensure they meet our community guidelines. 
-                    Reviews containing spam, hate speech, profanity, or false information will be removed. 
-                    Honest, constructive feedback is always welcome and helps other users make informed decisions.
-                </div>
-            </div>
-
-            <h2>Still Have Questions?</h2>
-
-            <div class="card">
-                <h3>Contact Our Support Team</h3>
-                <p>
-                    Can't find the answer you're looking for? Our friendly support team is here to help!
-                </p>
-                <p style="margin-top: 1rem;">
-                    <strong>Email:</strong> <a href="mailto:info@nightfind.com" style="color: var(--purple);">info@nightfind.com</a><br>
-                    <strong>Website:</strong> <a href="contact.html" style="color: var(--purple);">Contact Form</a><br>
-                    <strong>Response Time:</strong> We typically respond within 24 hours
-                </p>
-                <a href="contact.html" class="btn btn-primary mt-2">Contact Support</a>
-            </div>
-        </div>
+  </div>
+  <div class="login-pop" id="login-pop" hidden>
+    <b>Inloggen gaat via de extensie</b>
+    <p>Je flows, mappen en teamcode zitten in de ParseLab-extensie. Open hem op elke website met het ParseLab-icoon of <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>. Een webapp om in te loggen komt later.</p>
+    <a class="btn btn-ghost" href="inloggen.html" style="padding:10px 14px;font-size:15px">Meer over inloggen</a>
+  </div>
+</header>
+<main id="top">
+<section class="page-head"><canvas class="net" aria-hidden="true"></canvas><div class="wrap">
+  <ol class="crumbs" aria-label="Kruimelpad"><li><a href="index.html">Home</a></li><li><span aria-current="page">Help</span></li></ol>
+  
+  <h1>Help en installatie</h1>
+  <p class="lead">In twee minuten klaar in Chrome. Daarna je eerste tabel in vijf minuten.</p>
+</div></section>
+  <section class="band" id="installeren"><div class="wrap">
+    <div class="help">
+      <div class="dl">
+        <h3 style="font-size:22px">ParseLab voor Chrome</h3>
+        <p class="ver">Versie 1.47 · Chrome, Edge en andere Chromium-browsers</p>
+        <p class="found" data-ext-ok></p>
+        <a class="btn btn-green" href="downloads/parselab-extension.zip" download>Download de extensie (.zip)</a>
+        <p class="ver">Binnenkort ook in de Chrome Web Store.</p>
+      </div>
+      <div class="inst">
+        <div><b>1</b><p>Pak het zipbestand uit in een vaste map.</p></div>
+        <div><b>2</b><p>Open <code>chrome://extensions</code> en zet rechtsboven <strong>Ontwikkelaarsmodus</strong> aan.</p></div>
+        <div><b>3</b><p>Klik op <strong>Uitgepakte extensie laden</strong> en kies de map.</p></div>
+        <div><b>4</b><p>Open een website en klik op het ParseLab-icoon, of druk op <code>Alt+Shift+S</code>.</p></div>
+      </div>
     </div>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-links">
-                <a href="privacy.html">Privacy Policy</a>
-                <span style="color: var(--gray-light);">|</span>
-                <a href="terms.html">Terms of Service</a>
-                <span style="color: var(--gray-light);">|</span>
-                <a href="cookies.html">Cookies Policy</a>
-                <span style="color: var(--gray-light);">|</span>
-                <a href="help.html">Help & FAQ</a>
-                <span style="color: var(--gray-light);">|</span>
-                <a href="contact.html">Contact</a>
-            </div>
-            <div class="footer-copyright">
-                © 2025 NightFind • All rights reserved • 
-                <a href="mailto:info@nightfind.com">info@nightfind.com</a>
-            </div>
-        </div>
-    </footer>
-
-    <!-- JavaScript -->
-    <script>
-        // Navbar scroll effect
-        window.addEventListener('scroll', () => {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        });
-
-        // Mobile menu toggle
-        const navToggle = document.getElementById('navToggle');
-        const navMenu = document.getElementById('navMenu');
-
-        navToggle.addEventListener('click', () => {
-            navMenu.classList.toggle('active');
-            navToggle.classList.toggle('active');
-        });
-
-        // Close mobile menu when clicking a link
-        document.querySelectorAll('.nav-menu a').forEach(link => {
-            link.addEventListener('click', () => {
-                navMenu.classList.remove('active');
-                navToggle.classList.remove('active');
-            });
-        });
-    </script>
+  </div></section>
+  <section class="band"><div class="wrap prose">
+    <h2 style="margin-top:0">Je eerste tabel</h2>
+    <ol><li>Open de pagina met de lijst of tabel die je wilt hebben.</li><li>Open ParseLab en kies <strong>Handmatig → Uitlezen → Lijst</strong>.</li><li>Klik op één rij of kaart. ParseLab vindt de rest en laat een voorbeeld zien.</li><li>Wil je meer pagina's? Voeg een stap <strong>Volgende pagina</strong> toe en wijs de knop aan.</li><li>Klik op <strong>Start</strong> en daarna op <strong>Download bestand</strong> voor Excel.</li></ol>
+    <h2>Als het niet lukt</h2>
+    <h3>Het icoon doet niets</h3><p>Sommige pagina's laten geen extensies toe, zoals de pagina's van Chrome zelf. Probeer een gewone website.</p>
+    <h3>Een stap vindt het element niet meer</h3><p>De website is veranderd. Open de stap en wijs het element opnieuw aan. In het logboek zie je welke stap het was.</p>
+    <h3>Een planning start niet</h3><p>Chrome moet open zijn en je moet op de site ingelogd zijn. In <strong>Flows → Planning</strong> zie je de laatste status.</p>
+    <h3>Mijn flows staan niet op mijn andere computer</h3><p>Vul op beide computers dezelfde teamcode in (Instellingen → Cloud).</p>
+  </div></section>
+  <section class="band"><div class="wrap"><div class="wl" id="wachtlijst">
+  <div><h2>Vraag het ons</h2><p>Kom je er niet uit? Stel je vraag hier. We antwoorden per e-mail, meestal binnen twee werkdagen.</p></div>
+  <form class="wl-form" data-wachtlijst="vraag" novalidate>
+    <div class="fld"><label for="wl-email-vraag">E-mailadres</label><input id="wl-email-vraag" name="email" type="email" autocomplete="email" required placeholder="naam@bedrijf.nl"></div>
+    <div class="fld"><label for="wl-taak-vraag">Je vraag</label><textarea id="wl-taak-vraag" name="taak" maxlength="2000" placeholder="Waar loop je tegenaan?"></textarea></div>
+    <div class="hp" aria-hidden="true"><label for="wl-web-vraag">Website</label><input id="wl-web-vraag" name="website" tabindex="-1" autocomplete="off"></div>
+    <button class="btn btn-green" type="submit">Vraag versturen</button>
+    <p class="form-st" role="status" aria-live="polite"></p>
+    <div class="fld"><small>We gebruiken je e-mailadres alleen hiervoor. Afmelden kan altijd. Zie <a href="privacy.html">privacy</a>.</small></div>
+  </form>
+</div></div></section>
+</main>
+<footer>
+  <div class="wrap cols4">
+    <div><a class="logo" href="index.html"><span class="logo-mark"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="4.4" cy="4.2" r="2.3" fill="#03140b"/><circle cx="4.4" cy="13.8" r="2.3" fill="#03140b"/><circle cx="13.8" cy="9" r="2.3" fill="#03140b"/><path d="M4.4 6.4v5.2M6.3 5.2l5.6 2.8M6.3 12.8l5.6-2.8" stroke="#03140b" stroke-width="1.7" stroke-linecap="round"/></svg></span>ParseLab</a><p class="small">Vertel wat je wilt automatiseren; wij bouwen de flow. Gratis scraper in je eigen browser.</p></div>
+    <div><h4>Product</h4><ul><li><a href="hoe-het-werkt.html">Hoe het werkt</a></li><li><a href="app.html">Demo</a></li><li><a href="prijzen.html">Prijzen</a></li><li><a href="vault.html">Automation Vault</a></li></ul></div>
+    <div><h4>Toepassingen</h4><ul><li><a href="toepassingen/tabel-naar-excel.html">Een tabel van een website naar Excel</a></li><li><a href="toepassingen/webshop-producten-naar-excel.html">Producten en prijzen van een webshop naar Excel</a></li><li><a href="toepassingen/vacatures-verzamelen.html">Vacatures van een vacaturesite verzamelen</a></li><li><a href="toepassingen/concurrentieprijzen-volgen.html">Prijzen van concurrenten volgen</a></li><li><a href="toepassingen/nieuw-aanbod-melding.html">Een melding bij nieuw aanbod op een website</a></li><li><a href="toepassingen/index.html">Alle toepassingen</a></li></ul></div>
+    <div><h4>Hulp</h4><ul><li><a href="help.html">Help en installatie</a></li><li><a href="faq.html">Veelgestelde vragen</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="voorwaarden.html">Voorwaarden</a></li></ul></div>
+  </div>
+  <div class="wrap base"><span>© 2026 ParseLab</span><span>Voorbeelden op deze site gebruiken voorbeelddata.</span></div>
+</footer>
+<script src="assets/parselab/site.js" defer></script>
 </body>
 </html>
