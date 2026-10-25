@@ -1,4 +1,4 @@
-# ParseLab website
+# ParseLab
 
 Website van **ParseLab**: verzamel data en automatiseer wat je in je browser doet. Neem een taak één keer op of beschrijf hem, en ParseLab herhaalt hem voor elke regel uit je lijst, op elke website, in je eigen browser.
 
@@ -10,13 +10,14 @@ Eerste versie van de complete site, gebouwd volgens het projectdocument (werknaa
 |---|---|
 | Home (hero-loop, scraper, toepassingen, flow van de week, wachtlijst) | `index.html` |
 | Hoe het werkt | `hoe-het-werkt.html` |
-| Toepassingen: hub met filters + 12 use-casepagina's | `toepassingen/` |
+| Toepassingen: hub met filters + 13 use-casepagina's | `toepassingen/` |
 | Prijzen (gratis, Pro, Business, credits) | `prijzen.html` |
 | Automation Vault | `vault.html` |
 | FAQ | `faq.html` |
 | Help en installatie (download van de extensie) | `help.html` |
 | Inloggen (via de extensie; webapp volgt) | `inloggen.html` |
 | Demo-dashboard (Copilot-chat, flow, tabellen, geschiedenis, apps) | `app.html` |
+| Scrapetool proberen: het echte paneel op een voorbeeldwebshop | `scrapetool.html` |
 | Privacy en voorwaarden (concept) | `privacy.html`, `voorwaarden.html` |
 | 404, sitemap, robots | `404.html`, `sitemap.xml`, `robots.txt` |
 
@@ -30,13 +31,27 @@ python3 site-src/build.py
 
 - `CONFIG` bovenin: merknaam (`ParseLab`, of `Flowdeck`), domein, prijzen en credits.
 - `USE_CASES`: elke toepassing is één blok. Een blok erbij geeft een nieuwe pagina, een kaart op de hub, een sitemap-regel en interne links.
+- De scrapetool-demo komt uit de extensie zelf: `python3 site-src/scrapetool.py` bouwt `scrapetool.html` uit `extension/panel.js`. Draai dit na elke wijziging aan de extensie.
 - Gedeelde opmaak en scripts: `assets/parselab/site.css`, `site.js` (menu, wachtlijst, extensie-herkenning, filters), `hero.js` (hero-loop) en `app.js` (demo).
 
 ## Koppelingen
 
 - **Wachtlijst en vragen** gaan naar de tabel `wachtlijst` in het Supabase-project `scraper` (EU). Bezoekers kunnen alleen invoegen; via de API kan niemand de lijst lezen. Bekijk de aanmeldingen in het Supabase-dashboard.
 - **Extensie:** de site ziet via `bridge.js` of ParseLab geïnstalleerd is (op `larsvegelin.github.io`, `*.parselab.nl` en localhost) en past dan de knoppen aan.
-- `downloads/parselab-extension.zip` is de huidige extensie (1.47).
+- `downloads/parselab-extension.zip` is de huidige extensie (1.48), gezipt uit `extension/`.
+
+## De extensie (`extension/`)
+
+De broncode van de Chrome-extensie (Manifest V3): `panel.js` (het paneel), `background.js` (downloads, PDF, cloud, planning, pagina's ophalen), `bridge.js` (herkenning door de website) en `manifest.json`. Wat er per versie bij kwam, staat in `extension/README.md`.
+
+Nieuwe zip maken na een wijziging:
+
+```
+cd extension && zip -qr ../downloads/parselab-extension.zip . && cd ..
+python3 site-src/scrapetool.py
+```
+
+Nieuw in 1.48: **Andere pagina's uitlezen**. Voor elke regel uit je lijst haalt ParseLab de pagina van het adres op, ook van andere websites, zonder je tabblad te verlaten. Eerst snel (alleen de HTML); is de pagina leeg zonder JavaScript, dan in een verborgen tabblad. Velden wijs je één keer aan op een voorbeeldpagina.
 
 ## Nog in te vullen
 

@@ -16,7 +16,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG = {
     'BRAND': 'ParseLab',                 # werknaam in het projectdocument: Flowdeck
     'DOMAIN': 'https://parselab.nl',     # nog bevestigen (merkenregister en domein)
-    'VERSIE': '1.47',
+    'VERSIE': '1.48',
     'PRIJS_PRO': '€10',                  # eerste prijstest, ijkpunt uit het projectdocument
     'PRIJS_BUSINESS': '€50',
     'PRIJS_VAULT': '€29',
@@ -100,6 +100,21 @@ USE_CASES = [
               ('Kan ik filteren op plaats of uren?', 'Ja: gebruik de filters van de site zelf, ParseLab leest het resultaat.'),
               ('Hoe vaak kan het?', 'Handmatig zo vaak je wilt; met Pro ook vanzelf, bijvoorbeeld elke ochtend.')],
          verwant=['nieuw-aanbod-melding', 'tabel-naar-excel', 'webshop-producten-naar-excel']),
+    dict(slug='paginas-uit-adressenlijst', cat='Data verzamelen', laag='Gratis',
+         titel='Pagina\'s uitlezen uit een lijst met adressen',
+         kort='Je hebt een lijst met links. ParseLab opent ze op de achtergrond en zet van elke pagina dezelfde velden in Excel.',
+         desc='Lees een lijst met webadressen uit naar Excel: van elke pagina dezelfde velden, ook van andere websites. Zonder API, in je eigen browser.',
+         probleem='Je hebt een Excel-lijst met links, bijvoorbeeld productpagina\'s of bedrijfspagina\'s, en wilt van elke pagina dezelfde gegevens. Elke link openen en overtypen kost uren.',
+         stappen=[('lijst', 'Upload je lijst', 'Een kolom met adressen is genoeg. ParseLab herkent die kolom zelf.'),
+                  ('lees', 'Wijs de velden één keer aan', 'Op één voorbeeldpagina: titel, prijs, link of afbeelding. Of lees de hele pagina.'),
+                  ('opslaan', 'Naar Excel', 'Elke regel krijgt de velden van zijn pagina. Een adres dat niet werkt, staat apart met de reden.')],
+         kolommen=['Adres', 'Titel', 'Prijs', 'Merk'],
+         rijen=[['fietsshop.nl/lamp-x (voorbeeld)', 'Fietslamp X', '€ 24,95', 'Lumo'], ['fietsshop.nl/bidon (voorbeeld)', 'Bidon 750 ml', '€ 7,49', 'Aqua'], ['anderewinkel.nl/tas (voorbeeld)', 'Zadeltas klein', '€ 19,00', 'Packit'], ['anderewinkel.nl/olie (voorbeeld)', 'Kettingolie', '€ 8,99', 'Lube']],
+         tips=['ParseLab haalt eerst alleen de HTML op; dat is snel. Wordt de pagina met JavaScript opgebouwd, dan opent ParseLab hem in een verborgen tabblad.', 'Houd een rustig tempo met de pauze tussen pagina\'s, en haal alleen zakelijke gegevens op.'],
+         faq=[('Werkt het ook op andere websites dan waar ik nu ben?', 'Ja. De adressen mogen van elke website zijn die je in Chrome kunt openen. Je hoeft ze niet zelf te openen.'),
+              ('Werkt het op pagina\'s waar ik ben ingelogd?', 'Ja. ParseLab gebruikt je eigen browser en dus je eigen inlog.'),
+              ('Wat als een pagina niet bestaat?', 'Dan komt die regel als fout in het resultaat, met het adres erbij. De rest van de lijst gaat gewoon door.')],
+         verwant=['webshop-producten-naar-excel', 'website-inventariseren', 'tabel-naar-excel']),
     dict(slug='concurrentieprijzen-volgen', cat='Monitoren', laag='Pro',
          titel='Prijzen van concurrenten volgen',
          kort='Elke ochtend de prijzen van je concurrenten naast die van jou, met een melding bij een verschil.',
@@ -231,7 +246,7 @@ USE_CASES = [
          kolommen=['Pagina', 'Titel', 'Description', 'H1'],
          rijen=[['/', 'Fietswinkel (voorbeeld)', '142 tekens', 'Alles voor je fiets'], ['/lampen', 'Fietslampen', 'ontbreekt', 'Fietslampen'], ['/tassen', 'Fietstassen', '98 tekens', 'Fietstassen'], ['/contact', 'Contact', '61 tekens', 'Neem contact op']],
          tips=['Gebruik dit vóór een verhuizing: zo mis je geen pagina\'s.', 'Lege descriptions en dubbele titels vallen meteen op in de tabel.'],
-         faq=[('Gaat ParseLab ook naar andere websites?', 'Nee, alleen links binnen dezelfde website.'),
+         faq=[('Gaat ParseLab ook naar andere websites?', 'Bij deze flow niet: hij volgt alleen links binnen dezelfde website. Heb je een lijst met adressen van andere websites, gebruik dan "Pagina\'s uitlezen uit een lijst met adressen".'),
               ('Werkt het met elk CMS?', 'Ja, het leest de pagina zoals je browser hem ziet.'),
               ('Hoeveel pagina\'s kan het aan?', 'Honderden. Werk bij grote sites in porties.')],
          verwant=['tabel-naar-excel', 'pdf-per-regel', 'dagrapport-zonder-export']),
@@ -245,7 +260,8 @@ for u in USE_CASES:
 FAQ_ALG = [
     ('Moet ik kunnen programmeren?', f'Nee. Je beschrijft wat je wilt, wijst het aan of neemt het op. De flow staat daarna in gewone taal in je paneel en elke stap is aan te passen.'),
     ('Is de scraper gratis?', f'Ja. De extensie leest pagina\'s in je eigen browser; dat kost ons niets, dus jou ook niet. Je betaalt pas voor gemak zoals planning, opslag in de cloud en koppelingen.'),
-    ('Op welke websites werkt het?', 'Op bijna elke website in Chrome, ook in iframes en moderne webcomponenten. Pagina\'s van Chrome zelf en de Chrome Web Store laten geen extensies toe.'),
+    ('Op welke websites werkt het?', f'Op elke website die je in Chrome kunt openen, ook in iframes en moderne webcomponenten. Er is geen API, koppeling of speciale toegang nodig: {B} werkt met de pagina zoals jij hem ziet. Met een lijst adressen leest {B} ook pagina\'s van andere websites uit, op de achtergrond. Alleen pagina\'s van Chrome zelf en de Chrome Web Store laten geen extensies toe.'),
+    ('Wat is het verschil met Zapier of Make?', f'Zapier en Make koppelen apps die een API hebben. {B} werkt in je browser, dus ook op websites en portalen zonder API of export, zoals een leveranciersportaal of een oud intern systeem. Ze vullen elkaar aan: {B} stuurt resultaten via een webhook naar Zapier, Make of n8n, en die kunnen via de wachtrij werk klaarzetten voor {B}.'),
     ('Werkt het op pagina\'s waar ik ben ingelogd?', f'Ja. {B} draait in je eigen browser en gebruikt je eigen sessie. We bewaren geen wachtwoorden.'),
     ('Mag ik alles scrapen?', 'Nee. Veel websites verbieden het in hun voorwaarden, en persoonsgegevens verzamelen mag onder de AVG in de meeste gevallen niet. Gebruik het voor zakelijke gegevens zoals prijzen, producten en vacatures. Jij bent verantwoordelijk voor wat je ophaalt.'),
     ('Wat gebeurt er als een stap niet lukt?', f'{B} probeert het één keer opnieuw. Lukt het dan niet, dan slaat het die ronde over, gaat door met de volgende en meldt aan het eind wat het oversloeg. Bestanden worden altijd als ZIP gedownload.'),
@@ -320,7 +336,7 @@ def footer(R):
     return f'''<footer>
   <div class="wrap cols4">
     <div><a class="logo" href="{R}index.html"><span class="logo-mark">{LOGO_SVG}</span>{B}</a><p class="small">Vertel wat je wilt automatiseren; wij bouwen de flow. Gratis scraper in je eigen browser.</p></div>
-    <div><h4>Product</h4><ul><li><a href="{R}hoe-het-werkt.html">Hoe het werkt</a></li><li><a href="{R}app.html">Demo</a></li><li><a href="{R}prijzen.html">Prijzen</a></li><li><a href="{R}vault.html">Automation Vault</a></li></ul></div>
+    <div><h4>Product</h4><ul><li><a href="{R}hoe-het-werkt.html">Hoe het werkt</a></li><li><a href="{R}app.html">Demo</a></li><li><a href="{R}scrapetool.html">Scrapetool proberen</a></li><li><a href="{R}prijzen.html">Prijzen</a></li><li><a href="{R}vault.html">Automation Vault</a></li></ul></div>
     <div><h4>Toepassingen</h4><ul>{uc}<li><a href="{R}toepassingen/index.html">Alle toepassingen</a></li></ul></div>
     <div><h4>Hulp</h4><ul><li><a href="{R}help.html">Help en installatie</a></li><li><a href="{R}faq.html">Veelgestelde vragen</a></li><li><a href="{R}privacy.html">Privacy</a></li><li><a href="{R}voorwaarden.html">Voorwaarden</a></li></ul></div>
   </div>

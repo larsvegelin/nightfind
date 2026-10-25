@@ -1,0 +1,62 @@
+/* Overlay voor de hover-inspectie op de echte pagina (buiten de shadow DOM). */
+.wt-ovl {
+    position: absolute;
+    pointer-events: none;
+    /* Een popover krijgt van de browser inset:0 en margin:auto; dat zou de box centreren
+       in plaats van hem om het element te leggen. */
+    right: auto;
+    bottom: auto;
+    margin: 0;
+    z-index: 2147483646;
+    border: 2px solid #2a78d6;
+    background: rgba(42, 120, 214, 0.08);
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+.wt-ovl-label {
+    position: absolute;
+    left: -2px;
+    background: #2a78d6;
+    color: #fff;
+    font: 600 11px/1 system-ui, sans-serif;
+    padding: 3px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* Bij printen (ook automatisch naar PDF) het scraper-paneel + overlays nooit tonen. */
+/* Tijdens een schermafbeelding: de pagina even op volle breedte (het paneel is dan verborgen). */
+html.wt-dock.wt-nodock { margin-right: 0 !important; }
+html.wt-dock.wt-dock-app.wt-nodock > body { width: 100vw !important; }
+@media print {
+    #wt-scraper-host,
+    #wt-badge,
+    .wt-ovl,
+    .wt-mark,
+    #wt-list-layer,
+    #wt-func-layer {
+        display: none !important;
+    }
+}
+/* Handmatige verberg-schakelaar tijdens screenshot/print. */
+#wt-scraper-host.wt-capturing {
+    display: none !important;
+}
+
+/* Zijbalk: de website krijgt alleen de ruimte links van het paneel — ook onderdelen die de site
+   vastzet op het scherm (kopbalk, menu, knoppen). De transform maakt de body het kader voor
+   'position: fixed', zodat niets meer onder het paneel verdwijnt. */
+html.wt-dock { margin-right: var(--wt-dock, 430px) !important; }
+/* Web-app die zelf niet scrolt (zoals Cockpit): de body wordt het kader, ook voor vaste menu's. */
+html.wt-dock.wt-dock-app { margin-right: 0 !important; overflow: hidden !important; height: 100% !important; }
+html.wt-dock.wt-dock-app > body {
+  width: max(320px, calc(100vw - var(--wt-dock, 430px))) !important; max-width: none !important; min-width: 0 !important;
+  height: 100vh !important; max-height: 100vh !important; margin: 0 !important; box-sizing: border-box !important;
+  overflow: auto !important; position: relative !important; transform: translateZ(0) !important;
+}
+@media print {
+  html.wt-dock { overflow: visible !important; height: auto !important; margin-right: 0 !important; }
+  html.wt-dock.wt-dock-app > body { width: auto !important; height: auto !important; max-height: none !important; overflow: visible !important; transform: none !important; }
+}
+/* Tijdens een schermafbeelding: wachtwoordvelden onleesbaar maken. */
+html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
