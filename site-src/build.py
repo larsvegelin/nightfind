@@ -16,7 +16,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG = {
     'BRAND': 'ParseLab',                 # werknaam in het projectdocument: Flowdeck
     'DOMAIN': 'https://parselab.nl',     # nog bevestigen (merkenregister en domein)
-    'VERSIE': '1.48',
+    'VERSIE': '1.49',
     'PRIJS_PRO': '€10',                  # eerste prijstest, ijkpunt uit het projectdocument
     'PRIJS_BUSINESS': '€50',
     'PRIJS_VAULT': '€29',

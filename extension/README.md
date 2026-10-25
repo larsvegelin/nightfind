@@ -74,6 +74,9 @@ dat jij daar op het icoon klikt.
 - **Groter paneel** (instelling: normaal, groot of extra groot) en nooit meer naar links en rechts
   scrollen.
 
+### Nieuw in 1.49
+- **Rustig tempo** (Start → Volgende ronde → *rustig tempo*): na elke regel wacht ParseLab tot de pagina klaar is en pauzeert dan nog een paar seconden. De pauze verschilt per regel (tussen 1× en 2× het ingestelde aantal seconden). Zo krijgt een site niet elke paar seconden een verzoek. Handig voor grote lijsten op sites zoals de BAG Viewer of Google Maps.
+
 ### Nieuw in 1.48
 - **Andere pagina's uitlezen** (Handmatig → Uitlezen → Andere pagina's): voor elke regel uit je lijst haalt ParseLab de pagina van het adres in die regel op en leest hem uit, ook van andere websites, zonder je tabblad te verlaten. Werkt op elke site die je in Chrome kunt openen, met je eigen inlog; er is geen API nodig.
 - **Ophalen**: *automatisch* (standaard) probeert eerst snel, alleen de HTML. Komt daar niets uit (bijvoorbeeld bij een pagina die met JavaScript wordt opgebouwd), dan opent ParseLab de pagina in een verborgen tabblad, wacht tot hij klaar is en sluit het tabblad weer. Je kunt ook vast *snel* of *volledig* kiezen.

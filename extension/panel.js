@@ -3220,7 +3220,7 @@
         if (openLusIdx() >= 0) html += '<div class="knoprij"><button class="wt-btn" data-sluitlus="1">' + IC('check', 'ico-sm') + '<span>Lus afsluiten</span></button><button class="wt-btn alt" data-quick2="loop">' + IC('repeat', 'ico-sm') + '<span>Lus in deze lus</span></button><span class="hint">Klaar met de stappen per item? Of maak een lus binnen deze lus.</span></div>';
         while (blokken > 0) { html += '</div>'; blokken--; }
         if (pgOpen) html += '</div></div>';
-        { const n = aantalRondes(); const tm = { klaar: 'als de pagina klaar is', sec: 'na ' + (($('#flow-tussen-sec') && $('#flow-tussen-sec').value) || 3) + ' seconden', klik: 'als je op Volgende klikt', direct: 'meteen' }[($('#flow-tussen') && $('#flow-tussen').value) || 'klaar'];
+        { const n = aantalRondes(); const tm = { klaar: 'als de pagina klaar is', sec: 'na ' + (($('#flow-tussen-sec') && $('#flow-tussen-sec').value) || 3) + ' seconden', rustig: 'in een rustig tempo: pagina klaar, dan ' + (($('#flow-tussen-sec') && $('#flow-tussen-sec').value) || 3) + ' tot ' + 2 * ((($('#flow-tussen-sec') && $('#flow-tussen-sec').value) || 3)) + ' seconden pauze', klik: 'als je op Volgende klikt', direct: 'meteen' }[($('#flow-tussen') && $('#flow-tussen').value) || 'klaar'];
           html += '<div class="rondeinde">' + IC('repeat', 'ico-sm') + '<span><b>Einde van de ronde.</b> ' + (n > 1 ? 'Daarna begint ronde 2 van ' + n + ' (' + tm + ')' + ($('#flow-terugstart') && $('#flow-terugstart').checked ? ', weer vanaf stap 1 op de pagina van stap 1.' : ', vanaf stap 1.') : 'Er is maar één ronde.') + '</span></div>'; }
         box.innerHTML = html; box.classList.toggle('bewerk', BEWERK);
         bindParams(box);
@@ -3326,7 +3326,7 @@
         m.onchange = () => { na(); if (m.value === 'aantal') { n.focus(); n.select(); } };
         n.oninput = na;
         const tu = $('#flow-tussen'), ts = $('#flow-tussen-sec'), tl = $('#tussen-sec-lbl'), tb = $('#flow-terugstart');
-        const toonT = () => { ts.style.display = tl.style.display = tu.value === 'sec' ? '' : 'none'; };
+        const toonT = () => { ts.style.display = tl.style.display = (tu.value === 'sec' || tu.value === 'rustig') ? '' : 'none'; tl.textContent = tu.value === 'rustig' ? 'sec of meer' : 'sec'; };
         const bewaarT = () => { toonT(); renderSteps(); try { chrome.storage.local.set({ ['pl-tussen-' + location.hostname]: { t: tu.value, s: +ts.value || 3, b: tb.checked } }); } catch (e) {} };
         try { chrome.storage.local.get('pl-tussen-' + location.hostname, r => { const x = r && r['pl-tussen-' + location.hostname]; if (x) { tu.value = x.t || 'klaar'; ts.value = x.s || 3; tb.checked = x.b !== false; } toonT(); renderSteps(); }); } catch (e) { toonT(); }
         tu.onchange = bewaarT; ts.oninput = bewaarT; tb.onchange = bewaarT;
@@ -4473,6 +4473,14 @@
     async function tussenRondes(st, klaar0, totaal0) {
         const m = st.tussen || 'klaar', klaar = (st.passBasis || 0) + klaar0, totaal = (st.passBasis || 0) + totaal0;   // nummers zoals in je lijst
         if (m === 'klaar') { log('  Ronde ' + klaar + ' klaar — wachten tot de pagina klaar is…'); await sleep(400); await waitForIdle(15000); }
+        else if (m === 'rustig') {
+            // Rustig tempo voor grote lijsten: eerst tot de pagina klaar is, dan een pauze die per regel iets
+            // verschilt (tussen 1× en 2× de ingestelde seconden), zodat een site niet elke paar seconden een verzoek krijgt.
+            await sleep(400); await waitForIdle(15000);
+            const ms = Math.round(st.tussenSec * 1000 * (1 + Math.random()));
+            log('  Ronde ' + klaar + ' klaar — rustig tempo: ' + (ms / 1000).toFixed(1).replace('.', ',') + ' seconden pauze…');
+            for (let t0 = Date.now(); Date.now() - t0 < ms && !stopReq; ) await sleep(200);
+        }
         else if (m === 'sec') { log('  Ronde ' + klaar + ' klaar — ' + st.tussenSec + ' seconden wachten…'); for (let t0 = Date.now(); Date.now() - t0 < st.tussenSec * 1000 && !stopReq; ) await sleep(200); }
         else if (m === 'klik') {
             const balk = $('#stap-balk');
@@ -5967,6 +5975,7 @@
       <select id="flow-tussen" class="wt-num" title="Wanneer begint ParseLab aan de volgende regel?">
         <option value="klaar">als de pagina klaar is</option>
         <option value="sec">na een aantal seconden</option>
+        <option value="rustig">rustig tempo (pagina klaar + pauze)</option>
         <option value="klik">als ik op Volgende klik</option>
         <option value="direct">meteen</option>
       </select>
