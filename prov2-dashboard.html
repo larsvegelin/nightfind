@@ -11,6 +11,7 @@
   --rand:#dbe2de; --rood:#b91c1c; --ok:#15803d;
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 html,body{margin:0;padding:0}
 body{font:14px/1.45 "Segoe UI",system-ui,sans-serif;background:var(--bg-2);color:var(--ink)}
 .kop{background:var(--groen);color:#fff;padding:18px 28px}
@@ -191,14 +192,14 @@ main{padding:18px 28px;max-width:1560px;margin:0 auto}
     <div class="rechts">
       <div class="kpis">
         <div class="kpi">
+          <div class="kpi-label">Aantal relaties</div>
+          <div class="kpi-waarde" id="kpiRelaties">–</div>
+          <div class="kpi-sub" id="kpiRelatiesSub"></div>
+        </div>
+        <div class="kpi">
           <div class="kpi-label">Aantal polissen</div>
           <div class="kpi-waarde" id="kpiAantal">–</div>
           <div class="kpi-sub" id="kpiAantalSub"></div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Termijnprovisie</div>
-          <div class="kpi-waarde" id="kpiTermijn">–</div>
-          <div class="kpi-sub"></div>
         </div>
         <div class="kpi">
           <div class="kpi-label">Provisie per jaar</div>
@@ -482,6 +483,7 @@ function parseExport(tekst) {
       c: velden,
       ka: velden[0] + '\u0000' + velden[1],
       mj: maatschappijWeergave(velden[5], velden[4]),
+      rel: velden[2].trim(),
       tp: parseBedrag(velden[14]),
       pj: parseBedrag(velden[15]),
       tn: parseGetal(velden[9]),
@@ -526,6 +528,10 @@ function laadBestand(file) {
     staat.formaat = resultaat.formaat;
     staat.rijen = resultaat.rijen;
     staat.overgeslagen = resultaat.overgeslagen;
+    // totaal aantal unieke relaties (lege relatienummers tellen niet mee)
+    const uniekeRelaties = new Set();
+    for (const rij of resultaat.rijen) if (rij.rel !== '') uniekeRelaties.add(rij.rel);
+    staat.relatiesTotaal = uniekeRelaties.size;
     staat.sorteer = { index: null, richting: 1 };
     staat.pagina = 1;
     for (const df of DATUM_FILTERS) {
@@ -745,7 +751,9 @@ function bouwKantoorAgentSectie() {
   sectie.className = 'filter';
   sectie.dataset.key = 'kantooragent';
   sectie.appendChild(maakFilterKop('Kantoor & agent', true).kop);
-  sectie.appendChild(maakZoekveld('in kantoor of agent'));
+  const kaZoekveld = maakZoekveld('in kantoor of agent');
+  sectie.appendChild(kaZoekveld);
+  koppelZoekveld(kaZoekveld, sectie);
 
   const lijst = document.createElement('div');
   lijst.className = 'ka-lijst';
@@ -877,7 +885,9 @@ function bouwFilterUI() {
     sectie.className = 'filter';
     sectie.dataset.key = f.key;
     sectie.appendChild(maakFilterKop(f.label, true).kop);
-    sectie.appendChild(maakZoekveld(f.zoekTekst || ('in ' + f.label.toLowerCase())));
+    const zoekveld = maakZoekveld(f.zoekTekst || ('in ' + f.label.toLowerCase()));
+    sectie.appendChild(zoekveld);
+    koppelZoekveld(zoekveld, sectie);
 
     const lijst = document.createElement('div');
     lijst.className = 'filter-lijst';
@@ -1029,25 +1039,24 @@ $('filterContainer').addEventListener('click', (e) => {
   verversAlles();
 });
 
-/* zoeken binnen een filtersectie: alle zoekwoorden moeten voorkomen,
-   ongevoelig voor hoofdletters en accenten */
-$('filterContainer').addEventListener('input', (e) => {
-  const veld = e.target;
-  if (!(veld instanceof HTMLInputElement) || !veld.classList.contains('filter-zoek')) return;
-  const termen = zoekTermen(veld.value);
-  const sectie = veld.closest('.filter');
+/* Zoeken binnen een filtersectie: alle zoekwoorden moeten voorkomen,
+   ongevoelig voor hoofdletters en accenten. Direct aan het veld gekoppeld
+   met meerdere events, zodat het in elke browser werkt — ook bij plakken
+   of bij klikken op het wis-kruisje van het zoekveld. */
+function pasZoekToe(sectie, zoekwaarde) {
+  const termen = zoekTermen(zoekwaarde);
 
   if (sectie.dataset.key === 'kantooragent') {
     sectie.querySelectorAll('.ka-groep').forEach((groepEl) => {
       let agentTreffer = false;
       groepEl.querySelectorAll('.ka-agent').forEach((optie) => {
-        // agent-haystack bevat ook de kantoornaam, dus een kantoortreffer
-        // laat automatisch alle agenten van dat kantoor zien
-        const past = termen.length === 0 || voldoetAanZoek(optie.dataset.zoek, termen);
+        const hooi = optie.dataset.zoek !== undefined
+          ? optie.dataset.zoek : zoekNorm(optie.textContent);
+        const past = termen.length === 0 || voldoetAanZoek(hooi, termen);
         optie.hidden = !past;
         if (termen.length > 0 && past) agentTreffer = true;
       });
-      const kantoorPast = voldoetAanZoek(groepEl.dataset.zoek, termen);
+      const kantoorPast = voldoetAanZoek(groepEl.dataset.zoek || '', termen);
       groepEl.hidden = termen.length > 0 && !kantoorPast && !agentTreffer;
       if (termen.length > 0 && !groepEl.hidden && agentTreffer) {
         groepEl.querySelector('.ka-agenten').hidden = false;
@@ -1058,9 +1067,16 @@ $('filterContainer').addEventListener('input', (e) => {
   }
 
   sectie.querySelectorAll('.filter-optie').forEach((optie) => {
-    optie.hidden = termen.length > 0 && !voldoetAanZoek(optie.dataset.zoek, termen);
+    const hooi = optie.dataset.zoek !== undefined
+      ? optie.dataset.zoek : zoekNorm(optie.textContent);
+    optie.hidden = termen.length > 0 && !voldoetAanZoek(hooi, termen);
   });
-});
+}
+
+function koppelZoekveld(zoek, sectie) {
+  const voerUit = () => pasZoekToe(sectie, zoek.value);
+  ['input', 'search', 'keyup'].forEach((ev) => zoek.addEventListener(ev, voerUit));
+}
 
 $('wisFilters').addEventListener('click', () => {
   for (const f of FILTERS) {
@@ -1137,7 +1153,8 @@ function verwerkFilters() {
   const VOL = (1 << n) - 1;
   const kaTelling = new Map();
   const gefilterd = [];
-  let somTp = 0, somPj = 0;
+  const relaties = new Set();
+  let somPj = 0;
 
   for (const rij of staat.rijen) {
     let masker = 0;
@@ -1146,8 +1163,8 @@ function verwerkFilters() {
     }
     if (masker === VOL) {
       gefilterd.push(rij);
-      if (rij.tp !== null) somTp += rij.tp;
       if (rij.pj !== null) somPj += rij.pj;
+      if (rij.rel !== '') relaties.add(rij.rel);
     }
     /* meebewegende aantallen: een rij telt mee voor sectie s als hij aan
        alle ANDERE secties voldoet (eigen sectie buiten beschouwing) */
@@ -1164,8 +1181,8 @@ function verwerkFilters() {
   }
 
   staat.gefilterd = gefilterd;
-  staat.somTp = somTp;
   staat.somPj = somPj;
+  staat.relatiesSelectie = relaties.size;
   staat.kaTelling = kaTelling;
   staat.cbTelling = {};
   for (const s of secties) if (s.soort === 'cb') staat.cbTelling[s.key] = s.telling;
@@ -1359,9 +1376,10 @@ function verversTabel() {
 }
 
 function verversKpis() {
+  $('kpiRelaties').textContent = nfInt.format(staat.relatiesSelectie);
+  $('kpiRelatiesSub').textContent = 'van ' + nfInt.format(staat.relatiesTotaal) + ' totaal';
   $('kpiAantal').textContent = nfInt.format(staat.gefilterd.length);
   $('kpiAantalSub').textContent = 'van ' + nfInt.format(staat.rijen.length) + ' totaal';
-  $('kpiTermijn').textContent = nfEur.format(staat.somTp / 100);
   $('kpiJaar').textContent = nfEur.format(staat.somPj / 100);
 }
 
