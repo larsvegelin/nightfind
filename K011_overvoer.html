@@ -777,7 +777,8 @@ const K011Parser = (() => {
     if (/van\s+steen\s+gebouwd|stenen\s+muren|steenbouw/.test(t)) row['Bouwaard muren'] = 'T';
     else if (/houten?\s+(?:muren|wanden)|houtbouw|houtskelet/.test(t)) row['Bouwaard muren'] = 'H';
     if (/rieten?\s+dak|met\s+riet\s+gedekt/.test(t)) row['Bouwaard dak'] = 'R';
-    else if (/pannen|harde\s+dakbedekking/.test(t)) row['Bouwaard dak'] = 'P';
+    else if (/pannen/.test(t)) row['Bouwaard dak'] = 'P';
+    else if (/harde\s+dakbedekking/.test(t)) row['Bouwaard dak'] = 'H';
     if (/houten?\s+vloeren/.test(t)) row['Bouwaard vloeren'] = 'H';
     else if (/betonnen\s+vloeren|stenen\s+vloeren/.test(t)) row['Bouwaard vloeren'] = 'S';
     // Woonhuis type: alleen indien bekend.
