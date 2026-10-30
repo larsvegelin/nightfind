@@ -190,7 +190,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <body>
 
 <header>
-  <h1>DWA Premiecontrole Dashboard <span>versie 10-6</span></h1>
+  <h1>DWA Premiecontrole Dashboard <span>versie 10-7</span></h1>
   <p>Matcht nieuwe polissen (VL309) tegen de oude polissen (LV309), haalt de producten uit de selectie, controleert de premie en sorteert alles aflopend op provisie.</p>
 </header>
 
@@ -230,6 +230,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     <label class="chk"><input type="checkbox" id="chkLoose" checked>
       Soepel vergelijken polisnummers (omgewisselde letters, spaties, punten, streepjes en voorloopnullen negeren)</label>
     <button class="geel" id="btnCopy" style="display:none;">Overzicht kopi&euml;ren</button>
+    <button class="geel" id="btnUitdraai" style="display:none;" title="Excel met alle polissen: nog niet in de wacht, in de wacht met juiste premie en in de wacht met onjuiste premie">Totale uitdraai (Excel)</button>
   </div>
 
   <div class="error" id="errBox"></div>
@@ -359,6 +360,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   }
 
   var TOLERANTIE = 0.11;
+  // Omschrijving van de premieregel (voor de uitdraai).
+  function regelTekst(idx) {
+    var r = idx >= 0 ? PREMIEREGELS[idx] : null;
+    if (r && r.nieuwePremie) return "geen premiecontrole (krijgt nieuwe premie)";
+    if (r && r.band) return r.band[0] < 0
+      ? "1:1 (afwijking " + r.band[0] + "% t/m +" + r.band[1] + "% is goed)"
+      : "verhoging " + r.band[0] + "-" + r.band[1] + "% is goed";
+    return "premie gelijk (marge € 0,11)";
+  }
 
   var MAANDEN = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
@@ -608,6 +618,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     $("errBox").style.display = "none";
     $("results").style.display = "none";
     $("btnCopy").style.display = "none";
+    $("btnUitdraai").style.display = "none";
 
     var vlSet = haalRegels("vl", "taVl"), lvSet = haalRegels("lv", "taLv");
     var vlRows = vlSet.rows, lvRows = lvSet.rows;
@@ -682,7 +693,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       var soort = cel(row, KV.soort);
       var rec = {
         row: row, agent: cel(row, KV.agent), relnr: cel(row, KV.relnr), naam: cel(row, KV.naam), soort: soort,
-        polis: cel(row, KV.polisOudMij), bedragTekst: cel(row, KV.bedrag), bedrag: parseBedrag(cel(row, KV.bedrag)),
+        polis: cel(row, KV.polisOudMij), polisNieuw: cel(row, KV.polis),
+        bedragTekst: cel(row, KV.bedrag), bedrag: parseBedrag(cel(row, KV.bedrag)),
         provisie: parseBedrag(cel(row, KV.provisie)), provisieTekst: cel(row, KV.provisie),
         datum: parseDatum(cel(row, KV.verval)), prodIdx: vindRegel("nieuw", cel(row, KV.mij), cel(row, KV.brCode), soort)
       };
@@ -1042,8 +1054,102 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         laatsteF.rest.map(function (r) { return [r.relnr, r.soort, r.naam, r.branche, r.polis, r.datum.toon, r.bedrag, r.provisieTekst, r.product]; }));
     });
 
+    // ---- Totale uitdraai (Excel) ----
+    // Alle oude polissen, ongeacht de actieve filters, ingedeeld in:
+    // nog niet in de wacht / in de wacht met onjuiste premie / in de wacht met
+    // juiste premie. Met een samenvatting per product om aan te leveren wat er
+    // gedaan is en wat er nog gedaan moet worden.
+    var STATUS = { rest: "Nog niet in de wacht", verschil: "In de wacht - premie onjuist", gelijk: "In de wacht - premie goed" };
+    var KOP = ["Status", "Product", "Soort relatie", "Rel.nr", "Naam", "Polisnr oud (LV309)", "Polisnr nieuw (VL309)",
+      "Hoofdvervaldatum oud", "Oud bedrag", "Nieuw bedrag", "Verschil", "Afwijking %", "Provisie", "Premieregel", "Opmerking"];
+    function datumWaarde(d) {
+      if (!d || !d.maandKey) return d && d.toon ? d.toon : "";
+      var p = d.toon.split("-"); return new Date(+p[2], +p[1] - 1, +p[0]);
+    }
+    function getal(n) { return n == null || isNaN(n) ? "" : Math.round(n * 100) / 100; }
+    function rijGematcht(item, status) {
+      var r = item.rec;
+      return [status, item.product, item.soort, item.relnr, item.naam || r.naam, item.lvPolis, r.polisNieuw || r.polis,
+        datumWaarde(item.lvDatum), getal(item.oud), getal(r.bedrag), getal(item.delta),
+        item.pct == null ? "" : Math.round(item.pct * 10) / 10, getal(r.provisie),
+        item.nieuwePremie ? "geen premiecontrole (krijgt nieuwe premie)" : regelTekst(item.prodIdx),
+        [item.opRelatie ? "gevonden via relatienummer" : "", item.delta == null ? "bedrag onleesbaar" : ""].filter(Boolean).join("; ")];
+    }
+    function rijRest(r) {
+      return [STATUS.rest, r.product, r.soort, r.relnr, r.naam, r.polis, "", datumWaarde(r.datum), getal(parseBedrag(r.bedrag)),
+        "", "", "", getal(r.provisie), regelTekst(r.prodIdx), "nog in de wacht zetten"];
+    }
+    function sorteer(rijen) {
+      return rijen.sort(function (a, b) {
+        var p = String(a[1]).localeCompare(String(b[1]), "nl"); if (p) return p;
+        var da = a[7] instanceof Date ? a[7].getTime() : 0, db = b[7] instanceof Date ? b[7].getTime() : 0;
+        return da - db || String(a[3]).localeCompare(String(b[3]), "nl", { numeric: true });
+      });
+    }
+    var BEDRAGKOLOMMEN = [8, 9, 10, 12];   // oud, nieuw, verschil, provisie
+    function blad(aoa, breedtes, filterVanaf, bedragKolommen) {
+      var ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true, dateNF: "dd-mm-yyyy" });
+      ws["!cols"] = breedtes.map(function (w) { return { wch: w }; });
+      // Bedragen altijd met 2 decimalen
+      (bedragKolommen || []).forEach(function (k) {
+        for (var rij = 1; rij < aoa.length; rij++) {
+          var c = ws[XLSX.utils.encode_cell({ r: rij, c: k })];
+          if (c && c.t === "n") c.z = "#,##0.00";
+        }
+      });
+      if (filterVanaf != null) {
+        var bereik = XLSX.utils.decode_range(ws["!ref"]); bereik.s.r = filterVanaf;
+        ws["!autofilter"] = { ref: XLSX.utils.encode_range(bereik) };
+      }
+      return ws;
+    }
+    function maakUitdraai() {
+      if (typeof XLSX === "undefined") { toonFout("Excel maken lukt niet in deze browser."); return; }
+      var nietRijen = sorteer(rest.map(rijRest));
+      var onjuistRijen = sorteer(verschil.map(function (i) { return rijGematcht(i, STATUS.verschil); }));
+      var goedRijen = sorteer(gelijk.map(function (i) { return rijGematcht(i, STATUS.gelijk); }));
+      var BREED = [26, 34, 13, 10, 28, 20, 20, 14, 11, 11, 10, 11, 10, 34, 28];
+
+      // Samenvatting per product (VL309-omschrijving)
+      var perProduct = {};
+      function tel(product, veld) {
+        if (!perProduct[product]) perProduct[product] = { niet: 0, onjuist: 0, goed: 0 };
+        perProduct[product][veld]++;
+      }
+      rest.forEach(function (r) { tel(r.product, "niet"); });
+      verschil.forEach(function (i) { tel(i.product, "onjuist"); });
+      gelijk.forEach(function (i) { tel(i.product, "goed"); });
+      var nu = new Date();
+      var sam = [["DWA Premiecontrole — totale uitdraai"], ["Gemaakt op", nu],
+        ["LV309 (oud)", $("stLv").textContent.replace(/^✓\s*/, "") || "geplakte selectie"],
+        ["VL309 (nieuw)", $("stVl").textContent.replace(/^✓\s*/, "") || "geplakte selectie"], [],
+        ["Product", "Oude polissen", "Nog niet in de wacht", "In de wacht - premie onjuist", "In de wacht - premie goed", "% in de wacht", "% afgerond (premie goed)"]];
+      var tot = { n: 0, niet: 0, onjuist: 0, goed: 0 };
+      Object.keys(perProduct).sort(function (a, b) { return a.localeCompare(b, "nl"); }).forEach(function (p) {
+        var c = perProduct[p], n = c.niet + c.onjuist + c.goed;
+        tot.n += n; tot.niet += c.niet; tot.onjuist += c.onjuist; tot.goed += c.goed;
+        sam.push([p, n, c.niet, c.onjuist, c.goed, n ? Math.round((c.onjuist + c.goed) / n * 1000) / 10 : "", n ? Math.round(c.goed / n * 1000) / 10 : ""]);
+      });
+      sam.push(["Totaal", tot.n, tot.niet, tot.onjuist, tot.goed,
+        tot.n ? Math.round((tot.onjuist + tot.goed) / tot.n * 1000) / 10 : "", tot.n ? Math.round(tot.goed / tot.n * 1000) / 10 : ""]);
+      if (oversluitingUit) sam.push([], ["Interne oversluitingen (niet meegeteld)", oversluitingUit]);
+
+      var wb = XLSX.utils.book_new();
+      var wsSam = blad(sam, [40, 14, 20, 26, 24, 14, 22], null);
+      if (wsSam.B2) wsSam.B2.z = "dd-mm-yyyy hh:mm";
+      XLSX.utils.book_append_sheet(wb, wsSam, "Samenvatting");
+      XLSX.utils.book_append_sheet(wb, blad([KOP].concat(nietRijen, onjuistRijen, goedRijen), BREED, 0, BEDRAGKOLOMMEN), "Totaal");
+      XLSX.utils.book_append_sheet(wb, blad([KOP].concat(nietRijen), BREED, 0, BEDRAGKOLOMMEN), "Nog niet in de wacht");
+      XLSX.utils.book_append_sheet(wb, blad([KOP].concat(onjuistRijen), BREED, 0, BEDRAGKOLOMMEN), "Premie onjuist");
+      XLSX.utils.book_append_sheet(wb, blad([KOP].concat(goedRijen), BREED, 0, BEDRAGKOLOMMEN), "Premie goed");
+      var d = nu.getFullYear() + "-" + ("0" + (nu.getMonth() + 1)).slice(-2) + "-" + ("0" + nu.getDate()).slice(-2);
+      XLSX.writeFile(wb, "premiecontrole-totale-uitdraai-" + d + ".xlsx", { cellDates: true });
+    }
+    $("btnUitdraai").onclick = maakUitdraai;
+
     $("results").style.display = "block";
     $("btnCopy").style.display = "inline-block";
+    $("btnUitdraai").style.display = "inline-block";
   }
 
   function bouwRapport(vlRows, verschil, gelijk, geenMatch, rest, oversluitingUit) {
@@ -1091,7 +1197,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     ["stVl", "stLv"].forEach(function (id) { $(id).textContent = ""; });
     ["fileVl", "fileLv"].forEach(function (id) { $(id).value = ""; });
     ["taVl", "taLv"].forEach(function (id) { $(id).value = ""; });
-    $("results").style.display = "none"; $("errBox").style.display = "none"; $("btnCopy").style.display = "none";
+    $("results").style.display = "none"; $("errBox").style.display = "none"; $("btnCopy").style.display = "none"; $("btnUitdraai").style.display = "none";
   });
 })();
 </script>
