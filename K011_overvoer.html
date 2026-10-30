@@ -171,7 +171,9 @@
       <button class="btn btn-primary" id="processBtn">&#9654;&nbsp; Verwerken</button>
       <button class="btn btn-ghost" id="clearBtn">&#10005;&nbsp; Wachtrij wissen</button>
       <button class="btn btn-success" id="downloadBtn" disabled>&#11015;&nbsp; Download CSV</button>
+      <button class="btn btn-ghost" id="woningBtn" disabled>&#127968;&nbsp; Woningdata aanvullen (BAG)</button>
     </div>
+    <div id="woningStatus" style="font-size:.8rem;color:var(--text-muted);margin:-.75rem 0 1rem"></div>
     <div class="cards" id="summaryCards" style="display:none">
       <div class="card"><div class="card-val" id="statFiles">0</div><div class="card-lbl">Verwerkt</div></div>
       <div class="card"><div class="card-val" id="statRows">0</div><div class="card-lbl">Polisrijen</div></div>
@@ -778,12 +780,13 @@ const K011Parser = (() => {
     else if (/pannen|harde\s+dakbedekking/.test(t)) row['Bouwaard dak'] = 'P';
     if (/houten?\s+vloeren/.test(t)) row['Bouwaard vloeren'] = 'H';
     else if (/betonnen\s+vloeren|stenen\s+vloeren/.test(t)) row['Bouwaard vloeren'] = 'S';
-    // Woonhuis type: alleen indien bekend
+    // Woonhuis type: alleen indien bekend.
+    // Codes: U=tussenwoning, H=hoekwoning, T=2-onder-1-kap, 2=vrijstaand, A=appartement
     const wt = t.match(/\b(tussenwoning|hoekwoning|vrijstaand|2[- ]onder[- ]1[- ]kap|twee[- ]onder[- ][eé]{1,2}n[- ]kap|appartement|flat)\b/);
     if (wt) {
       const w = wt[1];
-      row['Woonhuis type'] = /tussen/.test(w) ? 'T' : /hoek/.test(w) ? 'H' : /vrijstaand/.test(w) ? 'U'
-        : /onder/.test(w) ? '2' : 'A';
+      row['Woonhuis type'] = /tussen/.test(w) ? 'U' : /hoek/.test(w) ? 'H' : /onder/.test(w) ? 'T'
+        : /vrijstaand/.test(w) ? '2' : 'A';
     }
   }
 
@@ -1389,6 +1392,8 @@ function handleFileItems(items) {
   $('restSection').style.display = 'none';
   summaryCards.style.display  = 'none';
   downloadBtn.disabled        = true;
+  $('woningBtn').disabled     = true;
+  $('woningStatus').textContent = '';
   progressFill.style.width    = '0%';
   processBtn.disabled         = false;
 }
@@ -1435,6 +1440,8 @@ processBtn.addEventListener('click', processQueue);
 clearBtn.addEventListener('click', () => {
   queue=[]; allRows=[]; restRows=[];
   $('restSection').style.display = 'none';
+  $('woningBtn').disabled = true;
+  $('woningStatus').textContent = '';
   emptyState.style.display='block'; queueSection.style.display='none';
   resultsSection.style.display='none';
 });
@@ -1537,6 +1544,9 @@ async function processQueue() {
   processBtn.disabled=false;
   showSummary();
   if (allRows.length) { downloadBtn.disabled=false; renderResults(); }
+  $('woningBtn').disabled = !allRows.some(r =>
+    (r['Productomschrijving'] === 'Woonhuis' || r['Productomschrijving'] === 'Inboedel') &&
+    (!r['Bouwjaar'] || !r['Woonhuis type']));
   renderRest();
 }
 
@@ -1750,6 +1760,173 @@ function doDownloadRestXlsx() {
 }
 $('downloadRestCsvBtn').addEventListener('click', doDownloadRestCsv);
 $('downloadRestXlsxBtn').addEventListener('click', doDownloadRestXlsx);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  WONINGDATA AANVULLEN via BAG/PDOK (zelfde aanpak als de Woningdata Verrijker)
+//  Vult leeg Bouwjaar en Woonhuis type voor Woonhuis/Inboedel-rijen.
+//  Typecodes: U=tussenwoning, H=hoekwoning, T=2-onder-1-kap, 2=vrijstaand, A=appartement
+//  NB: de BAG-geometrie kan hoekwoning en 2-onder-1-kap niet onderscheiden (één
+//  gedeelde muur) — die gevallen krijgen H.
+// ═══════════════════════════════════════════════════════════════════════════════
+const PDOK_LOCATIESERVER = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/free';
+const PDOK_BAG_BASES = [
+  'https://api.pdok.nl/kadaster/bag/ogc/v2',
+  'https://api.pdok.nl/lv/bag/ogc/v1'
+];
+let pdokBagApi = null;
+const woningCache = new Map();
+
+const wNorm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function wPropLike(props, needle){
+  if (!props) return undefined;
+  const n = wNorm(needle);
+  for (const k of Object.keys(props)) if (wNorm(k).includes(n)) return props[k];
+  return undefined;
+}
+function wRings(geom){
+  if (!geom) return [];
+  if (geom.type === 'Polygon') return geom.coordinates;
+  if (geom.type === 'MultiPolygon') return geom.coordinates.flat();
+  return [];
+}
+function wPointIn(pt, geom){
+  let inside = false;
+  for (const ring of wRings(geom)){
+    for (let i=0, j=ring.length-1; i<ring.length; j=i++){
+      const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+      if (((yi>pt[1]) !== (yj>pt[1])) && (pt[0] < (xj-xi)*(pt[1]-yi)/(yj-yi)+xi)) inside = !inside;
+    }
+  }
+  return inside;
+}
+function wMpd(lat){ const m=111320; return [m*Math.cos(lat*Math.PI/180), m]; }
+function wSegDist(p, a, b, mpd){
+  const ax=(p[0]-a[0])*mpd[0], ay=(p[1]-a[1])*mpd[1];
+  const bx=(b[0]-a[0])*mpd[0], by=(b[1]-a[1])*mpd[1];
+  const len2 = bx*bx+by*by;
+  let t = len2 ? (ax*bx+ay*by)/len2 : 0; t = Math.max(0, Math.min(1, t));
+  const dx=ax-t*bx, dy=ay-t*by;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+function wTouch(gA, gB, lat, tolM){
+  const mpd = wMpd(lat);
+  const rA = wRings(gA), rB = wRings(gB);
+  for (const ring of rB) for (const v of ring)
+    for (const ringA of rA) for (let i=0;i<ringA.length-1;i++)
+      if (wSegDist(v, ringA[i], ringA[i+1], mpd) <= tolM) return true;
+  for (const ring of rA) for (const v of ring)
+    for (const ringB of rB) for (let i=0;i<ringB.length-1;i++)
+      if (wSegDist(v, ringB[i], ringB[i+1], mpd) <= tolM) return true;
+  return false;
+}
+async function wFetchJSON(url){
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP '+res.status);
+  return res.json();
+}
+async function wInitBag(){
+  if (pdokBagApi) return pdokBagApi;
+  let lastErr = null;
+  for (const base of PDOK_BAG_BASES){
+    try{
+      const data = await wFetchJSON(base + '/collections?f=json');
+      const cols = (data.collections||[]).map(c=>c.id);
+      const pick = want => cols.find(c=>wNorm(c)===want) || cols.find(c=>wNorm(c).includes(want));
+      const pandCol = pick('pand'), vboCol = pick('verblijfsobject');
+      if (pandCol){ pdokBagApi = {base, pandCol, vboCol}; return pdokBagApi; }
+    }catch(e){ lastErr = e; }
+  }
+  throw new Error('BAG API onbereikbaar' + (lastErr ? ': '+lastErr.message : ''));
+}
+
+// Zoek bouwjaar + woonhuistypecode voor één adres (met cache per adres)
+async function wZoekWoning(postcode, huisnummer, toevoeging){
+  const key = `${postcode}|${huisnummer}|${toevoeging||''}`.toUpperCase().replace(/\s+/g,'');
+  if (woningCache.has(key)) return woningCache.get(key);
+  const out = { bouwjaar:'', type:'' };
+  try{
+    const pc = String(postcode||'').replace(/\s+/g,'').toUpperCase();
+    const nr = String(huisnummer||'').trim();
+    if (!/^\d{4}[A-Z]{2}$/.test(pc) || !/^\d+$/.test(nr)){ woningCache.set(key,out); return out; }
+    const params = new URLSearchParams({
+      q: `postcode:${pc} and huisnummer:${nr}`,
+      fq: 'type:adres', rows: '50', wt: 'json',
+      fl: 'huisletter huisnummertoevoeging huis_nlt adresseerbaarobject_id centroide_ll'
+    });
+    const data = await wFetchJSON(PDOK_LOCATIESERVER + '?' + params);
+    const docs = (data.response && data.response.docs) || [];
+    const t = wNorm(toevoeging);
+    const suffix = d => wNorm((d.huisletter||'') + (d.huisnummertoevoeging||''));
+    let doc = docs.find(d => suffix(d) === t);
+    if (!doc && !t) doc = docs.length === 1 ? docs[0] : docs.find(d => suffix(d) === '');
+    if (!doc){ woningCache.set(key,out); return out; }
+    const m = /POINT\s*\(\s*([\d.eE+-]+)\s+([\d.eE+-]+)\s*\)/.exec(doc.centroide_ll||'');
+    if (!m){ woningCache.set(key,out); return out; }
+    const pt = [parseFloat(m[1]), parseFloat(m[2])];
+
+    const api = await wInitBag();
+    const d = 0.00045; // ± ~35-50 m
+    const bbox = [pt[0]-d, pt[1]-d, pt[0]+d, pt[1]+d].join(',');
+    const panden = await wFetchJSON(`${api.base}/collections/${api.pandCol}/items?f=json&limit=200&bbox=${bbox}`);
+    const feats = (panden.features||[]).filter(f => {
+      const st = String(wPropLike(f.properties,'status')||'').toLowerCase();
+      return !st.includes('gesloopt') && !st.includes('niet gerealiseerd') && !st.includes('ingetrokken');
+    });
+    const target = feats.find(f => wPointIn(pt, f.geometry)) || null;
+    if (!target){ woningCache.set(key,out); return out; }
+    out.bouwjaar = String(wPropLike(target.properties,'bouwjaar') ?? '');
+
+    let vboInPand = 0;
+    if (api.vboCol){
+      try{
+        const vbos = await wFetchJSON(`${api.base}/collections/${api.vboCol}/items?f=json&limit=1000&bbox=${bbox}`);
+        for (const f of (vbos.features||[]))
+          if (f.geometry && f.geometry.type === 'Point' && wPointIn(f.geometry.coordinates, target.geometry)) vboInPand++;
+      }catch(e){ /* vbo-collectie optioneel */ }
+    }
+    let attached = 0;
+    for (const f of feats){
+      if (f === target) continue;
+      if (wTouch(target.geometry, f.geometry, pt[1], 0.35)) attached++;
+    }
+    out.type = vboInPand > 2 ? 'A' : attached === 0 ? '2' : attached === 1 ? 'H' : 'U';
+  }catch(e){ /* adres overslaan bij API-fout */ }
+  woningCache.set(key, out);
+  return out;
+}
+
+// Vul leeg Bouwjaar / Woonhuis type op alle Woonhuis- en Inboedelrijen
+async function vulWoningdata(){
+  const btn = $('woningBtn'), status = $('woningStatus');
+  const kandidaten = allRows.filter(r =>
+    (r['Productomschrijving'] === 'Woonhuis' || r['Productomschrijving'] === 'Inboedel') &&
+    (!r['Bouwjaar'] || !r['Woonhuis type']) &&
+    r['Postcode'] && r['Huisnummer']);
+  if (!kandidaten.length){
+    status.textContent = 'Geen Woonhuis/Inboedel-rijen met leeg bouwjaar of woonhuistype (of adres ontbreekt).';
+    return;
+  }
+  btn.disabled = true;
+  let gevuld = 0, fouten = 0;
+  for (let i = 0; i < kandidaten.length; i++){
+    const r = kandidaten[i];
+    btn.textContent = `⏳ Woningdata ${i+1}/${kandidaten.length}…`;
+    try{
+      const w = await wZoekWoning(r['Postcode'], r['Huisnummer'], r['Huisnummer toevoeging']);
+      let dit = false;
+      if (!r['Bouwjaar'] && w.bouwjaar){ r['Bouwjaar'] = w.bouwjaar; dit = true; }
+      if (!r['Woonhuis type'] && w.type){ r['Woonhuis type'] = w.type; dit = true; }
+      if (dit) gevuld++;
+    }catch(e){ fouten++; }
+    await new Promise(res => setTimeout(res, 120)); // fair use PDOK
+  }
+  btn.disabled = false;
+  btn.innerHTML = '&#127968;&nbsp; Woningdata aanvullen (BAG)';
+  status.textContent = `Woningdata: ${gevuld} van ${kandidaten.length} rijen aangevuld via BAG (Kadaster)` +
+    (fouten ? `, ${fouten} fout(en)` : '') + '. Hoekwoning en 2-onder-1-kap zijn met geometrie niet te onderscheiden — die staan als H.';
+  renderResults();
+}
+$('woningBtn').addEventListener('click', vulWoningdata);
 
 // ── Koppelbestand ─────────────────────────────────────────────────────────────
 let koppelMapping = {};

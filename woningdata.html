@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Woningdata Verrijker — CSV verrijken met BAG &amp; EP-Online</title>
+<style>
+  :root{
+    /* de Waerdse huisstijl */
+    --bg:#F8F8F8;            /* wit */
+    --surface:#ffffff;
+    --surface2:#efefef;      /* richting CTA-grijs #E6E6E6 */
+    --border:#E6E6E6;        /* CTA-grijs */
+    --ink:#00441D;           /* groen (primair) */
+    --ink2:#316648;          /* groen 80% */
+    --muted:#628C74;         /* groen 60% */
+    --accent:#00913E;        /* accent groen */
+    --accent2:#00441D;       /* groen (CTA) */
+    --gold:#FFC000;          /* goud */
+    --gold80:#FDCA31;        /* goud 80% */
+    --good:#00913E; --warn:#8a6a00; --bad:#b3261e;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Inter','Poppins',system-ui,-apple-system,sans-serif;
+    line-height:1.55; min-height:100vh;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 20px 80px}
+  header.tool{padding:36px 0 8px}
+  header.tool h1{font-size:1.9rem;font-weight:700;letter-spacing:-.02em}
+  header.tool h1 span{color:var(--accent)}
+  header.tool p.sub{color:var(--ink2);max-width:760px;margin-top:8px}
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:24px; margin-top:22px;
+  }
+  .card h2{font-size:1.05rem;font-weight:600;margin-bottom:4px}
+  .card h2 .step{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;border-radius:50%;background:var(--gold);
+    color:var(--ink);font-size:.8rem;margin-right:10px;flex:none;
+  }
+  .card p.hint{color:var(--muted);font-size:.88rem;margin-bottom:14px}
+
+  /* dropzone */
+  .drop{
+    border:2px dashed var(--border); border-radius:var(--radius);
+    padding:34px 20px; text-align:center; cursor:pointer;
+    transition:border-color .2s, background .2s;
+  }
+  .drop:hover,.drop.dragover{border-color:var(--accent);background:rgba(0,145,62,.07)}
+  .drop strong{color:var(--accent)}
+  .drop .filemeta{color:var(--ink2);font-size:.9rem;margin-top:6px}
+  input[type=file]{display:none}
+
+  /* mapping */
+  .maprow{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px}
+  .maprow label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:5px}
+  .maprow>div{flex:1;min-width:180px}
+  select,input[type=password],input[type=text]{
+    width:100%; background:var(--surface2); color:var(--ink);
+    border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+    font:inherit; font-size:.92rem;
+  }
+  select:focus,input:focus{outline:none;border-color:var(--accent)}
+
+  details.ep{margin-top:16px}
+  details.ep summary{cursor:pointer;color:var(--ink2);font-size:.92rem}
+  details.ep .epbody{margin-top:12px}
+  details.ep a{color:var(--accent)}
+
+  /* actions */
+  .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
+  button.primary{
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;border:none;border-radius:12px;padding:13px 26px;
+    font:inherit;font-weight:600;font-size:1rem;cursor:pointer;
+    transition:transform .15s, box-shadow .15s;
+  }
+  button.primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 22px rgba(0,68,29,.30)}
+  button.primary:disabled{opacity:.4;cursor:not-allowed}
+  button.ghost{
+    background:transparent;color:var(--ink);border:1px solid var(--border);
+    border-radius:12px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;
+  }
+  button.ghost:hover:not(:disabled){border-color:var(--accent)}
+  button.ghost:disabled{opacity:.4;cursor:not-allowed}
+
+  /* progress */
+  .progress{display:none;margin-top:16px}
+  .progress .bar{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden}
+  .progress .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;transition:width .2s}
+  .progress .ptext{color:var(--ink2);font-size:.85rem;margin-top:6px}
+
+  /* stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:18px}
+  .tile{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .tile .k{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .tile .v{font-size:1.6rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+
+  /* table */
+  .tablewrap{overflow:auto;max-height:480px;border:1px solid var(--border);border-radius:12px;margin-top:16px}
+  table{border-collapse:collapse;width:100%;font-size:.83rem;white-space:nowrap}
+  thead th{
+    position:sticky;top:0;background:var(--surface2);color:var(--ink2);
+    text-align:left;font-weight:600;padding:9px 12px;border-bottom:1px solid var(--border);
+  }
+  thead th.new{color:var(--accent)}
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--ink)}
+  tbody tr:hover{background:rgba(0,145,62,.06)}
+  td.ok{color:var(--good)} td.warn{color:var(--warn)} td.err{color:var(--bad)}
+
+  .note{background:rgba(255,192,0,.13);border:1px solid rgba(255,192,0,.55);color:var(--ink);
+    border-radius:10px;padding:10px 14px;font-size:.86rem;margin-top:14px;display:none}
+  .errbox{background:rgba(179,38,30,.07);border:1px solid rgba(179,38,30,.4);color:var(--bad);
+    border-radius:10px;padding:10px 14px;font-size:.86rem;margin-top:14px;display:none}
+
+  /* los adres resultaat */
+  .single{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px}
+  .single .field{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0}
+  .single .field .k{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .single .field .v{font-size:1.05rem;font-weight:600;margin-top:2px;overflow-wrap:break-word}
+  .single .field .v.big{font-size:1.25rem}
+  .single .field.wide{grid-column:1/-1}
+  .single .field .v .src{display:block;font-size:.72rem;font-weight:400;color:var(--muted)}
+
+  footer.src{margin-top:34px;color:var(--muted);font-size:.82rem}
+  footer.src a{color:var(--ink2)}
+  code{background:var(--surface2);padding:1px 6px;border-radius:6px;font-size:.85em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="tool">
+    <h1>Woningdata <span>Verrijker</span></h1>
+    <p class="sub">Upload een CSV met <strong>postcode</strong>, <strong>huisnummer</strong> en eventueel
+    <strong>toevoeging</strong>. De tool haalt per adres het <strong>bouwjaar</strong>,
+    <strong>woningtype</strong>, gebruiksdoel en oppervlakte op uit de
+    BAG (Kadaster, via PDOK — gratis, geen sleutel nodig) en optioneel het officiële woningtype +
+    energielabel uit EP-Online (RVO). Alles draait lokaal in je browser; je data verlaat je computer niet,
+    alleen de adressen worden opgevraagd bij de open API's.</p>
+  </header>
+
+  <!-- SNEL: één adres -->
+  <section class="card">
+    <h2><span class="step">⚡</span>Snel één adres opzoeken</h2>
+    <p class="hint">Geen CSV nodig: vul postcode en huisnummer in en klik op zoeken.</p>
+    <div class="maprow">
+      <div>
+        <label for="qPostcode">Postcode</label>
+        <input type="text" id="qPostcode" placeholder="1234 AB" autocomplete="postal-code">
+      </div>
+      <div>
+        <label for="qNummer">Huisnummer</label>
+        <input type="text" id="qNummer" placeholder="12" inputmode="numeric">
+      </div>
+      <div>
+        <label for="qToev">Toevoeging (optioneel)</label>
+        <input type="text" id="qToev" placeholder="A, bis, 2 …">
+      </div>
+      <div style="flex:0;display:flex;align-items:flex-end">
+        <button class="primary" id="qBtn">🔍 Zoek</button>
+      </div>
+    </div>
+    <div class="errbox" id="qErr"></div>
+    <div class="single" id="qResult" style="display:none"></div>
+  </section>
+
+  <!-- STAP 1: upload -->
+  <section class="card">
+    <h2><span class="step">1</span>CSV uploaden</h2>
+    <p class="hint">Scheidingsteken (<code>;</code> of <code>,</code>) wordt automatisch herkend. Kolomnamen zoals
+    <code>postcode</code>, <code>huisnummer</code>, <code>toevoeging</code> worden automatisch gevonden — anders kies je ze hieronder zelf.</p>
+    <div class="drop" id="drop">
+      <div>Sleep je CSV hierheen of <strong>klik om te bladeren</strong></div>
+      <div class="filemeta" id="filemeta">Nog geen bestand gekozen</div>
+    </div>
+    <input type="file" id="file" accept=".csv,text/csv,text/plain">
+    <div class="maprow" id="maprow" style="display:none">
+      <div>
+        <label for="colPostcode">Kolom: postcode</label>
+        <select id="colPostcode"></select>
+      </div>
+      <div>
+        <label for="colNummer">Kolom: huisnummer</label>
+        <select id="colNummer"></select>
+      </div>
+      <div>
+        <label for="colToev">Kolom: toevoeging / huisletter (optioneel)</label>
+        <select id="colToev"></select>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAP 2: opties -->
+  <section class="card">
+    <h2><span class="step">2</span>Bronnen</h2>
+    <p class="hint">De BAG levert altijd bouwjaar, gebruiksdoel en oppervlakte. Het woningtype
+    (vrijstaand / hoekwoning / tussenwoning / appartement) wordt standaard <em>afgeleid</em> uit de
+    BAG-gebouwgeometrie. Voor het officiële geregistreerde woningtype kun je een gratis
+    EP-Online-sleutel toevoegen.</p>
+    <details class="ep" id="epDetails">
+      <summary>Optioneel: EP-Online API-sleutel (officieel woningtype + energielabel)</summary>
+      <div class="epbody">
+        <p class="hint">Vraag gratis een sleutel aan op
+        <a href="https://apikey.ep-online.nl/" target="_blank" rel="noopener">apikey.ep-online.nl</a> (RVO).
+        Let op: sommige browsers blokkeren dit verzoek (CORS). Lukt het niet, dan gebruikt de tool
+        automatisch alleen de BAG-afleiding.</p>
+        <input type="password" id="epKey" placeholder="EP-Online API-sleutel (blijft alleen in je browser)" autocomplete="off">
+        <p class="hint" style="margin-top:8px;margin-bottom:0">De sleutel wordt alleen in deze browser bewaard (localStorage) en nooit meegestuurd naar iets anders dan EP-Online zelf.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- STAP 3: verrijken -->
+  <section class="card">
+    <h2><span class="step">3</span>Verrijken &amp; downloaden</h2>
+    <div class="actions">
+      <button class="primary" id="runBtn" disabled>▶ Verrijk adressen</button>
+      <button class="ghost" id="stopBtn" disabled>Stop</button>
+      <button class="ghost" id="dlBtn" disabled>⬇ Download verrijkte CSV</button>
+    </div>
+    <div class="progress" id="progress">
+      <div class="bar"><i id="pbar"></i></div>
+      <div class="ptext" id="ptext"></div>
+    </div>
+    <div class="tiles" id="tiles" style="display:none">
+      <div class="tile"><div class="k">Rijen</div><div class="v" id="tTotal">0</div></div>
+      <div class="tile"><div class="k">Verwerkt</div><div class="v" id="tDone">0</div></div>
+      <div class="tile"><div class="k">Gevonden</div><div class="v" id="tFound">0</div></div>
+      <div class="tile"><div class="k">Niet gevonden</div><div class="v" id="tMiss">0</div></div>
+      <div class="tile"><div class="k">Fouten</div><div class="v" id="tErr">0</div></div>
+    </div>
+    <div class="note" id="epNote"></div>
+    <div class="errbox" id="errBox"></div>
+    <div class="tablewrap" id="tablewrap" style="display:none">
+      <table id="resultTable"><thead></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <footer class="src">
+    Bronnen: <a href="https://api.pdok.nl/bzk/locatieserver/search/v3_1/free" target="_blank" rel="noopener">PDOK Locatieserver</a>
+    (adressen) · <a href="https://api.pdok.nl/kadaster/bag/ogc/v2" target="_blank" rel="noopener">BAG OGC API (Kadaster via PDOK)</a>
+    (bouwjaar, gebruiksdoel, oppervlakte, geometrie) ·
+    <a href="https://www.ep-online.nl/" target="_blank" rel="noopener">EP-Online (RVO)</a> (woningtype &amp; energielabel, optioneel).
+    Woningtype met een <code>*</code> is afgeleid uit de BAG-gebouwgeometrie (heuristiek), niet officieel geregistreerd.
+    “Bouwaard” (houtskelet/beton/steen) is niet beschikbaar in open registraties; EP-Online-gebouwsubtype wordt waar mogelijk meegegeven.
+  </footer>
+</div>
+
+<script>
+'use strict';
+/* ================= Configuratie ================= */
+const LOCATIESERVER = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/free';
+// Nieuwe BAG OGC API eerst; oude als fallback (uitgefaseerd per 15-07-2026, maar voor de zekerheid).
+const BAG_BASES = [
+  'https://api.pdok.nl/kadaster/bag/ogc/v2',
+  'https://api.pdok.nl/lv/bag/ogc/v1'
+];
+const EP_URL = 'https://public.ep-online.nl/api/v5/PandEnergielabel/Adres';
+const NEW_COLS = ['bag_straat','bag_woonplaats','bouwjaar','woningtype','woningtype_bron','gebouwsubtype','energielabel','gebruiksdoel','oppervlakte_m2','pand_id','melding'];
+
+/* ================= State ================= */
+let csv = null;            // {headers:[], rows:[[]], delimiter}
+let results = null;        // array van objecten met NEW_COLS
+let running = false, stopFlag = false;
+let bagApi = null;         // {base, pandCol, vboCol}
+let epBroken = false;
+
+/* ================= CSV parser / writer ================= */
+function detectDelimiter(text){
+  const line = text.slice(0, text.indexOf('\n') === -1 ? text.length : text.indexOf('\n'));
+  const counts = [[';',(line.match(/;/g)||[]).length],[',',(line.match(/,/g)||[]).length],['\t',(line.match(/\t/g)||[]).length]];
+  counts.sort((a,b)=>b[1]-a[1]);
+  return counts[0][1] > 0 ? counts[0][0] : ';';
+}
+function parseCSV(text){
+  text = text.replace(/^﻿/,'');
+  const delim = detectDelimiter(text);
+  const rows = []; let row = [], field = '', inQ = false;
+  for (let i=0;i<text.length;i++){
+    const c = text[i];
+    if (inQ){
+      if (c === '"'){ if (text[i+1] === '"'){ field+='"'; i++; } else inQ = false; }
+      else field += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === delim){ row.push(field); field=''; }
+      else if (c === '\n'){ row.push(field); field=''; if (row.some(f=>f!=='')) rows.push(row); row=[]; }
+      else if (c !== '\r') field += c;
+    }
+  }
+  if (field !== '' || row.length){ row.push(field); if (row.some(f=>f!=='')) rows.push(row); }
+  if (!rows.length) throw new Error('Leeg bestand');
+  const headers = rows.shift().map(h=>h.trim());
+  return {headers, rows, delimiter: delim};
+}
+function toCSV(headers, rows, delim){
+  const esc = v => {
+    v = v == null ? '' : String(v);
+    return (v.includes(delim) || v.includes('"') || v.includes('\n')) ? '"'+v.replace(/"/g,'""')+'"' : v;
+  };
+  return '﻿' + [headers.map(esc).join(delim), ...rows.map(r=>r.map(esc).join(delim))].join('\r\n');
+}
+
+/* ================= Kolomdetectie ================= */
+const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function guessColumn(headers, keys){
+  const H = headers.map(norm);
+  for (const k of keys){ const i = H.findIndex(h=>h===k); if (i!==-1) return i; }
+  for (const k of keys){ const i = H.findIndex(h=>h.includes(k)); if (i!==-1) return i; }
+  return -1;
+}
+
+/* ================= Geometrie-hulpjes (WGS84, lon/lat) ================= */
+function ringsOf(geom){
+  if (!geom) return [];
+  if (geom.type === 'Polygon') return geom.coordinates;
+  if (geom.type === 'MultiPolygon') return geom.coordinates.flat();
+  return [];
+}
+function pointInGeom(pt, geom){ // even-odd over alle ringen (gaten tellen vanzelf mee)
+  let inside = false;
+  for (const ring of ringsOf(geom)){
+    for (let i=0, j=ring.length-1; i<ring.length; j=i++){
+      const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+      if (((yi>pt[1]) !== (yj>pt[1])) && (pt[0] < (xj-xi)*(pt[1]-yi)/(yj-yi)+xi)) inside = !inside;
+    }
+  }
+  return inside;
+}
+function metersPerDeg(lat){ const m=111320; return [m*Math.cos(lat*Math.PI/180), m]; } // [lon,lat]
+function segPointDistM(p, a, b, mpd){ // afstand punt->lijnstuk in meters
+  const ax=(p[0]-a[0])*mpd[0], ay=(p[1]-a[1])*mpd[1];
+  const bx=(b[0]-a[0])*mpd[0], by=(b[1]-a[1])*mpd[1];
+  const len2 = bx*bx+by*by;
+  let t = len2 ? (ax*bx+ay*by)/len2 : 0; t = Math.max(0, Math.min(1, t));
+  const dx=ax-t*bx, dy=ay-t*by;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+function polysTouch(gA, gB, lat, tolM){ // raken 2 pand-geometrieën elkaar (≈ gedeelde muur)?
+  const mpd = metersPerDeg(lat);
+  const rA = ringsOf(gA), rB = ringsOf(gB);
+  for (const ring of rB) for (const v of ring)
+    for (const ringA of rA) for (let i=0;i<ringA.length-1;i++)
+      if (segPointDistM(v, ringA[i], ringA[i+1], mpd) <= tolM) return true;
+  for (const ring of rA) for (const v of ring)
+    for (const ringB of rB) for (let i=0;i<ringB.length-1;i++)
+      if (segPointDistM(v, ringB[i], ringB[i+1], mpd) <= tolM) return true;
+  return false;
+}
+
+/* ================= API-laag ================= */
+async function fetchJSON(url, opts){
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error('HTTP '+res.status+' bij '+url.split('?')[0]);
+  return res.json();
+}
+// Zoek property-waarde ongeacht exacte naamgeving (v1/v2 verschillen)
+function propLike(props, needle){
+  if (!props) return undefined;
+  const n = norm(needle);
+  for (const k of Object.keys(props)) if (norm(k).includes(n)) return props[k];
+  return undefined;
+}
+async function initBagApi(){
+  if (bagApi) return bagApi;
+  let lastErr = null;
+  for (const base of BAG_BASES){
+    try{
+      const data = await fetchJSON(base + '/collections?f=json');
+      const cols = (data.collections||[]).map(c=>c.id);
+      const pick = want => cols.find(c=>norm(c)===want) || cols.find(c=>norm(c).includes(want));
+      const pandCol = pick('pand'), vboCol = pick('verblijfsobject');
+      if (pandCol){ bagApi = {base, pandCol, vboCol}; return bagApi; }
+    }catch(e){ lastErr = e; }
+  }
+  throw new Error('BAG OGC API onbereikbaar: ' + (lastErr ? lastErr.message : 'geen collecties gevonden'));
+}
+async function locatieserverLookup(postcode, nummer, toev){
+  const params = new URLSearchParams({
+    q: `postcode:${postcode} and huisnummer:${nummer}`,
+    fq: 'type:adres', rows: '50', wt: 'json',
+    fl: 'weergavenaam straatnaam huisnummer huisletter huisnummertoevoeging huis_nlt postcode woonplaatsnaam gemeentenaam adresseerbaarobject_id nummeraanduiding_id centroide_ll'
+  });
+  const data = await fetchJSON(LOCATIESERVER + '?' + params);
+  const docs = (data.response && data.response.docs) || [];
+  if (!docs.length) return {doc:null, reden:'Adres niet gevonden'};
+  const t = norm(toev);
+  const suffix = d => norm((d.huisletter||'') + (d.huisnummertoevoeging||''));
+  let doc = docs.find(d => suffix(d) === t);
+  if (!doc && t) doc = docs.find(d => norm(d.huis_nlt||'').endsWith(norm(String(nummer))+t));
+  if (!doc && !t && docs.length === 1) doc = docs[0];
+  if (!doc && !t) doc = docs.find(d => suffix(d) === '');
+  if (!doc) return {doc:null, reden: t ? 'Toevoeging niet gevonden bij dit adres' : 'Meerdere adressen gevonden; toevoeging vereist'};
+  return {doc};
+}
+function parsePoint(wkt){
+  const m = /POINT\s*\(\s*([\d.eE+-]+)\s+([\d.eE+-]+)\s*\)/.exec(wkt||'');
+  return m ? [parseFloat(m[1]), parseFloat(m[2])] : null;
+}
+async function bagLookup(pt, aoId){
+  const api = await initBagApi();
+  const d = 0.00045; // ± ~35-50 m
+  const bbox = [pt[0]-d, pt[1]-d, pt[0]+d, pt[1]+d].join(',');
+  const panden = await fetchJSON(`${api.base}/collections/${api.pandCol}/items?f=json&limit=200&bbox=${bbox}`);
+  const feats = (panden.features||[]).filter(f => {
+    const st = String(propLike(f.properties,'status')||'').toLowerCase();
+    return !st.includes('gesloopt') && !st.includes('niet gerealiseerd') && !st.includes('ingetrokken');
+  });
+  const target = feats.find(f => pointInGeom(pt, f.geometry)) || null;
+
+  let vbo = null, vboInPand = 0;
+  if (api.vboCol){
+    try{
+      const vbos = await fetchJSON(`${api.base}/collections/${api.vboCol}/items?f=json&limit=1000&bbox=${bbox}`);
+      for (const f of (vbos.features||[])){
+        const id = String(propLike(f.properties,'identificatie')||'');
+        if (aoId && id === String(aoId)) vbo = f;
+        if (target && f.geometry && f.geometry.type === 'Point' && pointInGeom(f.geometry.coordinates, target.geometry)) vboInPand++;
+      }
+    }catch(e){ /* vbo-collectie optioneel */ }
+  }
+
+  let attached = 0;
+  if (target){
+    const lat = pt[1];
+    for (const f of feats){
+      if (f === target) continue;
+      if (polysTouch(target.geometry, f.geometry, lat, 0.35)) attached++;
+    }
+  }
+  return {target, vbo, vboInPand, attached};
+}
+function deriveWoningtype(bag, gebruiksdoel){
+  if (!bag.target) return null;
+  const gd = String(gebruiksdoel||'').toLowerCase();
+  if (gd && !gd.includes('woon')) return 'Geen woonfunctie (' + gebruiksdoel + ')';
+  if (bag.vboInPand > 2) return 'Appartement*';
+  if (bag.attached === 0) return 'Vrijstaand*';
+  if (bag.attached === 1) return 'Hoekwoning / 2-onder-1-kap*';
+  return 'Tussenwoning*';
+}
+async function epLookup(key, postcode, nummer, toev){
+  const attempts = [];
+  const base = {postcode, huisnummer: String(nummer)};
+  const t = String(toev||'').trim();
+  if (!t) attempts.push({...base});
+  else if (/^[a-z]$/i.test(t)){ attempts.push({...base, huisletter:t}); attempts.push({...base, huisnummertoevoeging:t}); }
+  else { attempts.push({...base, huisnummertoevoeging:t}); attempts.push({...base, huisletter:t.slice(0,1), huisnummertoevoeging:t.slice(1)}); }
+  for (const a of attempts){
+    const res = await fetch(EP_URL + '?' + new URLSearchParams(a), {headers:{'Authorization': key}});
+    if (res.status === 404) continue;
+    if (!res.ok) throw new Error('EP-Online HTTP ' + res.status);
+    const data = await res.json();
+    const rec = Array.isArray(data) ? data[0] : data;
+    if (rec) return {
+      gebouwtype:    propLike(rec,'gebouwtype'),
+      gebouwsubtype: propLike(rec,'gebouwsubtype'),
+      label:         propLike(rec,'energieklasse') || propLike(rec,'labelletter'),
+      bouwjaar:      propLike(rec,'bouwjaar')
+    };
+  }
+  return null;
+}
+
+/* ================= Verrijking per rij ================= */
+async function enrichRow(postcodeRaw, nummerRaw, toevRaw, epKey){
+  const out = Object.fromEntries(NEW_COLS.map(c=>[c,'']));
+  const postcode = String(postcodeRaw||'').replace(/\s+/g,'').toUpperCase();
+  const nummer = String(nummerRaw||'').trim().replace(/\.0$/,'');
+  let toev = String(toevRaw||'').trim();
+  if (!/^\d{4}[A-Z]{2}$/.test(postcode)){ out.melding = 'Ongeldige postcode'; out._status='err'; return out; }
+  if (!/^\d+/.test(nummer)){ out.melding = 'Ongeldig huisnummer'; out._status='err'; return out; }
+  let nr = nummer.match(/^\d+/)[0];
+  if (!toev && nummer.length > nr.length) toev = nummer.slice(nr.length).replace(/^[-\s]+/,''); // "12A" in één kolom
+
+  const {doc, reden} = await locatieserverLookup(postcode, nr, toev);
+  if (!doc){ out.melding = reden || 'Adres niet gevonden'; out._status='miss'; return out; }
+  out.bag_straat = doc.straatnaam || '';
+  out.bag_woonplaats = doc.woonplaatsnaam || '';
+
+  const pt = parsePoint(doc.centroide_ll);
+  let gebruiksdoel = '';
+  if (pt){
+    try{
+      const bag = await bagLookup(pt, doc.adresseerbaarobject_id);
+      if (bag.vbo){
+        const gd = propLike(bag.vbo.properties,'gebruiksdoel');
+        gebruiksdoel = Array.isArray(gd) ? gd.join(', ') : (gd || '');
+        const opp = propLike(bag.vbo.properties,'oppervlakte');
+        out.oppervlakte_m2 = opp != null ? String(opp) : '';
+      }
+      out.gebruiksdoel = gebruiksdoel;
+      if (bag.target){
+        out.bouwjaar = String(propLike(bag.target.properties,'bouwjaar') ?? '');
+        out.pand_id = String(propLike(bag.target.properties,'identificatie') || '');
+        const wt = deriveWoningtype(bag, gebruiksdoel);
+        if (wt){ out.woningtype = wt; out.woningtype_bron = 'BAG-geometrie (afgeleid)'; }
+      } else {
+        out.melding = 'Geen pand op deze locatie (ligplaats/standplaats?)';
+      }
+    }catch(e){ out.melding = 'BAG-fout: ' + e.message; }
+  }
+
+  if (epKey && !epBroken){
+    try{
+      const ep = await epLookup(epKey, postcode, nr, toev);
+      if (ep){
+        if (ep.gebouwtype){ out.woningtype = ep.gebouwtype; out.woningtype_bron = 'EP-Online (officieel)'; }
+        if (ep.gebouwsubtype) out.gebouwsubtype = String(ep.gebouwsubtype);
+        if (ep.label) out.energielabel = String(ep.label);
+        if (!out.bouwjaar && ep.bouwjaar) out.bouwjaar = String(ep.bouwjaar);
+      }
+    }catch(e){
+      epBroken = true;
+      showNote('EP-Online niet bereikbaar vanuit de browser (' + e.message + '). De tool gaat verder met alleen BAG-gegevens. ' +
+        'Dit gebeurt meestal door CORS-beperkingen van EP-Online; controleer ook of je API-sleutel geactiveerd is.');
+    }
+  }
+
+  out._status = (out.bouwjaar || out.woningtype) ? 'ok' : (out._status || 'miss');
+  if (out._status === 'miss' && !out.melding) out.melding = 'Geen gegevens gevonden';
+  return out;
+}
+
+/* ================= UI ================= */
+const $ = id => document.getElementById(id);
+const drop = $('drop'), fileInput = $('file');
+
+/* --- Los adres opzoeken --- */
+async function singleLookup(){
+  const btn = $('qBtn'), box = $('qResult'), err = $('qErr');
+  err.style.display = 'none'; box.style.display = 'none';
+  const pc = $('qPostcode').value, nr = $('qNummer').value, tv = $('qToev').value;
+  if (!pc.trim() || !nr.trim()){ err.textContent = 'Vul minimaal postcode en huisnummer in.'; err.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Bezig…';
+  try{
+    epBroken = false;
+    const res = await enrichRow(pc, nr, tv, $('epKey').value.trim());
+    if (res._status !== 'ok'){
+      err.textContent = res.melding || 'Geen gegevens gevonden voor dit adres.';
+      err.style.display = 'block';
+    }
+    if (res.bag_straat || res._status === 'ok'){
+      const e = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      const adres = [res.bag_straat, nr + (tv ? ' ' + tv : ''), '·', pc.toUpperCase(), res.bag_woonplaats].filter(Boolean).join(' ');
+      const f = (k, v, extra) => v ? `<div class="field${extra&&extra.wide?' wide':''}"><div class="k">${k}</div><div class="v${extra&&extra.big?' big':''}">${e(v)}${extra&&extra.src?`<span class="src">${e(extra.src)}</span>`:''}</div></div>` : '';
+      box.innerHTML =
+        f('Adres', adres, {wide:true}) +
+        f('Bouwjaar', res.bouwjaar, {big:true}) +
+        f('Woningtype', res.woningtype, {big:true, src:res.woningtype_bron}) +
+        f('Gebouwsubtype', res.gebouwsubtype) +
+        f('Energielabel', res.energielabel) +
+        f('Gebruiksdoel', res.gebruiksdoel) +
+        f('Oppervlakte', res.oppervlakte_m2 ? res.oppervlakte_m2 + ' m²' : '') +
+        f('BAG pand-id', res.pand_id) +
+        f('Melding', res.melding);
+      box.style.display = 'grid';
+    }
+  }catch(e2){
+    err.textContent = 'Fout: ' + e2.message; err.style.display = 'block';
+  }finally{
+    btn.disabled = false; btn.textContent = '🔍 Zoek';
+  }
+}
+$('qBtn').addEventListener('click', singleLookup);
+for (const id of ['qPostcode','qNummer','qToev'])
+  $(id).addEventListener('keydown', e=>{ if (e.key === 'Enter') singleLookup(); });
+
+/* EP-Online-sleutel lokaal onthouden */
+try{
+  const saved = localStorage.getItem('ep_api_key');
+  if (saved){ $('epKey').value = saved; $('epDetails').open = true; }
+  $('epKey').addEventListener('input', ()=>{
+    if ($('epKey').value.trim()) localStorage.setItem('ep_api_key', $('epKey').value.trim());
+    else localStorage.removeItem('ep_api_key');
+  });
+}catch(e){ /* localStorage niet beschikbaar (bijv. privémodus) */ }
+
+drop.addEventListener('click', ()=>fileInput.click());
+drop.addEventListener('dragover', e=>{e.preventDefault(); drop.classList.add('dragover');});
+drop.addEventListener('dragleave', ()=>drop.classList.remove('dragover'));
+drop.addEventListener('drop', e=>{
+  e.preventDefault(); drop.classList.remove('dragover');
+  if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', ()=>{ if (fileInput.files.length) loadFile(fileInput.files[0]); });
+
+function loadFile(f){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      csv = parseCSV(reader.result);
+      results = null;
+      $('filemeta').textContent = `${f.name} — ${csv.rows.length} rijen, ${csv.headers.length} kolommen (scheidingsteken “${csv.delimiter === '\t' ? 'tab' : csv.delimiter}”)`;
+      buildMapping();
+      $('runBtn').disabled = false;
+      $('dlBtn').disabled = true;
+      $('tablewrap').style.display = 'none';
+      $('tiles').style.display = 'none';
+      hideBoxes();
+    }catch(err){ showError('CSV kon niet worden gelezen: ' + err.message); }
+  };
+  reader.readAsText(f, 'utf-8');
+}
+function buildMapping(){
+  const opts = ['<option value="-1">— geen —</option>']
+    .concat(csv.headers.map((h,i)=>`<option value="${i}">${h.replace(/</g,'&lt;')}</option>`)).join('');
+  for (const id of ['colPostcode','colNummer','colToev']) $(id).innerHTML = opts;
+  $('colPostcode').value = guessColumn(csv.headers, ['postcode','pc','zip','zipcode','postalcode']);
+  $('colNummer').value   = guessColumn(csv.headers, ['huisnummer','huisnr','nummer','nr','housenumber','number']);
+  $('colToev').value     = guessColumn(csv.headers, ['toevoeging','huisnummertoevoeging','huisletter','toev','addition','suffix']);
+  $('maprow').style.display = 'flex';
+}
+function showNote(msg){ const n=$('epNote'); n.textContent=msg; n.style.display='block'; }
+function showError(msg){ const n=$('errBox'); n.textContent=msg; n.style.display='block'; }
+function hideBoxes(){ $('epNote').style.display='none'; $('errBox').style.display='none'; }
+
+function renderHeader(){
+  $('resultTable').querySelector('thead').innerHTML =
+    '<tr>' + csv.headers.map(h=>`<th>${h.replace(/</g,'&lt;')}</th>`).join('') +
+    NEW_COLS.map(c=>`<th class="new">${c}</th>`).join('') + '</tr>';
+  $('resultTable').querySelector('tbody').innerHTML = '';
+  $('tablewrap').style.display = 'block';
+}
+function renderRow(row, res){
+  const cls = res._status === 'ok' ? 'ok' : res._status === 'err' ? 'err' : 'warn';
+  const tds = row.map(v=>`<td>${String(v??'').replace(/</g,'&lt;')}</td>`).join('') +
+    NEW_COLS.map(c=>{
+      const v = String(res[c]??'').replace(/</g,'&lt;');
+      return c === 'melding' && v ? `<td class="${cls}">${v}</td>` : `<td>${v}</td>`;
+    }).join('');
+  const tr = document.createElement('tr'); tr.innerHTML = tds;
+  $('resultTable').querySelector('tbody').appendChild(tr);
+}
+
+$('runBtn').addEventListener('click', async ()=>{
+  if (!csv || running) return;
+  const ci = { pc:+$('colPostcode').value, nr:+$('colNummer').value, tv:+$('colToev').value };
+  if (ci.pc < 0 || ci.nr < 0){ showError('Kies eerst de kolommen voor postcode en huisnummer.'); return; }
+  hideBoxes();
+  running = true; stopFlag = false; epBroken = false;
+  results = [];
+  const epKey = $('epKey').value.trim();
+  $('runBtn').disabled = true; $('stopBtn').disabled = false; $('dlBtn').disabled = true;
+  $('progress').style.display = 'block'; $('tiles').style.display = 'grid';
+  renderHeader();
+  const total = csv.rows.length;
+  let found=0, miss=0, errs=0;
+  $('tTotal').textContent = total;
+
+  for (let i=0;i<total;i++){
+    if (stopFlag) break;
+    const row = csv.rows[i];
+    let res;
+    try{
+      res = await enrichRow(row[ci.pc], row[ci.nr], ci.tv >= 0 ? row[ci.tv] : '', epKey);
+    }catch(e){
+      res = Object.fromEntries(NEW_COLS.map(c=>[c,'']));
+      res.melding = 'Fout: ' + e.message; res._status = 'err';
+    }
+    results.push(res);
+    if (res._status==='ok') found++; else if (res._status==='err') errs++; else miss++;
+    renderRow(row, res);
+    $('tDone').textContent = i+1; $('tFound').textContent = found;
+    $('tMiss').textContent = miss; $('tErr').textContent = errs;
+    $('pbar').style.width = Math.round(((i+1)/total)*100) + '%';
+    $('ptext').textContent = `Bezig… ${i+1} / ${total}`;
+    await new Promise(r=>setTimeout(r, 120)); // fair use PDOK
+  }
+  $('ptext').textContent = stopFlag ? `Gestopt na ${results.length} van ${total} rijen.` : `Klaar: ${total} rijen verwerkt.`;
+  running = false;
+  $('runBtn').disabled = false; $('stopBtn').disabled = true;
+  $('dlBtn').disabled = results.length === 0;
+});
+$('stopBtn').addEventListener('click', ()=>{ stopFlag = true; });
+
+$('dlBtn').addEventListener('click', ()=>{
+  if (!csv || !results) return;
+  const headers = csv.headers.concat(NEW_COLS);
+  const rows = results.map((res,i)=>csv.rows[i].concat(NEW_COLS.map(c=>res[c]??'')));
+  const blob = new Blob([toCSV(headers, rows, csv.delimiter)], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'adressen_verrijkt.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+</script>
+</body>
+</html>
