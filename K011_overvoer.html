@@ -334,7 +334,7 @@ const K011Parser = (() => {
     if (/alleen/.test(l)) return 'A';
     if (/gezin/.test(l) && /zonder\s+kind/.test(l)) return 'H';
     if (/gezin/.test(l) && /kind/.test(l)) return 'I';
-    if (/gezin/.test(l)) return 'H'; // "Particulier in gezinsverband" → gezin, kinderen onbekend
+    if (/gezin/.test(l)) return 'I'; // "Particulier in gezinsverband" → I; geboren t/m 1960 wordt later H
     if (/met\s+kind/.test(l)) return 'K';
     return '';
   }
@@ -957,7 +957,7 @@ const K011Parser = (() => {
           row[`Omschrijving ${rslot}`] = dn; rslot++;
         }
         row['Uitzondering 1'] = restReden;
-        if (row['Gezinssamenstelling'] === 'H') {
+        if (row['Gezinssamenstelling'] === 'I') {
           const gzBronR = `${hoedanigheid} ${docGezinRaw} ${naam_lc}`.toLowerCase();
           if (/gezin/.test(gzBronR) && !/zonder\s*kind|met\s*kind/.test(gzBronR)) row['_gezinPlain'] = 1;
         }
@@ -1101,8 +1101,8 @@ const K011Parser = (() => {
       // Gezinsongevallen: geen dekkingcode-mapping bekend — geen regels (nooit omschrijving zonder code)
 
       // "Gezin" zonder kind-informatie markeren: wordt achteraf verfijnd op
-      // geboortejaar uit het relatiescherm (vóór 1965 → H, 1965 of later → I)
-      if (row['Gezinssamenstelling'] === 'H') {
+      // geboortejaar uit het relatiescherm (t/m 1960 → H, daarna → I)
+      if (row['Gezinssamenstelling'] === 'I') {
         const gzBron = `${hoedanigheid} ${docGezinRaw} ${naam_lc}`.toLowerCase();
         if (/gezin/.test(gzBron) && !/zonder\s*kind|met\s*kind/.test(gzBron)) row['_gezinPlain'] = 1;
       }
@@ -1582,19 +1582,13 @@ function applyRelatieschermInfo(rows, folderInfo) {
       if (!row['Postcode'] && fi.postcode) row['Postcode'] = fi.postcode;
       if (!row['Woonplaats'] && fi.woonplaats) row['Woonplaats'] = fi.woonplaats;
     }
-    // "Gezin" zonder kind-info verfijnen op geboortejaar: geboren vóór 1-1-1965
-    // → gezin zonder kinderen (H), geboren daarna → gezin met kinderen (I)
+    // "Particulier in gezinsverband" zonder kind-info verfijnen op geboortejaar:
+    // geboren t/m 1960 → gezin zonder kinderen (H), daarna → gezin met kinderen (I)
     const gebJaar = parseInt(((row['Geboortedatum klant']||'').match(/(\d{4})$/) || [,'0'])[1], 10);
     if (row['_gezinPlain'] && gebJaar) {
-      row['Gezinssamenstelling'] = gebJaar < 1965 ? 'H' : 'I';
+      row['Gezinssamenstelling'] = gebJaar <= 1960 ? 'H' : 'I';
     }
-    // Gezinssamenstelling is verplicht voor Inboedel/Woonhuis: als de polis geen
-    // Hoedanigheid gaf, afleiden uit relatietelling + geboortejaar
-    const prod = row['Productomschrijving'];
-    if ((prod === 'Inboedel' || prod === 'Woonhuis') && !row['Gezinssamenstelling']) {
-      const n = fi && fi.persons ? fi.persons.length : 0;
-      row['Gezinssamenstelling'] = n >= 2 ? (gebJaar >= 1965 ? 'I' : 'H') : 'A';
-    }
+    // Niet te parsen → leeg laten (geen afgeleide waardes meer)
   }
 }
 
