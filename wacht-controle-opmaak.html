@@ -105,6 +105,24 @@
     .pst{font-size:.7rem;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap;}
     .pst.gelijk{background:#e3f3e5;color:var(--ok);} .pst.tolerantie,.pst.andere_termijn{background:var(--blauw-bg);color:var(--blauw);} .pst.verschil{background:#f9d0d0;color:var(--rood);}
     tr.huidig td{font-weight:700;}
+
+    .woning-kaart{background:#fff;border:1px solid var(--rand);border-radius:10px;padding:16px 20px;margin-bottom:18px;}
+    .woning-kaart h3{font-size:.9rem;font-weight:700;margin-bottom:4px;}
+    .woning-kaart .sub{font-size:.76rem;color:var(--grijs);margin-bottom:10px;}
+    .woning-telling{font-size:.82rem;margin-bottom:10px;}
+    .instellingen{margin:0 0 12px;font-size:.8rem;}
+    .instellingen summary{cursor:pointer;font-weight:600;}
+    .code-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px;}
+    .code-grid label,.ep-label{display:block;font-size:.72rem;color:var(--grijs);margin-bottom:2px;}
+    .code-grid input,.ep-input{width:100%;border:1px solid var(--rand);border-radius:6px;padding:6px 8px;font:inherit;font-size:.82rem;color:var(--groen);}
+    .voortgang{margin-top:12px;}
+    .voortgang .balk{height:8px;background:#eee;border-radius:99px;overflow:hidden;}
+    .voortgang .balk i{display:block;height:100%;width:0;background:var(--groen);transition:width .2s;}
+    .voortgang .tekst{font-size:.78rem;color:var(--grijs);margin-top:4px;}
+    .woning-tabel-wrap{max-height:320px;overflow:auto;margin-top:12px;border:1px solid #eee;border-radius:8px;}
+    .woning-tabel-wrap th{position:sticky;top:0;background:#fff;}
+    td.st-ok{color:var(--ok);} td.st-miss{color:#8a6a00;} td.st-err{color:var(--rood);}
+    .bron-tag{display:inline-block;font-size:.66rem;font-weight:700;background:#e3f3e5;color:var(--ok);border-radius:8px;padding:0 6px;margin-left:5px;vertical-align:1px;}
   </style>
 </head>
 <body>
@@ -139,6 +157,31 @@
       <div class="status" id="status-rocon"></div>
     </div>
   </div>
+
+  <section class="woning-kaart" id="woning-kaart" hidden>
+    <h3>🏠 Woningdata aanvullen (BAG via PDOK)</h3>
+    <div class="sub">Vult lege <strong>Bouwjaar</strong> en <strong>Woonhuis type</strong> in de CSV aan voor Woonhuis- en Inboedelpolissen, op basis van postcode en huisnummer.
+      Bouwaard (muren/vloeren/dak) staat niet in open registraties en blijft leeg. Alleen de adressen worden opgevraagd bij PDOK (en optioneel EP-Online).</div>
+    <div class="woning-telling" id="woning-telling"></div>
+    <details class="instellingen" id="woning-instellingen">
+      <summary>Instellingen: codes voor Woonhuis type en EP-Online-sleutel</summary>
+      <div class="blok-uitleg" style="margin-top:6px">Welke code komt in de CSV per woningtype? Laat een veld leeg om dat type niet in te vullen.
+        De standaardcodes zijn afgeleid uit voorbeelden; controleer ze tegen de ANVA-codelijst.</div>
+      <div class="code-grid" id="code-grid"></div>
+      <div style="margin-top:10px">
+        <label class="ep-label" for="ep-key">EP-Online API-sleutel (optioneel: officieel woningtype in plaats van afgeleid uit de BAG)</label>
+        <input type="password" class="ep-input" id="ep-key" autocomplete="off" placeholder="Blijft alleen in deze browser" />
+      </div>
+    </details>
+    <div class="knop-rij">
+      <button class="knop-haal" type="button" id="woning-start">🏠 Vul lege woninggegevens aan</button>
+      <button class="knop-licht" type="button" id="woning-stop" disabled>Stop</button>
+      <button class="knop-licht" type="button" id="woning-download" disabled>⬇ Download aangepaste CSV</button>
+    </div>
+    <div class="waarschuwing" id="woning-melding" hidden style="margin:12px 0 0"></div>
+    <div class="voortgang" id="woning-voortgang" hidden><div class="balk"><i id="woning-balk"></i></div><div class="tekst" id="woning-tekst"></div></div>
+    <div class="woning-tabel-wrap" id="woning-tabel-wrap" hidden><table class="eenvoudige-tabel" id="woning-tabel"></table></div>
+  </section>
 
   <button class="knop-primair" id="knop-controleer" disabled>Controleer</button>
 
@@ -185,6 +228,7 @@ const SLAOVER_KOLOMMEN = ['pakket_pk'];
 const SLAOVER_BEVAT = ['dekkingsgebied','bouwjaar'];
 const INFO_BEVAT = ['pakketpolisn'];                       // afwijking blauw tonen, geen fout
 const NIET_GECONTROLEERD_BEVAT = ['dagwaarde','cataloguswaarde'];
+const LEEG_NIET_CONTROLEREN = ['bouwaard vloeren'];       // overslaan als de CSV-waarde leeg is
 const ONGELDIGE_POLISNRS = new Set(['','0','nvt','n.v.t.','geen','-']);
 // Dekkingen die ANVA zelf toevoegt en die de maatschappij niet meelevert
 const ROCON_ALLEEN_TOEGESTAAN = {
@@ -345,7 +389,8 @@ async function laadBestand(type,file,handle){
     const rijen=parseCSV(tekst,delim);
     if(rijen.length<2)throw new Error('bestand heeft geen datarijen');
     const header=rijen[0].map(h=>h.trim());
-    staat[type]={header,rijen:rijen.slice(1).map(r=>r.map(v=>v.trim())),naam:file.name};
+    staat[type]={header,rijen:rijen.slice(1).map(r=>r.map(v=>v.trim())),naam:file.name,delim};
+    if(type==='csv'){staat.csv.aangevuld=new Map();staat.csv.eigenWoningGecorrigeerd=corrigeerEigenWoning(staat.csv);}
     $('kaart-'+type).classList.add('geladen');
     setStatus(type,'✓ '+file.name+' ('+staat[type].rijen.length+' regels, '+header.length+' kolommen, '+DELIM_NAAM[delim]+')','ok');
     if(handle){await bewaarHandle(type,handle);toonHaalKnop(type,handle);}
@@ -355,6 +400,7 @@ async function laadBestand(type,file,handle){
     setStatus(type,'Fout: '+e.message,'fout');
   }
   $('knop-controleer').disabled=!(staat.csv&&staat.rocon);
+  if(type==='csv')updateWoningKaart();
 }
 
 // Bestandshandles bewaren zodat hetzelfde bestand later met één klik opnieuw geladen kan worden
@@ -496,9 +542,22 @@ function premieInfo(cr,rr){
 let metFouten=[],schoon=[],geenMatch=[],totaalCsv=0,gekoppeld=0,waarschuwingen=[];
 let huidigKlant=0,huidigePolis=0,weergave='fouten',kfFilter=null;
 
-function vergelijkKolom(lijst,i,kolNaam,csvV,roconV){
+function vergelijkKolom(lijst,i,kolNaam,csvV,roconV,vul){
   const kl=kolNaam.toLowerCase();
   const basis={kolom:kolNaam,letter:kolLetter(i),csvWaarde:csvV,roconWaarde:roconV};
+  if(vul){
+    basis.bron=vul.bron;
+    const gelijk=waardenGelijk(csvV,roconV);
+    if(vul.streng){
+      if(gelijk)lijst.push({...basis,type:'ok',melding:'Gecorrigeerd in CSV: '+vul.toelichting});
+      else lijst.push({...basis,type:'fout',melding:'Gecorrigeerd in CSV ('+vul.toelichting+'); ROCON wijkt af'});
+    }else if(gelijk){
+      lijst.push({...basis,type:'ok',melding:'Aangevuld uit '+vul.bron+' ('+vul.toelichting+')'});
+    }else{
+      lijst.push({...basis,type:'tolerantie',melding:'CSV was leeg; aangevuld uit '+vul.bron+' ('+vul.toelichting+'). Wijkt af van ROCON: handmatig controleren'});
+    }
+    return;
+  }
   if(waardenGelijk(csvV,roconV)){lijst.push({...basis,type:'ok'});return;}
   if(NIET_GECONTROLEERD_BEVAT.some(s=>kl.includes(s))){
     lijst.push({...basis,type:'tolerantie',melding:'Dagwaarde/cataloguswaarde: niet gecontroleerd'});return;
@@ -572,10 +631,11 @@ function controleer(){
   geenMatch=[];totaalCsv=0;gekoppeld=0;
   const nKol=Math.min(VERGELIJK_TOT,C.header.length,R.header.length);
 
-  C.rijen.forEach(cr=>{
+  C.rijen.forEach((cr,ri)=>{
     const polisNr=(cr[MATCH_IDX]||'').trim();
     if(!polisNr)return;
     totaalCsv++;
+    const gevuld=C.aangevuld?C.aangevuld.get(ri):null;
     const sleutel=normPolisNr(polisNr);
     const kandidaten=idxOud.get(sleutel)||idxNieuw.get(sleutel);
     const groep=kandidaten?kiesRoconPolis(kandidaten,cr,rPolisnrIdx):null;
@@ -601,8 +661,10 @@ function controleer(){
       for(let i=0;i<nKol;i++){
         if(i===MATCH_IDX)continue;
         const kl=C.header[i].toLowerCase();
-        if(SLAOVER_KOLOMMEN.includes(kl)||SLAOVER_BEVAT.some(s=>kl.includes(s)))continue;
-        vergelijkKolom(v,i,C.header[i],cr[i]||'',rr[i]||'');
+        const vul=gevuld?gevuld.get(i):null;
+        if(!vul&&(SLAOVER_KOLOMMEN.includes(kl)||SLAOVER_BEVAT.some(s=>kl.includes(s))))continue;
+        if(!vul&&!(cr[i]||'').trim()&&LEEG_NIET_CONTROLEREN.some(s=>kl.includes(s)))continue;
+        vergelijkKolom(v,i,C.header[i],cr[i]||'',rr[i]||'',vul);
       }
 
       // Fase 2: dekkingen op code, over alle ROCON-regels van deze polis
@@ -801,7 +863,7 @@ function renderKlant(){
       const ico=v.type==='ok'?'✓':v.type==='fout'?'✗':'ℹ';
       h+='<tr class="'+v.type+'"'+(kf?' data-kf-match="1" style="outline:2px solid #FFC000"':'')+'>'+
         '<td class="kol">'+esc(v.letter)+' &ndash; '+esc(v.kolom)+'</td>'+
-        '<td>'+esc(v.csvWaarde)+'</td><td>'+esc(v.roconWaarde)+'</td>'+
+        '<td>'+esc(v.csvWaarde)+(v.bron?'<span class="bron-tag">'+esc(v.bron)+'</span>':'')+'</td><td>'+esc(v.roconWaarde)+'</td>'+
         '<td><span class="ico '+v.type+'">'+ico+'</span>'+(v.melding?'<span class="melding">'+esc(v.melding)+'</span>':'')+'</td></tr>';
     });
     h+='</table></div>';
@@ -852,6 +914,366 @@ function downloadVerslag(){
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
+
+// ================================================================
+// Woningdata aanvullen (BAG via PDOK, optioneel EP-Online)
+// ================================================================
+const LOCATIESERVER='https://api.pdok.nl/bzk/locatieserver/search/v3_1/free';
+const BAG_BASES=['https://api.pdok.nl/kadaster/bag/ogc/v2','https://api.pdok.nl/lv/bag/ogc/v1'];
+const EP_URL='https://public.ep-online.nl/api/v5/PandEnergielabel/Adres';
+const IS_WONING=/woonhuis|inboedel|opstal/i;
+const MIN_BUUR_M2=30;   // kleinere aangrenzende panden (schuur, garage) tellen niet als buurwoning
+const WONING_CATEGORIEEN=[['vrijstaand','Vrijstaand'],['twee_onder_een_kap','2-onder-1-kap'],['hoekwoning','Hoekwoning'],['tussenwoning','Tussenwoning'],['appartement','Appartement']];
+const CAT_LABEL=Object.fromEntries(WONING_CATEGORIEEN);
+const STANDAARD_CODES={vrijstaand:'',twee_onder_een_kap:'2',hoekwoning:'',tussenwoning:'T',appartement:'A'};
+
+let bagApi=null,epBroken=false,woningBezig=false,woningStop=false;
+const woningCache=new Map();
+let woonCodes=(()=>{try{return {...STANDAARD_CODES,...JSON.parse(localStorage.getItem('wacht_woonhuistype_codes')||'{}')};}catch(e){return {...STANDAARD_CODES};}})();
+
+const normKey=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const wacht=ms=>new Promise(r=>setTimeout(r,ms));
+
+function ringsOf(g){if(!g)return [];if(g.type==='Polygon')return g.coordinates;if(g.type==='MultiPolygon')return g.coordinates.flat();return [];}
+function pointInGeom(pt,g){
+  let inside=false;
+  for(const ring of ringsOf(g)){
+    for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+      const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+      if(((yi>pt[1])!==(yj>pt[1]))&&(pt[0]<(xj-xi)*(pt[1]-yi)/(yj-yi)+xi))inside=!inside;
+    }
+  }
+  return inside;
+}
+function metersPerDeg(lat){const m=111320;return [m*Math.cos(lat*Math.PI/180),m];}
+function segPointDistM(p,a,b,mpd){
+  const ax=(p[0]-a[0])*mpd[0],ay=(p[1]-a[1])*mpd[1],bx=(b[0]-a[0])*mpd[0],by=(b[1]-a[1])*mpd[1];
+  const len2=bx*bx+by*by;
+  let t=len2?(ax*bx+ay*by)/len2:0;t=Math.max(0,Math.min(1,t));
+  const dx=ax-t*bx,dy=ay-t*by;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+function polysTouch(gA,gB,lat,tolM){
+  const mpd=metersPerDeg(lat),rA=ringsOf(gA),rB=ringsOf(gB);
+  for(const ring of rB)for(const v of ring)for(const ra of rA)for(let i=0;i<ra.length-1;i++)if(segPointDistM(v,ra[i],ra[i+1],mpd)<=tolM)return true;
+  for(const ring of rA)for(const v of ring)for(const rb of rB)for(let i=0;i<rb.length-1;i++)if(segPointDistM(v,rb[i],rb[i+1],mpd)<=tolM)return true;
+  return false;
+}
+function oppervlakM2(g,lat){
+  const r=ringsOf(g)[0]||[],[mx,my]=metersPerDeg(lat);let a=0;
+  for(let i=0,j=r.length-1;i<r.length;j=i++)a+=(r[j][0]-r[0][0])*mx*(r[i][1]-r[0][1])*my-(r[i][0]-r[0][0])*mx*(r[j][1]-r[0][1])*my;
+  return Math.abs(a/2);
+}
+
+async function fetchJSON(url,opts){
+  const res=await fetch(url,opts);
+  if(!res.ok)throw new Error('HTTP '+res.status+' bij '+url.split('?')[0]);
+  return res.json();
+}
+function propLike(props,needle){
+  if(!props)return undefined;
+  const n=normKey(needle);
+  for(const k of Object.keys(props))if(normKey(k).includes(n))return props[k];
+  return undefined;
+}
+async function initBagApi(){
+  if(bagApi)return bagApi;
+  let lastErr=null;
+  for(const base of BAG_BASES){
+    try{
+      const data=await fetchJSON(base+'/collections?f=json');
+      const cols=(data.collections||[]).map(c=>c.id);
+      const pick=w=>cols.find(c=>normKey(c)===w)||cols.find(c=>normKey(c).includes(w));
+      const pandCol=pick('pand'),vboCol=pick('verblijfsobject');
+      if(pandCol){bagApi={base,pandCol,vboCol};return bagApi;}
+    }catch(e){lastErr=e;}
+  }
+  throw new Error('BAG OGC API onbereikbaar: '+(lastErr?lastErr.message:'geen collecties gevonden'));
+}
+async function locatieserverLookup(postcode,nummer,toev){
+  const params=new URLSearchParams({
+    q:'postcode:'+postcode+' and huisnummer:'+nummer,fq:'type:adres',rows:'50',wt:'json',
+    fl:'weergavenaam straatnaam huisnummer huisletter huisnummertoevoeging huis_nlt postcode woonplaatsnaam adresseerbaarobject_id centroide_ll'
+  });
+  const data=await fetchJSON(LOCATIESERVER+'?'+params);
+  const docs=(data.response&&data.response.docs)||[];
+  if(!docs.length)return {doc:null,reden:'Adres niet gevonden'};
+  const t=normKey(toev);
+  const suffix=d=>normKey((d.huisletter||'')+(d.huisnummertoevoeging||''));
+  let doc=docs.find(d=>suffix(d)===t);
+  if(!doc&&t)doc=docs.find(d=>normKey(d.huis_nlt||'').endsWith(normKey(nummer)+t));
+  if(!doc&&!t&&docs.length===1)doc=docs[0];
+  if(!doc&&!t)doc=docs.find(d=>suffix(d)==='');
+  if(!doc)return {doc:null,reden:t?'Toevoeging niet gevonden bij dit adres':'Meerdere adressen gevonden; toevoeging vereist'};
+  return {doc};
+}
+function parsePoint(wkt){
+  const m=/POINT\s*\(\s*([\d.eE+-]+)\s+([\d.eE+-]+)\s*\)/.exec(wkt||'');
+  return m?[parseFloat(m[1]),parseFloat(m[2])]:null;
+}
+async function bagLookup(pt,aoId){
+  const api=await initBagApi();
+  const d=0.00045;
+  const bbox=[pt[0]-d,pt[1]-d,pt[0]+d,pt[1]+d].join(',');
+  const panden=await fetchJSON(api.base+'/collections/'+api.pandCol+'/items?f=json&limit=200&bbox='+bbox);
+  const feats=(panden.features||[]).filter(f=>{
+    const st=String(propLike(f.properties,'status')||'').toLowerCase();
+    return !st.includes('gesloopt')&&!st.includes('niet gerealiseerd')&&!st.includes('ingetrokken');
+  });
+  const target=feats.find(f=>pointInGeom(pt,f.geometry))||null;
+  let vbo=null,vboInPand=0;
+  if(api.vboCol){
+    try{
+      const vbos=await fetchJSON(api.base+'/collections/'+api.vboCol+'/items?f=json&limit=1000&bbox='+bbox);
+      for(const f of (vbos.features||[])){
+        const id=String(propLike(f.properties,'identificatie')||'');
+        if(aoId&&id===String(aoId))vbo=f;
+        if(target&&f.geometry&&f.geometry.type==='Point'&&pointInGeom(f.geometry.coordinates,target.geometry))vboInPand++;
+      }
+    }catch(e){}
+  }
+  const lat=pt[1];
+  const raakt=(a,b)=>oppervlakM2(b.geometry,lat)>=MIN_BUUR_M2&&polysTouch(a.geometry,b.geometry,lat,0.35);
+  const buren=target?feats.filter(f=>f!==target&&raakt(target,f)):[];
+  let buurBuren=0;
+  if(buren.length===1)buurBuren=feats.filter(f=>f!==target&&f!==buren[0]&&raakt(buren[0],f)).length;
+  return {target,vbo,vboInPand,attached:buren.length,buurBuren};
+}
+function bepaalCategorie(bag){
+  if(!bag.target)return '';
+  if(bag.vboInPand>2)return 'appartement';
+  if(bag.attached===0)return 'vrijstaand';
+  if(bag.attached===1)return bag.buurBuren>0?'hoekwoning':'twee_onder_een_kap';
+  return 'tussenwoning';
+}
+function epCategorie(t){
+  t=String(t||'').toLowerCase();
+  if(/appartement|flat|maisonnette|galerij|portiek/.test(t))return 'appartement';
+  if(/vrijstaand/.test(t))return 'vrijstaand';
+  if(/2\s*onder\s*1|twee\s*onder|onder\s*(een|1)\s*kap/.test(t))return 'twee_onder_een_kap';
+  if(/hoek/.test(t))return 'hoekwoning';
+  if(/tussen|rij/.test(t))return 'tussenwoning';
+  return '';
+}
+async function epLookup(key,postcode,nummer,toev){
+  const base={postcode,huisnummer:String(nummer)},t=String(toev||'').trim(),pogingen=[];
+  if(!t)pogingen.push({...base});
+  else if(/^[a-z]$/i.test(t)){pogingen.push({...base,huisletter:t});pogingen.push({...base,huisnummertoevoeging:t});}
+  else{pogingen.push({...base,huisnummertoevoeging:t});pogingen.push({...base,huisletter:t.slice(0,1),huisnummertoevoeging:t.slice(1)});}
+  for(const p of pogingen){
+    const res=await fetch(EP_URL+'?'+new URLSearchParams(p),{headers:{'Authorization':key}});
+    if(res.status===404)continue;
+    if(!res.ok)throw new Error('EP-Online HTTP '+res.status);
+    const data=await res.json();
+    const rec=Array.isArray(data)?data[0]:data;
+    if(rec)return {gebouwtype:propLike(rec,'gebouwtype'),bouwjaar:propLike(rec,'bouwjaar')};
+  }
+  return null;
+}
+function geldigBouwjaar(v){const n=parseInt(v,10);return n>=1200&&n<=new Date().getFullYear()+5?String(n):'';}
+
+async function zoekWoning(pcRaw,nrRaw,tvRaw,epKey){
+  const out={status:'miss',adres:'',bouwjaar:'',bouwjaarBron:'',categorie:'',typeBron:'',afgeleid:false,gebruiksdoel:'',melding:''};
+  const postcode=String(pcRaw||'').replace(/\s+/g,'').toUpperCase();
+  const nummer=String(nrRaw||'').trim();
+  let toev=String(tvRaw||'').trim();
+  if(!/^\d{4}[A-Z]{2}$/.test(postcode)){out.status='err';out.melding='Ongeldige postcode';return out;}
+  const m=nummer.match(/^\d+/);
+  if(!m){out.status='err';out.melding='Ongeldig huisnummer';return out;}
+  const nr=m[0];
+  if(!toev&&nummer.length>nr.length)toev=nummer.slice(nr.length).replace(/^[-\s]+/,'');
+
+  const {doc,reden}=await locatieserverLookup(postcode,nr,toev);
+  if(!doc){out.melding=reden||'Adres niet gevonden';return out;}
+  out.adres=doc.weergavenaam||'';
+  const pt=parsePoint(doc.centroide_ll);
+  if(pt){
+    try{
+      const bag=await bagLookup(pt,doc.adresseerbaarobject_id);
+      if(bag.vbo){const gd=propLike(bag.vbo.properties,'gebruiksdoel');out.gebruiksdoel=Array.isArray(gd)?gd.join(', '):(gd||'');}
+      if(bag.target){
+        const bj=geldigBouwjaar(propLike(bag.target.properties,'bouwjaar'));
+        if(bj){out.bouwjaar=bj;out.bouwjaarBron='BAG';}
+        if(out.gebruiksdoel&&!out.gebruiksdoel.toLowerCase().includes('woon'))out.melding='Geen woonfunctie ('+out.gebruiksdoel+')';
+        else{const c=bepaalCategorie(bag);if(c){out.categorie=c;out.typeBron='BAG';out.afgeleid=true;}}
+      }else out.melding='Geen pand op deze locatie (ligplaats/standplaats?)';
+    }catch(e){out.melding='BAG-fout: '+e.message;}
+  }
+  if(epKey&&!epBroken){
+    try{
+      const ep=await epLookup(epKey,postcode,nr,toev);
+      if(ep){
+        const c=epCategorie(ep.gebouwtype);
+        if(c){out.categorie=c;out.typeBron='EP-Online';out.afgeleid=false;}
+        const bj=geldigBouwjaar(ep.bouwjaar);
+        if(!out.bouwjaar&&bj){out.bouwjaar=bj;out.bouwjaarBron='EP-Online';}
+      }
+    }catch(e){
+      epBroken=true;
+      woningMelding('EP-Online niet bereikbaar vanuit de browser ('+e.message+'). De aanvulling gaat verder met alleen BAG-gegevens.');
+    }
+  }
+  out.status=(out.bouwjaar||out.categorie)?'ok':(out.status||'miss');
+  if(out.status==='miss'&&!out.melding)out.melding='Geen gegevens gevonden';
+  return out;
+}
+
+function woningKolommen(h){
+  const zoek=re=>h.findIndex(x=>re.test(x.trim()));
+  return {pc:zoek(/^postcode$/i),nr:zoek(/^huisnummer$/i),tv:zoek(/^huisnummer\s*toevoeging$/i),
+    bj:zoek(/^bouwjaar$/i),wt:zoek(/^woonhuis\s*type$/i),prod:zoek(/^productomschrijving$/i)};
+}
+function adresSleutel(pc,nr,tv){return String(pc||'').replace(/\s+/g,'').toUpperCase()+'|'+String(nr||'').trim()+'|'+normKey(tv);}
+function woningTaken(){
+  const C=staat.csv,k=woningKolommen(C.header);
+  const leeg={k,adressen:new Map(),nBj:0,nWt:0,nPolis:0};
+  if(k.pc<0||k.nr<0||(k.bj<0&&k.wt<0))return leeg;
+  C.rijen.forEach((r,ri)=>{
+    if(!IS_WONING.test(k.prod>=0?(r[k.prod]||''):''))return;
+    const lb=k.bj>=0&&!(r[k.bj]||'').trim(),lw=k.wt>=0&&!(r[k.wt]||'').trim();
+    if(!lb&&!lw)return;
+    leeg.nPolis++;if(lb)leeg.nBj++;if(lw)leeg.nWt++;
+    const key=adresSleutel(r[k.pc],r[k.nr],k.tv>=0?r[k.tv]:'');
+    if(!leeg.adressen.has(key))leeg.adressen.set(key,[]);
+    leeg.adressen.get(key).push(ri);
+  });
+  return leeg;
+}
+
+// Opstal (woonhuis) en inboedel op hetzelfde adres → de klant woont in een eigen woning
+function corrigeerEigenWoning(C){
+  const k=woningKolommen(C.header);
+  const ew=C.header.findIndex(h=>/^eigen\s*woning$/i.test(h.trim()));
+  if(k.pc<0||k.nr<0||k.prod<0||ew<0)return 0;
+  const perAdres=new Map();
+  C.rijen.forEach((r,ri)=>{
+    const p=(r[k.prod]||'').toLowerCase();
+    const soort=/woonhuis|opstal/.test(p)?'opstal':/inboedel/.test(p)?'inboedel':'';
+    if(!soort||!(r[k.pc]||'').trim())return;
+    const key=adresSleutel(r[k.pc],r[k.nr],k.tv>=0?r[k.tv]:'');
+    if(!perAdres.has(key))perAdres.set(key,{opstal:[],inboedel:[]});
+    perAdres.get(key)[soort].push(ri);
+  });
+  let n=0;
+  perAdres.forEach(g=>{
+    if(!g.opstal.length||!g.inboedel.length)return;
+    g.inboedel.concat(g.opstal).forEach(ri=>{
+      const r=C.rijen[ri],oud=(r[ew]||'').trim();
+      if(oud.toUpperCase()==='J')return;
+      r[ew]='J';
+      const m=C.aangevuld.get(ri)||new Map();
+      m.set(ew,{bron:'correctie',streng:true,toelichting:'eigen woning '+(oud||'leeg')+' → J, want opstal en inboedel op hetzelfde adres'});
+      C.aangevuld.set(ri,m);
+      n++;
+    });
+  });
+  return n;
+}
+
+function woningMelding(t){const el=$('woning-melding');el.textContent=t;el.hidden=!t;}
+function updateWoningKaart(){
+  const C=staat.csv;
+  $('woning-kaart').hidden=!C;
+  if(!C)return;
+  const t=woningTaken(),k=t.k;
+  $('woning-download').disabled=!(C.aangevuld&&C.aangevuld.size);
+  const ew=C.eigenWoningGecorrigeerd
+    ?'<div style="margin-top:4px">✓ <strong>'+C.eigenWoningGecorrigeerd+'</strong> polis(sen) gecorrigeerd naar <strong>Eigen woning J</strong>, omdat er een opstal en een inboedel op hetzelfde adres staan.</div>':'';
+  if(k.pc<0||k.nr<0||(k.bj<0&&k.wt<0)){
+    $('woning-telling').innerHTML='Kolommen Postcode/Huisnummer of Bouwjaar/Woonhuis type niet gevonden in deze CSV.'+ew;
+    $('woning-start').disabled=true;return;
+  }
+  $('woning-telling').innerHTML=(t.nPolis
+    ?'<strong>'+t.nPolis+'</strong> woningpolissen (Woonhuis/Inboedel) met lege velden: '+t.nBj+' zonder bouwjaar, '+t.nWt+' zonder woonhuis type, op '+t.adressen.size+' adressen.'
+    :'Alle woonhuis- en inboedelpolissen hebben al een bouwjaar en woonhuis type. ✓')+ew;
+  $('woning-start').disabled=!t.nPolis||woningBezig;
+}
+
+function renderCodeGrid(){
+  $('code-grid').innerHTML=WONING_CATEGORIEEN.map(([k,l])=>
+    '<div><label for="code-'+k+'">'+esc(l)+'</label><input id="code-'+k+'" data-cat="'+k+'" maxlength="4" value="'+esc(woonCodes[k]||'')+'" placeholder="niet invullen" /></div>').join('');
+}
+$('code-grid').addEventListener('input',e=>{
+  const c=e.target.dataset.cat;if(!c)return;
+  woonCodes[c]=e.target.value.trim();
+  try{localStorage.setItem('wacht_woonhuistype_codes',JSON.stringify(woonCodes));}catch(err){}
+});
+renderCodeGrid();
+try{
+  const k=localStorage.getItem('ep_api_key');
+  if(k)$('ep-key').value=k;
+  $('ep-key').addEventListener('input',()=>{const v=$('ep-key').value.trim();if(v)localStorage.setItem('ep_api_key',v);else localStorage.removeItem('ep_api_key');});
+}catch(e){}
+
+async function vulWoningdata(){
+  const C=staat.csv;
+  if(!C||woningBezig)return;
+  const {k,adressen}=woningTaken();
+  if(!adressen.size)return;
+  woningBezig=true;woningStop=false;epBroken=false;
+  woningMelding('');
+  const epKey=$('ep-key').value.trim();
+  if(!C.aangevuld)C.aangevuld=new Map();
+  $('woning-start').disabled=true;$('woning-stop').disabled=false;
+  $('woning-voortgang').hidden=false;$('woning-tabel-wrap').hidden=false;
+  const tabel=$('woning-tabel');
+  tabel.innerHTML='<tr><th>Adres</th><th>Polissen</th><th>Bouwjaar</th><th>Woningtype</th><th>Ingevuld</th><th>Melding</th></tr>';
+  const totaal=adressen.size;let n=0,cellen=0,gevonden=0;
+
+  for(const [key,ris] of adressen){
+    if(woningStop||staat.csv!==C)break;
+    const r0=C.rijen[ris[0]];
+    let res=woningCache.get(key);
+    if(!res){
+      try{res=await zoekWoning(r0[k.pc],r0[k.nr],k.tv>=0?r0[k.tv]:'',epKey);}
+      catch(e){res={status:'err',melding:'Fout: '+e.message,bouwjaar:'',categorie:''};}
+      if(res.status!=='err')woningCache.set(key,res);
+      await wacht(120);
+    }
+    if(res.status==='ok')gevonden++;
+    const code=res.categorie?(woonCodes[res.categorie]||''):'';
+    const typeLabel=res.categorie?CAT_LABEL[res.categorie]+(res.afgeleid?' (afgeleid)':''):'';
+    const ingevuld=[];
+    ris.forEach(ri=>{
+      const r=C.rijen[ri],m=C.aangevuld.get(ri)||new Map();
+      if(k.bj>=0&&!(r[k.bj]||'').trim()&&res.bouwjaar){r[k.bj]=res.bouwjaar;m.set(k.bj,{bron:res.bouwjaarBron,toelichting:'bouwjaar '+res.bouwjaar});cellen++;ingevuld.push('bouwjaar');}
+      if(k.wt>=0&&!(r[k.wt]||'').trim()&&code){r[k.wt]=code;m.set(k.wt,{bron:res.typeBron,toelichting:typeLabel});cellen++;ingevuld.push('type '+code);}
+      if(m.size)C.aangevuld.set(ri,m);
+    });
+    let melding=res.melding||'';
+    if(res.categorie&&!code)melding=(melding?melding+'; ':'')+'geen code ingesteld voor '+CAT_LABEL[res.categorie];
+    const polissen=ris.map(ri=>(C.rijen[ri][MATCH_IDX]||'')+(k.prod>=0?' ('+C.rijen[ri][k.prod]+')':'')).join(', ');
+    const adres=res.adres||[r0[k.pc],r0[k.nr],k.tv>=0?r0[k.tv]:''].filter(Boolean).join(' ');
+    tabel.insertAdjacentHTML('beforeend','<tr><td>'+esc(adres)+'</td><td>'+esc(polissen)+'</td><td>'+esc(res.bouwjaar||'')+'</td><td>'+esc(typeLabel)+'</td>'+
+      '<td>'+esc([...new Set(ingevuld)].join(', '))+'</td><td class="st-'+esc(res.status)+'">'+esc(melding)+'</td></tr>');
+    n++;
+    $('woning-balk').style.width=Math.round(n/totaal*100)+'%';
+    $('woning-tekst').textContent='Bezig… '+n+' / '+totaal+' adressen';
+  }
+
+  $('woning-tekst').textContent=(woningStop?'Gestopt na '+n+' van '+totaal+' adressen. ':'Klaar: '+n+' adressen opgezocht. ')+
+    gevonden+' gevonden, '+cellen+' lege velden aangevuld.';
+  woningBezig=false;
+  $('woning-stop').disabled=true;
+  updateWoningKaart();
+  if(staat.csv===C&&staat.rocon&&!$('resultaat').hidden)controleer();
+}
+
+function downloadAangevuld(){
+  const C=staat.csv;if(!C)return;
+  const d=C.delim||';';
+  const cel=v=>{v=String(v??'');return (v.includes(d)||v.includes('"')||/[\r\n]/.test(v))?'"'+v.replace(/"/g,'""')+'"':v;};
+  const tekst='﻿'+[C.header,...C.rijen].map(r=>r.map(cel).join(d)).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([tekst],{type:'text/csv;charset=utf-8'}));
+  a.download=C.naam.replace(/(\.[^.]+)?$/,m=>'_aangepast'+(m||'.csv'));
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+$('woning-start').addEventListener('click',vulWoningdata);
+$('woning-stop').addEventListener('click',()=>{woningStop=true;});
+$('woning-download').addEventListener('click',downloadAangevuld);
 
 $('knop-controleer').addEventListener('click',controleer);
 $('knop-download').addEventListener('click',downloadVerslag);
