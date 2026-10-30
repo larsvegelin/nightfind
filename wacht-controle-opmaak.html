@@ -165,8 +165,8 @@
     <div class="woning-telling" id="woning-telling"></div>
     <details class="instellingen" id="woning-instellingen">
       <summary>Instellingen: codes voor Woonhuis type en EP-Online-sleutel</summary>
-      <div class="blok-uitleg" style="margin-top:6px">Welke code komt in de CSV per woningtype? Laat een veld leeg om dat type niet in te vullen.
-        De standaardcodes zijn afgeleid uit voorbeelden; controleer ze tegen de ANVA-codelijst.</div>
+      <div class="blok-uitleg" style="margin-top:6px">Welke code komt in de CSV per woningtype? Standaard volgens ANVA:
+        vrijstaand 2, 2-onder-1-kap T, hoekwoning H, tussenwoning U, appartement A. Laat een veld leeg om dat type niet in te vullen.</div>
       <div class="code-grid" id="code-grid"></div>
       <div style="margin-top:10px">
         <label class="ep-label" for="ep-key">EP-Online API-sleutel (optioneel: officieel woningtype in plaats van afgeleid uit de BAG)</label>
@@ -925,11 +925,12 @@ const IS_WONING=/woonhuis|inboedel|opstal/i;
 const MIN_BUUR_M2=30;   // kleinere aangrenzende panden (schuur, garage) tellen niet als buurwoning
 const WONING_CATEGORIEEN=[['vrijstaand','Vrijstaand'],['twee_onder_een_kap','2-onder-1-kap'],['hoekwoning','Hoekwoning'],['tussenwoning','Tussenwoning'],['appartement','Appartement']];
 const CAT_LABEL=Object.fromEntries(WONING_CATEGORIEEN);
-const STANDAARD_CODES={vrijstaand:'',twee_onder_een_kap:'2',hoekwoning:'',tussenwoning:'T',appartement:'A'};
+const STANDAARD_CODES={vrijstaand:'2',twee_onder_een_kap:'T',hoekwoning:'H',tussenwoning:'U',appartement:'A'};
+const CODES_OPSLAG='wacht_woonhuistype_codes_v2';
 
 let bagApi=null,epBroken=false,woningBezig=false,woningStop=false;
 const woningCache=new Map();
-let woonCodes=(()=>{try{return {...STANDAARD_CODES,...JSON.parse(localStorage.getItem('wacht_woonhuistype_codes')||'{}')};}catch(e){return {...STANDAARD_CODES};}})();
+let woonCodes=(()=>{try{localStorage.removeItem('wacht_woonhuistype_codes');return {...STANDAARD_CODES,...JSON.parse(localStorage.getItem(CODES_OPSLAG)||'{}')};}catch(e){return {...STANDAARD_CODES};}})();
 
 const normKey=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const wacht=ms=>new Promise(r=>setTimeout(r,ms));
@@ -1196,7 +1197,7 @@ function renderCodeGrid(){
 $('code-grid').addEventListener('input',e=>{
   const c=e.target.dataset.cat;if(!c)return;
   woonCodes[c]=e.target.value.trim();
-  try{localStorage.setItem('wacht_woonhuistype_codes',JSON.stringify(woonCodes));}catch(err){}
+  try{localStorage.setItem(CODES_OPSLAG,JSON.stringify(woonCodes));}catch(err){}
 });
 renderCodeGrid();
 try{
