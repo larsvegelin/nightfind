@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overvoer — Klaverblad</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg:#f8f8f8; --surface:#ffffff; --surface2:#f0f4f1;
+      --green-dark:#00441D; --green-mid:#006b30; --green-light:#e8f2ec;
+      --yellow:#FFC000; --yellow-dark:#d9a200;
+      --text:#1a1a1a; --text-sub:#555555; --text-muted:#888888;
+      --border:#d8e0da; --border-strong:#b0c4b7;
+      --red:#c0392b; --radius:14px;
+    }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; line-height:1.6; }
+    .header { background:var(--green-dark); border-bottom:3px solid var(--yellow); padding:.85rem 2rem; display:flex; align-items:center; gap:1.25rem; position:sticky; top:0; z-index:100; }
+    .header-logo { font-size:1.35rem; font-weight:800; color:var(--yellow); letter-spacing:-0.5px; }
+    .header-divider { width:1px; height:1.4rem; background:rgba(255,255,255,.25); }
+    .header-sub { color:rgba(255,255,255,.75); font-size:0.875rem; }
+    .container { max-width:1200px; margin:0 auto; padding:2rem 1.5rem; }
+    .upload-zone { border:2px dashed var(--border-strong); border-radius:var(--radius); padding:2.5rem 2rem; text-align:center; background:var(--surface); cursor:pointer; transition:background .2s,border-color .2s; margin-bottom:1.5rem; user-select:none; box-shadow:0 1px 4px rgba(0,68,29,.07); }
+    .upload-zone:hover,.upload-zone.drag-over { border-color:var(--green-dark); background:var(--green-light); }
+    .upload-icon { font-size:2.5rem; display:block; margin-bottom:.6rem; line-height:1; }
+    .upload-title { font-size:1.1rem; font-weight:700; margin-bottom:.3rem; color:var(--green-dark); }
+    .upload-sub { color:var(--text-sub); font-size:.875rem; }
+    .upload-note { color:var(--text-muted); font-size:.75rem; margin-top:.6rem; }
+    .section-label { font-size:.68rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--green-dark); margin-bottom:.6rem; margin-top:1.75rem; opacity:.8; }
+    .progress-wrap { height:5px; background:var(--border); border-radius:9999px; margin-bottom:1.25rem; overflow:hidden; }
+    .progress-fill { height:100%; background:var(--yellow); border-radius:9999px; transition:width .3s ease; width:0%; }
+    .actions { display:flex; gap:.75rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .btn { display:inline-flex; align-items:center; gap:.45rem; padding:.6rem 1.2rem; border:2px solid transparent; border-radius:var(--radius); font-size:.875rem; font-weight:700; cursor:pointer; transition:all .15s; background:none; white-space:nowrap; }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-primary { background:var(--yellow); border-color:var(--yellow); color:var(--green-dark); }
+    .btn-primary:not(:disabled):hover { background:var(--yellow-dark); border-color:var(--yellow-dark); }
+    .btn-ghost { background:var(--surface); border-color:var(--border-strong); color:var(--green-dark); }
+    .btn-ghost:not(:disabled):hover { border-color:var(--green-dark); background:var(--green-light); }
+    .btn-success { background:var(--green-light); border-color:var(--green-mid); color:var(--green-dark); }
+    .btn-success:not(:disabled):hover { background:#cfe5d6; }
+    .btn-danger { background:#fff0ee; border-color:#e8b0ab; color:var(--red); }
+    .btn-danger:not(:disabled):hover { background:#ffe0db; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem 1rem; text-align:center; box-shadow:0 1px 3px rgba(0,68,29,.06); }
+    .card-val { font-size:1.9rem; font-weight:800; color:var(--green-dark); line-height:1; }
+    .card-lbl { font-size:.72rem; color:var(--text-muted); margin-top:.35rem; }
+    .table-wrap { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; margin-bottom:1.5rem; box-shadow:0 1px 3px rgba(0,68,29,.06); }
+    table { width:100%; border-collapse:collapse; font-size:.875rem; }
+    thead th { background:var(--green-light); padding:.55rem 1rem; text-align:left; font-size:.75rem; color:var(--green-dark); font-weight:700; white-space:nowrap; border-bottom:1px solid var(--border-strong); }
+    tbody td { padding:.55rem 1rem; border-bottom:1px solid var(--border); vertical-align:middle; color:var(--text); }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover td { background:var(--green-light); }
+    .badge { display:inline-flex; align-items:center; gap:.3rem; padding:.15rem .55rem; border-radius:9999px; font-size:.72rem; font-weight:700; line-height:1.6; }
+    .badge-pending   { background:#f0f0f0; color:#888; }
+    .badge-processing{ background:rgba(0,107,48,.12); color:var(--green-mid); }
+    .badge-done      { background:rgba(0,68,29,.1); color:var(--green-dark); }
+    .badge-empty     { background:rgba(255,192,0,.15); color:#8a6600; }
+    .badge-error     { background:rgba(192,57,43,.12); color:var(--red); }
+    .results-scroll { overflow-x:auto; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); margin-bottom:1.5rem; max-height:420px; overflow-y:auto; }
+    .results-scroll table { font-size:.78rem; min-width:max-content; }
+    .results-scroll thead th { position:sticky; top:0; z-index:1; font-size:.72rem; }
+    .results-scroll tbody td { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .empty { text-align:center; padding:5rem 2rem; color:var(--text-muted); }
+    .empty-icon { font-size:3rem; display:block; margin-bottom:.75rem; line-height:1; }
+    .empty-title { font-size:1rem; font-weight:600; margin-bottom:.35rem; color:var(--text-sub); }
+    .empty-sub { font-size:.875rem; opacity:.7; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { display:inline-block; animation:spin .9s linear infinite; }
+    .settings-row { display:flex; gap:1.25rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .setting-group { display:flex; flex-direction:column; gap:.35rem; }
+    .setting-label { font-size:.68rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--green-dark); opacity:.8; }
+    .setting-input { background:var(--surface); border:1.5px solid var(--border-strong); border-radius:10px; color:var(--text); padding:.5rem .85rem; font-size:.875rem; min-width:180px; font-family:inherit; }
+    .setting-input:focus { outline:none; border-color:var(--green-dark); }
+    .setting-input option { color:var(--text); background:var(--surface); }
+    .mapping-panel { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:1.1rem 1.25rem; margin-bottom:1.5rem; box-shadow:0 1px 3px rgba(0,68,29,.06); }
+    .mapping-row { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+    .mapping-tag { display:inline-block; background:var(--green-light); color:var(--green-dark); border:1px solid var(--border-strong); border-radius:8px; padding:.15rem .5rem; font-size:.75rem; font-family:monospace; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <span class="header-logo">&#9632; Overvoer</span>
+  <div class="header-divider"></div>
+  <span class="header-sub">Klaverblad — Polis Parser</span>
+</header>
+
+<main class="container">
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="folderInput" webkitdirectory style="display:none">
+    <input type="file" id="fileInput" multiple accept=".pdf,.zip" style="display:none">
+    <span class="upload-icon">&#128194;</span>
+    <div class="upload-title">Sleep een map of ZIP-bestand hiernaartoe</div>
+    <div class="upload-sub"><strong>.pdf</strong>, <strong>.zip</strong> (Polisbladen-map) en <strong>.txt</strong> polisbladen van Klaverblad</div>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:1.1rem">
+      <button class="btn btn-ghost" id="pickFolderBtn" type="button">&#128194;&nbsp; Map kiezen</button>
+      <button class="btn btn-ghost" id="pickFileBtn" type="button">&#128196;&nbsp; PDF / ZIP kiezen</button>
+    </div>
+    <div class="upload-note" style="margin-top:1rem">Mapnaam formaat: <strong>relatienummer - Naam</strong> &mdash; bijv. <em>71224624 - P.D.R. van Steijn</em></div>
+    <div class="upload-note">Alles verwerkt lokaal &mdash; er wordt niets ge&uuml;pload.</div>
+    <div id="folderDebug" style="margin-top:.6rem;font-size:.78rem;color:var(--green-dark);font-family:monospace;word-break:break-all;min-height:1.2em"></div>
+  </div>
+
+  <div class="settings-row">
+    <div class="setting-group">
+      <label class="setting-label" for="overvoermaand">Overvoermaand</label>
+      <select id="overvoermaand" class="setting-input">
+        <option value="">— kies maand —</option>
+        <option value="2026-06">Juni 2026</option>
+        <option value="2026-07">Juli 2026</option>
+        <option value="2026-08">Augustus 2026</option>
+        <option value="2026-09">September 2026</option>
+        <option value="2026-10">Oktober 2026</option>
+        <option value="2026-11">November 2026</option>
+        <option value="2026-12">December 2026</option>
+        <option value="2027-01">Januari 2027</option>
+        <option value="2027-02">Februari 2027</option>
+        <option value="2027-03">Maart 2027</option>
+        <option value="2027-04">April 2027</option>
+        <option value="2027-05">Mei 2027</option>
+        <option value="2027-06">Juni 2027</option>
+        <option value="2027-07">Juli 2027</option>
+        <option value="2027-08">Augustus 2027</option>
+        <option value="2027-09">September 2027</option>
+        <option value="2027-10">Oktober 2027</option>
+        <option value="2027-11">November 2027</option>
+        <option value="2027-12">December 2027</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label class="setting-label" for="kantoorInput">Kantoor (Pakketsoort)</label>
+      <select id="kantoorInput" class="setting-input">
+        <option value="">— kies kantoor —</option>
+        <option value="615">Schonewille &amp; ter Harkel (615)</option>
+        <option value="501">Poort en Woltjer (501)</option>
+        <option value="280">Kloosterboer (280)</option>
+        <option value="530">Ren&eacute; van Gameren (530)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Koppelbestand: relatienummer → oud polisnummer -->
+  <div class="mapping-panel">
+    <div class="section-label" style="margin-top:0">Koppelbestand — Relatienummer ↔ Oud Polisnummer</div>
+    <div class="mapping-row">
+      <input type="file" id="mappingFileInput" accept=".csv,.txt" style="display:none">
+      <button class="btn btn-ghost" id="loadMappingBtn" type="button">&#128203;&nbsp; CSV laden</button>
+      <button class="btn btn-danger" id="clearMappingBtn" type="button" style="display:none">&#10005;&nbsp; Wissen</button>
+      <span id="mappingStatus" style="font-size:.8rem;color:var(--text-muted)">Geen koppelbestand geladen &mdash; verwacht formaat: <code style="font-size:.75rem">relatienummer;oud_polisnummer</code></span>
+    </div>
+    <div id="mappingPreview" style="display:none;margin-top:.75rem">
+      <table style="font-size:.78rem">
+        <thead><tr><th>Relatienummer</th><th>Oud Polisnummer</th></tr></thead>
+        <tbody id="mappingBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="empty" id="emptyState">
+    <span class="empty-icon">&#128203;</span>
+    <div class="empty-title">Geen bestanden geladen</div>
+    <div class="empty-sub">Sleep één map hierheen om te beginnen</div>
+  </div>
+
+  <div id="queueSection" style="display:none">
+    <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="processBtn">&#9654;&nbsp; Verwerken</button>
+      <button class="btn btn-ghost" id="clearBtn">&#10005;&nbsp; Wachtrij wissen</button>
+      <button class="btn btn-success" id="downloadBtn" disabled>&#11015;&nbsp; Download CSV</button>
+    </div>
+    <div class="cards" id="summaryCards" style="display:none">
+      <div class="card"><div class="card-val" id="statFiles">0</div><div class="card-lbl">Verwerkt</div></div>
+      <div class="card"><div class="card-val" id="statRows">0</div><div class="card-lbl">Polisrijen</div></div>
+      <div class="card"><div class="card-val" id="statProducts">0</div><div class="card-lbl">Unieke producten</div></div>
+      <div class="card"><div class="card-val" id="statErrors">0</div><div class="card-lbl">Fouten</div></div>
+      <div class="card"><div class="card-val" id="statRest">0</div><div class="card-lbl">Niet overgevoerd</div></div>
+    </div>
+    <div class="section-label">Wachtrij</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Bestand</th><th>Map</th><th>Grootte</th><th>Type</th><th>Status</th><th>Rijen</th><th>Opmerking</th></tr></thead>
+        <tbody id="queueBody"></tbody>
+      </table>
+    </div>
+    <div id="resultsSection" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.5rem;margin-top:2rem">
+        <span class="section-label" id="resultsLabel" style="margin:0">Resultaten</span>
+        <button class="btn btn-success" id="downloadBtn2">&#11015;&nbsp; Download CSV</button>
+      </div>
+      <div class="results-scroll">
+        <table><thead id="resultsHead"></thead><tbody id="resultsBody"></tbody></table>
+      </div>
+    </div>
+    <!-- Handmatige producten: zelfde template, apart downloadvlak -->
+    <div id="restSection" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.5rem;margin-top:2rem">
+        <span class="section-label" id="restLabel" style="margin:0">Handmatige producten</span>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+          <button class="btn btn-success" id="downloadRestCsvBtn">&#11015;&nbsp; Download CSV (handmatig)</button>
+          <button class="btn btn-ghost" id="downloadRestXlsxBtn">&#11015;&nbsp; Download Excel (handmatig)</button>
+        </div>
+      </div>
+      <div class="results-scroll">
+        <table><thead id="restHead"></thead><tbody id="restBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+//  PDF.JS
+// ═══════════════════════════════════════════════════════════════════════════════
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+async function extractTextFromPDF(file) {
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js niet geladen');
+  const buf = await file.arrayBuffer();
+  // Timeout-guard zodat één corrupt PDF de hele wachtrij niet blokkeert
+  const withTimeout = (p, ms, msg) => Promise.race([
+    p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms)),
+  ]);
+  const pdf = await withTimeout(
+    pdfjsLib.getDocument({ data: buf, verbosity: 0 }).promise,
+    60000, 'PDF openen duurde te lang');
+  try {
+    const parts = [];
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await withTimeout(pdf.getPage(p), 30000, `Pagina ${p} laden duurde te lang`);
+      const tc = await withTimeout(page.getTextContent({ includeMarkedContent: false }), 30000, `Pagina ${p} lezen duurde te lang`);
+      parts.push(`--- PAGE ${p} ---\n${buildPageText(tc.items)}`);
+      if (page.cleanup) page.cleanup();
+    }
+    return parts.join('\n\n');
+  } finally {
+    // Geheugen vrijgeven — belangrijk bij honderden PDF's in één sessie
+    try { if (pdf.cleanup) await pdf.cleanup(); } catch(_) {}
+    try { if (pdf.destroy) await pdf.destroy(); } catch(_) {}
+  }
+}
+
+function buildPageText(items) {
+  if (!items.length) return '';
+  const Y_TOL = 4;
+  const lineMap = new Map();
+  for (const it of items) {
+    if (!it.str) continue;
+    const y = Math.round(it.transform[5] / Y_TOL) * Y_TOL;
+    if (!lineMap.has(y)) lineMap.set(y, []);
+    lineMap.get(y).push({ x: it.transform[4], w: it.width || 0, str: it.str });
+  }
+  const ys = [...lineMap.keys()].sort((a, b) => b - a);
+  return ys.map(y => {
+    const cols = lineMap.get(y).sort((a, b) => a.x - b.x);
+    let line = '';
+    for (let i = 0; i < cols.length; i++) {
+      if (i === 0) { line = cols[i].str; continue; }
+      const gap = cols[i].x - (cols[i-1].x + cols[i-1].w);
+      line += (gap > 8 ? '\t' : ' ') + cols[i].str;
+    }
+    return line;
+  }).join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  K011 PARSER (Klaverblad)
+// ═══════════════════════════════════════════════════════════════════════════════
+const K011Parser = (() => {
+  'use strict';
+
+  // Alleen echte partikelen — losse letters ('v','d','t') zijn voorletters of ruis
+  const TUSSENVOEGSELS = new Set([
+    'van','de','du','des','le','la','del','di','da','do','dos','das',
+    'los','las','von','zu','zum','zur','der','den','het',"'t",'ten',
+    'ter','te','op','in','aan','bij','tot','vd','v/d','v.d','v.d.'
+  ]);
+  // Achtervoegsels die bij de achternaam horen, nooit apart
+  const NAAM_SUFFIX = new Set(['sr','jr','sr.','jr.','senior','junior']);
+
+  const AGENT_MAP = { '615': '37', '501': '36', '530': '199', '280': '28' };
+
+  // ── utilities ──────────────────────────────────────────────────────────────
+  function normalizeDate(raw) {
+    if (!raw) return '';
+    const m = String(raw).match(/(\d{1,2})[\/.\-\s](\d{1,2})[\/.\-\s](\d{2,4})/);
+    if (!m) return '';
+    let d = parseInt(m[1],10), mo = parseInt(m[2],10), y = parseInt(m[3],10);
+    if (d < 1 || d > 31 || mo < 1 || mo > 12) return '';
+    if (y < 100) y = y <= 29 ? 2000+y : 1900+y;
+    if (y < 1900 || y > 2100) return '';
+    return `${String(d).padStart(2,'0')}-${String(mo).padStart(2,'0')}-${y}`;
+  }
+
+  function firstOfMonth(dateStr) {
+    if (!dateStr) return dateStr;
+    const m = dateStr.match(/^\d{2}-(\d{2}-\d{4})$/);
+    return m ? '01-' + m[1] : dateStr;
+  }
+
+  function advanceDateIfBefore(dateStr, refDate) {
+    if (!dateStr || !refDate) return dateStr;
+    if (dateToNum(dateStr) <= dateToNum(refDate)) {
+      const m = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+      if (m) return `${m[1]}-${m[2]}-${parseInt(m[3])+1}`;
+    }
+    return dateStr;
+  }
+
+  function parseDutchAmount(s) {
+    if (!s) return 0;
+    return parseFloat(String(s).replace(/\./g,'').replace(',','.')) || 0;
+  }
+
+  // Gezinssamenstelling → A/K/I/H (zelfde codes als NN-parser; G is ongeldig)
+  // A = alleenstaande zonder kind, K = alleenstaande met kind,
+  // H = gezin zonder kind, I = gezin met kind. Onbekend → leeg.
+  function normGezinssamenstelling(raw) {
+    if (!raw) return '';
+    const s = raw.trim();
+    if (/^[AKIH]$/i.test(s)) return s.toUpperCase();
+    const pre = s.match(/^([AKIH])\s+/i);
+    if (pre) return pre[1].toUpperCase();
+    const l = s.toLowerCase();
+    if (/alleen\s*staand/.test(l) && /met\s*kind/.test(l)) return 'K';
+    if (/alleen\s*staand/.test(l) && /kind/.test(l) && !/zonder/.test(l)) return 'K';
+    if (/alleen/.test(l) && /zonder\s+kind/.test(l)) return 'A';
+    if (/alleen/.test(l)) return 'A';
+    if (/gezin/.test(l) && /zonder\s+kind/.test(l)) return 'H';
+    if (/gezin/.test(l) && /kind/.test(l)) return 'I';
+    if (/gezin/.test(l)) return 'H'; // "Particulier in gezinsverband" → gezin, kinderen onbekend
+    if (/met\s+kind/.test(l)) return 'K';
+    return '';
+  }
+
+  function extractVerzekerdBedrag(text) {
+    if (!text) return '';
+    const m = text.match(/verzekerd\s*bedrag\s*[:=]?\s*(?:€|EUR|E\.)\s*([\d.]+)/i);
+    return m ? m[1].replace(/\./g,'') : '';
+  }
+
+  // Eigen risico per polis: "Eigen risico E. 150,-" of "eigen risico van E. 150,-"
+  function extractEigenRisico(text) {
+    if (!text) return '';
+    const m = text.match(/eigen\s*risico\s*(?:van\s*)?(?:€|EUR|E\.)\s*([\d.]+)/i);
+    return m ? m[1].replace(/\./g,'') : '';
+  }
+
+  // DD-MM-YYYY → sorteerbaar getal (YYYYMMDD); 0 bij ongeldig
+  function dateToNum(s) {
+    const m = String(s||'').match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    return m ? parseInt(m[3])*10000 + parseInt(m[2])*100 + parseInt(m[1]) : 0;
+  }
+  function addYearStr(s) {
+    const m = String(s||'').match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    return m ? `${m[1]}-${m[2]}-${parseInt(m[3])+1}` : s;
+  }
+
+  // Relatienummer (6-10 cijfers) uit een mapnaam; accepteert ook nummers met
+  // spaties of punten erin, zoals "71 224 624 - P.D.R. van Steijn"
+  function extractRelatienummerUitNaam(name) {
+    if (!name) return '';
+    let m = String(name).match(/\d{6,10}/);
+    if (m) return m[0];
+    m = String(name).match(/\d[\d .]{4,13}\d/);
+    if (m) {
+      const digits = m[0].replace(/\D/g,'');
+      if (/^\d{6,10}$/.test(digits)) return digits;
+    }
+    return '';
+  }
+
+  // Straatafkortingen voluit (pln vóór ln zodat "Korenbeurspln" → "Korenbeursplein")
+  function expandStreetAbbr(s) {
+    if (!s) return s;
+    return s
+      .replace(/pln\b\.?/gi, 'plein')
+      .replace(/stg\b\.?/gi, 'steeg')
+      .replace(/wg\b\.?/gi, 'weg')
+      .replace(/ln\b\.?/gi, 'laan')
+      .replace(/str\b\.?/gi, 'straat')
+      .replace(/dk\b\.?/gi, 'dijk')
+      .replace(/sngl\b\.?/gi, 'singel');
+  }
+
+  function formatKenteken(s) {
+    if (!s) return '';
+    const clean = s.replace(/[-\s]/g, '').toUpperCase();
+    const groepen = clean.match(/[A-Z]+|\d+/g) || [];
+    // Groepen van 4 tekens splitsen: "43-PLKH" → 43-PL-KH (NL-kenteken kent max 3 per groep)
+    const delen = [];
+    for (const g of groepen) {
+      if (g.length === 4) delen.push(g.slice(0,2), g.slice(2));
+      else if (g.length === 6) delen.push(g.slice(0,2), g.slice(2,4), g.slice(4));
+      else delen.push(g);
+    }
+    return delen.join('-');
+  }
+  function extractKenteken(text) {
+    // NL-kenteken = 6 tekens (letters/cijfers), streepjes variëren ("43-PLKH", "VX-818-P")
+    const m = text.match(/kenteken\s*[:=]?\s*([A-Z0-9][A-Z0-9-]{4,9})/i);
+    if (!m) return '';
+    const clean = m[1].toUpperCase().replace(/-/g, '');
+    return /^[A-Z0-9]{6}$/.test(clean) ? m[1].toUpperCase() : '';
+  }
+  function extractMeldcode(text) {
+    const m = text.match(/meldcode\s*[:=]?\s*(\d{4})/i);
+    return m ? m[1] : '';
+  }
+  function extractSchadevrijeJaren(text) {
+    // Voorkeur voor het aankomende aantal: "wordt het aantal schadevrije jaren per 01-10-2025 3 jaar"
+    let m = text.match(/schadevrije\s+jaren\s+per\s+\d{2}-\d{2}-\d{4}\s+(\d+)\s+jaar/i);
+    if (m) return m[1];
+    m = text.match(/U\s+heeft\s+(\d+)\s+schadevrije\s+jaren/i);
+    return m ? m[1] : '';
+  }
+  function extractKilometrage(text) {
+    const m = text.match(/maximaal\s+([\d.]+)\s*km/i);
+    return m ? m[1].replace(/\./g,'') : '';
+  }
+  // Kilometrage-klasse: t/m 12.000 km → 1, t/m 20.000 km → 2, daarboven → 3
+  function kilometrageKlasse(kmRaw) {
+    const km = parseInt(kmRaw, 10);
+    if (!km || isNaN(km)) return '';
+    if (km <= 12000) return '1';
+    if (km <= 20000) return '2';
+    return '3';
+  }
+  function extractGewicht(text) {
+    const m = text.match(/gewicht\s*[:=]?\s*([\d.]+)\s*kg/i);
+    return m ? m[1].replace(/\./g,'') : '';
+  }
+
+  // Betaaltermijn (maanden). De regel "Bij elke verzekering staat de premie per X
+  // inclusief assurantiebelasting" is leidend: "per 12 maanden" → 12 (jaar),
+  // "per maand" → 1. Fallback: pakket-premieregel "De premie is E. ... per maand".
+  function extractBetaaltermijn(text) {
+    const m = text.match(/bij\s+elke\s+verzekering\s+staat\s+de\s+premie\s+per\s+([\w\s]+?)\s+inclusief/i)
+           || text.match(/premie\s+is\s+E\.[\s\d.,]+per\s+(maand|kwartaal|half\s*jaar|jaar|\d+\s*maanden)/i)
+           || text.match(/premie\s+per\s+(maand|kwartaal|half\s*jaar|jaar|\d+\s*maanden)/i);
+    if (!m) return '';
+    const v = m[1].toLowerCase().replace(/\s/g,'');
+    if (v === 'maand' || v === '1maand') return '1';
+    if (v === 'kwartaal' || v === '3maanden') return '3';
+    if (v === 'halfjaar' || v === '6maanden') return '6';
+    if (v === 'jaar' || v === '12maanden') return '12';
+    return '';
+  }
+
+  // Premievervaldatum: 1e van de volgende betalingsperiode (zelfde als NN);
+  // bij jaarbetaling gelijk aan hoofdvervaldatum; nooit voorbij hoofdvervaldatum.
+  function calcPremievervaldatum(ingangsdatum, betaaltermijn, hoofdvervaldatum) {
+    if (!ingangsdatum) return '';
+    const pm = ingangsdatum.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (!pm) return '';
+    const mon = parseInt(pm[2],10) - 1, yr = parseInt(pm[3],10);
+    const months = parseInt(betaaltermijn, 10) || 0;
+    let pvd = '';
+    if (months === 12 && hoofdvervaldatum) {
+      pvd = firstOfMonth(hoofdvervaldatum);
+    } else if (months > 0) {
+      const d = new Date(yr, mon + months, 1);
+      pvd = `01-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+    }
+    if (pvd && hoofdvervaldatum && dateToNum(pvd) > dateToNum(firstOfMonth(hoofdvervaldatum))) {
+      pvd = firstOfMonth(hoofdvervaldatum);
+    }
+    return pvd;
+  }
+
+  function formatPostcode(s) {
+    if (!s) return '';
+    const c = s.replace(/\s/g,'').toUpperCase();
+    return /^\d{4}[A-Z]{2}$/.test(c) ? c.slice(0,4)+' '+c.slice(4) : c;
+  }
+
+  function titleCase(s) {
+    if (!s) return s;
+    return s.split(' ').map(w => w ? w[0].toUpperCase()+w.slice(1).toLowerCase() : '').join(' ');
+  }
+
+  // ── name parsing ───────────────────────────────────────────────────────────
+  function parseName(raw) {
+    const empty = { voorletters:'', tussenvoegsel:'', achternaam:'' };
+    if (!raw) return empty;
+    let s = String(raw).replace(/^\s*(?:de\s+heer|mevrouw|dhr\.?|mevr\.?|mw\.?)\s*/i,'').trim();
+    if (!s) return empty;
+    const tokens = s.split(/\s+/);
+    const ini = [], tv = [], ach = [];
+    let state = 'init';
+    for (let ti = 0; ti < tokens.length; ti++) {
+      const tok = tokens[ti];
+      const low = tok.toLowerCase().replace(/\.$/,'');
+      if (state === 'init') {
+        if (/^[A-Z]\.?$/i.test(tok)) { ini.push(tok.replace('.','').toUpperCase()); }
+        else if (/^(?:[A-Za-z]\.){1,6}[A-Za-z]?$/i.test(tok)) { for (const c of tok.toUpperCase().replace(/[^A-Z]/g,'')) ini.push(c); }
+        else if (TUSSENVOEGSELS.has(low)) { state='tv'; tv.push(low); }
+        else { state='ach'; ach.push(tok); }
+      } else if (state === 'tv') {
+        if (TUSSENVOEGSELS.has(low)) tv.push(low);
+        else { state='ach'; ach.push(tok); }
+      } else ach.push(tok);
+    }
+    return {
+      voorletters: ini.length ? ini.join('.')+'.':'',
+      tussenvoegsel: tv.join(' ').toLowerCase(),
+      achternaam: ach.join(' '),
+    };
+  }
+
+  // ── document type detection ────────────────────────────────────────────────
+  function isRelatiescherm(text) {
+    return /relatie[s]?\s+gevonden\s+met\s+achternaam|relatiescherm/i.test(text);
+  }
+
+  function isGroeneKaart(text) {
+    return /internationale\s+motorrijtuigverzekerings?kaart|international\s+motor\s+insurance\s+card/i.test(text);
+  }
+
+  // ── relatiescherm parser ───────────────────────────────────────────────────
+  // Klaverblad extranet "Relatie zoeken" print: levert geboortedatum, naam en adres
+  // van de verzekeringnemer. Voorbeeld: "P D R van Steijn  04-12-1959  Rietveldsewg 25"
+  function parseRelatiescherm(text) {
+    // Webfont-iconen komen als private-use codepoints in de PDF-tekst terecht
+    // (bv. U+F103 vóór de naam) — normaliseren naar spaties, anders faalt de naamregex
+    text = String(text||'').replace(/[-︀-️� ]/g, ' ');
+    const g = (pat, idx=1) => { const m = text.match(pat); return m ? m[idx].trim() : ''; };
+    const r = { geboortedatum:'', naamRaw:'', straat:'', huisnummer:'', huisnummertoevoeging:'',
+                postcode:'', woonplaats:'', email:'' };
+
+    // Verzekeringnemer-rijen: naam + geboortedatum (dd-mm-jjjj) — er kunnen
+    // meerdere relaties zijn ("Er zijn 2 relaties gevonden"); verzamel ze allemaal
+    r.persons = [];
+    const persRe = /^\s*[▲▼^v]?\s*([A-Z][A-Za-zÀ-ÿ' .-]{1,60}?)[ \t]+(\d{2}-\d{2}-\d{4})/gm;
+    let pm;
+    while ((pm = persRe.exec(text)) !== null) {
+      const naam = pm[1].trim().replace(/\s{2,}/g, ' ');
+      if (/geboortedatum|verzekeringnemer|adres|polisnummer|extranet|wijziging|relatie/i.test(naam)) continue;
+      if (!r.persons.some(p => p.naam === naam)) r.persons.push({ naam, geboortedatum: pm[2] });
+    }
+    if (r.persons.length) { r.naamRaw = r.persons[0].naam; r.geboortedatum = r.persons[0].geboortedatum; }
+
+    r.email = g(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/);
+
+    // Adres: postcoderegel + voorafgaande straatregel.
+    // URL-restanten "(/Wijziging-Extranet/..." op adresregels weghalen
+    const lines = text.split(/\r?\n/).map(l => l.replace(/\(\/.*$/,'').trim());
+    const isNoise = l => !l || /extranet|wijziging|execution|eventid|https?:|^\(|@/i.test(l);
+    for (let i = 0; i < lines.length; i++) {
+      const pcm = lines[i].match(/^(\d{4})\s*([A-Z]{2})\b\s*(.*)$/);
+      if (!pcm) continue;
+      r.postcode   = formatPostcode(pcm[1] + pcm[2]);
+      r.woonplaats = (pcm[3] || '').trim().split(/\s{2,}|\t/)[0].replace(/[,;.\s]+$/,'');
+      for (let j = i - 1; j >= Math.max(0, i - 4); j--) {
+        if (isNoise(lines[j])) continue;
+        const hm = lines[j].match(/^(.+?)[ \t]+(\d{1,5})\s*([A-Za-z]{0,3})$/);
+        if (hm && /[A-Za-zÀ-ÿ]{2}/.test(hm[1]) && !/geboortedatum|adres|polisnummer/i.test(hm[1])) {
+          r.straat = hm[1].trim();
+          r.huisnummer = hm[2];
+          r.huisnummertoevoeging = (hm[3]||'').trim();
+          break;
+        }
+      }
+      break;
+    }
+    return r;
+  }
+
+  // ── polisblad parser ───────────────────────────────────────────────────────
+  function parsePolisblad(text) {
+    const g = (pat, idx=1) => { const m = text.match(pat); return m ? m[idx].trim() : ''; };
+
+    const r = {};
+    r.polisnummer  = g(/Polisnummer\s*:\s*([\d\s]+)/).replace(/\s+/g,'');
+    r.datum        = g(/Datum\s*:\s*(\d{2}-\d{2}-\d{4})/);
+    r.ingangsdatum = g(/geldt vanaf\s*(\d{2}-\d{2}-\d{4})/i) || g(/Ingangsdatum\s*:\s*(\d{2}-\d{2}-\d{4})/i);
+    r.einddatum    = g(/Eerstkom[.\s]*einddatum\s*:\s*(\d{2}-\d{2}-\d{4})/i);
+
+    // Client block
+    const vnBlock = text.match(/Verzekeringnemer\s*:(.+?)(?=Clausules|VERZEKERING|Bijlage|AFREKENING|\n\n[A-Z]{3})/s);
+    const vb = vnBlock ? vnBlock[1] : text.slice(0, 1500);
+    const naamLine = vb.match(/((?:De heer|Mevrouw|Dhr\.|Mevr\.)\s+[^\n]+)/i);
+    r.naamRaw  = naamLine ? naamLine[1].trim() : '';
+    r.telefoon = (vb.match(/\b(0[1-9]\d{8})\b/) || [])[1] || '';
+    r.email    = (vb.match(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/) || [])[1] || '';
+
+    // Address from client block
+    const adrLines = vb.split('\n').map(l=>l.trim()).filter(Boolean);
+    const pcIdx = adrLines.findIndex(l => /^\d{4}\s*[A-Z]{2}/.test(l));
+    if (pcIdx >= 0) {
+      const pcLine = adrLines[pcIdx];
+      const pcm = pcLine.match(/^(\d{4})\s*([A-Z]{2})\s*(.*)/);
+      r.postcode  = pcm ? formatPostcode(pcm[1]+pcm[2]) : '';
+      r.woonplaats = pcm && pcm[3] ? pcm[3].trim().split(/\s{2,}/)[0] : '';
+      if (pcIdx > 0) {
+        const straatLine = adrLines[pcIdx-1];
+        const hm = straatLine.match(/^(.+?)\s+(\d{1,5})\s*([A-Za-z]{0,4})\s*$/);
+        if (hm && /[A-Za-z]{2}/.test(hm[1])) {
+          r.straat = hm[1].trim();
+          r.huisnummer = hm[2];
+          r.huisnummertoevoeging = (hm[3]||'').trim();
+        } else {
+          r.straat = straatLine;
+          r.huisnummer = '';
+          r.huisnummertoevoeging = '';
+        }
+      }
+    }
+
+    // Individual policies: ALLCAPS NAME (XX XXXXXX XXX) E. X,XX
+    r.polissen = extractPolissen(text);
+
+    return r;
+  }
+
+  function extractPolissen(text) {
+    const allMatches = [];
+
+    // Format A (single line): PRODUCT NAME (XX XXXXXX XXX)  E.  X,XX
+    const fmtA = /([A-Z][A-Z \t\/\-]+?)\s+\((\d{2}\s+\d{6}\s+\d{3})\)[ \t]+E\.[ \t]*([\d,]+)/g;
+    let m;
+    while ((m = fmtA.exec(text)) !== null) {
+      allMatches.push({
+        index: m.index,
+        naam: m[1].trim(),
+        polis: m[2],
+        premieRaw: m[3],
+      });
+    }
+
+    // Format B (two lines): PRODUCT_PART1  E.  X,XX\n  PRODUCT_PART2 (XX XXXXXX XXX)
+    const fmtB = /([A-Z][A-Z \t\/\-]+?)[ \t]+E\.[ \t]*([\d,]+)[ \t]*[\r\n][ \t]*([A-Z][A-Z \t\/\-]*)[ \t]*\((\d{2}\s+\d{6}\s+\d{3})\)/gm;
+    while ((m = fmtB.exec(text)) !== null) {
+      const polisNorm = m[4].replace(/\s+/g, '');
+      if (!allMatches.some(x => x.polis.replace(/\s+/g, '') === polisNorm)) {
+        allMatches.push({
+          index: m.index,
+          naam: (m[1].trim() + ' ' + m[3].trim()).replace(/\s{2,}/g, ' ').trim(),
+          polis: m[4],
+          premieRaw: m[2],
+        });
+      }
+    }
+
+    allMatches.sort((a, b) => a.index - b.index);
+
+    return allMatches.map((match, i) => {
+      const start = match.index;
+      const end   = i < allMatches.length - 1 ? allMatches[i + 1].index : text.length;
+      const sec   = text.slice(start, end);
+      const gs    = (pat, idx=1) => { const x = sec.match(pat); return x ? x[idx].trim() : ''; };
+      return {
+        naam:     match.naam,
+        nummer:   match.polis.replace(/\s+/g, ''),
+        premie:   parseDutchAmount(match.premieRaw),
+        ingang:   normalizeDate(gs(/Ingangsdatum\s*:\s*(\d{2}-\d{2}-\d{4})/i)),
+        eind:     normalizeDate(gs(/Eerstkom[.\s]*einddatum\s*:\s*(\d{2}-\d{2}-\d{4})/i)),
+        dekkingen: extractDekkingen(sec),
+        blockText: sec,
+      };
+    });
+  }
+
+  function extractDekkingen(blockText) {
+    const result = [];
+    const dekkBlock = blockText.match(/Dekking\(en\)([\s\S]+?)(?=\n\n[A-Z]|AFREKENING|$)/i);
+    if (dekkBlock) {
+      const db = dekkBlock[1];
+      // Lines starting with dash: dekking names
+      const lines = [...db.matchAll(/^\s*[-–]\s*(.+)/gm)].map(x => x[1].trim());
+      lines.forEach(naam => result.push(naam));
+      // Module-style rechtsbijstand
+      if (!lines.length) {
+        const modRe = /Module\s+(\w+)/gi;
+        let mm;
+        while ((mm = modRe.exec(db)) !== null) result.push('Module ' + mm[1]);
+      }
+    }
+    if (!result.length) {
+      // Fallback: Dekking lines in block
+      const fallback = [...blockText.matchAll(/Dekking\s*\d*\s*:\s*([^\n\t]+)/gi)];
+      fallback.forEach(x => result.push(x[1].trim()));
+    }
+    return result;
+  }
+
+  // Map Klaverblad ALLCAPS product name → standard Productomschrijving
+  function mapProduct(naam) {
+    const t = naam.toLowerCase();
+    if (/woonhuis|opstal/.test(t)) return 'Woonhuis';
+    if (/inboedel/.test(t)) return 'Inboedel';
+    if (/particuliere?\s+brand/.test(t)) return 'Inboedel'; // particuliere brandverzekering → inboedel (agrarische brand blijft rest)
+    if (/bedrijfs\s*aansprakelijkheid/.test(t)) return 'Bedrijfsaansprakelijkheid'; // zakelijk → handmatig, verdringt de particuliere AVP niet
+    if (/aansprakelijkheid|avp/.test(t)) return 'AVP';
+    if (/bestelauto|bestelbus/.test(t)) return 'Bestelauto'; // niet in whitelist → handmatig
+    if (/personenauto|auto(?!mat)|motorrijtuig/.test(t)) return 'Personenauto';
+    if (/motor\b/.test(t) && !/automot/.test(t)) return 'Motor';
+    if (/rechtsbijstand/.test(t)) return 'Rechtsbijstand particulier';
+    if (/doorlopende\s*reis|reis/.test(t)) return 'Doorlopende Reis';
+    if (/fiets/.test(t)) return 'Fietsverzekering';
+    if (/caravan|kampeer/.test(t)) return 'Caravan';
+    if (/boot|scheeps/.test(t)) return 'Watersport';
+    if (/ongevall/.test(t)) return 'Gezinsongevallen';
+    // Capitalize first letter for unknown products
+    return naam.charAt(0) + naam.slice(1).toLowerCase();
+  }
+
+  // Parse folder name "NNNNNN - A.J. van Slooten"
+  // - alleen echte partikelen als tussenvoegsel (nooit willekeurige middelste woorden)
+  // - sr/jr blijft onderdeel van de achternaam ("Schellekens Sr")
+  // - losse voornaam vóór tussenvoegsel/achternaam → voorletter ("Mixk Guerrero" → M. Guerrero)
+  function parseFolderNAW(naam) {
+    if (!naam) return { voorletters:'', tussenvoegsel:'', achternaam:'' };
+    const cleaned = naam.trim()
+      .replace(/^(?:dhr\.?|mevr\.?|mw\.?|de\s+heer|mevrouw)\s*/i,'')
+      .replace(/^[\s\-_]+/,'').replace(/[\s\-_]+$/,'');
+    const isTV = t => TUSSENVOEGSELS.has(t.toLowerCase().replace(/\.+$/,''));
+    // Tokens: losse koppeltekens weg ("A.J.M. - T."), vastgeplakte voorletters splitsen ("R.Burgers")
+    let tokens = [];
+    for (const t of cleaned.split(/\s+/).filter(Boolean)) {
+      if (/^[-_&+]+$/.test(t)) continue;
+      const g = t.match(/^((?:[A-Za-z]\.)+)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'\-]+)$/);
+      if (g && !isTV(g[1])) { tokens.push(g[1], g[2]); } else tokens.push(t);
+    }
+    const ini = [];
+    let i = 0;
+    // 1. voorletters (incl. "T. en D." koppels); tussenvoegsels stoppen deze fase
+    while (i < tokens.length) {
+      const tok = tokens[i];
+      if (isTV(tok)) break;
+      if (/^(?:en|&|\+|e\/o)$/i.test(tok) && i + 1 < tokens.length && /^[A-Za-z](?:\.[A-Za-z]?)*\.?$/.test(tokens[i+1])) { i++; continue; }
+      if (/^[A-Za-z](?:\.[A-Za-z])+\.?$/.test(tok)) { for (const c of tok.toUpperCase().replace(/[^A-Z]/g,'')) ini.push(c); i++; }
+      else if (/^[A-Za-z]\.$/.test(tok)) { ini.push(tok[0].toUpperCase()); i++; }
+      else if (/^[A-Z]$/.test(tok)) { ini.push(tok); i++; }
+      else break;
+    }
+    // 2. losse voornaam vóór een tussenvoegsel of tweede naamwoord → voorletter
+    if (i < tokens.length - 1 && !isTV(tokens[i]) && /^[A-Za-zÀ-ÿ]{2,}$/.test(tokens[i])) {
+      const laterTV = tokens.slice(i+1).some(isTV);
+      if (laterTV || (ini.length === 0 && tokens.length - i >= 2 && !NAAM_SUFFIX.has(tokens[tokens.length-1].toLowerCase()))) {
+        ini.push(tokens[i][0].toUpperCase());
+        i++;
+      }
+    }
+    // 3. tussenvoegsels: alleen whitelisted partikelen
+    const tv = [];
+    while (i < tokens.length && isTV(tokens[i])) { tv.push(tokens[i].toLowerCase().replace(/\.+$/,'')); i++; }
+    // 4. rest = achternaam (incl. suffix sr/jr); kleine letters netjes kapitaliseren
+    let ach = tokens.slice(i).join(' ');
+    if (ach && ach === ach.toLowerCase()) ach = ach.replace(/(^|[\s\-'])([a-zà-ÿ])/g, (m,p,c) => p + c.toUpperCase());
+    return {
+      voorletters: ini.length ? ini.join('.')+'.' : '',
+      tussenvoegsel: tv.join(' '),
+      achternaam: ach,
+    };
+  }
+
+  // Woningkenmerken uit de Klaverblad-objectomschrijving,
+  // bv. "Inboedel in een woonhuis, van steen gebouwd met harde dakbedekking"
+  // Bouwaard muren T/H/J, vloeren S/H, dak P/R/N/M/H, woonhuistype T/H/U/2/A
+  function applyWoningkenmerken(row, bt) {
+    const t = bt.toLowerCase();
+    // Bouwjaar: alleen als bekend
+    const bj = bt.match(/bouwjaar\s*[:=]?\s*((?:18|19|20)\d{2})/i);
+    if (bj) row['Bouwjaar'] = bj[1];
+    // Monumentaal pand: verplicht, standaard N
+    row['Monumentaal pand'] = /monument/i.test(t) ? 'J' : 'N';
+    // Bouwaard: alleen invullen als de polis het expliciet zegt
+    if (/van\s+steen\s+gebouwd|stenen\s+muren|steenbouw/.test(t)) row['Bouwaard muren'] = 'T';
+    else if (/houten?\s+(?:muren|wanden)|houtbouw|houtskelet/.test(t)) row['Bouwaard muren'] = 'H';
+    if (/rieten?\s+dak|met\s+riet\s+gedekt/.test(t)) row['Bouwaard dak'] = 'R';
+    else if (/pannen|harde\s+dakbedekking/.test(t)) row['Bouwaard dak'] = 'P';
+    if (/houten?\s+vloeren/.test(t)) row['Bouwaard vloeren'] = 'H';
+    else if (/betonnen\s+vloeren|stenen\s+vloeren/.test(t)) row['Bouwaard vloeren'] = 'S';
+    // Woonhuis type: alleen indien bekend
+    const wt = t.match(/\b(tussenwoning|hoekwoning|vrijstaand|2[- ]onder[- ]1[- ]kap|twee[- ]onder[- ][eé]{1,2}n[- ]kap|appartement|flat)\b/);
+    if (wt) {
+      const w = wt[1];
+      row['Woonhuis type'] = /tussen/.test(w) ? 'T' : /hoek/.test(w) ? 'H' : /vrijstaand/.test(w) ? 'U'
+        : /onder/.test(w) ? '2' : 'A';
+    }
+  }
+
+  // ── main extraction ────────────────────────────────────────────────────────
+  // Alleen deze producten mogen een CSV-rij opleveren (zelfde set als NN)
+  const PRODUCT_WHITELIST = new Set([
+    'Personenauto','Woonhuis','Inboedel','Rechtsbijstand particulier',
+    'AVP','Doorlopende Reis','Gezinsongevallen'
+  ]);
+
+  function extractPolicyRowsK011(text, filename, nawbesPk, folderNaam, kantoor, overvoermaand, restCollector) {
+    if (!text || !text.trim()) return [];
+
+    // Pagina-markers van de PDF-extractie mogen nergens in velden belanden;
+    // private-use glyphs (webfont-iconen) normaliseren naar spaties
+    text = text.replace(/-{2,}\s*PAGE\s+\d+\s*-{2,}/gi, '\n')
+               .replace(/[-︀-️� ]/g, ' ');
+
+    // Relatienummer uitsluitend uit de mapnaam (6-10 cijfers, waar dan ook)
+    if (!nawbesPk && folderNaam) {
+      nawbesPk = extractRelatienummerUitNaam(folderNaam);
+    }
+
+    // Determine document type. NB: geen vroege groene-kaart-return — sommige
+    // polisblad-PDF's bevatten óók groene-kaartpagina's; het polisblad wint dan.
+    if (isRelatiescherm(text)) return [];
+
+    const pol = parsePolisblad(text);
+    if (!pol.polissen || !pol.polissen.length) return [];
+
+    // NAW from folder name as fallback
+    let folderNAW = { voorletters:'', tussenvoegsel:'', achternaam:'' };
+    if (folderNaam) {
+      const nameOnly = folderNaam.replace(/\d{6,10}/,'').replace(/^[\s\-_]+/,'').replace(/[\s\-_]+$/,'').trim();
+      folderNAW = parseFolderNAW(nameOnly);
+    }
+
+    // Parsed name from polisblad
+    const docNAW = parseName(pol.naamRaw);
+
+    const voorletters   = docNAW.voorletters || folderNAW.voorletters || '';
+    const tussenvoegsel = docNAW.tussenvoegsel || folderNAW.tussenvoegsel || '';
+    const achternaam    = docNAW.achternaam || folderNAW.achternaam || '';
+
+    const straat            = pol.straat || '';
+    const huisnummer        = pol.huisnummer || '';
+    const huisnummertoev    = pol.huisnummertoevoeging || '';
+    const postcode          = pol.postcode || '';
+    const woonplaats        = pol.woonplaats || '';
+
+    // Documentversie (voor ontdubbeling van oude polisbladen): "geldt vanaf" of poliskop-datum
+    const docDatumNum = Math.max(dateToNum(normalizeDate(pol.ingangsdatum)), dateToNum(normalizeDate(pol.datum)));
+    // Betaaltermijn uit pakket-premietekst ("De premie is E. 153,18 per maand")
+    const betaaltermijn = extractBetaaltermijn(text) || '1';
+    const heeftWoonhuisverzekering = /woonhuisverzekering|opstalverzekering/i.test(text);
+    // Gezinssamenstelling op documentniveau (eerste Hoedanigheid-regel in het pakket)
+    const docGezinRaw = ((text.match(/Hoedanigheid\s*:\s*([^\n]+)/i) || [,''])[1] || '').trim();
+    const docGezin = normGezinssamenstelling(docGezinRaw);
+
+    const rows = [];
+
+    pol.polissen.forEach(polis => {
+      const productOmsch = mapProduct(polis.naam);
+      // Niet-overvoerbare producten (buiten whitelist, bestelauto's) krijgen een
+      // volledige rij in hetzelfde template maar gaan naar de handmatige lijst
+      const restReden = !PRODUCT_WHITELIST.has(productOmsch) ? 'Product buiten whitelist'
+        : (productOmsch === 'Personenauto' && /object\s*:\s*bestelauto/i.test(polis.blockText || '')) ? 'Bestelauto'
+        : '';
+      if (restReden && !restCollector) return;
+      const polisnummer  = polis.nummer.replace(/\s+/g,''); // strip spaces → numeric string
+
+      // Overvoer-datumlogica (zelfde als NN):
+      // ingangsdatum = dag uit de polis-einddatum + gekozen overvoermaand — nooit historische data
+      const einddatum = polis.eind || normalizeDate(pol.einddatum) || '';
+      let ingangsdatum = '';
+      if (overvoermaand) {
+        const p = overvoermaand.split('-');
+        if (p.length === 2) {
+          const dag = /^\d{2}-/.test(einddatum) ? einddatum.slice(0,2) : '01';
+          ingangsdatum = `${dag}-${p[1]}-${p[0]}`;
+        }
+      }
+      if (!ingangsdatum) ingangsdatum = polis.ingang || ''; // geen overvoermaand gekozen → polisdatum
+
+      // Hoofdvervaldatum: polis-einddatum op de 1e; +1 jaar zolang deze niet ná de ingangsdatum ligt
+      let hoofdvervaldatum = einddatum ? firstOfMonth(einddatum) : '';
+      if (!hoofdvervaldatum && ingangsdatum) {
+        const im = ingangsdatum.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if (im) hoofdvervaldatum = `01-${im[2]}-${parseInt(im[3],10)+1}`;
+      }
+      let hvGuard = 0;
+      while (hoofdvervaldatum && ingangsdatum && dateToNum(hoofdvervaldatum) <= dateToNum(ingangsdatum) && hvGuard++ < 60) {
+        hoofdvervaldatum = addYearStr(hoofdvervaldatum);
+      }
+      const contractvervaldatum = hoofdvervaldatum;
+
+      // Premievervaldatum: 1e van de volgende betalingsperiode; bij jaarbetaling = hoofdvervaldatum;
+      // nooit voorbij de hoofdvervaldatum
+      const premievervaldatum = calcPremievervaldatum(ingangsdatum, betaaltermijn, hoofdvervaldatum)
+        || (hoofdvervaldatum ? firstOfMonth(hoofdvervaldatum) : '');
+
+      const row = {};
+      for (const col of CSV_COLUMNS) row[col] = '';
+      // Identity
+      row['NAWBES_PK']          = nawbesPk || '';
+      row['PAKKET_PK']          = '1';
+      row['Pakketpolisnummer']  = nawbesPk ? nawbesPk+'.001' : '';
+      row['Polisnummer']        = polisnummer;
+      row['Pakketsoort']        = kantoor || '';
+      row['Agent']              = AGENT_MAP[kantoor] || '';
+      row['Maatschappij']       = 'K011';
+      // NAW
+      row['Voorletters']        = voorletters.toUpperCase();
+      row['Tussenvoegsels']     = tussenvoegsel;
+      row['Achternaam']         = achternaam;
+      row['Straat']             = straat ? titleCase(expandStreetAbbr(straat)) : '';
+      row['Huisnummer']         = huisnummer;
+      row['Huisnummer toevoeging'] = huisnummertoev;
+      row['Postcode']           = postcode;
+      row['Woonplaats']         = woonplaats;
+      // Dates
+      row['Ingangsdatum']       = ingangsdatum;
+      row['Hoofdvervaldatum']   = hoofdvervaldatum;
+      row['Contractvervaldatum']= contractvervaldatum;
+      row['Premievervaldatum']  = premievervaldatum;
+      row['Betaaltermijn']      = betaaltermijn;
+      // Product
+      row['Productomschrijving']= productOmsch;
+      // Premie: format as Dutch decimal
+      row['Incassobedrag']      = polis.premie > 0 ? polis.premie.toFixed(2).replace('.',',') : '';
+
+      // Product-specific enrichment — dekkingcode verplicht, nooit omschrijving zonder code
+      const naam_lc = polis.naam.toLowerCase();
+      const bt = polis.blockText || '';
+      const dkNames = polis.dekkingen;
+      const hasDk = (pat) => dkNames.some(d => new RegExp(pat, 'i').test(d));
+      const has = (pat) => hasDk(pat) || new RegExp(pat, 'i').test(naam_lc);
+      let slot = 1;
+      const addDk = (code, omsch) => {
+        if (code && slot <= 11) {
+          row[`Dekking ${slot}`] = String(code);
+          row[`Omschrijving ${slot}`] = omsch;
+          slot++;
+        }
+      };
+      // Hoedanigheid: "Particulier in gezinsverband" / "Particulier als alleenstaande"
+      const hoedanigheid = (bt.match(/Hoedanigheid\s*:\s*([^\n]+)/i) || [,''])[1].trim();
+
+      if (restReden) {
+        // Handmatige rij: zelfde template, generiek geparste waardes
+        row['Productomschrijving'] = titleCase(naam_lc);
+        const kent = formatKenteken(extractKenteken(bt));
+        if (kent) {
+          row['Kenteken'] = kent;
+          row['Meldcode'] = extractMeldcode(bt);
+          row['Schadevrije jaren'] = extractSchadevrijeJaren(bt);
+          row['Kilometrage'] = kilometrageKlasse(extractKilometrage(bt));
+          row['Gewicht'] = extractGewicht(bt);
+        }
+        const vsr = extractVerzekerdBedrag(bt);
+        if (vsr) row['Verzekerde som'] = vsr;
+        row['Eigenrisico'] = extractEigenRisico(bt);
+        row['Gezinssamenstelling'] = normGezinssamenstelling(hoedanigheid) || docGezin;
+        // Dekkingnamen als omschrijving (zonder code) als hulp bij handmatige invoer
+        let rslot = 1;
+        for (const d of dkNames) {
+          if (rslot > 11) break;
+          const dn = String(d).trim();
+          if (dn.length < 3 || dn.length > 45) continue;
+          if (/E\.\s*[\d.]|per\s+gebeurtenis|verzekerd\s+bedrag|www\.|^\d|:\s*$/i.test(dn)) continue;
+          row[`Omschrijving ${rslot}`] = dn; rslot++;
+        }
+        row['Uitzondering 1'] = restReden;
+        if (row['Gezinssamenstelling'] === 'H') {
+          const gzBronR = `${hoedanigheid} ${docGezinRaw} ${naam_lc}`.toLowerCase();
+          if (/gezin/.test(gzBronR) && !/zonder\s*kind|met\s*kind/.test(gzBronR)) row['_gezinPlain'] = 1;
+        }
+        row['_folder'] = folderNaam || '';
+        row['_pakket'] = pol.polisnummer || polisnummer.slice(0, 8) || '';
+        row['_doc']    = docDatumNum;
+        row['_eind']   = dateToNum(einddatum);
+        restCollector.push(row);
+        return;
+      }
+
+      if (productOmsch === 'Personenauto') {
+        addDk(2010, 'Wettelijke Aansprakelijkheid');
+        if (hasDk('volledige\\s+casco') || has('all\\s*[- ]?risk|volledig\\s*casco')) addDk(2030, 'Casco');
+        else if (hasDk('beperkte?\\s+casco')) addDk(2020, 'Beperkt Casco');
+        if (hasDk('ongevallen\\s*[- ]?inzittenden')) addDk(2040, 'Ongevallen Inzittenden');
+        // Module Schadeverzekering inzittenden → 2080
+        if (hasDk('schadeverzekering\\s*[- ]?inzittenden')) addDk(2080, 'Schadeverzekering Inzittenden');
+        if (hasDk('verkeersrechtsbijstand|rechtsbijstand\\s+motorrijtuigen')) addDk(2050, 'Rechtsbijstand motorrijtuigen');
+        row['Eigenrisico'] = extractEigenRisico(bt);
+        row['Kenteken'] = formatKenteken(extractKenteken(bt));
+        row['Meldcode'] = extractMeldcode(bt);
+        row['Schadevrije jaren'] = extractSchadevrijeJaren(bt);
+        // Kilometrage als klasse: ≤12.000 → 1, ≤20.000 → 2, daarboven → 3
+        row['Kilometrage'] = kilometrageKlasse(extractKilometrage(bt));
+        row['Gewicht'] = extractGewicht(bt);
+
+      } else if (productOmsch === 'Inboedel') {
+        // Royaal en All-In → 5398 Inboedel All-In; anders → 5397 Inboedel Basis
+        const isRoyaalOfAllIn = /royaal|all[- ]?in|alle\s*gevaren/.test(naam_lc) || hasDk('royaal|all[- ]?in');
+        if (isRoyaalOfAllIn) addDk(5398, 'Inboedel All-In');
+        else                 addDk(5397, 'Inboedel Basis');
+        const vs = extractVerzekerdBedrag(bt);
+        if (vs) { const n = parseInt(vs,10); if (n >= 1000 && n <= 300000) row['Verzekerde som'] = vs; }
+        row['Eigenrisico'] = extractEigenRisico(bt);
+        applyWoningkenmerken(row, bt);
+        // Inboedel zonder woonhuisverzekering → huurder → Eigen woning N
+        row['Eigen woning'] = (heeftWoonhuisverzekering || /eigen\s+woning/i.test(bt)) ? 'J' : 'N';
+        // Gezinssamenstelling verplicht: eigen Hoedanigheid, anders pakketniveau
+        row['Gezinssamenstelling'] = normGezinssamenstelling(hoedanigheid) || docGezin;
+
+      } else if (productOmsch === 'Woonhuis') {
+        // Royaal en All-In → 5396 Woonhuis All-In, altijd met 5409 Glas; basis → 5395 Opstal Basis (OP)
+        const isRoyaalOfAllIn = /royaal|all[- ]?in|alle\s*gevaren/.test(naam_lc) || hasDk('royaal|all[- ]?in');
+        if (isRoyaalOfAllIn) {
+          addDk(5396, 'Woonhuis All-In');
+          addDk(5409, 'Glas in Woonhuis');
+        } else {
+          addDk(5395, 'Opstal Basis (OP)');
+          if (hasDk('glas')) addDk(5409, 'Glas in Woonhuis');
+        }
+        const vs = extractVerzekerdBedrag(bt);
+        if (vs) { const n = parseInt(vs,10); if (n >= 50000 && n <= 2000000) row['Verzekerde som'] = vs; }
+        row['Eigenrisico'] = extractEigenRisico(bt);
+        applyWoningkenmerken(row, bt);
+        row['Eigen woning'] = 'J';
+        row['Gezinssamenstelling'] = normGezinssamenstelling(hoedanigheid) || docGezin;
+
+      } else if (productOmsch === 'AVP') {
+        addDk(6100, 'Aansprakelijkheid particulier');
+        row['Verzekerde som'] = '2500000';
+        row['Gezinssamenstelling'] = normGezinssamenstelling(hoedanigheid) || normGezinssamenstelling(naam_lc);
+
+      } else if (productOmsch === 'Rechtsbijstand particulier') {
+        // Module-dekkingcodes met Module A/B/C/D-omschrijvingen.
+        // Op de volledige bloktekst zoeken: modules kunnen op een vervolgblad
+        // staan, buiten het "Dekking(en)"-blok (bv. Module Motorrijtuigen)
+        const btHas = (pat) => new RegExp(pat, 'i').test(bt);
+        if (btHas('module\\s+standaard|module\\s+schadeverhaal')) addDk(9185, 'Module A: Verkeer');
+        if (btHas('module\\s+familie'))  addDk(9182, 'Familie');
+        if (btHas('module\\s+inkomen'))  addDk(9186, 'Module C: Inkomen');
+        if (btHas('module\\s+wonen'))    addDk(9187, 'Module B: Consument en Wonen');
+        if (btHas('module\\s+fiscaal'))  addDk(9190, 'Module D: Fiscaal en Vermogen');
+        if (!btHas('module\\s+\\w')) {
+          // klassieke stijl zonder Module-benaming
+          if (has('verkeer|consument|standaard')) addDk(9185, 'Module A: Verkeer');
+          if (has('familie'))          addDk(9182, 'Familie');
+          if (has('inkomen'))          addDk(9186, 'Module C: Inkomen');
+          if (has('wonen'))            addDk(9187, 'Module B: Consument en Wonen');
+          if (has('fiscaal'))          addDk(9190, 'Module D: Fiscaal en Vermogen');
+        }
+        row['Motorrijtuigen meeverzekeren'] = btHas('module\\s+motorrijtuigen|verkeersrechtsbijstand') ? 'J' : 'N';
+        row['Mediation meeverzekeren']    = has('mediation') ? 'J' : 'N';
+        row['Arbeidsrecht meeverzekeren'] = has('arbeidsrecht') ? 'J' : 'N';
+        // Gezinssamenstelling: Hoedanigheid-regel of productnaam ("RECHTSBIJSTAND PARTICULIER GEZIN")
+        const pmg = polis.naam.match(/rechtsbijstand\s+particulier\s+(\w+)/i);
+        row['Gezinssamenstelling'] = normGezinssamenstelling(hoedanigheid)
+          || (pmg ? normGezinssamenstelling(pmg[1]) : '') || normGezinssamenstelling(naam_lc);
+
+      } else if (productOmsch === 'Doorlopende Reis') {
+        row['Productomschrijving'] = 'Doorlopende reis particulier';
+        // Klaverblad-dekkingen → reiscodes, gesorteerd laag→hoog
+        const reis = new Map();
+        const heeftSOS      = dkNames.some(d => /persoonlijke\s+hulp|s\.?o\.?s\.?\s*hulp/i.test(d));
+        const heeftWinter   = dkNames.some(d => /wintersport/i.test(d) && !/exclusief\s+wintersport/i.test(d));
+        const heeftMedisch  = dkNames.some(d => /medische\s+kosten/i.test(d));
+        const heeftOngeval  = dkNames.some(d => /personenschade|ongevallen/i.test(d));
+        const heeftBagage   = dkNames.some(d => /bagage/i.test(d));
+        const heeftAnnul    = dkNames.some(d => /annulering/i.test(d));
+        // Bagagebedrag voor de S.O.S.-tier (Compleet vanaf E. 5.000)
+        const bagM = bt.match(/bagage[^\n]*\n[^\n]*?verzekerd\s*bedrag\s*(?:€|EUR|E\.)\s*([\d.]+)/i)
+                  || bt.match(/verzekerd\s*bedrag\s*bagage\s*(?:€|EUR|E\.)\s*([\d.]+)/i);
+        const bagageBedrag = bagM ? parseInt(bagM[1].replace(/\./g,''),10) : 0;
+        // S.O.S.-tier: Compleet bij ongevallendekking of bagage ≥ 5.000;
+        // Basis bij alleen bagage; anders Uitgebreid
+        if (heeftSOS) {
+          if (heeftOngeval || bagageBedrag >= 5000) reis.set(3854, 'S.O.S. Hulpverlening Compleet');
+          else if (heeftBagage && !heeftAnnul && !heeftMedisch && !heeftWinter) reis.set(3852, 'S.O.S. Hulpverlening Basis');
+          else reis.set(3853, 'S.O.S. Hulpverlening Uitgebreid');
+        }
+        if (heeftWinter)  reis.set(3851, 'Wintersport en Risicosporten');
+        if (dkNames.some(d => /automobilist/i.test(d))) reis.set(3855, 'Automobilistenhulp');
+        if (heeftMedisch) reis.set(3856, 'Medische kosten');
+        if (heeftOngeval) reis.set(3857, 'Ongevallen');
+        if (heeftBagage)  reis.set(3858, 'Bagage');
+        if (heeftAnnul)   reis.set(3859, 'Annulering');
+        // Bij Uitgebreid (3853) en Compleet (3854) horen Bagage en Medische kosten er standaard bij
+        if (reis.has(3853) || reis.has(3854)) {
+          reis.set(3856, 'Medische kosten');
+          reis.set(3858, 'Bagage');
+        }
+        [...reis.keys()].sort((a,b) => a-b).forEach(code => addDk(code, reis.get(code)));
+
+        // Vaste reisvelden (altijd vullen):
+        // Dekkingsgebied: Werelddekking → W, Europadekking → X (zelfde codes als NN)
+        row['Dekkingsgebied'] = /europa/i.test(bt) && !/wereld/i.test(bt) ? 'X' : 'W';
+        // Maximale reisduur: expliciete duur uit de polis; anders 185
+        // (Klaverblad dekt aaneengesloten reizen tot 180 dagen)
+        const duurM = bt.match(/(?:maximaal|max\.?)\s+(\d{1,3})\s+(?:aaneengesloten\s+)?dagen/i)
+                   || bt.match(/reisduur\s*[:=]?\s*(\d{1,3})/i);
+        const duurN = duurM ? parseInt(duurM[1], 10) : 0;
+        row['Maximale reisduur'] = duurN && duurN <= 65 ? '65' : '185';
+        // Verzekerde som bagage: bedrag onder de bagage-dekking; Klaverblad-standaard 2.500
+        row['Verzekerde som bagage'] = heeftBagage ? String(bagageBedrag || 2500) : '';
+        // Verzekerde som annulering: bedrag onder de annuleringsdekking; standaard 1.500
+        if (heeftAnnul) {
+          const annM = bt.match(/annulering[^\n]*\n[^\n]*?verzekerd\s*bedrag\s*(?:€|EUR|E\.)\s*([\d.]+)/i);
+          row['Verzekerde som annulering'] = annM ? annM[1].replace(/\./g,'') : '1500';
+        }
+      }
+      // Gezinsongevallen: geen dekkingcode-mapping bekend — geen regels (nooit omschrijving zonder code)
+
+      // "Gezin" zonder kind-informatie markeren: wordt achteraf verfijnd op
+      // geboortejaar uit het relatiescherm (vóór 1965 → H, 1965 of later → I)
+      if (row['Gezinssamenstelling'] === 'H') {
+        const gzBron = `${hoedanigheid} ${docGezinRaw} ${naam_lc}`.toLowerCase();
+        if (/gezin/.test(gzBron) && !/zonder\s*kind|met\s*kind/.test(gzBron)) row['_gezinPlain'] = 1;
+      }
+
+      // Verborgen velden voor ontdubbeling van oude polisversies (verwijderd vóór CSV/preview)
+      row['_folder'] = folderNaam || '';
+      row['_pakket'] = pol.polisnummer || polisnummer.slice(0, 8) || '';
+      row['_doc']    = docDatumNum;
+      row['_eind']   = dateToNum(einddatum);
+
+      rows.push(row);
+    });
+
+    return rows;
+  }
+
+  return { extractPolicyRowsK011, isRelatiescherm, isGroeneKaart, parseRelatiescherm,
+           expandStreetAbbr, titleCase, dateToNum, extractRelatienummerUitNaam };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CSV COLUMNS
+// ═══════════════════════════════════════════════════════════════════════════════
+const CSV_COLUMNS = [
+  'NAWBES_PK','PAKKET_PK','Pakketpolisnummer','Polisnummer',
+  'Voorletters','Tussenvoegsels','Achternaam',
+  'Straat','Huisnummer','Huisnummer toevoeging','Postcode','Woonplaats',
+  'Geboortedatum klant','Agent','Pakketsoort','Productomschrijving','Maatschappij',
+  'Ingangsdatum','Premievervaldatum','Hoofdvervaldatum','Contractvervaldatum',
+  'Betaaltermijn',
+  'Verzekerde som','Eigenrisico',
+  'Gewicht','Kenteken','Meldcode','Kilometrage','Cataloguswaarde','Dagwaarde',
+  'Incassobedrag','Schadevrije jaren','Gezinssamenstelling','Bouwjaar',
+  'Monumentaal pand','Bouwaard muren','Bouwaard vloeren','Bouwaard dak',
+  'Eigen woning','Woonhuis type',
+  'Dekkingsgebied','Maximale reisduur','Verzekerde som bagage','Verzekerde som annulering',
+  'Mediation meeverzekeren','Motorrijtuigen meeverzekeren','Arbeidsrecht meeverzekeren',
+  'Dekking 1','Omschrijving 1','Dekking 2','Omschrijving 2','Dekking 3','Omschrijving 3',
+  'Dekking 4','Omschrijving 4','Dekking 5','Omschrijving 5','Dekking 6','Omschrijving 6',
+  'Dekking 7','Omschrijving 7','Dekking 8','Omschrijving 8','Dekking 9','Omschrijving 9',
+  'Dekking 10','Omschrijving 10','Dekking 11','Omschrijving 11',
+  'Naam verzekeringsnemer 1','Voorletters verzekeringsnemer 1','Voorvoegsel verzekeringsnemer 1',
+  'Geboortedatum verzekeringsnemer 1','Geslacht verzekeringsnemer 1','Verzekerd relatie type verzekeringsnemer 1',
+  'Naam verzekeringsnemer 2','Voorletters verzekeringsnemer 2','Voorvoegsel verzekeringsnemer 2',
+  'Geboortedatum verzekeringsnemer 2','Geslacht verzekeringsnemer 2','Verzekerd relatie type verzekeringsnemer 2',
+  'Naam verzekeringsnemer 3','Voorletters verzekeringsnemer 3','Voorvoegsel verzekeringsnemer 3',
+  'Geboortedatum verzekeringsnemer 3','Geslacht verzekeringsnemer 3','Verzekerd relatie type verzekeringsnemer 3',
+  'Naam verzekeringsnemer 4','Voorletters verzekeringsnemer 4','Voorvoegsel verzekeringsnemer 4',
+  'Geboortedatum verzekeringsnemer 4','Geslacht verzekeringsnemer 4','Verzekerd relatie type verzekeringsnemer 4',
+  'Naam verzekeringsnemer 5','Voorletters verzekeringsnemer 5','Voorvoegsel verzekeringsnemer 5',
+  'Geboortedatum verzekeringsnemer 5','Geslacht verzekeringsnemer 5','Verzekerd relatie type verzekeringsnemer 5',
+  'Uitzondering 1','Uitzondering 2','Uitzondering 3','Uitzondering 4','Uitzondering 5',
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  APP
+// ═══════════════════════════════════════════════════════════════════════════════
+let queue = [], allRows = [], restRows = [];
+
+const $ = id => document.getElementById(id);
+const uploadZone     = $('uploadZone');
+const emptyState     = $('emptyState');
+const queueSection   = $('queueSection');
+const queueBody      = $('queueBody');
+const progressFill   = $('progressFill');
+const processBtn     = $('processBtn');
+const clearBtn       = $('clearBtn');
+const downloadBtn    = $('downloadBtn');
+const summaryCards   = $('summaryCards');
+const resultsSection = $('resultsSection');
+const resultsHead    = $('resultsHead');
+const resultsBody    = $('resultsBody');
+const resultsLabel   = $('resultsLabel');
+
+function parseFolderName(folderName) {
+  if (!folderName) return { relatienummer:'', naam:'', voorletters:'', tussenvoegsel:'', achternaam:'' };
+  // Relatienummer: 6-10 cijfers, waar dan ook in de mapnaam (ook met spaties/punten erin)
+  const relatienummer = K011Parser.extractRelatienummerUitNaam(folderName);
+  // Naam = mapnaam zonder nummer en zonder scheidingstekens ("-", "_", spaties)
+  const naam = folderName.replace(/\d[\d .]{4,13}\d/,'').replace(/\d{6,10}/,'')
+    .replace(/^[\s\-_]+/,'').replace(/[\s\-_]+$/,'').trim();
+  const cleaned = naam.replace(/^(?:dhr\.?|mevr\.?|mw\.?|de\s+heer|mevrouw)\s*/i,'');
+  // Alleen echte partikelen als tussenvoegsel — losse letters zijn voorletters of ruis
+  const TV = new Set(['van','de','du','des','le','la','del','di','da','do','dos','das','los','las','von','zu','zum','zur','der','den','het',"'t",'ten','ter','te','op','in','aan','bij','tot','vd','v/d','v.d','v.d.']);
+  const SUFFIX = new Set(['sr','jr','sr.','jr.','senior','junior']);
+  const isTV = t => TV.has(t.toLowerCase().replace(/\.+$/,''));
+  // Tokens: losse koppeltekens weg ("A.J.M. - T."), vastgeplakte voorletters splitsen ("R.Burgers")
+  let tokens = [];
+  for (const t of cleaned.split(/\s+/).filter(Boolean)) {
+    if (/^[-_&+]+$/.test(t)) continue;
+    const g = t.match(/^((?:[A-Za-z]\.)+)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'\-]+)$/);
+    if (g && !isTV(g[1])) { tokens.push(g[1], g[2]); } else tokens.push(t);
+  }
+  const ini = [];
+  let i = 0;
+  // 1. voorletters (incl. "T. en D." koppels); tussenvoegsels stoppen deze fase
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    if (isTV(tok)) break;
+    if (/^(?:en|&|\+|e\/o)$/i.test(tok) && i + 1 < tokens.length && /^[A-Za-z](?:\.[A-Za-z]?)*\.?$/.test(tokens[i+1])) { i++; continue; }
+    if (/^[A-Za-z](?:\.[A-Za-z])+\.?$/.test(tok)) { for (const c of tok.toUpperCase().replace(/[^A-Z]/g,'')) ini.push(c); i++; }
+    else if (/^[A-Za-z]\.$/.test(tok)) { ini.push(tok[0].toUpperCase()); i++; }
+    else if (/^[A-Za-z]$/.test(tok)) { ini.push(tok.toUpperCase()); i++; }
+    else break;
+  }
+  // 2. losse voornaam vóór tussenvoegsel/achternaam → voorletter
+  if (i < tokens.length - 1 && !isTV(tokens[i]) && /^[A-Za-zÀ-ÿ]{2,}$/.test(tokens[i])) {
+    const laterTV = tokens.slice(i+1).some(isTV);
+    if (laterTV || (ini.length === 0 && tokens.length - i >= 2 && !SUFFIX.has(tokens[tokens.length-1].toLowerCase()))) {
+      ini.push(tokens[i][0].toUpperCase());
+      i++;
+    }
+  }
+  // 3. tussenvoegsels: alleen whitelisted partikelen
+  const tv = [];
+  while (i < tokens.length && isTV(tokens[i])) { tv.push(tokens[i].toLowerCase().replace(/\.+$/,'')); i++; }
+  // 4. rest = achternaam, incl. suffix sr/jr; kleine letters netjes kapitaliseren
+  let achternaam = tokens.slice(i).join(' ');
+  if (achternaam && achternaam === achternaam.toLowerCase()) achternaam = achternaam.replace(/(^|[\s\-'])([a-zà-ÿ])/g, (mm,p,c) => p + c.toUpperCase());
+  return { relatienummer, naam, voorletters: ini.length ? ini.join('.')+'.' : '', tussenvoegsel: tv.join(' '), achternaam };
+}
+
+// Generieke submapnamen ("Polisbladen", "Documenten") zijn geen klantmap —
+// loop omhoog tot de echte klantmap (bv. "71224624 - P.D.R. van Steijn/Polisbladen/x.pdf")
+const GENERIEKE_MAP_RE = /^(polisbladen?|polissen|documenten|docs?|pdf'?s?|bladen|klaverblad|overvoer|export)$/i;
+
+function folderFromPath(relativePath) {
+  const parts = (relativePath||'').replace(/\\/g,'/').split('/').filter(p=>p.length>0);
+  for (let i = parts.length - 2; i >= 0; i--) {
+    if (!GENERIEKE_MAP_RE.test(parts[i])) return parts[i];
+  }
+  return parts.length >= 2 ? parts[parts.length-2] : '';
+}
+
+function showFolderDebug(items) {
+  const uniek = new Map();
+  for (const it of items) {
+    if (!it.folderName || uniek.has(it.folderName)) continue;
+    uniek.set(it.folderName, it.relatienummer || K011Parser.extractRelatienummerUitNaam(it.folderName) || '');
+  }
+  const debugDiv = $('folderDebug');
+  if (!debugDiv) return;
+  if (!uniek.size) {
+    debugDiv.textContent = 'Geen mapnaam gedetecteerd — controleer mapstructuur';
+    return;
+  }
+  const delen = [...uniek.entries()].map(([map, nr]) =>
+    nr ? `${map} (#${nr})` : `${map} (GEEN RELATIENUMMER!)`);
+  debugDiv.textContent = 'Gedetecteerde map(pen): ' + delen.join(' | ');
+}
+
+// ── ZIP expansion ─────────────────────────────────────────────────────────────
+async function expandZips(items) {
+  if (typeof JSZip === 'undefined') return items; // JSZip niet geladen — doorgeven
+  const result = [];
+  for (const item of items) {
+    if (/\.zip$/i.test(item.file.name)) {
+      try {
+        const zip = await JSZip.loadAsync(item.file);
+        const baseName = item.file.name.replace(/\.zip$/i, '');
+        const pdfEntries = Object.entries(zip.files)
+          .filter(([name, f]) => !f.dir && /\.pdf$/i.test(name));
+        for (const [name, zipEntry] of pdfEntries) {
+          const blob = await zipEntry.async('blob');
+          const parts = name.replace(/\\/g, '/').split('/').filter(Boolean);
+          const shortName = parts[parts.length - 1];
+          const pdfFile = new File([blob], shortName, { type: 'application/pdf' });
+          // Klantmap bepalen: mappen in de ZIP (generieke namen zoals "Polisbladen"
+          // overslaan) → map waar de ZIP zelf in staat → ZIP-bestandsnaam
+          let folderInZip = '';
+          for (let pi = parts.length - 2; pi >= 0; pi--) {
+            if (!GENERIEKE_MAP_RE.test(parts[pi])) { folderInZip = parts[pi]; break; }
+          }
+          const kandidaten = [folderInZip, item.folderName, baseName].filter(n => n && !GENERIEKE_MAP_RE.test(n));
+          result.push({ file: pdfFile, folderName: kandidaten[0] || item.folderName || baseName });
+        }
+      } catch (err) {
+        console.warn('ZIP uitpakken mislukt:', item.file.name, err);
+      }
+    } else {
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+$('pickFolderBtn').addEventListener('click', e => { e.stopPropagation(); folderInput.value=''; folderInput.click(); });
+$('pickFileBtn').addEventListener('click', e => { e.stopPropagation(); $('fileInput').value=''; $('fileInput').click(); });
+
+folderInput.addEventListener('change', async e => {
+  const rawFiles = Array.from(e.target.files);
+  const items = rawFiles
+    .filter(f => /\.(txt|pdf|zip)$/i.test(f.name))
+    .map(f => {
+      const rp = f.webkitRelativePath || '';
+      return { file: f, folderName: rp ? folderFromPath(rp) : '' };
+    });
+  e.target.value = '';
+  if (!items.length) { alert('Geen .txt, .pdf of .zip bestanden gevonden in deze map.'); return; }
+  const expanded = await expandZips(items);
+  showFolderDebug(expanded);
+  if (expanded.length) handleFileItems(expanded);
+});
+
+$('fileInput').addEventListener('change', async e => {
+  const rawFiles = Array.from(e.target.files);
+  const items = rawFiles
+    .filter(f => /\.(txt|pdf|zip)$/i.test(f.name))
+    .map(f => ({ file: f, folderName: '' }));
+  e.target.value = '';
+  if (!items.length) return;
+  const expanded = await expandZips(items);
+  showFolderDebug(expanded);
+  if (expanded.length) handleFileItems(expanded);
+});
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', e => { if (!uploadZone.contains(e.relatedTarget)) uploadZone.classList.remove('drag-over'); });
+uploadZone.addEventListener('drop', async e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  const fileItems = [];
+  const dtItems = Array.from(e.dataTransfer.items || []);
+  const entries = [];
+  const fallbackFiles = Array.from(e.dataTransfer.files || []);
+  if (dtItems.length && typeof dtItems[0].webkitGetAsEntry === 'function') {
+    for (const dtItem of dtItems) {
+      try { const en = dtItem.webkitGetAsEntry(); if (en) entries.push(en); } catch(_) {}
+    }
+  }
+  for (const entry of entries) {
+    try { fileItems.push(...await collectFiles(entry, entry.isDirectory ? entry.name : '')); } catch(err) {}
+  }
+  if (!fileItems.length) {
+    for (const f of fallbackFiles) {
+      if (/\.(txt|pdf|zip)$/i.test(f.name)) fileItems.push({ file: f, folderName:'' });
+    }
+  }
+  if (fileItems.length) {
+    const expanded = await expandZips(fileItems);
+    showFolderDebug(expanded);
+    if (expanded.length) handleFileItems(expanded);
+  }
+});
+
+function readDirEntries(reader) {
+  return new Promise((resolve,reject) => {
+    const all = [];
+    function next() { reader.readEntries(batch => { if (!batch.length) { resolve(all); return; } all.push(...batch); next(); }, reject); }
+    next();
+  });
+}
+function entryToFile(entry) { return new Promise((res,rej) => entry.file(res,rej)); }
+async function collectFiles(entry, folderName) {
+  const result = [];
+  if (entry.isFile) {
+    if (/\.(txt|pdf|zip)$/i.test(entry.name)) {
+      const file = await entryToFile(entry);
+      result.push({ file, folderName });
+    }
+  } else if (entry.isDirectory) {
+    // Generieke submap ("Polisbladen") → klantmapnaam van erboven doorgeven
+    const dirFolder = (GENERIEKE_MAP_RE.test(entry.name) && folderName) ? folderName : entry.name;
+    const entries = await readDirEntries(entry.createReader());
+    for (const child of entries) result.push(...await collectFiles(child, dirFolder));
+  }
+  return result;
+}
+
+function handleFileItems(items) {
+  if (!items.length) return;
+  const newItems = items.map(({ file, folderName }) => {
+    const parsed = parseFolderName(folderName);
+    return { file, folderName, relatienummer: parsed.relatienummer,
+      folderVoorletters: parsed.voorletters, folderTussenvoegsel: parsed.tussenvoegsel, folderAchternaam: parsed.achternaam,
+      status: 'pending', rows: 0, error: null };
+  });
+  queue = [...newItems]; // replace, don't append
+  allRows = [];
+  restRows = [];
+  renderQueue();
+  emptyState.style.display    = 'none';
+  queueSection.style.display  = 'block';
+  resultsSection.style.display = 'none';
+  $('restSection').style.display = 'none';
+  summaryCards.style.display  = 'none';
+  downloadBtn.disabled        = true;
+  progressFill.style.width    = '0%';
+  processBtn.disabled         = false;
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtSize(b) { return b<1024?`${b} B`:b<1048576?`${(b/1024).toFixed(1)} KB`:`${(b/1048576).toFixed(1)} MB`; }
+function isPDF(f) { return f.name.toLowerCase().endsWith('.pdf'); }
+
+function renderQueue() {
+  queueBody.innerHTML = '';
+  for (const item of queue) {
+    const badge = {
+      pending:    `<span class="badge badge-pending">&#9203; Wachten</span>`,
+      processing: `<span class="badge badge-processing"><span class="spin">&#9881;</span> Verwerken&hellip;</span>`,
+      done:       `<span class="badge badge-done">&#10003; Klaar</span>`,
+      empty:      `<span class="badge badge-empty">&#9888; Geen data</span>`,
+      error:      `<span class="badge badge-error">&#10007; Fout</span>`,
+    }[item.status] || '';
+    // Mapcel: naam + relatienummer-badge, of een duidelijke waarschuwing als de
+    // mapnaam geen 6-10-cijferig relatienummer bevat
+    let mapDisplay;
+    if (item.folderName) {
+      const nr = item.relatienummer || '';
+      mapDisplay = `<span style="color:var(--green-dark);font-size:.8rem">${esc(item.folderName)}</span>` +
+        (nr ? ` <span class="mapping-tag">#${esc(nr)}</span>`
+            : ` <span class="badge badge-error" title="Mapnaam bevat geen relatienummer (6-10 cijfers) — NAWBES_PK blijft leeg">geen relatienr!</span>`);
+    } else {
+      mapDisplay = `<span class="badge badge-error" title="Bestand zit niet in een klantmap — relatienummer en naam kunnen niet bepaald worden">geen map!</span>`;
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600">${esc(item.file.name)}</td>
+      <td>${mapDisplay}</td>
+      <td style="color:var(--text-muted)">${fmtSize(item.file.size)}</td>
+      <td style="color:var(--text-muted)">${isPDF(item.file)?'PDF':'TXT'}</td>
+      <td>${badge}</td>
+      <td style="color:var(--text-muted)">${item.status==='done'||item.status==='empty'?item.rows:'&mdash;'}</td>
+      <td style="color:var(--text-muted);font-size:.8rem">${esc(item.error||'')}</td>`;
+    queueBody.appendChild(tr);
+  }
+}
+
+processBtn.addEventListener('click', processQueue);
+clearBtn.addEventListener('click', () => {
+  queue=[]; allRows=[]; restRows=[];
+  $('restSection').style.display = 'none';
+  emptyState.style.display='block'; queueSection.style.display='none';
+  resultsSection.style.display='none';
+});
+
+async function processQueue() {
+  processBtn.disabled = true; allRows = []; restRows = [];
+  $('restSection').style.display = 'none';
+  const kantoor      = ($('kantoorInput')||{}).value || '';
+  const overvoermaand = ($('overvoermaand')||{}).value || '';
+
+  // Eén doorloop: elk bestand wordt direct volledig verwerkt (extract → parse → klaar),
+  // zodat de wachtrij live afvinkt. Relatiescherm-verrijking gebeurt achteraf op alle
+  // rijen, dus de volgorde van bestanden maakt niet uit.
+  const folderInfo = {}; // mapnaam → { persons:[{naam,geboortedatum}], straat, postcode, ... }
+  for (let i = 0; i < queue.length; i++) {
+    const item = queue[i];
+    item.status='processing'; item.rows=0; item.error=null;
+    progressFill.style.width = `${(i/queue.length)*100}%`;
+    renderQueue();
+    await tick();
+    try {
+      // Bestandsnaam-hint: "..._gk_1.pdf" = groene kaart (nummer varieert), "..._pb_2.pdf" = polisblad
+      if (/(^|[_\-\s.])gk[_\-\s]?\d*\.(pdf|txt)$/i.test(item.file.name)) {
+        item.status='done'; item.error='Groene kaart — overgeslagen (bestandsnaam)';
+        renderQueue(); await tick(); continue;
+      }
+      const text = isPDF(item.file) ? await extractTextFromPDF(item.file) : await readTxt(item.file);
+      if (K011Parser.isRelatiescherm(text)) {
+        const rs = K011Parser.parseRelatiescherm(text);
+        const key = item.folderName || '';
+        const prev = folderInfo[key] || {};
+        // persons samenvoegen als een map meerdere relatieschermen heeft
+        rs.persons = [...(prev.persons||[]), ...(rs.persons||[])];
+        folderInfo[key] = Object.assign(prev, rs);
+        item.status='done'; item.error='Relatiescherm — NAW-bron';
+      } else if (!text.trim()) {
+        item.status='empty'; item.error='Geen tekst gevonden in bestand';
+      } else {
+        const restVoor = restRows.length;
+        const rows = K011Parser.extractPolicyRowsK011(text, item.file.name, item.relatienummer, item.folderName, kantoor, overvoermaand, restRows);
+        const restNieuw = restRows.length - restVoor;
+
+        // NAWBES_PK uitsluitend uit de mapnaam (6-10 cijfers) — nooit uit de PDF
+        const folderRel = item.relatienummer && /^\d{6,10}$/.test(item.relatienummer) ? item.relatienummer : '';
+        for (const row of rows.concat(restRows.slice(restVoor))) {
+          if (folderRel) {
+            row['NAWBES_PK'] = folderRel;
+            row['Pakketpolisnummer'] = folderRel + '.001';
+          } else {
+            row['NAWBES_PK'] = '';
+            row['Pakketpolisnummer'] = '';
+          }
+          if (item.folderAchternaam) {
+            row['Voorletters'] = (item.folderVoorletters||'').toUpperCase();
+            row['Tussenvoegsels'] = item.folderTussenvoegsel||'';
+            row['Achternaam'] = item.folderAchternaam;
+          }
+        }
+
+        applyKoppelMapping(rows);
+        applyKoppelMapping(restRows.slice(restVoor));
+        item.rows = rows.length;
+        if (rows.length) {
+          item.status = 'done';
+          if (!folderRel) item.error = 'Let op: geen relatienummer in mapnaam';
+        } else if (restNieuw) {
+          item.status = 'done'; item.error = `${restNieuw} handmatig product(en) — zie vlak onderaan`;
+        } else if (K011Parser.isGroeneKaart(text)) {
+          // Pas ná het parsen labelen: een polisblad mét groene-kaartpagina's parseert gewoon
+          item.status = 'done'; item.error = 'Groene kaart — overgeslagen';
+        } else {
+          item.status = 'empty'; item.error = 'Geen polisrijen herkend';
+        }
+        allRows.push(...rows);
+      }
+    } catch(err) {
+      item.status='error'; item.error=String(err.message||err).slice(0,120);
+    }
+    renderQueue();
+    await tick();
+  }
+
+  // ── Naverwerking: relatiescherm-verrijking (geboortedatum!) en ontdubbeling ──
+  applyRelatieschermInfo(allRows, folderInfo);
+  // Eigen woning bij Inboedel: J zodra dezelfde klant ergens een woonhuisverzekering
+  // heeft (ook in een ander pakket/polisblad); anders N (huurder)
+  const woonhuisKlanten = new Set(allRows.filter(r => r['Productomschrijving'] === 'Woonhuis').map(r => r['_folder']));
+  for (const r of allRows) {
+    if (r['Productomschrijving'] === 'Inboedel' && r['Eigen woning'] !== 'J') {
+      r['Eigen woning'] = woonhuisKlanten.has(r['_folder']) ? 'J' : 'N';
+    }
+  }
+  allRows = dedupeK011Rows(allRows);
+
+  // Handmatige rijen: zelfde naverwerking (geboortedatum, gezin-verfijning, ontdubbeling)
+  applyRelatieschermInfo(restRows, folderInfo);
+  restRows = dedupeK011Rows(restRows);
+
+  progressFill.style.width='100%';
+  processBtn.disabled=false;
+  showSummary();
+  if (allRows.length) { downloadBtn.disabled=false; renderResults(); }
+  renderRest();
+}
+
+// Kies bij meerdere relaties (bv. "Er zijn 2 relaties gevonden") de persoon die bij
+// de mapnaam hoort: eerst op achternaam, dan op voorletters.
+function pickRelatie(fi, achternaam, voorletters) {
+  const persons = (fi && fi.persons) || [];
+  if (!persons.length) return null;
+  let cands = persons;
+  const ach = (achternaam||'').toLowerCase().trim();
+  if (ach) {
+    const m = cands.filter(p => p.naam.toLowerCase().includes(ach));
+    if (m.length) cands = m;
+  }
+  const vl = (voorletters||'').replace(/[^A-Za-z]/g,'').toUpperCase();
+  if (vl && cands.length > 1) {
+    const m2 = cands.filter(p => {
+      const pIni = p.naam.split(/\s+/).filter(t => /^[A-Z]$/.test(t)).join('');
+      return pIni && (pIni === vl || pIni.startsWith(vl) || vl.startsWith(pIni));
+    });
+    if (m2.length) cands = m2;
+  }
+  return cands[0];
+}
+
+// Relatiescherm-gegevens toepassen op alle rijen (na verwerking, volgorde-onafhankelijk):
+// geboortedatum klant (juiste persoon bij de mapnaam), adres-fallback,
+// en verplichte gezinssamenstelling voor Inboedel/Woonhuis.
+function applyRelatieschermInfo(rows, folderInfo) {
+  const keys = Object.keys(folderInfo);
+  const infoFor = name => folderInfo[name || ''] || (keys.length === 1 ? folderInfo[keys[0]] : null);
+  for (const row of rows) {
+    const fi = infoFor(row['_folder']);
+    if (fi) {
+      const pers = pickRelatie(fi, row['Achternaam'], row['Voorletters']);
+      if (pers && pers.geboortedatum) row['Geboortedatum klant'] = pers.geboortedatum;
+      else if (fi.geboortedatum) row['Geboortedatum klant'] = fi.geboortedatum;
+      if (!row['Straat'] && fi.straat) {
+        row['Straat'] = K011Parser.titleCase(K011Parser.expandStreetAbbr(fi.straat));
+        row['Huisnummer'] = fi.huisnummer || '';
+        row['Huisnummer toevoeging'] = fi.huisnummertoevoeging || '';
+      }
+      if (!row['Postcode'] && fi.postcode) row['Postcode'] = fi.postcode;
+      if (!row['Woonplaats'] && fi.woonplaats) row['Woonplaats'] = fi.woonplaats;
+    }
+    // "Gezin" zonder kind-info verfijnen op geboortejaar: geboren vóór 1-1-1965
+    // → gezin zonder kinderen (H), geboren daarna → gezin met kinderen (I)
+    const gebJaar = parseInt(((row['Geboortedatum klant']||'').match(/(\d{4})$/) || [,'0'])[1], 10);
+    if (row['_gezinPlain'] && gebJaar) {
+      row['Gezinssamenstelling'] = gebJaar < 1965 ? 'H' : 'I';
+    }
+    // Gezinssamenstelling is verplicht voor Inboedel/Woonhuis: als de polis geen
+    // Hoedanigheid gaf, afleiden uit relatietelling + geboortejaar
+    const prod = row['Productomschrijving'];
+    if ((prod === 'Inboedel' || prod === 'Woonhuis') && !row['Gezinssamenstelling']) {
+      const n = fi && fi.persons ? fi.persons.length : 0;
+      row['Gezinssamenstelling'] = n >= 2 ? (gebJaar >= 1965 ? 'I' : 'H') : 'A';
+    }
+  }
+}
+
+// Ontdubbeling (zelfde gedrag als NN):
+// 1. per klant+pakketnummer alleen het nieuwste polisblad ("vervangt alle voorgaande polisbladen")
+// 2. per klant+kenteken één autorij — nieuwste document/einddatum wint
+// 3. ghost-check: Personenauto zonder kenteken/meldcode/gewicht vervalt
+// 4. AVP en Rechtsbijstand maximaal één per klant (ook over pakketten heen)
+// 5. uniek per klant+polisnummer
+function dedupeK011Rows(rows) {
+  const newestDoc = {};
+  for (const r of rows) {
+    const k = `${r['_folder']}|${r['_pakket']}`;
+    if (!(k in newestDoc) || (r['_doc']||0) > newestDoc[k]) newestDoc[k] = r['_doc']||0;
+  }
+  rows = rows.filter(r => (r['_doc']||0) >= newestDoc[`${r['_folder']}|${r['_pakket']}`]);
+
+  const byKenteken = {};
+  for (const r of rows) {
+    if (r['Productomschrijving'] !== 'Personenauto' || !r['Kenteken']) continue;
+    const k = `${r['_folder']}|${r['Kenteken']}`;
+    const score = (r['_doc']||0)*100000000 + (r['_eind']||0);
+    if (!(k in byKenteken) || score > byKenteken[k].score) byKenteken[k] = { row:r, score };
+  }
+  rows = rows.filter(r => {
+    if (r['Productomschrijving'] !== 'Personenauto' || !r['Kenteken']) return true;
+    return byKenteken[`${r['_folder']}|${r['Kenteken']}`].row === r;
+  });
+
+  rows = rows.filter(r => r['Productomschrijving'] !== 'Personenauto'
+    || !!(r['Kenteken'] || r['Meldcode'] || r['Gewicht']));
+
+  // AVP en Rechtsbijstand: maximaal één per klant, ook over pakketten heen —
+  // meerdere rijen zijn oude polisversies; het nieuwste polisblad wint
+  const EEN_PER_KLANT = new Set(['AVP','Rechtsbijstand particulier']);
+  const bestPerKlant = {};
+  for (const r of rows) {
+    if (!EEN_PER_KLANT.has(r['Productomschrijving'])) continue;
+    const k = `${r['_folder']}|${r['Productomschrijving']}`;
+    const score = (r['_doc']||0)*100000000 + (r['_eind']||0);
+    if (!(k in bestPerKlant) || score >= bestPerKlant[k].score) bestPerKlant[k] = { row:r, score };
+  }
+  rows = rows.filter(r => {
+    if (!EEN_PER_KLANT.has(r['Productomschrijving'])) return true;
+    return bestPerKlant[`${r['_folder']}|${r['Productomschrijving']}`].row === r;
+  });
+
+  const seen = new Set();
+  rows = rows.filter(r => {
+    const k = `${r['_folder']}|${r['Polisnummer']}`;
+    if (r['Polisnummer'] && seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  for (const r of rows) { delete r['_folder']; delete r['_pakket']; delete r['_doc']; delete r['_eind']; delete r['_gezinPlain']; }
+  return rows;
+}
+
+function readTxt(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = () => rej(new Error('Kan bestand niet lezen'));
+    r.readAsText(file, 'UTF-8');
+  });
+}
+function tick() { return new Promise(r => setTimeout(r,0)); }
+
+function showSummary() {
+  const done = queue.filter(q=>q.status==='done').length;
+  const errors = queue.filter(q=>q.status==='error').length;
+  const products = new Set(allRows.map(r=>r['Productomschrijving']).filter(Boolean));
+  $('statFiles').textContent = done;
+  $('statRows').textContent = allRows.length;
+  $('statProducts').textContent = products.size;
+  $('statErrors').textContent = errors;
+  $('statRest').textContent = restRows.length;
+  summaryCards.style.display = 'grid';
+}
+
+function renderResults() {
+  const PREVIEW = 100;
+  resultsLabel.textContent = `Resultaten (${Math.min(allRows.length,PREVIEW)} van ${allRows.length} rijen)`;
+  resultsSection.style.display = 'block';
+  resultsHead.innerHTML = '<tr>'+CSV_COLUMNS.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>';
+  resultsBody.innerHTML = allRows.slice(0,PREVIEW).map(row =>
+    '<tr>'+CSV_COLUMNS.map(col => {
+      let v = row[col]; if (v==null) v='';
+      return `<td title="${esc(String(v))}">${esc(String(v))}</td>`;
+    }).join('')+'</tr>'
+  ).join('');
+}
+
+function doDownloadCSV() {
+  if (!allRows.length) return;
+  const lines = allRows.map(row =>
+    CSV_COLUMNS.map(col => {
+      let v = row[col]; if (v==null) v=''; v=String(v);
+      if (v.includes(';')||v.includes('"')||v.includes('\n')||v.includes('\r')) v='"'+v.replace(/"/g,'""')+'"';
+      return v;
+    }).join(';')
+  );
+  const csv = '﻿' + [CSV_COLUMNS.join(';'), ...lines].join('\r\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
+    download: `overvoer_k011_${new Date().toISOString().slice(0,10)}.csv`,
+  });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+downloadBtn.addEventListener('click', doDownloadCSV);
+document.addEventListener('click', e => { if (e.target.id==='downloadBtn2') doDownloadCSV(); });
+
+// Handmatige producten (bromfiets, motor, camper, landbouwtrekker, brand, ...):
+// zelfde 104-kolommen template als de gewone export, apart downloadvlak
+function renderRest() {
+  if (!restRows.length) { $('restSection').style.display = 'none'; return; }
+  const PREVIEW = 100;
+  $('restLabel').textContent = `Handmatige producten (${Math.min(restRows.length,PREVIEW)} van ${restRows.length} rijen)`;
+  $('restSection').style.display = 'block';
+  $('restHead').innerHTML = '<tr>'+CSV_COLUMNS.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>';
+  $('restBody').innerHTML = restRows.slice(0,PREVIEW).map(row =>
+    '<tr>'+CSV_COLUMNS.map(col => {
+      let v = row[col]; if (v==null) v='';
+      return `<td title="${esc(String(v))}">${esc(String(v))}</td>`;
+    }).join('')+'</tr>'
+  ).join('');
+}
+
+function doDownloadRestCsv() {
+  if (!restRows.length) return;
+  const lines = restRows.map(row =>
+    CSV_COLUMNS.map(col => {
+      let v = row[col]; if (v==null) v=''; v=String(v);
+      if (v.includes(';')||v.includes('"')||v.includes('\n')||v.includes('\r')) v='"'+v.replace(/"/g,'""')+'"';
+      return v;
+    }).join(';')
+  );
+  const csv = '﻿' + [CSV_COLUMNS.join(';'), ...lines].join('\r\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
+    download: `overvoer_k011_handmatig_${new Date().toISOString().slice(0,10)}.csv`,
+  });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function doDownloadRestXlsx() {
+  if (!restRows.length) return;
+  if (typeof XLSX === 'undefined') { doDownloadRestCsv(); return; }
+  const data = restRows.map(row => {
+    const o = {};
+    for (const c of CSV_COLUMNS) o[c] = row[c] == null ? '' : row[c];
+    return o;
+  });
+  const ws = XLSX.utils.json_to_sheet(data, { header: CSV_COLUMNS });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Handmatig');
+  XLSX.writeFile(wb, `overvoer_k011_handmatig_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+$('downloadRestCsvBtn').addEventListener('click', doDownloadRestCsv);
+$('downloadRestXlsxBtn').addEventListener('click', doDownloadRestXlsx);
+
+// ── Koppelbestand ─────────────────────────────────────────────────────────────
+let koppelMapping = {};
+
+function applyKoppelMapping(rows) {
+  for (const row of rows) {
+    const pk = row['NAWBES_PK'];
+    if (pk && koppelMapping[pk]) row['NAWBES_PK'] = koppelMapping[pk];
+  }
+}
+
+$('loadMappingBtn').addEventListener('click', () => $('mappingFileInput').click());
+
+$('mappingFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const lines = (ev.target.result||'').split(/\r?\n/).filter(l=>l.trim());
+    const newMap = {};
+    for (const line of lines) {
+      const sep = line.includes(';') ? ';' : line.includes(',') ? ',' : '\t';
+      const parts = line.split(sep).map(s=>s.trim());
+      if (parts.length >= 2 && /^\d{6,10}$/.test(parts[0])) newMap[parts[0]] = parts[1];
+    }
+    const count = Object.keys(newMap).length;
+    if (!count) { alert('Geen geldige regels gevonden. Verwacht formaat: relatienummer;oud_polisnummer'); return; }
+    koppelMapping = newMap;
+    $('mappingStatus').textContent = `${count} koppeling(en) geladen`;
+    $('clearMappingBtn').style.display = 'inline-flex';
+    const body = $('mappingBody');
+    body.innerHTML = Object.entries(newMap).slice(0, 15).map(([k, v]) =>
+      `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('');
+    $('mappingPreview').style.display = 'block';
+  };
+  reader.readAsText(file, 'UTF-8');
+});
+
+$('clearMappingBtn').addEventListener('click', () => {
+  koppelMapping = {};
+  $('mappingStatus').innerHTML = 'Geen koppelbestand geladen &mdash; verwacht formaat: <code style="font-size:.75rem">relatienummer;oud_polisnummer</code>';
+  $('clearMappingBtn').style.display = 'none';
+  $('mappingPreview').style.display = 'none';
+});
+</script>
+</body>
+</html>
