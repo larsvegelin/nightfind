@@ -233,7 +233,10 @@ Bestanden: `budget.html`, `assets/css/budget.css`, `assets/js/budget.js`.
 Eén los HTML-bestand (geen installatie, werkt ook offline): dubbelklik om te openen in de browser.
 
 - **X-OVR (overgang kantoor)** – brief 1 (aankondiging), 2 (tussentijdse kennisgeving) of 3 (nieuwe polisbladen); kies kantoor (aangesloten ZekerDichtbij-kantoren), huidige maatschappij, ingangsdatum (maand + jaar), **particulier/zakelijk**, **kantoorpakket of Waerdse pakket** en **met/zonder Q&A**
-- **X-BRF (productbrief)** – kies maatschappij, type product en premiestijging
+- **X-BRF** – *Omzetting* (maatschappij, product, premiestijging), *Herbeoordeling premie* (met tabelbouwer voor de uitgangspunten) of *Eigen* (HTML plakken; tabellen worden herkend en zijn te bewerken)
+- **Labels (ANVA)** – ingebouwde labellijst (9.850 labels): zoeken op nummer of omschrijving en invoegen in codevakken, tabelcellen of onderwerp; labels in de brief worden met omschrijving getoond, met voorbeeldwaarden per soort (bedrag, datum, aantal…); lijst te vervangen door een nieuwe CSV-export
+- **Codecleaner** – alle brieven worden opgeschoond (opmaakattributen, spans, Word-code weg; tabellen strak opgemaakt) zonder de inhoud te wijzigen; zie `docs/brieventool-labels-tabellen-codecleaner.md`
+- **Arial 11** – preview en Word gebruiken altijd Arial 11
 - **Eigen (Word → HTML)** – plak tekst uit Word (opmaak, lijsten, tabellen en links blijven behouden) of upload een `.docx`; de HTML-code is te bewerken en de preview werkt direct mee. Geef de brief een eigen naam
 - **Vaste kop** – briefhoofd (plaats, kenmerk, onderwerp) en aanhef voor alle brieven, aan of uit te zetten; bij X-BRF en Eigen zijn plaats en onderwerp in te vullen
 - **Uitlezen** – samenvoegvelden van het briefsysteem (`@L97020@`, `@ondertek_naam@`, …) worden herkend; ze blijven in de downloads staan

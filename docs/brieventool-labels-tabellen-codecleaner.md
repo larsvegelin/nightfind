@@ -252,8 +252,10 @@ X-BRF krijgt een keuze **"Soort brief"**:
 
 ---
 
-## 8. Open punten
+## 8. Besluiten (open punten afgehandeld)
 
-1. **Arial 11 vs. briefsysteem op 10 pt** – zie §4. Graag bevestigen dat het briefsysteem ook naar 11 gaat; anders klopt de paginaverdeling in de preview niet meer met de echte brief.
-2. **Tabelbreedte** – de cleaner haalt de breedte (29,6% in het voorbeeld) weg; het briefsysteem bepaalt de breedte dan zelf (passend bij de inhoud). Moet een vaste breedte blijven, dan kan die als optie terugkomen.
-3. **Afzender X-BRF** – blijft "De Waerdse Assuradeuren B.V.", met plaats Heerhugowaard in de vaste kop (nog te bevestigen).
+| # | Punt | Besluit |
+|---|---|---|
+| 1 | Arial 11 vs. briefsysteem op 10 pt | **Arial 11** – preview en Word gebruiken altijd Arial 11 (keuzelijst verwijderd). |
+| 2 | Tabelbreedte | **Akkoord** – de codecleaner haalt breedtes weg; het briefsysteem bepaalt de breedte. |
+| 3 | Afzender X-BRF | **Akkoord** – "De Waerdse Assuradeuren B.V.", plaats Heerhugowaard in de vaste kop. |
