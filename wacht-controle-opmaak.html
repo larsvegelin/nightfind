@@ -159,9 +159,11 @@
   </div>
 
   <section class="woning-kaart" id="woning-kaart" hidden>
-    <h3>🏠 Woningdata aanvullen (BAG via PDOK)</h3>
-    <div class="sub">Vult lege <strong>Bouwjaar</strong> en <strong>Woonhuis type</strong> in de CSV aan voor Woonhuis- en Inboedelpolissen, op basis van postcode en huisnummer.
-      Bouwaard (muren/vloeren/dak) staat niet in open registraties en blijft leeg. Alleen de adressen worden opgevraagd bij PDOK (en optioneel EP-Online).</div>
+    <h3>🏠 CSV corrigeren en woningdata aanvullen</h3>
+    <div class="sub">Bij inlezen corrigeert de tool automatisch: <strong>Eigen woning J</strong> als opstal en inboedel op hetzelfde adres staan, en
+      <strong>Gezinssamenstelling</strong> uit de AVP-tekst (clausule "eigen risico voor kinderen" → H, "particulier in gezinsverband" → I), ook op de andere polissen van de klant.<br>
+      De knop vult lege <strong>Bouwjaar</strong> en <strong>Woonhuis type</strong> aan voor Woonhuis- en Inboedelpolissen via de BAG (PDOK). Bouwaard staat niet in open registraties en blijft leeg.
+      Alleen de adressen worden opgevraagd bij PDOK (en optioneel EP-Online).</div>
     <div class="woning-telling" id="woning-telling"></div>
     <details class="instellingen" id="woning-instellingen">
       <summary>Instellingen: codes voor Woonhuis type en EP-Online-sleutel</summary>
@@ -390,7 +392,11 @@ async function laadBestand(type,file,handle){
     if(rijen.length<2)throw new Error('bestand heeft geen datarijen');
     const header=rijen[0].map(h=>h.trim());
     staat[type]={header,rijen:rijen.slice(1).map(r=>r.map(v=>v.trim())),naam:file.name,delim};
-    if(type==='csv'){staat.csv.aangevuld=new Map();staat.csv.eigenWoningGecorrigeerd=corrigeerEigenWoning(staat.csv);}
+    if(type==='csv'){
+      staat.csv.aangevuld=new Map();staat.csv.correcties=[];
+      corrigeerEigenWoning(staat.csv);
+      corrigeerGezinssamenstelling(staat.csv);
+    }
     $('kaart-'+type).classList.add('geladen');
     setStatus(type,'✓ '+file.name+' ('+staat[type].rijen.length+' regels, '+header.length+' kolommen, '+DELIM_NAAM[delim]+')','ok');
     if(handle){await bewaarHandle(type,handle);toonHaalKnop(type,handle);}
@@ -1141,6 +1147,52 @@ function woningTaken(){
   return leeg;
 }
 
+// ================================================================
+// Automatische correcties in de CSV (bij inlezen)
+// ================================================================
+function corrigeerCel(C,ri,col,nieuw,reden){
+  const r=C.rijen[ri],oud=(r[col]||'').trim();
+  if(oud.toUpperCase()===nieuw.toUpperCase())return false;
+  r[col]=nieuw;
+  const m=C.aangevuld.get(ri)||new Map();
+  m.set(col,{bron:'correctie',streng:true,toelichting:C.header[col].toLowerCase()+' '+(oud||'leeg')+' → '+nieuw+', '+reden});
+  C.aangevuld.set(ri,m);
+  const prod=woningKolommen(C.header).prod;
+  C.correcties.push({polisNr:r[MATCH_IDX]||'',product:prod>=0?r[prod]:'',kolom:C.header[col],oud,nieuw,reden});
+  return true;
+}
+
+// AVP-tekst bepaalt de gezinssamenstelling; die gaat ook naar de andere (niet-voertuig)polissen van de klant
+const GEZIN_H_PATROON=/eigen\s*risico\s*voor\s*kinderen|clausule\s*0*403\b/i;   // H = gezin zonder kinderen
+const GEZIN_I_PATROON=/particulier\s+in\s+gezinsverband/i;                        // I = gezin met kinderen
+const IS_AVP=/\bavp\b|aansprakelijkheid\s*particulier/i;
+const IS_VOERTUIG=/auto|motor|brom|scooter|snorfiets|oldtimer|caravan|aanhang|camper|vaartuig|boot|invalidenwagen/i;
+function corrigeerGezinssamenstelling(C){
+  const gz=C.header.findIndex(h=>/^gezinssamenstelling$/i.test(h.trim()));
+  const k=woningKolommen(C.header);
+  if(gz<0||k.prod<0)return;
+  const klantKey=r=>(r[0]||'').trim()||('adres|'+adresSleutel(k.pc>=0?r[k.pc]:'',k.nr>=0?r[k.nr]:'',k.tv>=0?r[k.tv]:'')+'|'+normKey(r[6]));
+  const perKlant=new Map();
+  C.rijen.forEach((r,ri)=>{
+    if(!IS_AVP.test(r[k.prod]||''))return;
+    const tekst=r.join(' ');
+    let code='',reden='';
+    if(GEZIN_H_PATROON.test(tekst)){code='H';reden='AVP met clausule "eigen risico voor kinderen"';}
+    else if(GEZIN_I_PATROON.test(tekst)){code='I';reden='AVP met hoedanigheid "particulier in gezinsverband"';}
+    if(!code)return;
+    const kk=klantKey(r);
+    if(!perKlant.has(kk))perKlant.set(kk,{code,polis:r[MATCH_IDX]||''});
+    corrigeerCel(C,ri,gz,code,reden);
+  });
+  if(!perKlant.size)return;
+  C.rijen.forEach((r,ri)=>{
+    const info=perKlant.get(klantKey(r));
+    const prod=r[k.prod]||'';
+    if(!info||IS_AVP.test(prod)||IS_VOERTUIG.test(prod))return;
+    corrigeerCel(C,ri,gz,info.code,'overgenomen van AVP '+info.polis);
+  });
+}
+
 // Opstal (woonhuis) en inboedel op hetzelfde adres → de klant woont in een eigen woning
 function corrigeerEigenWoning(C){
   const k=woningKolommen(C.header);
@@ -1155,20 +1207,21 @@ function corrigeerEigenWoning(C){
     if(!perAdres.has(key))perAdres.set(key,{opstal:[],inboedel:[]});
     perAdres.get(key)[soort].push(ri);
   });
-  let n=0;
   perAdres.forEach(g=>{
     if(!g.opstal.length||!g.inboedel.length)return;
-    g.inboedel.concat(g.opstal).forEach(ri=>{
-      const r=C.rijen[ri],oud=(r[ew]||'').trim();
-      if(oud.toUpperCase()==='J')return;
-      r[ew]='J';
-      const m=C.aangevuld.get(ri)||new Map();
-      m.set(ew,{bron:'correctie',streng:true,toelichting:'eigen woning '+(oud||'leeg')+' → J, want opstal en inboedel op hetzelfde adres'});
-      C.aangevuld.set(ri,m);
-      n++;
-    });
+    g.inboedel.concat(g.opstal).forEach(ri=>corrigeerCel(C,ri,ew,'J','want opstal en inboedel op hetzelfde adres'));
   });
-  return n;
+}
+
+function correctieHtml(C){
+  if(!C.correcties||!C.correcties.length)return '<div style="margin-top:4px">Automatische correcties: niet nodig in dit bestand.</div>';
+  const per=new Map();
+  C.correcties.forEach(c=>per.set(c.kolom,(per.get(c.kolom)||0)+1));
+  return '<details class="instellingen" style="margin:6px 0 0"><summary>✓ '+C.correcties.length+' automatische correctie(s) in de CSV: '+
+    [...per].map(([kol,n])=>esc(kol)+' '+n+'×').join(', ')+'</summary>'+
+    '<div class="woning-tabel-wrap" style="margin-top:8px"><table class="eenvoudige-tabel"><tr><th>Polis</th><th>Product</th><th>Kolom</th><th>Oud</th><th>Nieuw</th><th>Reden</th></tr>'+
+    C.correcties.map(c=>'<tr><td>'+esc(c.polisNr)+'</td><td>'+esc(c.product)+'</td><td>'+esc(c.kolom)+'</td><td>'+esc(c.oud||'(leeg)')+'</td><td><strong>'+esc(c.nieuw)+'</strong></td><td>'+esc(c.reden)+'</td></tr>').join('')+
+    '</table></div></details>';
 }
 
 function woningMelding(t){const el=$('woning-melding');el.textContent=t;el.hidden=!t;}
@@ -1178,8 +1231,7 @@ function updateWoningKaart(){
   if(!C)return;
   const t=woningTaken(),k=t.k;
   $('woning-download').disabled=!(C.aangevuld&&C.aangevuld.size);
-  const ew=C.eigenWoningGecorrigeerd
-    ?'<div style="margin-top:4px">✓ <strong>'+C.eigenWoningGecorrigeerd+'</strong> polis(sen) gecorrigeerd naar <strong>Eigen woning J</strong>, omdat er een opstal en een inboedel op hetzelfde adres staan.</div>':'';
+  const ew=correctieHtml(C);
   if(k.pc<0||k.nr<0||(k.bj<0&&k.wt<0)){
     $('woning-telling').innerHTML='Kolommen Postcode/Huisnummer of Bouwjaar/Woonhuis type niet gevonden in deze CSV.'+ew;
     $('woning-start').disabled=true;return;
