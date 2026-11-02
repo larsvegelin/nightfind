@@ -172,7 +172,9 @@ body.label-slepen [data-labeldoel] { outline: 2px dashed var(--accent); outline-
     padding: 0.5rem 0.85rem; font-size: 0.88rem; font-weight: 600; cursor: pointer;
 }
 .btn:hover:not(:disabled) { border-color: var(--accent); }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: inherit; }
+a.btn-primary { color: #fff; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-small { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
@@ -524,10 +526,11 @@ pre.broncode {
                 <label class="switch"><input type="checkbox" value="bron" checked> Broncode (.txt)</label>
             </div>
             <div class="row-actions">
-                <button type="button" class="btn btn-primary" id="mailHelpdesk">Mail naar helpdesk</button>
+                <a class="btn btn-primary" id="mailHelpdesk" href="mailto:helpdesk@dewaerdse.nl" role="button">Mail naar helpdesk (Outlook)</a>
                 <button type="button" class="btn" id="lijstLeegmaken">Leegmaken</button>
+                <button type="button" class="btn btn-small" id="mailEml" title="Concept-mail als bestand, met de brieven als bijlage in de aangevinkte formaten">Als .eml met bijlagen</button>
             </div>
-            <p class="hint">Maakt een concept-mail aan <strong>helpdesk@dewaerdse.nl</strong> met de opgeslagen brieven als bijlage in de aangevinkte formaten (.eml-bestand). Per brief staat in de mail of hij nieuw is of al bestaat, met de briefcode. Open het bestand in Outlook, controleer en klik op Verzenden.</p>
+            <p class="hint"><strong>Mail naar helpdesk</strong> opent direct een nieuwe mail in Outlook aan <strong>helpdesk@dewaerdse.nl</strong>, met per brief de status (nieuw of bestaat al, met briefcode) en de HTML-code van de brieven in de tekst. Past de code niet in de mail, dan staat hij op je klembord: plak hem met Ctrl+V. Bijlagen kunnen via een mail-link niet mee; daarvoor is <em>Als .eml met bijlagen</em> (de vinkjes hierboven).</p>
         </section>
 
         <section class="card">
@@ -2266,8 +2269,48 @@ function toonOpgeslagen() {
         li.append(naam, weg, rij);
         lijst.append(li);
     });
-    $('mailHelpdesk').disabled = !state.brieven.length || !gekozenFormaten().length;
+    $('mailHelpdesk').setAttribute('aria-disabled', String(!state.brieven.length));
+    $('mailEml').disabled = !state.brieven.length || !gekozenFormaten().length;
     $('lijstLeegmaken').disabled = !state.brieven.length;
+}
+
+// Onderwerp en tekst van de mail aan de helpdesk (gedeeld door mail-link en .eml)
+function helpdeskMail(brieven, metBijlagen) {
+    const onderwerp = brieven.length === 1
+        ? `Brief: ${brieven[0].naam}${brieven[0].systeem && brieven[0].systeem.bestaat ? ` (briefcode ${brieven[0].systeem.code.trim()})` : ''}`
+        : `Brieven ter verwerking (${brieven.length})`;
+    const lijst = brieven.map((b, i) => `${i + 1}. ${b.naam}\r\n   ${systeemTekst(b.systeem)}`);
+    return { onderwerp, lijst, intro: brieven.length === 1 ? `Bijgaand de volgende brief${metBijlagen}:` : `Bijgaand de volgende ${brieven.length} brieven${metBijlagen}:` };
+}
+function zonderBriefcode(brieven) {
+    const zonder = brieven.filter((b) => b.systeem && b.systeem.bestaat && !b.systeem.code.trim());
+    if (zonder.length) toast(`Vul de briefcode in bij: ${zonder.map((b) => b.naam).join(', ')}`);
+    return zonder.length > 0;
+}
+
+// Mail-link: opent direct een nieuwe mail in Outlook (geen download). Mail-links kunnen geen bijlagen meesturen,
+// daarom staat de HTML-code in de tekst; is die te lang voor een mail-link, dan gaat hij naar het klembord.
+const MAILTO_MAX = 1900;
+async function mailHelpdeskLink() {
+    const brieven = state.brieven;
+    if (!brieven.length || zonderBriefcode(brieven)) return;
+    const m = helpdeskMail(brieven, '');
+    const code = brieven.map((b) => `===== ${b.naam} =====\r\n${htmlCode(b.html).trim()}`).join('\r\n\r\n');
+    const basis = ['Beste helpdesk,', '', m.intro, '', ...m.lijst, ''];
+    const slot = ['', 'Met vriendelijke groet,', ''];
+    const link = (tekst) => `mailto:${HELPDESK}?subject=${encodeURIComponent(m.onderwerp)}&body=${encodeURIComponent(tekst.join('\r\n'))}`;
+    let href = link([...basis, 'HTML-code (broncode) van de brieven:', '', code, ...slot]);
+    let opKlembord = false;
+    if (href.length > MAILTO_MAX) {
+        await kopieer(code);
+        opKlembord = true;
+        href = link([...basis, 'De HTML-code (broncode) van de brieven staat hieronder:', '', '[plak hier de code: Ctrl+V]', ...slot]);
+    }
+    $('mailHelpdesk').dataset.laatste = href;
+    window.location.href = href;
+    toast(opKlembord
+        ? 'Outlook opent een nieuwe mail. De HTML-code staat op je klembord: zet de cursor op “[plak hier de code]” en druk Ctrl+V.'
+        : 'Outlook opent een nieuwe mail aan de helpdesk, met de brieven in de tekst.');
 }
 
 async function mailHelpdesk() {
@@ -2275,11 +2318,7 @@ async function mailHelpdesk() {
     if (!brieven.length) return;
     const formaten = gekozenFormaten();
     if (!formaten.length) { toast('Vink minstens één formaat aan voor de bijlagen.'); return; }
-    const zonderCode = brieven.filter((b) => b.systeem && b.systeem.bestaat && !b.systeem.code.trim());
-    if (zonderCode.length) {
-        toast(`Vul de briefcode in bij: ${zonderCode.map((b) => b.naam).join(', ')}`);
-        return;
-    }
+    if (zonderBriefcode(brieven)) return;
     const bijlagen = [];
     for (const b of brieven) {
         const blokken = naarBlokken(schoonmaken(b.html));
@@ -2290,24 +2329,9 @@ async function mailHelpdesk() {
     }
     const formaatNamen = { docx: 'Word', txt: 'TXT', html: 'HTML', bron: 'broncode' };
     const soorten = formaten.map((f) => formaatNamen[f]).join(', ').replace(/, ([^,]*)$/, ' en $1');
-    const tekst = [
-        'Beste helpdesk,',
-        '',
-        brieven.length === 1 ? `Bijgaand de volgende brief (${soorten}):` : `Bijgaand de volgende ${brieven.length} brieven (${soorten}):`,
-        '',
-        ...brieven.map((b, i) => `${i + 1}. ${b.naam}\r\n   ${systeemTekst(b.systeem)}`),
-        '',
-        'Met vriendelijke groet,',
-        ''
-    ].join('\r\n');
-    const eml = await maakEml({
-        aan: HELPDESK,
-        onderwerp: brieven.length === 1
-            ? `Brief: ${brieven[0].naam}${brieven[0].systeem && brieven[0].systeem.bestaat ? ` (briefcode ${brieven[0].systeem.code.trim()})` : ''}`
-            : `Brieven ter verwerking (${brieven.length})`,
-        tekst,
-        bijlagen
-    });
+    const m = helpdeskMail(brieven, ` (${soorten})`);
+    const tekst = ['Beste helpdesk,', '', m.intro, '', ...m.lijst, '', 'Met vriendelijke groet,', ''].join('\r\n');
+    const eml = await maakEml({ aan: HELPDESK, onderwerp: m.onderwerp, tekst, bijlagen });
     download(eml, 'Mail aan helpdesk De Waerdse.eml');
     toast('Concept-mail gedownload. Open het bestand in Outlook en klik op Verzenden.');
 }
@@ -3533,7 +3557,8 @@ function init() {
         $('briefcode').classList.toggle('is-invalid', huidigSysteem().bestaat && !e.target.value.trim());
     });
     $('briefcode').addEventListener('blur', toonSysteem);
-    $('mailHelpdesk').addEventListener('click', mailHelpdesk);
+    $('mailHelpdesk').addEventListener('click', (e) => { e.preventDefault(); mailHelpdeskLink(); });
+    $('mailEml').addEventListener('click', mailHelpdesk);
     $('bijlageFormaten').addEventListener('change', () => { bewaarKeuzes(); toonOpgeslagen(); });
     $('lijstLeegmaken').addEventListener('click', () => {
         if (!confirm('Alle opgeslagen brieven uit de lijst verwijderen?')) return;
