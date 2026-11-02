@@ -92,7 +92,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .segmented button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 .segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-select, input[type="text"], textarea {
+select, input[type="text"], input[type="search"], textarea {
     width: 100%; border: 1px solid var(--border); background: var(--surface); border-radius: 8px;
     padding: 0.5rem 0.6rem; font-size: 0.9rem;
 }
@@ -2746,7 +2746,8 @@ function toonLabelResultaten() {
         const oms = document.createElement('span');
         oms.textContent = l.oms;
         const extra = document.createElement('small');
-        extra.textContent = `${labelSoort(l).soort}${l.len ? ` · max. ${l.len} tekens` : ''}${l.code === 'J' ? ' · codetabel' : ''}`;
+        const soort = labelSoort(l).soort;
+        extra.textContent = `${soort}${l.len ? ` · max. ${l.len} tekens` : ''}${l.code === 'J' && soort !== 'codetabel' ? ' · codetabel' : ''}`;
         li.append(code, oms, extra);
         li.addEventListener('mousedown', (e) => e.preventDefault());
         li.addEventListener('click', () => labelInvoegen(labelCode(l.nr)));
