@@ -526,11 +526,20 @@ pre.broncode {
                 <label class="switch"><input type="checkbox" value="bron" checked> Broncode (.txt)</label>
             </div>
             <div class="row-actions">
-                <a class="btn btn-primary" id="mailHelpdesk" href="mailto:helpdesk@dewaerdse.nl" role="button">Mail naar helpdesk (Outlook)</a>
+                <button type="button" class="btn btn-primary" id="mailEml">Mail naar helpdesk (met bijlagen)</button>
+                <button type="button" class="btn" id="mailDelen" hidden>Delen met Outlook… (met bijlagen)</button>
                 <button type="button" class="btn" id="lijstLeegmaken">Leegmaken</button>
-                <button type="button" class="btn btn-small" id="mailEml" title="Concept-mail als bestand, met de brieven als bijlage in de aangevinkte formaten">Als .eml met bijlagen</button>
+                <a class="btn btn-small" id="mailHelpdesk" href="mailto:helpdesk@dewaerdse.nl" role="button">Zonder bijlagen (mail-link)</a>
             </div>
-            <p class="hint"><strong>Mail naar helpdesk</strong> opent direct een nieuwe mail in Outlook aan <strong>helpdesk@dewaerdse.nl</strong>, met per brief de status (nieuw of bestaat al, met briefcode) en de HTML-code van de brieven in de tekst. Past de code niet in de mail, dan staat hij op je klembord: plak hem met Ctrl+V. Bijlagen kunnen via een mail-link niet mee; daarvoor is <em>Als .eml met bijlagen</em> (de vinkjes hierboven).</p>
+            <p class="hint"><strong>Mail naar helpdesk (met bijlagen)</strong> maakt een nieuwe Outlook-mail aan <strong>helpdesk@dewaerdse.nl</strong> met de opgeslagen brieven als bijlage (aangevinkte formaten) en per brief de status en briefcode.</p>
+            <details class="hint">
+                <summary>Direct openen in Outlook, zonder te klikken op de download (eenmalig instellen)</summary>
+                <p><strong>Chrome:</strong> klik na de eerste keer bij de download op ⋮ (of rechts op het bestand) → <em>Bestanden van dit type altijd openen</em>.<br>
+                <strong>Edge:</strong> klik bij de download op ⋯ → <em>Altijd bestanden van dit type openen</em>.<br>
+                Daarna opent de mail voortaan meteen in Outlook, met de bijlagen erin.</p>
+                <p><strong>Delen met Outlook…</strong> (als je browser het ondersteunt) opent het deelvenster van Windows; kies Outlook en de bijlagen staan erin. Het adres van de helpdesk staat dan op je klembord (plakken in Aan).<br>
+                <strong>Zonder bijlagen (mail-link)</strong> opent direct een mail; een mail-link kan technisch geen bijlagen meesturen.</p>
+            </details>
         </section>
 
         <section class="card">
@@ -2271,6 +2280,7 @@ function toonOpgeslagen() {
     });
     $('mailHelpdesk').setAttribute('aria-disabled', String(!state.brieven.length));
     $('mailEml').disabled = !state.brieven.length || !gekozenFormaten().length;
+    $('mailDelen').disabled = $('mailEml').disabled;
     $('lijstLeegmaken').disabled = !state.brieven.length;
 }
 
@@ -2319,6 +2329,17 @@ async function mailHelpdesk() {
     const formaten = gekozenFormaten();
     if (!formaten.length) { toast('Vink minstens één formaat aan voor de bijlagen.'); return; }
     if (zonderBriefcode(brieven)) return;
+    const bijlagen = bouwBijlagen(brieven, formaten);
+    const formaatNamen = { docx: 'Word', txt: 'TXT', html: 'HTML', bron: 'broncode' };
+    const soorten = formaten.map((f) => formaatNamen[f]).join(', ').replace(/, ([^,]*)$/, ' en $1');
+    const m = helpdeskMail(brieven, ` (${soorten})`);
+    const tekst = ['Beste helpdesk,', '', m.intro, '', ...m.lijst, '', 'Met vriendelijke groet,', ''].join('\r\n');
+    const eml = await maakEml({ aan: HELPDESK, onderwerp: m.onderwerp, tekst, bijlagen });
+    download(eml, 'Mail aan helpdesk De Waerdse.eml');
+    toast('Concept-mail met bijlagen gemaakt. Open hem in Outlook (of stel in dat .eml altijd direct opent, zie uitleg) en klik op Verzenden.');
+}
+
+function bouwBijlagen(brieven, formaten) {
     const bijlagen = [];
     for (const b of brieven) {
         const blokken = naarBlokken(schoonmaken(b.html));
@@ -2327,13 +2348,25 @@ async function mailHelpdesk() {
         if (formaten.includes('html')) bijlagen.push({ naam: veiligBestand(`${b.naam}.html`), type: 'text/html; charset=utf-8', blob: new Blob([htmlCode(b.html)]) });
         if (formaten.includes('bron')) bijlagen.push({ naam: veiligBestand(`${b.naam} - broncode.txt`), type: 'text/plain; charset=utf-8', blob: broncodeBlob(b.html) });
     }
-    const formaatNamen = { docx: 'Word', txt: 'TXT', html: 'HTML', bron: 'broncode' };
-    const soorten = formaten.map((f) => formaatNamen[f]).join(', ').replace(/, ([^,]*)$/, ' en $1');
-    const m = helpdeskMail(brieven, ` (${soorten})`);
-    const tekst = ['Beste helpdesk,', '', m.intro, '', ...m.lijst, '', 'Met vriendelijke groet,', ''].join('\r\n');
-    const eml = await maakEml({ aan: HELPDESK, onderwerp: m.onderwerp, tekst, bijlagen });
-    download(eml, 'Mail aan helpdesk De Waerdse.eml');
-    toast('Concept-mail gedownload. Open het bestand in Outlook en klik op Verzenden.');
+    return bijlagen;
+}
+
+// Delen via het deelvenster van Windows/het apparaat (Outlook kiezen): bijlagen gaan mee, zonder download
+const kanDelen = () => {
+    try { return !!(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'test.txt', { type: 'text/plain' })] })); } catch { return false; }
+};
+function mailDelen() {
+    const brieven = state.brieven;
+    const formaten = gekozenFormaten();
+    if (!brieven.length || !formaten.length || zonderBriefcode(brieven)) return;
+    const bijlagen = bouwBijlagen(brieven, formaten);
+    const files = bijlagen.map((b) => new File([b.blob], b.naam, { type: b.type.split(';')[0] }));
+    const m = helpdeskMail(brieven, '');
+    const tekst = [`Aan: ${HELPDESK}`, '', 'Beste helpdesk,', '', m.intro, '', ...m.lijst, '', 'Met vriendelijke groet,'].join('\n').replace(/\r\n/g, '\n');
+    kopieer(HELPDESK);
+    navigator.share({ files, title: m.onderwerp, text: tekst })
+        .then(() => toast(`Gedeeld. Vul in Outlook bij Aan het adres in (staat op je klembord: ${HELPDESK}).`))
+        .catch((fout) => { if (fout && fout.name !== 'AbortError') toast('Delen lukt niet in deze browser; gebruik “Mail naar helpdesk (met bijlagen)”.'); });
 }
 
 const gekozenFormaten = () => [...$('bijlageFormaten').querySelectorAll('input:checked')].map((i) => i.value);
@@ -3559,6 +3592,8 @@ function init() {
     $('briefcode').addEventListener('blur', toonSysteem);
     $('mailHelpdesk').addEventListener('click', (e) => { e.preventDefault(); mailHelpdeskLink(); });
     $('mailEml').addEventListener('click', mailHelpdesk);
+    $('mailDelen').hidden = !kanDelen();
+    $('mailDelen').addEventListener('click', mailDelen);
     $('bijlageFormaten').addEventListener('change', () => { bewaarKeuzes(); toonOpgeslagen(); });
     $('lijstLeegmaken').addEventListener('click', () => {
         if (!confirm('Alle opgeslagen brieven uit de lijst verwijderen?')) return;
