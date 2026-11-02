@@ -2570,6 +2570,8 @@ function codeOpschonen(html) {
         t.nodeValue = t.nodeValue.replace(/([A-Za-zÀ-ɏ0-9.,;:!?)"'”’@]) +(?=[A-Za-zÀ-ɏ0-9("'“‘@])/g, (m, a) => { tel.nbsp++; return `${a} `; });
     }
     let uit = netteHtml(body.innerHTML);
+    // tweede ronde na het uitpakken van spans (bijv. een gesleept label in een eigen element)
+    uit = uit.replace(/([A-Za-z\u00C0-\u024F0-9.,;:!?)"'\u201D\u2019@])(?:&nbsp;)+(?=[A-Za-z\u00C0-\u024F0-9("'\u201C\u2018@])/g, (m, a) => { tel.nbsp++; return `${a} `; });
     // witruimte tussen tabeltags (niet in cellen) weg, zodat de tabel strak wordt opgemaakt
     uit = uit.split('\n').map((regel) => (regel.startsWith('<table')
         ? regel.replace(/>\s+(?=<\/?(thead|tbody|tfoot|tr|td|th)[\s>])/g, '>').replace(/(<\/(td|th|tr|thead|tbody|tfoot)>)\s+(?=<)/g, '$1')
