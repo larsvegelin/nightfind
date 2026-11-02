@@ -127,6 +127,12 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .labelresultaten li:first-child { border-top: 0; }
 .labelresultaten li:hover, .labelresultaten li:focus { background: var(--accent-soft); outline: none; }
 .labelresultaten li.leeg { cursor: default; color: var(--muted); display: block; }
+.labelresultaten li[draggable="true"] { cursor: grab; }
+.labelresultaten li[draggable="true"]:active { cursor: grabbing; }
+.labelresultaten li .greep { grid-row: span 2; color: var(--muted); font-size: 0.9rem; line-height: 1.2; user-select: none; }
+.labelresultaten li { grid-template-columns: auto auto minmax(0, 1fr) !important; }
+.labelresultaten small { grid-column: 3 !important; }
+body.label-slepen [data-labeldoel] { outline: 2px dashed var(--accent); outline-offset: 2px; background: var(--accent-soft); }
 .labelresultaten code { font-size: 0.76rem; }
 .labelresultaten small { grid-column: 2; color: var(--muted); font-size: 0.74rem; }
 .tabelbouwer { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
@@ -393,7 +399,7 @@ pre.broncode {
             <label class="label" for="eigenNaam">Naam van de brief</label>
             <input type="text" id="eigenNaam" placeholder="Eigen brief" autocomplete="off">
             <span class="label">Plak uit Word</span>
-            <div class="plakvak" id="eigenPlak" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Plak hier tekst uit Word"
+            <div class="plakvak" id="eigenPlak" data-labeldoel="tekst (Plak uit Word)" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Plak hier tekst uit Word"
                  data-leeg="Klik hier en plak (Ctrl+V) de tekst uit Word…"></div>
             <div class="row-actions">
                 <label class="btn" for="eigenBestand">Word-bestand (.docx)</label>
@@ -422,7 +428,7 @@ pre.broncode {
         <section class="card">
             <h2>Labels (ANVA)</h2>
             <input type="search" id="labelZoek" placeholder="Zoek op nummer of omschrijving, bijv. jaaromzet" autocomplete="off" aria-label="Label zoeken">
-            <p class="hint" id="labelDoelInfo">Klik in een HTML-codevak, tabelcel of het onderwerp en kies een label om het daar in te voegen.</p>
+            <p class="hint" id="labelDoelInfo"><strong>Sleep</strong> een label naar de plek in de tekst (Plak uit Word, HTML-code), een tabelcel of het onderwerp. Of klik in zo'n veld en klik dan op het label.</p>
             <ul class="labelresultaten" id="labelResultaten"></ul>
             <p class="hint" id="labelBron"></p>
             <div class="row-actions">
@@ -2555,12 +2561,13 @@ function codeOpschonen(html) {
         }
         if (verplaats.length) { el.after(...verplaats); tel.br++; }
     }
-    // harde spatie tussen twee woorden -> gewone spatie (niet na €)
+    // harde spatie tussen twee woorden -> gewone spatie (niet na €); aangrenzende tekststukken eerst samenvoegen
+    body.normalize();
     const walker = doc.createTreeWalker(body, NodeFilter.SHOW_TEXT);
     const teksten = [];
     while (walker.nextNode()) teksten.push(walker.currentNode);
     for (const t of teksten) {
-        t.nodeValue = t.nodeValue.replace(/([A-Za-zÀ-ɏ0-9.,;:!?)"'”’]) +(?=[A-Za-zÀ-ɏ0-9("'“‘])/g, (m, a) => { tel.nbsp++; return `${a} `; });
+        t.nodeValue = t.nodeValue.replace(/([A-Za-zÀ-ɏ0-9.,;:!?)"'”’@]) +(?=[A-Za-zÀ-ɏ0-9("'“‘@])/g, (m, a) => { tel.nbsp++; return `${a} `; });
     }
     let uit = netteHtml(body.innerHTML);
     // witruimte tussen tabeltags (niet in cellen) weg, zodat de tabel strak wordt opgemaakt
@@ -2749,8 +2756,20 @@ function toonLabelResultaten() {
         const extra = document.createElement('small');
         const soort = labelSoort(l).soort;
         extra.textContent = `${soort}${l.len ? ` · max. ${l.len} tekens` : ''}${l.code === 'J' && soort !== 'codetabel' ? ' · codetabel' : ''}`;
-        li.append(code, oms, extra);
-        li.addEventListener('mousedown', (e) => e.preventDefault());
+        const greep = document.createElement('span');
+        greep.className = 'greep';
+        greep.textContent = '⠿';
+        greep.setAttribute('aria-hidden', 'true');
+        li.append(greep, code, oms, extra);
+        li.draggable = true;
+        li.title = `Sleep ${labelCode(l.nr)} naar de tekst, of klik om in te voegen op de cursor`;
+        li.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', labelCode(l.nr));
+            e.dataTransfer.effectAllowed = 'copy';
+            state.sleepLabel = labelCode(l.nr);
+            document.body.classList.add('label-slepen');
+        });
+        li.addEventListener('dragend', () => { document.body.classList.remove('label-slepen'); state.sleepLabel = null; });
         li.addEventListener('click', () => labelInvoegen(labelCode(l.nr)));
         li.addEventListener('keydown', (e) => { if (e.key === 'Enter') labelInvoegen(labelCode(l.nr)); });
         lijst.append(li);
@@ -2759,9 +2778,16 @@ function toonLabelResultaten() {
 
 async function labelInvoegen(code) {
     const doel = state.labelDoel;
-    if (!doel || !doel.isConnected) {
-        await kopieer(code);
-        toast(`${code} gekopieerd (klik eerst in een veld om direct in te voegen).`);
+    if (!doel || !doel.isConnected || doel.offsetParent === null) {
+        toast(`Sleep ${code} naar de plek in de tekst, of klik eerst in een tekstveld en dan op het label.`);
+        return;
+    }
+    if (doel.isContentEditable) {
+        doel.focus();
+        const sel = window.getSelection();
+        if (state.plakBereik && doel.contains(state.plakBereik.startContainer)) { sel.removeAllRanges(); sel.addRange(state.plakBereik); }
+        document.execCommand('insertText', false, code);
+        toast(`${code} ingevoegd in ${doel.dataset.labeldoel}.`);
         return;
     }
     const start = doel.selectionStart ?? doel.value.length;
@@ -3382,6 +3408,20 @@ function init() {
     toonLabelResultaten();
     let zoekTimer;
     $('labelZoek').addEventListener('input', () => { clearTimeout(zoekTimer); zoekTimer = setTimeout(toonLabelResultaten, 120); });
+    document.addEventListener('selectionchange', () => {
+        const sel = window.getSelection();
+        if (sel.rangeCount && $('eigenPlak').contains(sel.anchorNode)) state.plakBereik = sel.getRangeAt(0).cloneRange();
+    });
+    document.addEventListener('drop', (e) => {
+        const doel = e.target.closest ? e.target.closest('[data-labeldoel]') : null;
+        document.body.classList.remove('label-slepen');
+        if (!state.sleepLabel) return;
+        if (!doel) { e.preventDefault(); toast('Laat het label los in een tekstveld, het plakvak of een tabelcel.'); return; }
+        const code = state.sleepLabel;
+        state.labelDoel = doel;
+        setTimeout(() => toast(`${code} ingevoegd in ${doel.dataset.labeldoel}.`), 0);
+    });
+    document.addEventListener('dragover', (e) => { if (state.sleepLabel && !(e.target.closest && e.target.closest('[data-labeldoel]'))) e.dataTransfer.dropEffect = 'none'; });
     document.addEventListener('focusin', (e) => {
         if (e.target.matches && e.target.matches('[data-labeldoel]')) {
             state.labelDoel = e.target;
@@ -3487,13 +3527,13 @@ function init() {
         if (!vak.textContent.trim()) zetEigenHtml(schoon);
         else {
             document.execCommand('insertHTML', false, schoon);
-            zetEigenHtml(netteHtml(vak.innerHTML), { vanPlakvak: true });
+            zetEigenHtml(codeOpschonen(vak.innerHTML).html, { vanPlakvak: true });
         }
         toast('Tekst uit Word omgezet naar HTML.');
     });
     $('eigenPlak').addEventListener('input', () => {
         clearTimeout(plakTimer);
-        plakTimer = setTimeout(() => zetEigenHtml(netteHtml($('eigenPlak').innerHTML), { vanPlakvak: true }), 300);
+        plakTimer = setTimeout(() => zetEigenHtml(codeOpschonen($('eigenPlak').innerHTML).html, { vanPlakvak: true }), 300);
     });
     $('eigenInvoer').addEventListener('input', () => {
         clearTimeout(codeTimer);
