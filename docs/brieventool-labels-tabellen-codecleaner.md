@@ -256,6 +256,17 @@ X-BRF krijgt een keuze **"Soort brief"**:
 
 | # | Punt | Besluit |
 |---|---|---|
-| 1 | Arial 11 vs. briefsysteem op 10 pt | **Arial 11** – preview en Word gebruiken altijd Arial 11 (keuzelijst verwijderd). |
+| 1 | Arial 11 vs. briefsysteem op 10 pt | Eerst **Arial 11**; daarna bijgesteld: de preview moet **1:1** lopen met een echte brief (Pluijm Advies, brief 3, PDF uit OL Connect). Die PDF – net als de twee eerdere – gebruikt Arial met lettergrootte 10. Preview en Word gebruiken nu die grootte; alle regels vallen op dezelfde plek als in de PDF (binnen 0,2 pt). Er is geen keuzelijst. |
 | 2 | Tabelbreedte | **Akkoord** – de codecleaner haalt breedtes weg; het briefsysteem bepaalt de breedte. |
 | 3 | Afzender X-BRF | **Akkoord** – "De Waerdse Assuradeuren B.V.", plaats Heerhugowaard in de vaste kop. |
+
+---
+
+## 9. Controle 1:1 met de echte brief (Pluijm Advies, brief 3)
+
+| Instelling | Regels met andere regelval | Grootste verschuiving |
+|---|---|---|
+| Arial 11 | 12 van 19 | 22,6 pt |
+| Arial 10 pt (zoals PDF) | 0 van 19* | 0,2 pt |
+
+\* Twee regels tellen in de meting mee als "anders", maar zijn geen opmaakverschil: de aanhef staat in de tool als samenvoegveld `@L99906@`, en de tool haalt "(keuze: Actuele polisvoorwaarden)" automatisch weg.

@@ -524,7 +524,7 @@ pre.broncode {
             <div class="checks">
                 <label class="switch"><input type="checkbox" id="voorbeeldToggle"> Voorbeeldgegevens invullen</label>
                 <label class="switch"><input type="checkbox" id="broncodeToggle"> Broncode tonen</label>
-                <span class="switch" title="De brieven gebruiken altijd Arial 11">Arial 11</span>
+                <span class="switch" title="Zelfde lettergrootte als in de echte brieven uit het briefsysteem (gemeten in de PDF's)">Arial, 1:1 met briefsysteem</span>
             </div>
         </div>
         <div class="notes" id="meldingen"></div>
@@ -884,7 +884,7 @@ const state = {
     voorbeeld: false,
     broncode: false,
     weergave: 'pagina',
-    lettergrootte: '11',
+    lettergrootte: '10',
     labelDoel: null,
     qaScheiding: 'pb2',
     systeem: {},
@@ -1570,9 +1570,10 @@ const LETTER = {
     10: { bf: '13.16px', bl: '16px', bp: '13.333px', bt: '14.2px', sz: 20, regel: 240, na: 200 },
     11: { bf: '14.48px', bl: '17.6px', bp: '14.667px', bt: '15.6px', sz: 22, regel: 264, na: 220 }
 };
-// De brieven gebruiken altijd Arial 11 (preview en Word)
+// Lettergrootte zoals in het briefsysteem (gemeten in drie echte brieven uit OL Connect: Arial 10 pt),
+// zodat de preview 1:1 loopt met de echte brief. Geldt voor preview en Word.
 function zetLettergrootte() {
-    state.lettergrootte = '11';
+    state.lettergrootte = '10';
     const l = LETTER[state.lettergrootte];
     for (const k of ['bf', 'bl', 'bp', 'bt']) document.documentElement.style.setProperty(`--${k}`, l[k]);
 }
