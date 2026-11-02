@@ -1023,7 +1023,18 @@ const K011Parser = (() => {
       } else if (productOmsch === 'AVP') {
         addDk(6100, 'Aansprakelijkheid particulier');
         row['Verzekerde som'] = '2500000';
-        row['Gezinssamenstelling'] = normGezinssamenstelling(hoedanigheid) || normGezinssamenstelling(naam_lc);
+        const gzAvp = normGezinssamenstelling(hoedanigheid) || normGezinssamenstelling(naam_lc);
+        if (gzAvp === 'I' || gzAvp === 'H') {
+          // "Particulier in gezinsverband": de clausule "Eigen risico voor
+          // kinderen" (000403) bepaalt de samenstelling — clausule aanwezig → H
+          // (gezin zonder kinderen), anders → I (gezin met kinderen)
+          const heeftKindClausule = /eigen\s*risico\s+voor\s+kinderen|clausule\s*0*00403/i.test(bt)
+            || /eigen\s*risico\s+voor\s+kinderen/i.test(text);
+          row['Gezinssamenstelling'] = heeftKindClausule ? 'H' : 'I';
+          row['_gezinVast'] = 1; // definitief — niet meer verfijnen op geboortejaar
+        } else {
+          row['Gezinssamenstelling'] = gzAvp;
+        }
 
       } else if (productOmsch === 'Rechtsbijstand particulier') {
         // Module-dekkingcodes met Module A/B/C/D-omschrijvingen.
@@ -1105,8 +1116,9 @@ const K011Parser = (() => {
       // Gezinsongevallen: geen dekkingcode-mapping bekend — geen regels (nooit omschrijving zonder code)
 
       // "Gezin" zonder kind-informatie markeren: wordt achteraf verfijnd op
-      // geboortejaar uit het relatiescherm (t/m 1960 → H, daarna → I)
-      if (row['Gezinssamenstelling'] === 'I') {
+      // geboortejaar uit het relatiescherm (t/m 1960 → H, daarna → I).
+      // Niet voor de AVP: daar is de kinderclausule-regel definitief.
+      if (!row['_gezinVast'] && row['Gezinssamenstelling'] === 'I') {
         const gzBron = `${hoedanigheid} ${docGezinRaw} ${naam_lc}`.toLowerCase();
         if (/gezin/.test(gzBron) && !/zonder\s*kind|met\s*kind/.test(gzBron)) row['_gezinPlain'] = 1;
       }
@@ -1527,6 +1539,26 @@ async function processQueue() {
 
   // ── Naverwerking: relatiescherm-verrijking (geboortedatum!) en ontdubbeling ──
   applyRelatieschermInfo(allRows, folderInfo);
+  applyRelatieschermInfo(restRows, folderInfo);
+
+  // Gezinssamenstelling van de AVP overnemen op de andere polissen van dezelfde
+  // klant (nieuwste AVP wint). Expliciet alleenstaand (A/K) op een andere polis
+  // blijft staan; lege of gezinswaardes (H/I) volgen de AVP.
+  const avpGezin = {};
+  for (const r of allRows) {
+    if (r['Productomschrijving'] !== 'AVP' || !r['Gezinssamenstelling']) continue;
+    const k = r['_folder'];
+    const score = (r['_doc'] || 0);
+    if (!(k in avpGezin) || score >= avpGezin[k].score) avpGezin[k] = { gz: r['Gezinssamenstelling'], score };
+  }
+  for (const r of allRows.concat(restRows)) {
+    if (r['Productomschrijving'] === 'AVP') continue;
+    const a = avpGezin[r['_folder']];
+    if (a && (!r['Gezinssamenstelling'] || r['Gezinssamenstelling'] === 'H' || r['Gezinssamenstelling'] === 'I')) {
+      r['Gezinssamenstelling'] = a.gz;
+    }
+  }
+
   // Eigen woning bij Inboedel: J zodra dezelfde klant ergens een woonhuisverzekering
   // heeft (ook in een ander pakket/polisblad); anders N (huurder)
   const woonhuisKlanten = new Set(allRows.filter(r => r['Productomschrijving'] === 'Woonhuis').map(r => r['_folder']));
@@ -1537,8 +1569,7 @@ async function processQueue() {
   }
   allRows = dedupeK011Rows(allRows);
 
-  // Handmatige rijen: zelfde naverwerking (geboortedatum, gezin-verfijning, ontdubbeling)
-  applyRelatieschermInfo(restRows, folderInfo);
+  // Handmatige rijen: zelfde ontdubbeling van oude polisbladversies
   restRows = dedupeK011Rows(restRows);
 
   progressFill.style.width='100%';
@@ -1655,7 +1686,7 @@ function dedupeK011Rows(rows) {
     return true;
   });
 
-  for (const r of rows) { delete r['_folder']; delete r['_pakket']; delete r['_doc']; delete r['_eind']; delete r['_gezinPlain']; }
+  for (const r of rows) { delete r['_folder']; delete r['_pakket']; delete r['_doc']; delete r['_eind']; delete r['_gezinPlain']; delete r['_gezinVast']; }
   return rows;
 }
 
