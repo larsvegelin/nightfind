@@ -2794,7 +2794,9 @@ function toonLabelResultaten() {
         li.addEventListener('dragend', () => { document.body.classList.remove('label-slepen'); state.sleepLabel = null; verbergPlaatsteken(); });
         li.addEventListener('mousedown', () => {
             const actief = document.activeElement;
-            state.veldVoorKlik = actief && actief.matches && actief.matches('[data-labeldoel]') && actief.offsetParent !== null ? actief : null;
+            const inVeld = actief && actief.matches && actief.matches('[data-labeldoel]') && actief.offsetParent !== null;
+            // ook als je na het veld alleen het zoekvak van de labels gebruikte
+            state.veldVoorKlik = inVeld ? actief : (state.doelActief && state.labelDoel && state.labelDoel.isConnected && state.labelDoel.offsetParent !== null ? state.labelDoel : null);
         });
         li.addEventListener('click', () => {
             if (state.veldVoorKlik) { state.labelDoel = state.veldVoorKlik; state.veldVoorKlik = null; labelInvoegen(labelCode(l.nr)); }
@@ -3632,6 +3634,8 @@ function init() {
     });
     document.addEventListener('dragover', (e) => { if (state.sleepLabel && !(e.target.closest && e.target.closest('[data-labeldoel], #papier'))) e.dataTransfer.dropEffect = 'none'; });
     document.addEventListener('focusin', (e) => {
+        const inLabels = e.target.closest && e.target.closest('#labelZoek, #labelResultaten');
+        if (!inLabels) state.doelActief = !!(e.target.matches && e.target.matches('[data-labeldoel]'));
         if (e.target.matches && e.target.matches('[data-labeldoel]')) {
             state.labelDoel = e.target;
             $('labelDoelInfo').textContent = `Invoegen in: ${e.target.dataset.labeldoel}. Kies een label hieronder.`;
