@@ -132,6 +132,22 @@ input.is-invalid, .field.is-missing input { border-color: #c4473f; }
 .labelresultaten li .greep { grid-row: span 2; color: var(--muted); font-size: 0.9rem; line-height: 1.2; user-select: none; }
 .labelresultaten li { grid-template-columns: auto auto minmax(0, 1fr) !important; }
 .labelresultaten small { grid-column: 3 !important; }
+.plaatsteken {
+    position: fixed; width: 2px; background: #c4473f; z-index: 30; pointer-events: none; border-radius: 1px;
+    box-shadow: 0 0 0 1px rgba(196,71,63,0.25); animation: knipper 0.9s steps(2, start) infinite;
+}
+.plaatsteken::before {
+    content: attr(data-code); position: absolute; left: 4px; top: -18px; white-space: nowrap;
+    font: 600 11px/1 ui-monospace, Menlo, Consolas, monospace; color: #fff; background: #c4473f; padding: 2px 4px; border-radius: 3px;
+}
+@keyframes knipper { to { visibility: hidden; } }
+.plaatsbalk {
+    position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 31; background: #1d1d1b; color: #fff;
+    padding: 0.55rem 0.9rem; border-radius: 8px; font-size: 0.88rem; box-shadow: 0 6px 20px rgba(0,0,0,0.25); max-width: calc(100% - 32px);
+}
+.plaatsbalk code { background: #c4473f; color: #fff; padding: 1px 5px; border-radius: 4px; }
+body.label-slepen #papier .page, body.label-plaatsen #papier .page { outline: 2px dashed var(--accent); outline-offset: 3px; }
+body.label-plaatsen #papier .brieftekst { cursor: text; }
 body.label-slepen [data-labeldoel] { outline: 2px dashed var(--accent); outline-offset: 2px; background: var(--accent-soft); }
 .labelresultaten code { font-size: 0.76rem; }
 .labelresultaten small { grid-column: 2; color: var(--muted); font-size: 0.74rem; }
@@ -428,7 +444,7 @@ pre.broncode {
         <section class="card">
             <h2>Labels (ANVA)</h2>
             <input type="search" id="labelZoek" placeholder="Zoek op nummer of omschrijving, bijv. jaaromzet" autocomplete="off" aria-label="Label zoeken">
-            <p class="hint" id="labelDoelInfo"><strong>Sleep</strong> een label naar de plek in de tekst (Plak uit Word, HTML-code), een tabelcel of het onderwerp. Of klik in zo'n veld en klik dan op het label.</p>
+            <p class="hint" id="labelDoelInfo"><strong>Sleep</strong> een label naar de plek in de brief (preview rechts) of in een tekstveld; een rood streepje laat zien waar het komt. Of <strong>klik</strong> op een label en klik daarna in de brief op de plek waar het moet komen.</p>
             <ul class="labelresultaten" id="labelResultaten"></ul>
             <p class="hint" id="labelBron"></p>
             <div class="row-actions">
@@ -540,6 +556,8 @@ pre.broncode {
 </main>
 
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="plaatsteken" id="plaatsteken" hidden></div>
+<div class="plaatsbalk" id="plaatsbalk" role="status" hidden></div>
 <div class="meetvak brieftekst" id="meetvak" aria-hidden="true"></div>
 
 <script>
@@ -1930,11 +1948,13 @@ function chip(code) {
     const span = document.createElement('span');
     if (code.startsWith('[')) {
         span.className = 'missing';
+        span.dataset.code = code;
         span.textContent = code;
         return span;
     }
     const info = veldInfo(code);
     span.className = 'merge';
+    span.dataset.code = code;
     span.title = `${info ? info.label : 'Onbekend label (niet in de labellijst)'}${info && info.soort ? ` – ${info.soort}` : ''} (${code})`;
     if (state.voorbeeld && info) {
         span.classList.add('filled');
@@ -2771,9 +2791,16 @@ function toonLabelResultaten() {
             state.sleepLabel = labelCode(l.nr);
             document.body.classList.add('label-slepen');
         });
-        li.addEventListener('dragend', () => { document.body.classList.remove('label-slepen'); state.sleepLabel = null; });
-        li.addEventListener('click', () => labelInvoegen(labelCode(l.nr)));
-        li.addEventListener('keydown', (e) => { if (e.key === 'Enter') labelInvoegen(labelCode(l.nr)); });
+        li.addEventListener('dragend', () => { document.body.classList.remove('label-slepen'); state.sleepLabel = null; verbergPlaatsteken(); });
+        li.addEventListener('mousedown', () => {
+            const actief = document.activeElement;
+            state.veldVoorKlik = actief && actief.matches && actief.matches('[data-labeldoel]') && actief.offsetParent !== null ? actief : null;
+        });
+        li.addEventListener('click', () => {
+            if (state.veldVoorKlik) { state.labelDoel = state.veldVoorKlik; state.veldVoorKlik = null; labelInvoegen(labelCode(l.nr)); }
+            else startPlaatsen(labelCode(l.nr));
+        });
+        li.addEventListener('keydown', (e) => { if (e.key === 'Enter') startPlaatsen(labelCode(l.nr)); });
         lijst.append(li);
     }
 }
@@ -2798,6 +2825,151 @@ async function labelInvoegen(code) {
     doel.focus();
     doel.dispatchEvent(new Event('input', { bubbles: true }));
     toast(`${code} ingevoegd in ${doel.dataset.labeldoel}.`);
+}
+
+/* ---------- Label plaatsen in de brief (preview) ---------- */
+
+const GEEN_TEKST_OUDER = new Set(['BODY', 'DIV', 'TABLE', 'TBODY', 'THEAD', 'TFOOT', 'TR', 'UL', 'OL']);
+// Tekststukken in volgorde; een label-markering telt als de code zelf (ook als er een voorbeeldwaarde staat)
+function tekstEenheden(roots) {
+    const uit = [];
+    for (const root of roots) {
+        const w = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        while (w.nextNode()) {
+            const n = w.currentNode;
+            if (!n.nodeValue.trim() && GEEN_TEKST_OUDER.has(n.parentElement.tagName)) continue;
+            const chip = n.parentElement.closest('.merge, .missing');
+            if (chip && root.contains(chip)) {
+                if (chip.firstChild !== n) continue;
+                uit.push({ node: n, len: chip.dataset.code.length, chip });
+            } else uit.push({ node: n, len: n.nodeValue.length });
+        }
+    }
+    return uit;
+}
+function caretVanPunt(x, y) {
+    if (document.caretPositionFromPoint) {
+        const p = document.caretPositionFromPoint(x, y);
+        if (p && p.offsetNode) return { node: p.offsetNode, offset: p.offset };
+    }
+    if (document.caretRangeFromPoint) {
+        const r = document.caretRangeFromPoint(x, y);
+        if (r) return { node: r.startContainer, offset: r.startOffset };
+    }
+    return null;
+}
+// Plek in de preview onder de muis -> positie in de tekst van de brief (of null buiten de tekst)
+function plekInBrief(x, y) {
+    const c = caretVanPunt(x, y);
+    if (!c) return null;
+    const el = c.node.nodeType === Node.ELEMENT_NODE ? c.node : c.node.parentElement;
+    if (!el || !el.closest('#papier .page .brieftekst')) return null;
+    const eenheden = tekstEenheden([...document.querySelectorAll('#papier .page .brieftekst')]);
+    const punt = document.createRange();
+    punt.setStart(c.node, c.offset);
+    let offset = 0;
+    for (const u of eenheden) {
+        if (u.chip ? u.chip.contains(c.node) : u.node === c.node) {
+            const eind = u.chip ? c.offset > (c.node.length || 0) / 2 : c.offset >= u.len;
+            offset += u.chip ? (eind ? u.len : 0) : c.offset;
+            return { offset, caret: c, begin: !u.chip && c.offset === 0 };
+        }
+        if (punt.comparePoint(u.chip || u.node, 0) > 0) return { offset, caret: c, begin: true };
+        offset += u.len;
+    }
+    return { offset, caret: c };
+}
+function toonPlaatsteken(x, y, code) {
+    const teken = $('plaatsteken');
+    const plek = plekInBrief(x, y);
+    if (!plek) { teken.hidden = true; return null; }
+    const r = document.createRange();
+    const { node, offset } = plek.caret;
+    let rect = null;
+    if (node.nodeType === Node.TEXT_NODE && node.length) {
+        const i = Math.min(offset, node.length - 1);
+        r.setStart(node, i); r.setEnd(node, i + 1);
+        const b = r.getBoundingClientRect();
+        rect = { left: offset >= node.length ? b.right : b.left, top: b.top, height: b.height };
+    } else {
+        r.setStart(node, offset); r.collapse(true);
+        const b = r.getBoundingClientRect();
+        const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+        const eb = el.getBoundingClientRect();
+        rect = { left: b.left || eb.left, top: b.top || eb.top, height: b.height || 16 };
+    }
+    Object.assign(teken.style, { left: `${rect.left - 1}px`, top: `${rect.top - 1}px`, height: `${Math.max(14, rect.height + 2)}px` });
+    teken.dataset.code = code;
+    teken.hidden = false;
+    return plek;
+}
+function verbergPlaatsteken() { $('plaatsteken').hidden = true; }
+
+function startPlaatsen(code) {
+    state.plaatsLabel = code;
+    document.body.classList.add('label-plaatsen');
+    const balk = $('plaatsbalk');
+    balk.replaceChildren('Klik in de brief (preview rechts) op de plek waar ', Object.assign(document.createElement('code'), { textContent: code }), ' moet komen. Esc = annuleren.');
+    balk.hidden = false;
+}
+function stopPlaatsen() {
+    state.plaatsLabel = null;
+    document.body.classList.remove('label-plaatsen');
+    $('plaatsbalk').hidden = true;
+    verbergPlaatsteken();
+}
+
+// Label invoegen op tekstpositie 'offset' van de brief en de brief bijwerken
+function plaatsLabelInBrief(code, offset, begin = false) {
+    if (!state.resultaat) return;
+    const body = state.resultaat.body.cloneNode(true);
+    const eenheden = tekstEenheden([body]);
+    let rest = offset;
+    let doel = eenheden[eenheden.length - 1];
+    let lokaal = doel ? doel.len : 0;
+    for (const u of eenheden) {
+        if (rest < u.len || (rest === u.len && !begin)) { doel = u; lokaal = rest; break; }
+        rest -= u.len;
+    }
+    if (!doel) return;
+    // het briefhoofd (vaste kop) wordt automatisch gemaakt
+    const kopTabel = body.querySelector(':scope > table');
+    const kopAanhef = kopTabel && kopTabel.nextElementSibling;
+    const heeftKop = state.kop[state.brief] && kopTabel && /@L00084@|Ons Kenmerk/i.test(kopTabel.textContent);
+    if (heeftKop && (kopTabel.contains(doel.node) || (kopAanhef && kopAanhef.contains(doel.node)))) {
+        toast('Het briefhoofd en de aanhef maakt de tool zelf. Zet het label in de tekst eronder, of in het onderwerp (vaste kop).');
+        return;
+    }
+    const t = doel.node.nodeValue;
+    const voor = lokaal > 0 ? t[lokaal - 1] : '';
+    const na = lokaal < t.length ? t[lokaal] : '';
+    const invoeg = `${voor && !/\s/.test(voor) ? ' ' : ''}${code}${na && !/[\s.,;:!?)]/.test(na) ? ' ' : ''}`;
+    doel.node.nodeValue = t.slice(0, lokaal) + invoeg + t.slice(lokaal);
+    // romp = brief zonder vaste kop
+    if (heeftKop) { kopAanhef && kopAanhef.remove(); kopTabel.remove(); }
+    const romp = codeOpschonen(body.innerHTML).html;
+    if (state.brief === 'EIGEN') {
+        zetEigenHtml(romp);
+    } else if (state.brief === 'X-BRF' && state.brf.soort === 'eigen') {
+        state.brf.eigenHtml = romp;
+        $('brfEigenCode').value = romp;
+        bewaarKeuzes(); render(); toonBrfTabellen();
+    } else {
+        // vaste sjabloon-brief: eigen kopie maken onder Eigen
+        if (!confirm('Deze brief komt uit een vast sjabloon. Om er een label in te zetten maakt de tool er een eigen kopie van (tabblad Eigen), met het label erin. Doorgaan?')) return;
+        const tabel = state.resultaat.body.querySelector(':scope > table');
+        state.kop.EIGEN = !!heeftKop;
+        if (heeftKop && tabel && tabel.rows.length >= 3) {
+            state.kopTekst.EIGEN.plaats = tabel.rows[0].cells[0].textContent.trim();
+            state.kopTekst.EIGEN.onderwerp = (tabel.rows[2].cells[2] || tabel.rows[2].cells[1]).textContent.trim();
+        }
+        state.brief = 'EIGEN';
+        zetEigenNaam(state.resultaat.bestand);
+        toonSecties();
+        zetEigenHtml(romp);
+        bewaarKeuzes();
+    }
+    toast(`${code} geplaatst in de brief.`);
 }
 
 function toonLabelBron() {
@@ -3414,6 +3586,41 @@ function init() {
         const sel = window.getSelection();
         if (sel.rangeCount && $('eigenPlak').contains(sel.anchorNode)) state.plakBereik = sel.getRangeAt(0).cloneRange();
     });
+    const papier = $('papier');
+    papier.addEventListener('dragover', (e) => {
+        if (!state.sleepLabel) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        toonPlaatsteken(e.clientX, e.clientY, state.sleepLabel);
+    });
+    papier.addEventListener('dragleave', (e) => {
+        const b = papier.getBoundingClientRect();
+        if (e.clientX <= b.left || e.clientX >= b.right || e.clientY <= b.top || e.clientY >= b.bottom) verbergPlaatsteken();
+    });
+    papier.addEventListener('drop', (e) => {
+        if (!state.sleepLabel) return;
+        e.preventDefault();
+        e.stopPropagation();
+        document.body.classList.remove('label-slepen');
+        const plek = plekInBrief(e.clientX, e.clientY);
+        verbergPlaatsteken();
+        const code = state.sleepLabel;
+        state.sleepLabel = null;
+        if (!plek) { toast('Laat het label los op de tekst van de brief.'); return; }
+        plaatsLabelInBrief(code, plek.offset, plek.begin);
+    });
+    papier.addEventListener('mousemove', (e) => { if (state.plaatsLabel) toonPlaatsteken(e.clientX, e.clientY, state.plaatsLabel); });
+    papier.addEventListener('mouseleave', () => { if (state.plaatsLabel) verbergPlaatsteken(); });
+    papier.addEventListener('click', (e) => {
+        if (!state.plaatsLabel) return;
+        e.preventDefault();
+        const plek = plekInBrief(e.clientX, e.clientY);
+        if (!plek) { toast('Klik op de tekst van de brief.'); return; }
+        const code = state.plaatsLabel;
+        stopPlaatsen();
+        plaatsLabelInBrief(code, plek.offset, plek.begin);
+    }, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.plaatsLabel) { stopPlaatsen(); toast('Plaatsen geannuleerd.'); } });
     document.addEventListener('drop', (e) => {
         const doel = e.target.closest ? e.target.closest('[data-labeldoel]') : null;
         document.body.classList.remove('label-slepen');
@@ -3423,7 +3630,7 @@ function init() {
         state.labelDoel = doel;
         setTimeout(() => toast(`${code} ingevoegd in ${doel.dataset.labeldoel}.`), 0);
     });
-    document.addEventListener('dragover', (e) => { if (state.sleepLabel && !(e.target.closest && e.target.closest('[data-labeldoel]'))) e.dataTransfer.dropEffect = 'none'; });
+    document.addEventListener('dragover', (e) => { if (state.sleepLabel && !(e.target.closest && e.target.closest('[data-labeldoel], #papier'))) e.dataTransfer.dropEffect = 'none'; });
     document.addEventListener('focusin', (e) => {
         if (e.target.matches && e.target.matches('[data-labeldoel]')) {
             state.labelDoel = e.target;
