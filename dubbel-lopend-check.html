@@ -468,8 +468,8 @@ async function readWorkbook(file) {
   const buf = await file.arrayBuffer();
   if (/\.(csv|txt|tsv)$/i.test(file.name)) {
     let text = new TextDecoder('utf-8').decode(buf);
-    if (text.includes('�')) text = new TextDecoder('windows-1252').decode(buf);
-    return XLSX.read(text.replace(/^﻿/, ''), { type: 'string', raw: true });
+    if (text.includes('\uFFFD')) text = new TextDecoder('windows-1252').decode(buf);
+    return XLSX.read(text.replace(/^\uFEFF/, ''), { type: 'string', raw: true });
   }
   return XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: false, cellNF: false, cellText: false });
 }
