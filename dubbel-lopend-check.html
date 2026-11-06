@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dubbel lopend – PROV × Volmacht</title>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#fff; --ink:#16191d; --muted:#5d6672; --line:#e2e5e9; --line2:#f0f2f4;
+  --accent:#1f5bd8; --accent-soft:#e9effc;
+  --ok:#17663a; --ok-bg:#e3f3e8; --warn:#9a4a00; --warn-bg:#fdefdc; --bad:#b3261e; --bad-bg:#fce8e6;
+  --na:#56606b; --na-bg:#eceef1;
+  --vol:#1f5bd8; --vol-bg:#e9effc; --prov:#7a3fc2; --prov-bg:#f2eafb;
+  --radius:12px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.07);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:22px 20px 48px}
+button,input,select{font:inherit;color:inherit}
+h1{font-size:22px;line-height:1.2;margin:0 0 6px;letter-spacing:-.01em}
+h2{font-size:16px;margin:0}
+.sub{color:var(--muted);margin:0;max-width:880px}
+.sub b{color:var(--ink);font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.mono{font-family:var(--mono);font-size:12.5px}
+.banner{margin:14px 0 0;padding:10px 14px;border-radius:10px;background:var(--bad-bg);color:var(--bad);border:1px solid #f4c7c3}
+.step{display:flex;align-items:center;gap:9px;margin:24px 0 10px;font-weight:650;font-size:15px}
+.step .n{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+
+/* Bestandskaarten */
+.ds-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.tag{font:700 11px/1 var(--mono);letter-spacing:.05em;padding:5px 7px;border-radius:6px}
+.tag-vol{background:var(--vol-bg);color:var(--vol)}
+.tag-prov{background:var(--prov-bg);color:var(--prov)}
+.ds-desc{margin:0 0 12px;color:var(--muted);font-size:13px}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;
+  border:1.5px dashed #c5cbd3;border-radius:10px;padding:18px 12px;cursor:pointer;background:#fafbfc;transition:background .15s,border-color .15s;min-height:86px}
+.drop:hover,.drop:focus-visible{border-color:var(--accent);background:var(--accent-soft);outline:none}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop strong{font-weight:600}
+.drop.loaded{min-height:0;padding:9px 12px;flex-direction:row;gap:8px;justify-content:flex-start;text-align:left}
+.drop.loaded .drop-hint{display:none}
+.drop.loaded .drop-body{display:flex;align-items:center;gap:12px;width:100%}
+.drop .fname{font-weight:600;word-break:break-all}
+.drop .change{margin-left:auto;color:var(--accent);font-size:12.5px;white-space:nowrap}
+.ds-info{margin-top:12px;display:grid;gap:10px}
+.ds-meta{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.ds-meta label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+.ds-meta select,.ds-meta input{border:1px solid var(--line);border-radius:7px;padding:4px 7px;background:#fff;color:var(--ink);max-width:220px}
+.ds-meta input[type=number]{width:62px}
+.ds-count{font-weight:600}
+.keys{display:flex;flex-wrap:wrap;gap:6px}
+.key{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 9px 3px 4px;font-size:12.5px;background:#fff}
+.key .col{font:700 11px/1 var(--mono);background:var(--ink);color:#fff;border-radius:999px;padding:4px 6px;min-width:22px;text-align:center}
+.key.missing{border-color:#f4c7c3;background:var(--bad-bg);color:var(--bad)}
+.key.missing .col{background:var(--bad)}
+.key.assumed{border-color:#f6d2a8;background:var(--warn-bg)}
+.key.assumed .col{background:var(--warn)}
+details.map summary{cursor:pointer;color:var(--accent);font-size:13px;width:max-content}
+.map-grid{display:grid;grid-template-columns:max-content 1fr;gap:6px 10px;align-items:center;margin-top:10px}
+.map-grid label{font-size:13px;color:var(--muted)}
+.map-grid select{border:1px solid var(--line);border-radius:7px;padding:4px 7px;background:#fff;min-width:0;width:100%}
+.req{color:var(--bad)}
+.msg{font-size:13px;padding:8px 10px;border-radius:8px}
+.msg.err{background:var(--bad-bg);color:var(--bad)}
+.msg.warn{background:var(--warn-bg);color:var(--warn)}
+.msg.info{background:var(--line2);color:var(--muted)}
+.loading{display:inline-flex;align-items:center;gap:8px;color:var(--muted)}
+.spin{width:14px;height:14px;border:2px solid #c9ced6;border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Resultaat */
+.empty-hint{padding:26px;text-align:center;color:var(--muted)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.tb-left,.tb-right{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+.seg button{border:0;background:none;padding:6px 11px;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--ink);color:#fff}
+.lbl{color:var(--muted);font-size:13px;margin-right:6px}
+.chk{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:13px}
+.chk input{width:16px;height:16px;accent-color:var(--accent)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 13px;cursor:pointer;font-weight:550;display:inline-flex;gap:7px;align-items:center}
+.btn:hover{border-color:#c5cbd3;background:#fafbfc}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover{background:#2b3138}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.link{border:0;background:none;color:var(--accent);padding:4px 6px}
+
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
+@media (max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{text-align:left;border:1px solid var(--line);background:#fff;border-radius:11px;padding:11px 13px;cursor:pointer;box-shadow:var(--shadow);transition:border-color .15s,box-shadow .15s}
+.kpi:hover{border-color:#c5cbd3}
+.kpi.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.kpi .k-l{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.kpi .k-v{display:block;font-size:24px;font-weight:700;letter-spacing:-.01em;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .k-s{display:block;font-size:12px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.d-dub{background:var(--bad)} .d-goed{background:var(--ok)} .d-check{background:var(--warn)} .d-nb{background:#9aa3ad} .d-all{background:var(--ink)}
+.kpi.k-dub .k-v{color:var(--bad)}
+
+.filters{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;margin-top:14px}
+.fgrp{display:flex;flex-direction:column;gap:4px}
+.fgrp > span{font-size:12px;color:var(--muted);font-weight:550}
+.frow{display:flex;gap:6px;align-items:center}
+.frow input,.frow select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;min-height:34px}
+.frow input[type=search]{width:230px}
+.frow .sep{color:var(--muted);font-size:12px}
+.hintline{font-size:11.5px;color:var(--muted)}
+
+.groups{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;cursor:pointer;display:inline-flex;gap:7px;align-items:center;font-size:13px}
+.chip:hover{border-color:#c5cbd3}
+.chip .c{font-variant-numeric:tabular-nums;font-weight:700;color:var(--bad)}
+.chip.zero .c{color:var(--muted);font-weight:500}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.on .c{color:#fff}
+.gnote{margin-top:8px}
+
+.formula{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.formula code{font-family:var(--mono);font-size:12px;background:var(--line2);border-radius:6px;padding:3px 7px}
+
+.tablewrap{margin-top:12px;overflow:auto;border:1px solid var(--line);border-radius:11px;background:#fff;max-height:70vh}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line2)}
+th{position:sticky;top:0;background:#f8f9fa;z-index:1;font-weight:600;font-size:12px;color:#39414a;cursor:pointer;user-select:none;border-bottom:1px solid var(--line)}
+th:hover{background:#f0f2f4}
+th .arr{color:var(--accent);margin-left:3px;font-size:10px}
+th.grp-vol{box-shadow:inset 0 3px 0 var(--vol)}
+th.grp-prov{box-shadow:inset 0 3px 0 var(--prov)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:#fafbfc}
+td.trunc{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.badge{display:inline-block;font-weight:650;font-size:12px;padding:2px 8px;border-radius:999px}
+.b-goed{background:var(--ok-bg);color:var(--ok)}
+.b-checken{background:var(--warn-bg);color:var(--warn)}
+.b-nb{background:var(--na-bg);color:var(--na)}
+.yes{color:var(--bad);font-weight:700}
+.no{color:var(--muted)}
+.more{color:var(--warn);font-weight:600;font-size:12px}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap}
+.pager .pg{display:flex;gap:6px;align-items:center}
+.nores{padding:28px;text-align:center;color:var(--muted)}
+
+footer{margin-top:28px;color:var(--muted);font-size:12.5px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:9px 16px;border-radius:9px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:10;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Dubbel lopend – PROV × Volmacht</h1>
+    <p class="sub">Controleert of een polis dubbel loopt: het <b>polisnummer uit de provinciale selectie</b> mag niet voorkomen als <b>Polisnr. oude mij.</b> in de volmachtselectie. Werkt zoals <span class="mono">X.ZOEKEN</span> + <span class="mono">ALS(…;"Goed";"Checken")</span> in je Excel, maar dan per kantoor en met datumfilters.</p>
+    <div class="banner" id="libError" hidden>De Excel-lezer (SheetJS) kon niet worden geladen. Controleer je internetverbinding en herlaad de pagina.</div>
+  </header>
+
+  <div class="step"><span class="n">1</span>Selecties laden</div>
+  <div class="grid2">
+    <section class="card ds" data-ds="vol">
+      <div class="ds-head"><span class="tag tag-vol">VOCOL</span><h2>Volmacht</h2></div>
+      <p class="ds-desc">Selectie volmacht. Er wordt gezocht in <b>Polisnr. oude mij.</b> (kolom U) en het <b>Relatienummer</b> (kolom D) wordt teruggegeven.</p>
+      <label class="drop" tabindex="0">
+        <input type="file" accept=".xlsx,.xlsm,.xlsb,.xls,.csv,.txt" multiple hidden>
+        <span class="drop-body"><strong>Sleep de Excel hierheen</strong></span>
+        <span class="drop-hint muted small">of klik om een bestand te kiezen (.xlsx, .xls, .csv)</span>
+      </label>
+      <div class="ds-info" hidden></div>
+    </section>
+
+    <section class="card ds" data-ds="prov">
+      <div class="ds-head"><span class="tag tag-prov">PROCO</span><h2>Provinciaal</h2></div>
+      <p class="ds-desc">Provinciale selectie. Het <b>Polisnummer</b> (kolom D) wordt opgezocht; het <b>Relatienummer</b> (kolom C) wordt vergeleken.</p>
+      <label class="drop" tabindex="0">
+        <input type="file" accept=".xlsx,.xlsm,.xlsb,.xls,.csv,.txt" multiple hidden>
+        <span class="drop-body"><strong>Sleep de Excel hierheen</strong></span>
+        <span class="drop-hint muted small">Eén Excel met de tabbladen VOLMACHT en PROV mag ook: beide worden dan herkend.</span>
+      </label>
+      <div class="ds-info" hidden></div>
+    </section>
+  </div>
+
+  <div class="step"><span class="n">2</span>Controle</div>
+  <section class="card" id="results">
+    <div class="empty-hint" id="emptyHint">Laad beide selecties om de controle te starten.</div>
+
+    <div id="resBody" hidden>
+      <div class="toolbar">
+        <div class="tb-left">
+          <div><span class="lbl">Splits per</span>
+            <div class="seg" id="groupBy" role="group" aria-label="Splits per">
+              <button type="button" data-v="kantoor">Kantoor</button>
+              <button type="button" data-v="agent">Agent</button>
+            </div>
+          </div>
+          <label class="chk" title="Uit = exacte vergelijking zoals X.ZOEKEN (alleen spaties rondom en hoofdletters worden genegeerd)">
+            <input type="checkbox" id="optSmart"> Negeer spaties, punten, streepjes en voorloopnullen
+          </label>
+        </div>
+        <div class="tb-right">
+          <button type="button" class="btn" id="btnCopy" title="Kopieer de getoonde regels; plakken in Excel kan direct">Kopieer tabel</button>
+          <button type="button" class="btn primary" id="btnExport" title="Samenvatting + tabblad per kantoor, met de huidige filters">Excel per kantoor</button>
+        </div>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="filters">
+        <div class="fgrp">
+          <span>Ingangsdatum PROV</span>
+          <div class="frow"><input type="date" id="fProvFrom" aria-label="Ingangsdatum PROV vanaf"><span class="sep">t/m</span><input type="date" id="fProvTo" aria-label="Ingangsdatum PROV tot en met"></div>
+          <span class="hintline" id="provRange"></span>
+        </div>
+        <div class="fgrp">
+          <span>Ingangsdatum volmacht</span>
+          <div class="frow"><input type="date" id="fVolFrom" aria-label="Ingangsdatum volmacht vanaf"><span class="sep">t/m</span><input type="date" id="fVolTo" aria-label="Ingangsdatum volmacht tot en met"></div>
+          <span class="hintline" id="volRange"></span>
+        </div>
+        <div class="fgrp">
+          <span>Toon</span>
+          <div class="frow">
+            <select id="fStatus">
+              <option value="dubbel">Dubbel lopend (Goed + Checken)</option>
+              <option value="checken">Alleen Checken</option>
+              <option value="goed">Alleen Goed</option>
+              <option value="nb">Niet gevonden (#N/B)</option>
+              <option value="alle">Alle PROV-polissen</option>
+            </select>
+          </div>
+          <span class="hintline">&nbsp;</span>
+        </div>
+        <div class="fgrp">
+          <span>Zoeken</span>
+          <div class="frow"><input type="search" id="fQ" placeholder="Polisnr, relatienr, naam, postcode…"></div>
+          <span class="hintline">&nbsp;</span>
+        </div>
+        <div class="fgrp">
+          <span>&nbsp;</span>
+          <div class="frow"><button type="button" class="btn link" id="btnClear">Filters wissen</button></div>
+          <span class="hintline">&nbsp;</span>
+        </div>
+      </div>
+
+      <div class="groups" id="groups"></div>
+      <div class="gnote muted small" id="groupNote"></div>
+
+      <div class="formula small muted" id="formula"></div>
+
+      <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+      <div class="pager">
+        <span class="muted small" id="pgInfo"></span>
+        <span class="pg">
+          <button type="button" class="btn" id="pgPrev">‹ Vorige</button>
+          <button type="button" class="btn" id="pgNext">Volgende ›</button>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <footer>De bestanden worden alleen in je eigen browser gelezen; er wordt niets geüpload of opgeslagen.</footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Excel-lezer (SheetJS) ---------- */
+const XLSX_SOURCES = [
+  'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+];
+let xlsxPromise = null;
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (xlsxPromise) return xlsxPromise;
+  xlsxPromise = new Promise((resolve, reject) => {
+    let i = 0;
+    const next = () => {
+      if (window.XLSX) return resolve(window.XLSX);
+      if (i >= XLSX_SOURCES.length) {
+        xlsxPromise = null;
+        $('#libError').hidden = false;
+        return reject(new Error('SheetJS kon niet worden geladen'));
+      }
+      const s = document.createElement('script');
+      s.src = XLSX_SOURCES[i++];
+      s.onload = () => (window.XLSX ? resolve(window.XLSX) : next());
+      s.onerror = () => { s.remove(); next(); };
+      document.head.appendChild(s);
+    };
+    next();
+  });
+  return xlsxPromise;
+}
+
+/* ---------- Hulpfuncties ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = new Intl.NumberFormat('nl-NL');
+const fmtN = n => nf.format(n);
+const pad = n => String(n).padStart(2, '0');
+const tick = () => new Promise(r => setTimeout(r, 30));
+const EPOCH = Date.UTC(1899, 11, 30), DAY = 864e5;
+
+function colLetter(i) { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function colIndex(L) { let n = 0; for (const ch of L) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; }
+
+// Datums intern als Excel-serienummer (hele dagen), los van tijdzones.
+function serialYMD(y, m, d) {
+  if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2200)) return null;
+  const t = Date.UTC(y, m - 1, d), dt = new Date(t);
+  if (dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
+  return Math.round((t - EPOCH) / DAY);
+}
+function parseDate(v) {
+  if (v === '' || v == null) return '';
+  if (v instanceof Date) return isNaN(v) ? '' : serialYMD(v.getFullYear(), v.getMonth() + 1, v.getDate());
+  if (typeof v === 'number') {
+    if (Number.isInteger(v) && v >= 19000101 && v <= 22001231) {
+      const s = serialYMD(Math.floor(v / 1e4), Math.floor(v / 100) % 100, v % 100);
+      if (s != null) return s;
+    }
+    if (v > 0 && v < 2958466) return Math.floor(v);
+    return String(v);
+  }
+  const s = String(v).trim();
+  if (!s) return '';
+  let m, r;
+  if ((m = s.match(/^(\d{1,2})[-/. ](\d{1,2})[-/. ](\d{4}|\d{2})(?:\D.*)?$/))) {
+    let y = +m[3]; if (y < 100) y += y < 50 ? 2000 : 1900;
+    if ((r = serialYMD(y, +m[2], +m[1])) != null) return r;
+  }
+  if ((m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:\D.*)?$/))) {
+    if ((r = serialYMD(+m[1], +m[2], +m[3])) != null) return r;
+  }
+  if ((m = s.match(/^(\d{2})(\d{2})(\d{4})$/)) && !/^(19|20)/.test(s)) {
+    if ((r = serialYMD(+m[3], +m[2], +m[1])) != null) return r;
+  }
+  if (/^\d+(\.\d+)?$/.test(s)) return parseDate(Number(s));
+  return s; // onbekend formaat: tekst laten staan
+}
+const isDate = v => typeof v === 'number';
+function fmtDate(v) {
+  if (!isDate(v)) return v == null ? '' : String(v);
+  const d = new Date(EPOCH + v * DAY);
+  return pad(d.getUTCDate()) + '-' + pad(d.getUTCMonth() + 1) + '-' + d.getUTCFullYear();
+}
+function inputToSerial(str) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str || ''); return m ? serialYMD(+m[1], +m[2], +m[3]) : null; }
+
+// Sleutel om polis- en relatienummers te vergelijken.
+function normKey(v, smart) {
+  if (v === '' || v == null) return '';
+  let s = String(v).trim().toUpperCase();
+  if (smart) s = s.replace(/[\s.\-/_,]/g, '').replace(/^0+(?=.)/, '');
+  return s;
+}
+const txt = v => (v == null ? '' : String(v));
+
+/* ---------- Kolommen van de selecties ---------- */
+// Koppen worden herkend op naam (deel na de laatste ">"), anders op de vaste kolomletter.
+function hInfo(raw) {
+  const full = String(raw ?? '').trim();
+  const parts = full.split('>');
+  const n = s => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]/g, '');
+  return { raw: full, full: n(full), last: n(parts[parts.length - 1]), pre: n(parts.slice(0, -1).join('>')) };
+}
+const has = (...w) => h => w.some(x => h.last.includes(x));
+const mPolisnr = h => (h.last.includes('polisnummer') || h.last === 'polisnr') && !h.last.includes('oud');
+const mRelnr = h => h.last.includes('relatienummer') || h.last === 'relatienr';
+const mOud = h => h.last.includes('oud') && (h.last.includes('pol') || h.last.includes('mij'));
+
+const FIELDS = {
+  vol: [
+    { id: 'oudPolis', label: 'Polisnr. oude mij.', col: 'U', req: true, ui: true, m: mOud },
+    { id: 'relatienr', label: 'Relatienummer', col: 'D', req: true, ui: true, m: mRelnr },
+    { id: 'polisnr', label: 'Polisnummer', col: 'F', ui: true, m: mPolisnr },
+    { id: 'ingang', label: 'Ingangsdatum', col: 'K', ui: true, date: true, m: has('ingangsdatum') },
+    { id: 'kantoor', label: 'Kantoorcode', col: 'A', ui: true, m: has('kantoor') },
+    { id: 'agent', label: 'Agent', col: 'B', ui: true, m: h => h.last.includes('agent') && !h.pre.includes('oms') },
+    { id: 'agentOms', label: 'Agent omschrijving', col: 'C', m: h => h.last.includes('agent') && h.pre.includes('oms') },
+    { id: 'naam', label: 'Naam', col: 'E', m: has('voorletters', 'achternaam', 'naam') },
+    { id: 'maatschappij', label: 'Maatschappij', col: 'G', m: has('maatschappij') },
+    { id: 'branche', label: 'Branche', col: 'I', m: has('branche') },
+    { id: 'wijzreden', label: 'Wijzigingsreden', col: 'J', m: has('wijzigingsreden') },
+    { id: 'wijzdatum', label: 'Wijzigingsdatum', col: 'L', date: true, m: has('wijzigingsdatum') },
+    { id: 'hoofdverval', label: 'Hoofdvervaldatum', col: 'N', date: true, m: has('hoofdverval') },
+    { id: 'incasso', label: 'Incassobedrag', col: 'O', m: has('incasso') },
+    { id: 'medewerker', label: 'Medewerker', col: 'Q', m: has('medewerker') },
+    { id: 'dekking', label: 'Dekking', col: 'T', m: has('dekking') }
+  ],
+  prov: [
+    { id: 'polisnr', label: 'Polisnummer', col: 'D', req: true, ui: true, m: mPolisnr },
+    { id: 'relatienr', label: 'Relatienummer', col: 'C', req: true, ui: true, m: mRelnr },
+    { id: 'ingang', label: 'Ingangsdatum', col: 'A', ui: true, date: true, m: has('ingangsdatum') },
+    { id: 'kantoor', label: 'Kantoorcode', col: null, ui: true, m: has('kantoor') },
+    { id: 'agent', label: 'Agent', col: 'O', ui: true, m: has('agent') },
+    { id: 'voorletters', label: 'Voorletters', col: 'F', m: has('voorletters') },
+    { id: 'voorvoegsels', label: 'Voorvoegsels', col: 'G', m: has('voorvoegsel') },
+    { id: 'achternaam', label: 'Achternaam', col: 'H', m: has('achternaam') },
+    { id: 'straat', label: 'Straat', col: 'I', m: has('straat') },
+    { id: 'huisnr', label: 'Huisnummer', col: 'J', m: h => h.last === 'huisnummer' },
+    { id: 'toevoeging', label: 'Toevoeging', col: 'K', m: has('toevoeging') },
+    { id: 'postcode', label: 'Postcode', col: 'L', m: has('postcode') },
+    { id: 'woonplaats', label: 'Woonplaats', col: 'M', m: has('woonplaats') },
+    { id: 'branche', label: 'Branche', col: 'P', m: has('branche') },
+    { id: 'maatschappij', label: 'Maatschappij', col: 'Q', m: has('maatschappij') },
+    { id: 'hoofdverval', label: 'Hoofdvervaldatum', col: 'R', date: true, m: has('hoofdverval') },
+    { id: 'kenteken', label: 'Kenteken', col: 'V', m: has('kenteken') },
+    { id: 'incasso', label: 'Incassobedrag', col: 'AD', m: has('incasso') }
+  ]
+};
+const VOL_ONLY = ['kantoorcode', 'wijzigingsreden', 'opmaakdatum', 'wachtjn', 'premievervaldatum', 'medewerker'];
+const PROV_ONLY = ['kenteken', 'meldcode', 'cataloguswaarde', 'dagwaarde', 'gezinssamenstelling', 'komtdubbelvoor', 'postcode', 'geboortedatum', 'woonplaats', 'termijn', 'straat'];
+const ALL_MATCHERS = FIELDS.vol.concat(FIELDS.prov).map(f => f.m);
+const DS_NAME = { vol: 'VOLMACHT', prov: 'PROV' };
+
+function detectHeaderRow(aoa) {
+  let best = 0, bestScore = 0;
+  for (let r = 0; r < Math.min(25, aoa.length); r++) {
+    const hs = (aoa[r] || []).map(hInfo).filter(h => h.full);
+    const score = ALL_MATCHERS.filter(m => hs.some(m)).length;
+    if (score > bestScore) { best = r; bestScore = score; }
+  }
+  return best;
+}
+function autoMap(type, headers) {
+  const map = {}, assumed = new Set();
+  for (const f of FIELDS[type]) {
+    const exp = f.col ? colIndex(f.col) : -1;
+    let idx = -1;
+    if (exp >= 0 && exp < headers.length && f.m(headers[exp])) idx = exp;
+    else idx = headers.findIndex(h => h.full && f.m(h));
+    if (idx < 0 && f.req && exp >= 0 && exp < headers.length) { idx = exp; assumed.add(f.id); }
+    map[f.id] = idx;
+  }
+  return { map, assumed };
+}
+
+/* ---------- Status ---------- */
+const state = {
+  vol: emptyDs(), prov: emptyDs(),
+  opts: { smart: true, groupBy: 'kantoor' },
+  f: { provFrom: null, provTo: null, volFrom: null, volTo: null, status: 'dubbel', q: '', group: '__all' },
+  results: null, meta: null, sort: { k: null, dir: 1 }, page: 0, view: []
+};
+function emptyDs() { return { file: null, wb: null, sheet: null, aoa: null, start: 0, headers: [], headerRow: 0, map: {}, assumed: new Set(), recs: null, note: '', warn: '', error: '', loading: false }; }
+try {
+  const saved = JSON.parse(localStorage.getItem('dubbelLopend.opts') || 'null');
+  if (saved) { if (typeof saved.smart === 'boolean') state.opts.smart = saved.smart; if (saved.groupBy === 'agent') state.opts.groupBy = 'agent'; }
+} catch (e) { /* geen opslag beschikbaar */ }
+function saveOpts() { try { localStorage.setItem('dubbelLopend.opts', JSON.stringify(state.opts)); } catch (e) { /* negeren */ } }
+
+/* ---------- Inlezen ---------- */
+async function readWorkbook(file) {
+  const XLSX = await loadXLSX();
+  const buf = await file.arrayBuffer();
+  if (/\.(csv|txt|tsv)$/i.test(file.name)) {
+    let text = new TextDecoder('utf-8').decode(buf);
+    if (text.includes('�')) text = new TextDecoder('windows-1252').decode(buf);
+    return XLSX.read(text.replace(/^﻿/, ''), { type: 'string', raw: true });
+  }
+  return XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: false, cellNF: false, cellText: false });
+}
+// Geeft { rows, start }: rows[i] hoort bij Excel-rij start + i + 1.
+function sheetAoa(wb, name, limit) {
+  const ws = wb.Sheets[name];
+  if (!ws || !ws['!ref']) return { rows: [], start: 0 };
+  const r = XLSX.utils.decode_range(ws['!ref']);
+  // Bereik inkorten tot de laatste gevulde rij (opgemaakte lege rijen kunnen tot rij 1.048.576 lopen).
+  let last = r.e.r;
+  if (r.e.r - r.s.r > 200000) {
+    last = r.s.r;
+    if (Array.isArray(ws['!data'])) last = r.s.r + ws['!data'].length - 1;
+    else for (const k in ws) { if (k.charCodeAt(0) === 33) continue; const m = /\d+$/.exec(k); if (m && +m[0] - 1 > last) last = +m[0] - 1; }
+  }
+  r.e.r = Math.min(r.e.r, last, limit ? r.s.r + limit : Infinity);
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '', blankrows: true, range: XLSX.utils.encode_range(r) });
+  return { rows, start: r.s.r };
+}
+function sheetScore(wb, name) {
+  const top = sheetAoa(wb, name, 25).rows;
+  const hs = (top[detectHeaderRow(top)] || []).map(hInfo);
+  const cnt = list => list.filter(w => hs.some(h => h.last.includes(w))).length;
+  let vol = cnt(VOL_ONLY), prov = cnt(PROV_ONLY);
+  if (/volmacht|vocol/i.test(name)) vol += 5;
+  if (/prov|proco/i.test(name)) prov += 5;
+  return { name, vol, prov };
+}
+const other = t => (t === 'vol' ? 'prov' : 'vol');
+function pickSheet(scores, t, exclude) {
+  const o = other(t);
+  const c = scores.filter(s => s.name !== exclude);
+  if (!c.length) return null;
+  const best = [...c].sort((a, b) => (b[t] - b[o]) - (a[t] - a[o]) || b[t] - a[t])[0];
+  return best;
+}
+
+async function handleFiles(fileList, t) {
+  const files = [...fileList].filter(Boolean).slice(0, 2);
+  if (!files.length) return;
+  const targets = files.length === 2 ? ['vol', 'prov'] : [t];
+  targets.forEach(x => setLoading(x, files.length === 2 ? files.map(f => f.name).join(' + ') : files[0].name));
+  try {
+    await tick();
+    const books = [];
+    for (const file of files) {
+      const wb = await readWorkbook(file);
+      const scores = wb.SheetNames.map(n => sheetScore(wb, n));
+      books.push({ file, wb, scores, lean: Math.max(...scores.map(s => s.vol - s.prov)) });
+    }
+    if (books.length === 2) {
+      books.sort((a, b) => b.lean - a.lean);
+      loadBook('vol', books[0]);
+      loadBook('prov', books[1]);
+    } else {
+      const b = books[0];
+      const pick = loadBook(t, b);
+      // Excel met beide tabbladen: de andere selectie meteen ook vullen.
+      const o = other(t);
+      if (!state[o].recs && b.scores.length > 1) {
+        const os = pickSheet(b.scores, o, pick.name);
+        if (os && os[o] > os[t]) loadSheet(o, b.file, b.wb, os.name, 'uit hetzelfde bestand');
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    targets.forEach(x => { const ds = state[x]; ds.loading = false; ds.error = 'Kon het bestand niet lezen: ' + (err && err.message ? err.message : err); renderDs(x); });
+  }
+  recompute();
+}
+function loadBook(t, b) {
+  const pick = pickSheet(b.scores, t) || { name: b.wb.SheetNames[0] };
+  loadSheet(t, b.file, b.wb, pick.name);
+  return pick;
+}
+function loadSheet(t, file, wb, sheet, note) {
+  const ds = state[t];
+  Object.assign(ds, { file, wb, sheet, note: note || '', error: '', loading: false });
+  const a = sheetAoa(wb, sheet);
+  ds.aoa = a.rows; ds.start = a.start;
+  ds.headerRow = detectHeaderRow(ds.aoa);
+  const sc = sheetScore(wb, sheet);
+  ds.warn = sc[other(t)] > sc[t] ? `Let op: dit tabblad lijkt meer op de ${t === 'vol' ? 'provinciale' : 'volmacht'}selectie.` : '';
+  applyHeaderRow(t);
+}
+function applyHeaderRow(t) {
+  const ds = state[t];
+  ds.headers = (ds.aoa[ds.headerRow] || []).map(hInfo);
+  const { map, assumed } = autoMap(t, ds.headers);
+  ds.map = map; ds.assumed = assumed;
+  buildRecs(t);
+  renderDs(t);
+}
+function buildRecs(t) {
+  const ds = state[t], fields = FIELDS[t], recs = [];
+  for (let i = ds.headerRow + 1; i < ds.aoa.length; i++) {
+    const row = ds.aoa[i];
+    if (!row) continue;
+    const r = { _row: ds.start + i + 1 };
+    let any = false;
+    for (const f of fields) {
+      const idx = ds.map[f.id];
+      let v = idx >= 0 ? row[idx] : '';
+      if (v == null) v = '';
+      if (f.date) v = parseDate(v);
+      else if (typeof v === 'string') v = v.trim();
+      r[f.id] = v;
+      if (v !== '' && v != null) any = true;
+    }
+    if (any) recs.push(r);
+  }
+  ds.recs = recs;
+}
+const dsReady = t => { const ds = state[t]; return ds.recs && FIELDS[t].filter(f => f.req).every(f => ds.map[f.id] >= 0); };
+
+/* ---------- Controle ---------- */
+function compute() {
+  const smart = state.opts.smart;
+  const K = v => normKey(v, smart);
+  const vol = state.vol.recs, prov = state.prov.recs;
+  const idx = new Map(), relKantoor = new Map(), agentOms = new Map();
+  let volWithOld = 0;
+  for (const v of vol) {
+    const kr = K(v.relatienr);
+    if (kr && v.kantoor !== '' && !relKantoor.has(kr)) relKantoor.set(kr, txt(v.kantoor));
+    if (v.agent !== '' && v.agentOms !== '' && !agentOms.has(txt(v.agent))) agentOms.set(txt(v.agent), txt(v.agentOms));
+    const ko = K(v.oudPolis);
+    if (!ko) continue;
+    volWithOld++;
+    let m = idx.get(ko);
+    if (!m) idx.set(ko, (m = new Map()));
+    const pk = K(v.polisnr) || '#' + m.size; // dekkingsregels van dezelfde polis tellen één keer
+    if (!m.has(pk)) m.set(pk, v);
+  }
+  const seen = new Map(), results = [];
+  let noPolis = 0;
+  for (const p of prov) {
+    const k = K(p.polisnr);
+    if (!k) { noPolis++; continue; }
+    const prev = seen.get(k);
+    if (prev) { prev.regels++; continue; }
+    const hits = idx.has(k) ? [...idx.get(k).values()] : [];
+    const pRel = K(p.relatienr);
+    const same = pRel ? hits.find(v => K(v.relatienr) === pRel) : null;
+    const v = same || hits[0] || null;
+    const res = {
+      p, v, hits,
+      status: !hits.length ? 'nb' : same ? 'goed' : 'checken',
+      kantoor: txt(p.kantoor) || relKantoor.get(pRel) || (v ? txt(v.kantoor) : '') || '',
+      agent: txt(p.agent) || (v ? txt(v.agent) : '') || '',
+      naam: [p.voorletters, p.voorvoegsels, p.achternaam].map(txt).filter(Boolean).join(' ') || (v ? txt(v.naam) : ''),
+      regels: 1
+    };
+    seen.set(k, res);
+    results.push(res);
+  }
+  state.results = results;
+  state.meta = { agentOms, volRows: vol.length, volWithOld, provRows: prov.length, noPolis };
+}
+function groupKey(r) { const g = state.opts.groupBy === 'agent' ? r.agent : r.kantoor; return g || 'Onbekend'; }
+function groupLabel(g) {
+  if (state.opts.groupBy !== 'agent' || g === 'Onbekend') return g;
+  const oms = state.meta.agentOms.get(g);
+  return oms && oms !== g ? `${g} – ${oms}` : g;
+}
+
+/* ---------- Filters ---------- */
+function inRange(d, from, to) {
+  if (from == null && to == null) return true;
+  if (!isDate(d)) return false;
+  return (from == null || d >= from) && (to == null || d <= to);
+}
+function dateRows() {
+  const f = state.f;
+  return state.results.filter(r => inRange(r.p.ingang, f.provFrom, f.provTo) && ((f.volFrom == null && f.volTo == null) || (r.v && inRange(r.v.ingang, f.volFrom, f.volTo))));
+}
+function statusOk(r, s) { return s === 'alle' || (s === 'dubbel' ? r.status !== 'nb' : r.status === s); }
+function searchOk(r, q) {
+  if (!q) return true;
+  const hay = [r.p.polisnr, r.p.relatienr, r.naam, r.p.postcode, r.p.kenteken, r.p.woonplaats, ...r.hits.flatMap(h => [h.polisnr, h.relatienr])].map(txt).join(' ').toLowerCase();
+  return q.split(/\s+/).every(w => hay.includes(w));
+}
+function tableRows(group) {
+  const f = state.f, q = f.q.trim().toLowerCase();
+  return dateRows().filter(r => statusOk(r, f.status) && searchOk(r, q) && (group === '__all' || groupKey(r) === group));
+}
+
+/* ---------- Kolommen van de uitkomst ---------- */
+const COLS = [
+  { k: 'group', label: () => (state.opts.groupBy === 'agent' ? 'Agent' : 'Kantoor'), get: r => groupLabel(groupKey(r)) },
+  { k: 'dubbel', label: 'Dubbel lopend', get: r => (r.status === 'nb' ? 'Nee' : 'Ja'), html: r => (r.status === 'nb' ? '<span class="no">Nee</span>' : '<span class="yes">Ja</span>') },
+  { k: 'controle', label: 'Controle', get: r => ({ goed: 'Goed', checken: 'Checken', nb: '#N/B' })[r.status],
+    html: r => `<span class="badge b-${r.status}" title="${esc(STATUS_TITLE[r.status])}">${({ goed: 'Goed', checken: 'Checken', nb: '#N/B' })[r.status]}</span>` },
+  { k: 'pRel', label: 'Relatienr PROV', grp: 'prov', get: r => r.p.relatienr },
+  { k: 'pPolis', label: 'Polisnr PROV', grp: 'prov', get: r => r.p.polisnr },
+  { k: 'pIngang', label: 'Ingangsdatum PROV', grp: 'prov', date: true, get: r => r.p.ingang },
+  { k: 'naam', label: 'Naam', grp: 'prov', trunc: true, get: r => r.naam },
+  { k: 'pBranche', label: 'Branche PROV', grp: 'prov', trunc: true, get: r => r.p.branche },
+  { k: 'pMij', label: 'Maatschappij PROV', grp: 'prov', trunc: true, get: r => r.p.maatschappij },
+  { k: 'vRel', label: 'Relatienr volmacht (X.ZOEKEN)', grp: 'vol', get: r => (r.v ? r.v.relatienr : '') },
+  { k: 'vPolis', label: 'Polisnr volmacht', grp: 'vol', get: r => (r.v ? r.v.polisnr : ''),
+    html: r => (r.v ? esc(r.v.polisnr) + (r.hits.length > 1 ? ` <span class="more" title="${esc(r.hits.map(h => txt(h.polisnr)).join(', '))}">+${r.hits.length - 1}</span>` : '') : '') },
+  { k: 'vIngang', label: 'Ingangsdatum volmacht', grp: 'vol', date: true, get: r => (r.v ? r.v.ingang : '') },
+  { k: 'vMij', label: 'Maatschappij volmacht', grp: 'vol', trunc: true, get: r => (r.v ? r.v.maatschappij : '') },
+  { k: 'vBranche', label: 'Branche volmacht', grp: 'vol', trunc: true, get: r => (r.v ? r.v.branche : '') },
+  { k: 'hits', label: 'Treffers', num: true, get: r => r.hits.length }
+];
+const EXPORT_EXTRA = [
+  { label: 'Postcode', get: r => r.p.postcode },
+  { label: 'Woonplaats', get: r => r.p.woonplaats },
+  { label: 'Kenteken', get: r => r.p.kenteken },
+  { label: 'Agent PROV', get: r => r.p.agent },
+  { label: 'Hoofdvervaldatum PROV', date: true, get: r => r.p.hoofdverval },
+  { label: 'Kantoorcode volmacht', get: r => (r.v ? r.v.kantoor : '') },
+  { label: 'Wijzigingsreden volmacht', get: r => (r.v ? r.v.wijzreden : '') },
+  { label: 'Medewerker volmacht', get: r => (r.v ? r.v.medewerker : '') },
+  { label: 'Alle volmacht polisnrs', get: r => r.hits.map(h => txt(h.polisnr)).join(', ') },
+  { label: 'Alle volmacht relatienrs', get: r => [...new Set(r.hits.map(h => txt(h.relatienr)))].join(', ') },
+  { label: 'Regels in PROV', num: true, get: r => r.regels },
+  { label: 'Rij PROV', num: true, get: r => r.p._row },
+  { label: 'Rij volmacht', num: true, get: r => (r.v ? r.v._row : '') }
+];
+const STATUS_TITLE = {
+  goed: 'Polisnummer staat als oude polis in volmacht – zelfde relatienummer',
+  checken: 'Polisnummer staat als oude polis in volmacht – ander relatienummer',
+  nb: 'Niet gevonden in volmacht – loopt niet dubbel'
+};
+const colLabel = c => (typeof c.label === 'function' ? c.label() : c.label);
+
+function sortRows(rows) {
+  const { k, dir } = state.sort;
+  if (!k) return rows;
+  const c = COLS.find(x => x.k === k);
+  const coll = new Intl.Collator('nl', { numeric: true, sensitivity: 'base' });
+  return [...rows].sort((a, b) => {
+    const va = c.get(a), vb = c.get(b);
+    const ea = va === '' || va == null, eb = vb === '' || vb == null;
+    if (ea || eb) return ea === eb ? 0 : ea ? 1 : -1;
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+    return coll.compare(String(va), String(vb)) * dir;
+  });
+}
+
+/* ---------- Weergave: bestandskaarten ---------- */
+function setLoading(t, name) {
+  const ds = state[t];
+  ds.loading = true; ds.error = '';
+  const card = $(`.ds[data-ds="${t}"]`), info = $('.ds-info', card);
+  info.hidden = false;
+  info.innerHTML = `<span class="loading"><span class="spin"></span>Bezig met inlezen van ${esc(name)}…</span>`;
+}
+function renderDs(t) {
+  const ds = state[t], card = $(`.ds[data-ds="${t}"]`), info = $('.ds-info', card), drop = $('.drop', card);
+  if (ds.loading) return;
+  if (!ds.file && !ds.error) { info.hidden = true; return; }
+  info.hidden = false;
+  if (ds.error && !ds.recs) {
+    drop.classList.remove('loaded');
+    info.innerHTML = `<div class="msg err">${esc(ds.error)}</div>`;
+    return;
+  }
+  drop.classList.add('loaded');
+  $('.drop-body', card).innerHTML = `<span class="fname">${esc(ds.file.name)}</span><span class="change">Ander bestand</span>`;
+
+  const sheets = ds.wb.SheetNames;
+  const opt = (i, label, sel) => `<option value="${i}"${sel ? ' selected' : ''}>${esc(label)}</option>`;
+  const fieldsUi = FIELDS[t].filter(f => f.ui);
+  const keyChip = f => {
+    const i = ds.map[f.id];
+    const cls = i < 0 ? (f.req ? 'missing' : '') : ds.assumed.has(f.id) ? 'assumed' : '';
+    if (i < 0 && !f.req) return '';
+    return `<span class="key ${cls}" title="${i >= 0 ? esc(ds.headers[i] ? ds.headers[i].raw : '') : 'Niet gevonden'}"><span class="col">${i >= 0 ? colLetter(i) : '?'}</span>${esc(f.label)}</span>`;
+  };
+  const width = Math.max(ds.headers.length, ...(ds.aoa.slice(ds.headerRow + 1, ds.headerRow + 6).map(r => r.length)));
+  const colOpts = sel => opt(-1, '— niet gebruiken —', sel === -1) +
+    Array.from({ length: width }, (_, i) => opt(i, `${colLetter(i)} · ${(ds.headers[i] && ds.headers[i].raw) || '(leeg)'}`.slice(0, 70), sel === i)).join('');
+  const missing = FIELDS[t].filter(f => f.req && ds.map[f.id] < 0);
+  const assumed = FIELDS[t].filter(f => ds.assumed.has(f.id));
+
+  info.innerHTML = `
+    <div class="ds-meta">
+      <span class="ds-count">${fmtN(ds.recs.length)} regels</span>
+      ${sheets.length > 1 ? `<label>Tabblad <select data-act="sheet">${sheets.map(s => opt(esc(s), s, s === ds.sheet)).join('')}</select></label>` : ''}
+      <label title="Excel-rijnummer van de kolomkoppen">Kopregel <input type="number" min="${ds.start + 1}" max="${ds.start + ds.aoa.length}" value="${ds.start + ds.headerRow + 1}" data-act="hdr"></label>
+      ${ds.note ? `<span class="muted small">(${esc(ds.note)})</span>` : ''}
+    </div>
+    <div class="keys">${fieldsUi.map(keyChip).join('')}</div>
+    ${missing.length ? `<div class="msg err">Kolom niet gevonden: ${missing.map(f => '<b>' + esc(f.label) + '</b>').join(', ')}. Kies de kolom hieronder bij “Kolommen aanpassen”.</div>` : ''}
+    ${assumed.length ? `<div class="msg warn">Kop niet herkend, daarom de vaste kolom gebruikt voor: ${assumed.map(f => `<b>${esc(f.label)}</b> (${f.col})`).join(', ')}. Controleer dit even.</div>` : ''}
+    ${ds.warn ? `<div class="msg warn">${esc(ds.warn)}</div>` : ''}
+    <details class="map"${missing.length ? ' open' : ''}><summary>Kolommen aanpassen</summary>
+      <div class="map-grid">${fieldsUi.map(f => `<label for="map-${t}-${f.id}">${esc(f.label)}${f.req ? ' <span class="req">*</span>' : ''}</label><select id="map-${t}-${f.id}" data-act="map" data-f="${f.id}">${colOpts(ds.map[f.id])}</select>`).join('')}</div>
+    </details>`;
+}
+
+/* ---------- Weergave: resultaat ---------- */
+function recompute() {
+  const ready = dsReady('vol') && dsReady('prov');
+  $('#emptyHint').hidden = ready;
+  $('#resBody').hidden = !ready;
+  if (!ready) {
+    const loaded = ['vol', 'prov'].filter(t => state[t].recs);
+    $('#emptyHint').textContent = loaded.length === 2 ? 'Kies eerst de ontbrekende kolommen bij de selecties hierboven.'
+      : loaded.length === 1 ? `Laad nu ook de ${loaded[0] === 'vol' ? 'provinciale selectie (PROCO)' : 'volmachtselectie (VOCOL)'}.`
+      : 'Laad beide selecties om de controle te starten.';
+    state.results = null;
+    return;
+  }
+  compute();
+  state.page = 0;
+  renderResults();
+}
+function renderResults() {
+  if (!state.results) return;
+  const f = state.f, rowsD = dateRows();
+
+  // knoppen en filters synchroon houden
+  $$('#groupBy button').forEach(b => b.classList.toggle('on', b.dataset.v === state.opts.groupBy));
+  $('#optSmart').checked = state.opts.smart;
+  $('#fStatus').value = f.status;
+
+  // groepen (kantoor / agent)
+  const groups = new Map();
+  for (const r of rowsD) {
+    const g = groupKey(r);
+    const o = groups.get(g) || { total: 0, dub: 0 };
+    o.total++; if (r.status !== 'nb') o.dub++;
+    groups.set(g, o);
+  }
+  if (f.group !== '__all' && !groups.has(f.group)) f.group = '__all';
+  const gNames = [...groups.keys()].sort((a, b) => (a === 'Onbekend') - (b === 'Onbekend') || a.localeCompare(b, 'nl', { numeric: true }));
+  const totDub = rowsD.filter(r => r.status !== 'nb').length;
+  const chip = (g, label, o) => `<button type="button" class="chip${f.group === g ? ' on' : ''}${o.dub ? '' : ' zero'}" data-g="${esc(g)}" title="${fmtN(o.dub)} dubbel lopend van ${fmtN(o.total)} PROV-polissen"><span>${esc(label)}</span><span class="c">${fmtN(o.dub)}</span></button>`;
+  $('#groups').innerHTML = chip('__all', state.opts.groupBy === 'agent' ? 'Alle agenten' : 'Alle kantoren', { total: rowsD.length, dub: totDub }) +
+    gNames.map(g => chip(g, groupLabel(g), groups.get(g))).join('');
+  const provHasKantoor = state.prov.map.kantoor >= 0;
+  $('#groupNote').textContent = state.opts.groupBy === 'kantoor' && !provHasKantoor
+    ? 'Kantoor van een PROV-polis = kantoorcode van dezelfde relatie in de volmachtselectie, anders die van de gevonden volmachtpolis. “Onbekend” = relatie niet gevonden in de volmachtselectie.'
+    : state.opts.groupBy === 'agent' ? 'Agent = “Agent op relatienivo” uit de PROV-selectie (anders uit de gevonden volmachtpolis).' : '';
+
+  // KPI's (datumfilter + gekozen groep)
+  const inG = f.group === '__all' ? rowsD : rowsD.filter(r => groupKey(r) === f.group);
+  const c = { alle: inG.length, goed: 0, checken: 0, nb: 0 };
+  inG.forEach(r => c[r.status]++);
+  const dub = c.goed + c.checken;
+  const pct = n => (c.alle ? Math.round((n / c.alle) * 1000) / 10 : 0).toLocaleString('nl-NL') + '%';
+  const kpi = (s, dot, label, val, sub, extra = '') => `<button type="button" class="kpi ${extra}${f.status === s ? ' on' : ''}" data-s="${s}"><span class="k-l"><i class="dot ${dot}"></i>${label}</span><span class="k-v">${fmtN(val)}</span><span class="k-s">${sub}</span></button>`;
+  $('#kpis').innerHTML =
+    kpi('alle', 'd-all', 'PROV-polissen', c.alle, `${fmtN(state.meta.provRows)} regels ingelezen`) +
+    kpi('dubbel', 'd-dub', 'Dubbel lopend', dub, `${pct(dub)} van de polissen`, 'k-dub') +
+    kpi('goed', 'd-goed', 'Goed', c.goed, 'zelfde relatienummer') +
+    kpi('checken', 'd-check', 'Checken', c.checken, 'ander relatienummer') +
+    kpi('nb', 'd-nb', 'Niet gevonden', c.nb, '#N/B – niet dubbel');
+
+  // datumbereik als hulp
+  const span = (rows, get) => { let lo = Infinity, hi = -Infinity; for (const r of rows) { const d = get(r); if (isDate(d)) { if (d < lo) lo = d; if (d > hi) hi = d; } } return lo === Infinity ? 'geen datums gevonden' : `in bestand: ${fmtDate(lo)} t/m ${fmtDate(hi)}`; };
+  $('#provRange').textContent = span(state.prov.recs, r => r.ingang);
+  $('#volRange').textContent = span(state.vol.recs, r => r.ingang);
+
+  // formule-uitleg
+  const L = (t, id) => (state[t].map[id] >= 0 ? colLetter(state[t].map[id]) : '?');
+  const m = state.meta;
+  $('#formula').innerHTML = `<code>X.ZOEKEN(PROV!${L('prov', 'polisnr')}; VOLMACHT!${L('vol', 'oudPolis')}; VOLMACHT!${L('vol', 'relatienr')})</code>
+    <code>ALS(… = PROV!${L('prov', 'relatienr')}; "Goed"; "Checken")</code>
+    <span>${fmtN(m.volRows)} volmachtregels, waarvan ${fmtN(m.volWithOld)} met een oud polisnummer · ${fmtN(state.results.length)} unieke PROV-polissen${m.noPolis ? ` · ${fmtN(m.noPolis)} PROV-regels zonder polisnummer overgeslagen` : ''}</span>`;
+
+  renderTable();
+}
+const PAGE = 100;
+function renderTable() {
+  const rows = sortRows(tableRows(state.f.group));
+  state.view = rows;
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  if (state.page >= pages) state.page = pages - 1;
+  const slice = rows.slice(state.page * PAGE, (state.page + 1) * PAGE);
+  const { k, dir } = state.sort;
+  $('#tbl thead').innerHTML = '<tr>' + COLS.map(c => `<th data-k="${c.k}" class="${c.num ? 'num' : ''} ${c.grp ? 'grp-' + c.grp : ''}" title="Sorteren">${esc(colLabel(c))}<span class="arr">${k === c.k ? (dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('') + '</tr>';
+  $('#tbl tbody').innerHTML = slice.length
+    ? slice.map(r => '<tr>' + COLS.map(c => {
+        const cls = [c.num ? 'num' : '', c.trunc ? 'trunc' : ''].join(' ').trim();
+        const val = c.html ? c.html(r) : esc(c.date ? fmtDate(c.get(r)) : txt(c.get(r)));
+        return `<td${cls ? ` class="${cls}"` : ''}${c.trunc ? ` title="${esc(txt(c.get(r)))}"` : ''}>${val}</td>`;
+      }).join('') + '</tr>').join('')
+    : `<tr><td colspan="${COLS.length}" class="nores">${state.f.status === 'dubbel' ? 'Geen dubbel lopende polissen gevonden voor deze filters. 👍' : 'Geen polissen voor deze filters.'}</td></tr>`;
+  $('#pgInfo').textContent = rows.length ? `${fmtN(state.page * PAGE + 1)}–${fmtN(Math.min(rows.length, (state.page + 1) * PAGE))} van ${fmtN(rows.length)} polissen` : '0 polissen';
+  $('#pgPrev').disabled = state.page === 0;
+  $('#pgNext').disabled = state.page >= pages - 1;
+  $('#btnCopy').disabled = !rows.length;
+}
+
+/* ---------- Export ---------- */
+let downloadsNs = null;
+if (window.claude && typeof window.claude.use === 'function') {
+  downloadsNs = window.claude.use('downloads').catch(() => null);
+}
+async function saveFile(filename, data, mime) {
+  const blob = new Blob([data], { type: mime });
+  const ns = downloadsNs ? await downloadsNs : null;
+  if (ns) {
+    try { await ns.save({ filename, data: blob }); toast('Bestand opgeslagen'); return; }
+    catch (e) { if (e && e.code === 'declined') { toast('Opslaan geannuleerd'); return; } }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+function exportCols() { return COLS.map(c => ({ label: colLabel(c), get: c.get, date: c.date, num: c.num })).concat(EXPORT_EXTRA); }
+function rowsToSheet(XLSX, rows, cols) {
+  const aoa = [cols.map(c => c.label)];
+  for (const r of rows) aoa.push(cols.map(c => { const v = c.get(r); return v == null ? '' : v; }));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  cols.forEach((c, ci) => {
+    if (!c.date) return;
+    for (let ri = 1; ri < aoa.length; ri++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: ri, c: ci })];
+      if (cell && cell.t === 'n') cell.z = 'dd-mm-yyyy';
+    }
+  });
+  ws['!cols'] = cols.map((c, ci) => ({ wch: Math.min(42, Math.max(c.label.length + 2, ...aoa.slice(1, 300).map(r => (c.date ? 10 : txt(r[ci]).length) + 2))) }));
+  if (rows.length) ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: cols.length - 1 } }) };
+  return ws;
+}
+function sheetName(name, used) {
+  let base = String(name).replace(/[\[\]:*?/\\]/g, '-').trim().slice(0, 31) || 'Leeg';
+  let n = base, i = 2;
+  while (used.has(n.toLowerCase())) { const suf = ` (${i++})`; n = base.slice(0, 31 - suf.length) + suf; }
+  used.add(n.toLowerCase());
+  return n;
+}
+const STATUS_TEXT = { dubbel: 'Dubbel lopend (Goed + Checken)', checken: 'Alleen Checken', goed: 'Alleen Goed', nb: 'Niet gevonden (#N/B)', alle: 'Alle PROV-polissen' };
+async function exportXlsx() {
+  const btn = $('#btnExport');
+  btn.disabled = true;
+  try {
+    const XLSX = await loadXLSX();
+    const f = state.f, wb = XLSX.utils.book_new(), used = new Set();
+    const rowsD = dateRows();
+    const gName = state.opts.groupBy === 'agent' ? 'Agent' : 'Kantoor';
+    const groups = new Map();
+    for (const r of rowsD) {
+      const g = groupKey(r);
+      const o = groups.get(g) || { alle: 0, goed: 0, checken: 0, nb: 0 };
+      o.alle++; o[r.status]++;
+      groups.set(g, o);
+    }
+    const gNames = [...groups.keys()].sort((a, b) => (a === 'Onbekend') - (b === 'Onbekend') || a.localeCompare(b, 'nl', { numeric: true }));
+    const range = (a, b) => (a == null && b == null ? 'alle' : `${a != null ? fmtDate(a) : '…'} t/m ${b != null ? fmtDate(b) : '…'}`);
+    const now = new Date();
+    const sum = [
+      ['Dubbel lopend – controle PROV × Volmacht'],
+      ['Gemaakt op', `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`],
+      ['Volmacht (VOCOL)', `${state.vol.file.name} – ${state.vol.sheet}`],
+      ['Provinciaal (PROCO)', `${state.prov.file.name} – ${state.prov.sheet}`],
+      ['Vergelijking', state.opts.smart ? 'Spaties, punten, streepjes en voorloopnullen genegeerd' : 'Exact (zoals X.ZOEKEN)'],
+      ['Ingangsdatum PROV', range(f.provFrom, f.provTo)],
+      ['Ingangsdatum volmacht', range(f.volFrom, f.volTo)],
+      ['Tabbladen tonen', STATUS_TEXT[f.status] + (f.q.trim() ? ` · zoekterm “${f.q.trim()}”` : '')],
+      [],
+      [gName, 'PROV-polissen', 'Dubbel lopend', 'Goed', 'Checken', 'Niet gevonden (#N/B)']
+    ];
+    const tot = { alle: 0, goed: 0, checken: 0, nb: 0 };
+    for (const g of gNames) {
+      const o = groups.get(g);
+      sum.push([groupLabel(g), o.alle, o.goed + o.checken, o.goed, o.checken, o.nb]);
+      for (const k in tot) tot[k] += o[k];
+    }
+    sum.push(['Totaal', tot.alle, tot.goed + tot.checken, tot.goed, tot.checken, tot.nb]);
+    const wsSum = XLSX.utils.aoa_to_sheet(sum);
+    wsSum['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsSum, sheetName('Samenvatting', used));
+
+    const cols = exportCols();
+    const all = sortRows(tableRows('__all'));
+    XLSX.utils.book_append_sheet(wb, rowsToSheet(XLSX, all, cols), sheetName(state.opts.groupBy === 'agent' ? 'Alle agenten' : 'Alle kantoren', used));
+    for (const g of gNames) {
+      const rows = all.filter(r => groupKey(r) === g);
+      if (rows.length) XLSX.utils.book_append_sheet(wb, rowsToSheet(XLSX, rows, cols), sheetName(g, used));
+    }
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
+    const d = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    await saveFile(`dubbel-lopend_${d}.xlsx`, out, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  } catch (e) {
+    console.error(e);
+    toast('Exporteren mislukt: ' + (e && e.message ? e.message : e));
+  } finally {
+    btn.disabled = false;
+  }
+}
+async function copyTable() {
+  const cols = COLS;
+  const clean = s => txt(s).replace(/[\t\r\n]+/g, ' ');
+  const lines = [cols.map(c => clean(colLabel(c))).join('\t')]
+    .concat(state.view.map(r => cols.map(c => clean(c.date ? fmtDate(c.get(r)) : c.get(r))).join('\t')));
+  const text = lines.join('\r\n');
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand && document.execCommand('copy');
+    ta.remove();
+    if (!ok) { toast('Kopiëren is hier niet toegestaan'); return; }
+  }
+  toast(`${fmtN(state.view.length)} regels gekopieerd – plak ze in Excel`);
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* ---------- Events ---------- */
+$$('.ds').forEach(card => {
+  const t = card.dataset.ds, drop = $('.drop', card), input = $('input[type=file]', card);
+  input.addEventListener('change', () => { if (input.files.length) handleFiles(input.files, t); input.value = ''; });
+  drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, t); });
+
+  const info = $('.ds-info', card);
+  info.addEventListener('change', e => {
+    const el = e.target, ds = state[t];
+    if (el.dataset.act === 'sheet') { loadSheet(t, ds.file, ds.wb, el.value); recompute(); }
+    else if (el.dataset.act === 'hdr') {
+      const n = (parseInt(el.value, 10) || 1) - ds.start - 1;
+      ds.headerRow = Math.max(0, Math.min(ds.aoa.length - 1, n)); applyHeaderRow(t); recompute();
+    } else if (el.dataset.act === 'map') {
+      ds.map[el.dataset.f] = parseInt(el.value, 10);
+      ds.assumed.delete(el.dataset.f);
+      buildRecs(t); renderDs(t); recompute();
+      const d = $('details.map', card); if (d) d.open = true;
+    }
+  });
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => e.preventDefault());
+
+$('#groupBy').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.opts.groupBy = b.dataset.v; state.f.group = '__all'; saveOpts(); state.page = 0; renderResults();
+});
+$('#optSmart').addEventListener('change', e => { state.opts.smart = e.target.checked; saveOpts(); recompute(); });
+$('#kpis').addEventListener('click', e => {
+  const b = e.target.closest('.kpi'); if (!b) return;
+  state.f.status = b.dataset.s; state.page = 0; renderResults();
+});
+$('#groups').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  state.f.group = b.dataset.g; state.page = 0; renderResults();
+});
+const dateInputs = { fProvFrom: 'provFrom', fProvTo: 'provTo', fVolFrom: 'volFrom', fVolTo: 'volTo' };
+Object.entries(dateInputs).forEach(([id, key]) => $('#' + id).addEventListener('change', e => {
+  state.f[key] = inputToSerial(e.target.value); state.page = 0; renderResults();
+}));
+$('#fStatus').addEventListener('change', e => { state.f.status = e.target.value; state.page = 0; renderResults(); });
+let qTimer;
+$('#fQ').addEventListener('input', e => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.f.q = e.target.value; state.page = 0; renderTable(); }, 150); });
+$('#btnClear').addEventListener('click', () => {
+  Object.assign(state.f, { provFrom: null, provTo: null, volFrom: null, volTo: null, status: 'dubbel', q: '', group: '__all' });
+  Object.keys(dateInputs).forEach(id => { $('#' + id).value = ''; });
+  $('#fQ').value = '';
+  state.page = 0; renderResults();
+});
+$('#tbl thead').addEventListener('click', e => {
+  const th = e.target.closest('th'); if (!th) return;
+  const k = th.dataset.k;
+  state.sort = state.sort.k === k ? { k, dir: -state.sort.dir } : { k, dir: 1 };
+  state.page = 0; renderTable();
+});
+$('#pgPrev').addEventListener('click', () => { state.page--; renderTable(); $('.tablewrap').scrollTop = 0; });
+$('#pgNext').addEventListener('click', () => { state.page++; renderTable(); $('.tablewrap').scrollTop = 0; });
+$('#btnExport').addEventListener('click', exportXlsx);
+$('#btnCopy').addEventListener('click', copyTable);
+
+loadXLSX().catch(() => { /* melding staat al op de pagina */ });
+})();
+</script>
+</body>
+</html>
