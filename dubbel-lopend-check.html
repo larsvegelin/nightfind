@@ -126,6 +126,14 @@ details.diag pre{margin:8px 0 4px;padding:9px 11px;background:var(--line2);borde
 .chip.on .c{color:#fff}
 .gnote{margin-top:8px}
 
+.royed{margin-top:14px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:#fbfbfc;display:grid;gap:6px}
+.royed details summary{cursor:pointer;color:var(--accent);font-size:13px;width:max-content}
+.rs-help{margin:8px 0}
+.reasons{display:flex;flex-wrap:wrap;gap:6px}
+.rsn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12.5px;display:inline-flex;gap:8px;align-items:baseline}
+.rsn .n{color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums}
+.rsn.on{background:var(--bad-bg);border-color:#f4c7c3;color:var(--bad)}
+.rsn.on .t{text-decoration:line-through}
 .formula{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
 .formula code{font-family:var(--mono);font-size:12px;background:var(--line2);border-radius:6px;padding:3px 7px}
 
@@ -211,6 +219,15 @@ footer{margin-top:28px;color:var(--muted);font-size:12.5px}
           <button type="button" class="btn" id="btnCopy" title="Kopieer de getoonde regels; plakken in Excel kan direct">Kopieer tabel</button>
           <button type="button" class="btn primary" id="btnExport" title="Samenvatting + tabblad per kantoor, met de huidige filters">Excel per kantoor</button>
         </div>
+      </div>
+
+      <div class="royed">
+        <label class="chk"><input type="checkbox" id="optRoyed"> <span><b>Geroyeerde polissen overslaan</b> <span class="muted">– wijzigingsreden 40 t/m 49 loopt niet meer, dus niet dubbel</span></span></label>
+        <div class="muted small" id="royedSummary"></div>
+        <details id="royedList"><summary>Wijzigingsredenen bekijken / aanpassen</summary>
+          <p class="muted small rs-help">Rood doorgestreept = geroyeerd (telt niet mee). Klik op een reden om dat om te zetten. Codes 40 t/m 49, of een omschrijving met “royement”, staan standaard op geroyeerd.</p>
+          <div class="reasons" id="reasons"></div>
+        </details>
       </div>
 
       <div class="kpis" id="kpis"></div>
@@ -394,7 +411,7 @@ const FIELDS = {
     { id: 'naam', label: 'Naam', col: 'E', m: has('voorletters', 'achternaam', 'naam') },
     { id: 'maatschappij', label: 'Maatschappij', col: 'G', m: has('maatschappij') },
     { id: 'branche', label: 'Branche', col: 'I', m: has('branche') },
-    { id: 'wijzreden', label: 'Wijzigingsreden', col: 'J', m: has('wijzigingsreden') },
+    { id: 'wijzreden', label: 'Wijzigingsreden', col: 'J', ui: true, preferNumeric: true, m: has('wijzigingsreden') },
     { id: 'wijzdatum', label: 'Wijzigingsdatum', col: 'L', date: true, m: has('wijzigingsdatum') },
     { id: 'hoofdverval', label: 'Hoofdvervaldatum', col: 'N', date: true, m: has('hoofdverval') },
     { id: 'incasso', label: 'Incassobedrag', col: 'O', m: has('incasso') },
@@ -407,6 +424,7 @@ const FIELDS = {
     { id: 'ingang', label: 'Ingangsdatum', col: 'A', ui: true, date: true, m: has('ingangsdatum') },
     { id: 'kantoor', label: 'Kantoorcode', col: null, ui: true, m: has('kantoor') },
     { id: 'agent', label: 'Agent', col: 'N', ui: true, m: has('agent') },
+    { id: 'wijzreden', label: 'Wijzigingsreden', col: null, ui: true, preferNumeric: true, m: has('wijzigingsreden') },
     { id: 'voorletters', label: 'Voorletters', col: 'E', m: has('voorletters') },
     { id: 'voorvoegsels', label: 'Voorvoegsels', col: 'F', m: has('voorvoegsel') },
     { id: 'achternaam', label: 'Achternaam', col: 'G', m: has('achternaam') },
@@ -443,7 +461,7 @@ function detectHeaderRow(aoa) {
   }
   return best;
 }
-function autoMap(type, headers, width) {
+function autoMap(type, headers, width, rows = []) {
   const map = {}, assumed = new Set();
   const noHeaders = !headers.some(h => h.full);
   for (const f of FIELDS[type]) {
@@ -455,6 +473,11 @@ function autoMap(type, headers, width) {
       if (exp >= 0 && exp < headers.length && f.m(headers[exp])) idx = exp;
       else idx = headers.findIndex(h => h.full && f.m(h));
       if (idx < 0 && f.req && exp >= 0 && exp < width) { idx = exp; assumed.add(f.id); }
+      if (f.preferNumeric) {
+        const cands = headers.map((h, i) => (h.full && f.m(h) ? i : -1)).filter(i => i >= 0);
+        const share = i => { let n = 0, tot = 0; for (const r of rows) { const v = txt(r[i]).trim(); if (!v) continue; tot++; if (/^\d+$/.test(v)) n++; if (tot >= 50) break; } return tot ? n / tot : 0; };
+        if (cands.length > 1) idx = cands.reduce((best, i) => (share(i) > share(best) ? i : best), idx >= 0 ? idx : cands[0]);
+      }
     }
     map[f.id] = idx;
   }
@@ -464,7 +487,7 @@ function autoMap(type, headers, width) {
 /* ---------- Status ---------- */
 const state = {
   vol: emptyDs(), prov: emptyDs(),
-  opts: { smart: true, groupBy: 'kantoor' },
+  opts: { smart: true, groupBy: 'kantoor', royed: true, reasonOverrides: {} },
   f: { provFrom: null, provTo: null, volFrom: null, volTo: null, status: 'dubbel', q: '', group: '__all' },
   results: null, meta: null, sort: { k: null, dir: 1 }, page: 0, view: []
 };
@@ -477,7 +500,12 @@ function emptyDs() {
 }
 try {
   const saved = JSON.parse(localStorage.getItem('dubbelLopend.opts') || 'null');
-  if (saved) { if (typeof saved.smart === 'boolean') state.opts.smart = saved.smart; if (saved.groupBy === 'agent') state.opts.groupBy = 'agent'; }
+  if (saved) {
+    if (typeof saved.smart === 'boolean') state.opts.smart = saved.smart;
+    if (saved.groupBy === 'agent') state.opts.groupBy = 'agent';
+    if (typeof saved.royed === 'boolean') state.opts.royed = saved.royed;
+    if (saved.reasonOverrides && typeof saved.reasonOverrides === 'object') state.opts.reasonOverrides = saved.reasonOverrides;
+  }
 } catch (e) { /* geen opslag beschikbaar */ }
 function saveOpts() { try { localStorage.setItem('dubbelLopend.opts', JSON.stringify(state.opts)); } catch (e) { /* negeren */ } }
 
@@ -729,7 +757,7 @@ async function applyHeaderRow(t) {
   const ds = state[t];
   ds.headers = ds.headerRow >= 0 ? (ds.top[ds.headerRow] || []).map(hInfo) : [];
   ds.width = Math.max(0, ds.headers.length, ...ds.top.slice(ds.headerRow + 1).map(r => r.length));
-  const { map, assumed } = autoMap(t, ds.headers, ds.width);
+  const { map, assumed } = autoMap(t, ds.headers, ds.width, ds.top.slice(ds.headerRow + 1));
   ds.map = map; ds.assumed = assumed;
   await rebuild(t);
 }
@@ -797,10 +825,43 @@ function isPlaceholder(v) {
   const s = String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   return !s || /^0+$/.test(s) || PLACEHOLDERS.has(s);
 }
+// Wijzigingsreden: code 40 t/m 49 = geroyeerd. Staat alleen de omschrijving in de selectie,
+// dan telt een omschrijving met "royement" als geroyeerd (behalve herstel/ongedaan maken).
+const normReason = v => txt(v).trim().toLowerCase().replace(/\s+/g, ' ');
+function reasonDefault(raw) {
+  const s = txt(raw).trim();
+  const m = /^0*(\d{1,3})(?!\d)/.exec(s);
+  if (m) return +m[1] >= 40 && +m[1] <= 49;
+  const l = s.toLowerCase();
+  if (/herstel|ongedaan|terugdraai/.test(l)) return false;
+  return /royement|royering|geroyeerd|royeren/.test(l);
+}
+function collectReasons() {
+  const reasons = new Map();
+  const add = (v, side) => {
+    if (v === '' || v == null) return;
+    const k = normReason(v);
+    let r = reasons.get(k);
+    if (!r) reasons.set(k, (r = { key: k, raw: txt(v).trim(), vol: 0, prov: 0 }));
+    r[side]++;
+  };
+  state.vol.recs.forEach(v => add(v.wijzreden, 'vol'));
+  state.prov.recs.forEach(p => add(p.wijzreden, 'prov'));
+  for (const r of reasons.values()) {
+    const o = state.opts.reasonOverrides[r.key];
+    r.def = reasonDefault(r.raw);
+    r.royed = typeof o === 'boolean' ? o : r.def;
+  }
+  return reasons;
+}
 function compute() {
   const smart = state.opts.smart;
   const K = v => normKey(v, smart);
   const V = state.vol, P = state.prov;
+  const reasons = collectReasons();
+  const isRoyed = v => state.opts.royed && v !== '' && v != null && reasons.get(normReason(v)).royed;
+  let volRoyed = 0;
+  const provRoyed = new Set();
   const idx = new Map(), relKantoor = new Map();
   for (const [rel, k] of V.relKantoorRaw) { const kr = K(rel); if (kr && !relKantoor.has(kr)) relKantoor.set(kr, k); }
   let volWithOld = 0;
@@ -808,6 +869,7 @@ function compute() {
     const ko = K(v.oudPolis);
     if (!ko) continue;
     volWithOld += v._n;
+    if (isRoyed(v.wijzreden)) { volRoyed++; continue; }
     let m = idx.get(ko);
     if (!m) idx.set(ko, (m = new Map()));
     const pk = K(v.polisnr) || '#' + m.size; // dekkingsregels van dezelfde polis tellen één keer
@@ -818,6 +880,7 @@ function compute() {
   for (const p of P.recs) {
     const k = K(p.polisnr);
     if (!k) { noPolis += p._n; continue; }
+    if (isRoyed(p.wijzreden)) { provRoyed.add(k); continue; }
     const prev = seen.get(k);
     if (prev) { prev.regels += p._n; continue; }
     const hits = idx.has(k) ? [...idx.get(k).values()] : [];
@@ -836,7 +899,9 @@ function compute() {
     results.push(res);
   }
   state.results = results;
-  state.meta = { agentOms: V.agentOmsRaw, volRows: V.total, volWithOld, volPlaceholder: V.placeholder, provRows: P.total, noPolis: P.noPolis + noPolis };
+  state.reasons = reasons;
+  state.meta = { agentOms: V.agentOmsRaw, volRows: V.total, volWithOld, volPlaceholder: V.placeholder, provRows: P.total, noPolis: P.noPolis + noPolis,
+    volRoyed, provRoyed: provRoyed.size, volPolicies: V.recs.length };
 }
 function groupKey(r) { const g = state.opts.groupBy === 'agent' ? r.agent : r.kantoor; return g || 'Onbekend'; }
 function groupLabel(g) {
@@ -879,13 +944,14 @@ const COLS = [
   { k: 'naam', label: 'Naam', grp: 'prov', trunc: true, get: r => r.naam },
   { k: 'pBranche', label: 'Branche PROV', grp: 'prov', trunc: true, get: r => r.p.branche },
   { k: 'pMij', label: 'Maatschappij PROV', grp: 'prov', trunc: true, get: r => r.p.maatschappij },
+  { k: 'pReden', label: 'Wijzigingsreden PROV', grp: 'prov', trunc: true, opt: true, get: r => r.p.wijzreden },
   { k: 'vRel', label: 'Relatienr volmacht (X.ZOEKEN)', grp: 'vol', get: r => (r.v ? r.v.relatienr : '') },
   { k: 'vPolis', label: 'Polisnr volmacht', grp: 'vol', get: r => (r.v ? r.v.polisnr : ''),
     html: r => (r.v ? esc(r.v.polisnr) + (r.hits.length > 1 ? ` <span class="more" title="${esc(r.hits.map(h => txt(h.polisnr)).join(', '))}">+${r.hits.length - 1}</span>` : '') : '') },
   { k: 'vIngang', label: 'Ingangsdatum volmacht', grp: 'vol', date: true, get: r => (r.v ? r.v.ingang : '') },
   { k: 'vMij', label: 'Maatschappij volmacht', grp: 'vol', trunc: true, get: r => (r.v ? r.v.maatschappij : '') },
   { k: 'vBranche', label: 'Branche volmacht', grp: 'vol', trunc: true, get: r => (r.v ? r.v.branche : '') },
-  { k: 'vReden', label: 'Wijzigingsreden volmacht', grp: 'vol', trunc: true, get: r => (r.v ? r.v.wijzreden : '') },
+  { k: 'vReden', label: 'Wijzigingsreden volmacht', grp: 'vol', trunc: true, opt: true, get: r => (r.v ? r.v.wijzreden : '') },
   { k: 'hits', label: 'Treffers', num: true, get: r => r.hits.length }
 ];
 const EXPORT_EXTRA = [
@@ -908,6 +974,8 @@ const STATUS_TITLE = {
   nb: 'Niet gevonden in volmacht – loopt niet dubbel'
 };
 const colLabel = c => (typeof c.label === 'function' ? c.label() : c.label);
+// Optionele kolommen alleen tonen als er iets in staat.
+const visibleCols = rows => COLS.filter(c => !c.opt || rows.some(r => { const v = c.get(r); return v !== '' && v != null; }));
 
 function sortRows(rows) {
   const { k, dir } = state.sort;
@@ -1083,7 +1151,7 @@ function renderResults() {
   const pct = n => (c.alle ? Math.round((n / c.alle) * 1000) / 10 : 0).toLocaleString('nl-NL') + '%';
   const kpi = (s, dot, label, val, sub, extra = '') => `<button type="button" class="kpi ${extra}${f.status === s ? ' on' : ''}" data-s="${s}"><span class="k-l"><i class="dot ${dot}"></i>${label}</span><span class="k-v">${fmtN(val)}</span><span class="k-s">${sub}</span></button>`;
   $('#kpis').innerHTML =
-    kpi('alle', 'd-all', 'PROV-polissen', c.alle, `${fmtN(state.meta.provRows)} regels ingelezen`) +
+    kpi('alle', 'd-all', 'PROV-polissen', c.alle, state.opts.royed && state.meta.provRoyed ? `${fmtN(state.meta.provRoyed)} geroyeerd overgeslagen` : `${fmtN(state.meta.provRows)} regels ingelezen`) +
     kpi('dubbel', 'd-dub', 'Dubbel lopend', dub, `${pct(dub)} van de polissen`, 'k-dub') +
     kpi('goed', 'd-goed', 'Goed', c.goed, 'zelfde relatienummer') +
     kpi('checken', 'd-check', 'Checken', c.checken, 'ander relatienummer') +
@@ -1102,28 +1170,47 @@ function renderResults() {
   // formule-uitleg
   const L = (t, id) => (state[t].map[id] >= 0 ? colLetter(state[t].map[id]) : '?');
   const m = state.meta;
+  renderRoyed();
   $('#formula').innerHTML = `<code>X.ZOEKEN(PROV!${L('prov', 'polisnr')}; VOLMACHT!${L('vol', 'oudPolis')}; VOLMACHT!${L('vol', 'relatienr')})</code>
     <code>ALS(… = PROV!${L('prov', 'relatienr')}; "Goed"; "Checken")</code>
     <span>${fmtN(m.volRows)} volmachtregels, waarvan ${fmtN(m.volWithOld)} met een oud polisnummer${m.volPlaceholder ? ` (${fmtN(m.volPlaceholder)}× “onbekend” e.d. genegeerd)` : ''} · ${fmtN(state.results.length)} unieke PROV-polissen${m.noPolis ? ` · ${fmtN(m.noPolis)} PROV-regels zonder polisnummer overgeslagen` : ''}</span>`;
 
   renderTable();
 }
+function renderRoyed() {
+  const m = state.meta, on = state.opts.royed;
+  $('#optRoyed').checked = on;
+  const reasons = [...state.reasons.values()];
+  const cnt = t => reasons.filter(r => r.royed).reduce((a, r) => a + r[t], 0);
+  const side = (t, n, of) => {
+    const name = t === 'vol' ? 'VOCOL' : 'PROCO';
+    if (state[t].map.wijzreden < 0) return `${name}: geen kolom Wijzigingsreden in de selectie` + (t === 'prov' ? ' – voeg Polis->Wijzigingsreden toe aan PROCO om ook daar te filteren' : '');
+    const what = t === 'vol' ? `van ${fmtN(of)} volmachtpolissen met oud polisnr` : `PROV-${n === 1 ? 'polis' : 'polissen'}`;
+    return `${name}: ${fmtN(n)} ${what} geroyeerd` + (on ? ' – overgeslagen' : ' – telt nu wel mee (vinkje uit)');
+  };
+  $('#royedSummary').textContent = [side('vol', on ? m.volRoyed : cnt('vol'), m.volPolicies), side('prov', on ? m.provRoyed : cnt('prov'))].join(' · ');
+  reasons.sort((a, b) => (b.royed - a.royed) || a.raw.localeCompare(b.raw, 'nl', { numeric: true }));
+  $('#reasons').innerHTML = reasons.length
+    ? reasons.map(r => `<button type="button" class="rsn${r.royed ? ' on' : ''}" data-k="${esc(r.key)}" title="${r.royed ? 'Geroyeerd – klik om als actief te tellen' : 'Actief – klik om als geroyeerd te tellen'}${r.royed !== r.def ? ' (handmatig aangepast)' : ''}"><span class="t">${esc(r.raw)}${r.royed !== r.def ? ' *' : ''}</span><span class="n">${[r.vol ? 'VOCOL ' + fmtN(r.vol) : '', r.prov ? 'PROCO ' + fmtN(r.prov) : ''].filter(Boolean).join(' · ')}</span></button>`).join('')
+    : '<span class="muted small">Geen wijzigingsredenen gevonden.</span>';
+}
 const PAGE = 100;
 function renderTable() {
   const rows = sortRows(tableRows(state.f.group));
   state.view = rows;
+  const cols = state.viewCols = visibleCols(rows);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   if (state.page >= pages) state.page = pages - 1;
   const slice = rows.slice(state.page * PAGE, (state.page + 1) * PAGE);
   const { k, dir } = state.sort;
-  $('#tbl thead').innerHTML = '<tr>' + COLS.map(c => `<th data-k="${c.k}" class="${c.num ? 'num' : ''} ${c.grp ? 'grp-' + c.grp : ''}" title="Sorteren">${esc(colLabel(c))}<span class="arr">${k === c.k ? (dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('') + '</tr>';
+  $('#tbl thead').innerHTML = '<tr>' + cols.map(c => `<th data-k="${c.k}" class="${c.num ? 'num' : ''} ${c.grp ? 'grp-' + c.grp : ''}" title="Sorteren">${esc(colLabel(c))}<span class="arr">${k === c.k ? (dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('') + '</tr>';
   $('#tbl tbody').innerHTML = slice.length
-    ? slice.map(r => '<tr>' + COLS.map(c => {
+    ? slice.map(r => '<tr>' + cols.map(c => {
         const cls = [c.num ? 'num' : '', c.trunc ? 'trunc' : ''].join(' ').trim();
         const val = c.html ? c.html(r) : esc(c.date ? fmtDate(c.get(r)) : txt(c.get(r)));
         return `<td${cls ? ` class="${cls}"` : ''}${c.trunc ? ` title="${esc(txt(c.get(r)))}"` : ''}>${val}</td>`;
       }).join('') + '</tr>').join('')
-    : `<tr><td colspan="${COLS.length}" class="nores">${state.f.status === 'dubbel' ? 'Geen dubbel lopende polissen gevonden voor deze filters. 👍' : 'Geen polissen voor deze filters.'}</td></tr>`;
+    : `<tr><td colspan="${cols.length}" class="nores">${state.f.status === 'dubbel' ? 'Geen dubbel lopende polissen gevonden voor deze filters. 👍' : 'Geen polissen voor deze filters.'}</td></tr>`;
   $('#pgInfo').textContent = rows.length ? `${fmtN(state.page * PAGE + 1)}–${fmtN(Math.min(rows.length, (state.page + 1) * PAGE))} van ${fmtN(rows.length)} polissen` : '0 polissen';
   $('#pgPrev').disabled = state.page === 0;
   $('#pgNext').disabled = state.page >= pages - 1;
@@ -1148,7 +1235,7 @@ async function saveFile(filename, data, mime) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
-function exportCols() { return COLS.map(c => ({ label: colLabel(c), get: c.get, date: c.date, num: c.num })).concat(EXPORT_EXTRA); }
+function exportCols(rows) { return visibleCols(rows).map(c => ({ label: colLabel(c), get: c.get, date: c.date, num: c.num })).concat(EXPORT_EXTRA); }
 function rowsToSheet(XLSX, rows, cols) {
   const aoa = [cols.map(c => c.label)];
   // Gewone getallen als getal wegschrijven (geen "getal opgeslagen als tekst"); voorloopnullen blijven tekst.
@@ -1201,6 +1288,10 @@ async function exportXlsx() {
       ['Volmacht (VOCOL)', `${state.vol.src.file.name}` + (state.vol.src.sheets.length > 1 ? ` – ${state.vol.sheet}` : '')],
       ['Provinciaal (PROCO)', `${state.prov.src.file.name}` + (state.prov.src.sheets.length > 1 ? ` – ${state.prov.sheet}` : '')],
       ['Vergelijking', state.opts.smart ? 'Spaties, punten, streepjes en voorloopnullen genegeerd' : 'Exact (zoals X.ZOEKEN)'],
+      ['Geroyeerd overslaan', state.opts.royed
+        ? 'Ja – ' + ([...state.reasons.values()].filter(r => r.royed).map(r => r.raw).join(', ') || 'geen geroyeerde redenen gevonden')
+        : 'Nee'],
+      ['Overgeslagen (geroyeerd)', state.opts.royed ? `${fmtN(state.meta.volRoyed)} volmachtpolissen, ${fmtN(state.meta.provRoyed)} PROV-polissen` : '–'],
       ['Ingangsdatum PROV', range(f.provFrom, f.provTo)],
       ['Ingangsdatum volmacht', range(f.volFrom, f.volTo)],
       ['Tabbladen tonen', STATUS_TEXT[f.status] + (f.q.trim() ? ` · zoekterm “${f.q.trim()}”` : '')],
@@ -1218,8 +1309,8 @@ async function exportXlsx() {
     wsSum['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(wb, wsSum, sheetName('Samenvatting', used));
 
-    const cols = exportCols();
     const all = sortRows(tableRows('__all'));
+    const cols = exportCols(all);
     XLSX.utils.book_append_sheet(wb, rowsToSheet(XLSX, all, cols), sheetName(state.opts.groupBy === 'agent' ? 'Alle agenten' : 'Alle kantoren', used));
     for (const g of gNames) {
       const rows = all.filter(r => groupKey(r) === g);
@@ -1236,7 +1327,7 @@ async function exportXlsx() {
   }
 }
 async function copyTable() {
-  const cols = COLS;
+  const cols = state.viewCols || COLS;
   const clean = s => txt(s).replace(/[\t\r\n]+/g, ' ');
   const lines = [cols.map(c => clean(colLabel(c))).join('\t')]
     .concat(state.view.map(r => cols.map(c => clean(c.date ? fmtDate(c.get(r)) : c.get(r))).join('\t')));
@@ -1299,6 +1390,14 @@ $('#groupBy').addEventListener('click', e => {
   state.opts.groupBy = b.dataset.v; state.f.group = '__all'; saveOpts(); state.page = 0; renderResults();
 });
 $('#optSmart').addEventListener('change', e => { state.opts.smart = e.target.checked; saveOpts(); recompute(); });
+$('#optRoyed').addEventListener('change', e => { state.opts.royed = e.target.checked; saveOpts(); recompute(); });
+$('#reasons').addEventListener('click', e => {
+  const b = e.target.closest('.rsn'); if (!b) return;
+  const r = state.reasons.get(b.dataset.k); if (!r) return;
+  const next = !r.royed;
+  if (next === r.def) delete state.opts.reasonOverrides[r.key]; else state.opts.reasonOverrides[r.key] = next;
+  saveOpts(); recompute();
+});
 $('#kpis').addEventListener('click', e => {
   const b = e.target.closest('.kpi'); if (!b) return;
   state.f.status = b.dataset.s; state.page = 0; renderResults();
