@@ -63,7 +63,8 @@ h2{font-size:16px;margin:0}
 .key.missing .col{background:var(--bad)}
 .key.assumed{border-color:#f6d2a8;background:var(--warn-bg)}
 .key.assumed .col{background:var(--warn)}
-details.map summary{cursor:pointer;color:var(--accent);font-size:13px;width:max-content}
+details.map summary,details.diag summary{cursor:pointer;color:var(--accent);font-size:13px;width:max-content}
+details.diag pre{margin:8px 0 4px;padding:9px 11px;background:var(--line2);border-radius:8px;font:12px/1.5 var(--mono);white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
 .map-grid{display:grid;grid-template-columns:max-content 1fr;gap:6px 10px;align-items:center;margin-top:10px}
 .map-grid label{font-size:13px;color:var(--muted)}
 .map-grid select{border:1px solid var(--line);border-radius:7px;padding:4px 7px;background:#fff;min-width:0;width:100%}
@@ -171,7 +172,7 @@ footer{margin-top:28px;color:var(--muted);font-size:12.5px}
       <p class="ds-desc">Volmachtselectie (.exp uit ANVA of Excel). Er wordt gezocht in <b>Polisnr. oude mij.</b> (kolom U) en het <b>Relatienummer</b> (kolom D) wordt teruggegeven.</p>
       <label class="drop" tabindex="0">
         <input type="file" multiple hidden>
-        <span class="drop-body"><strong>Sleep de Excel hierheen</strong></span>
+        <span class="drop-body"><strong>Sleep het bestand hierheen</strong></span>
         <span class="drop-hint muted small">of klik om te kiezen (.exp, .xlsx, .xls, .csv)</span>
       </label>
       <div class="ds-info" hidden></div>
@@ -182,7 +183,7 @@ footer{margin-top:28px;color:var(--muted);font-size:12.5px}
       <p class="ds-desc">Provinciale selectie (.exp uit ANVA of Excel). Het <b>Polisnummer</b> (kolom D) wordt opgezocht; het <b>Relatienummer</b> (kolom C) wordt vergeleken.</p>
       <label class="drop" tabindex="0">
         <input type="file" multiple hidden>
-        <span class="drop-body"><strong>Sleep de Excel hierheen</strong></span>
+        <span class="drop-body"><strong>Sleep het bestand hierheen</strong></span>
         <span class="drop-hint muted small">Je mag ook beide .exp-bestanden tegelijk slepen; ze worden automatisch herkend.</span>
       </label>
       <div class="ds-info" hidden></div>
@@ -467,7 +468,13 @@ const state = {
   f: { provFrom: null, provTo: null, volFrom: null, volTo: null, status: 'dubbel', q: '', group: '__all' },
   results: null, meta: null, sort: { k: null, dir: 1 }, page: 0, view: []
 };
-function emptyDs() { return { file: null, wb: null, sheet: null, aoa: null, start: 0, headers: [], headerRow: -1, width: 0, map: {}, assumed: new Set(), recs: null, note: '', warn: '', error: '', loading: false }; }
+function emptyDs() {
+  return {
+    src: null, sheet: null, top: [], start: 0, headers: [], headerRow: -1, width: 0, map: {}, assumed: new Set(),
+    recs: null, total: 0, lines: null, noPolis: 0, placeholder: 0, relKantoorRaw: new Map(), agentOmsRaw: new Map(),
+    note: '', warn: '', error: '', errDiag: null, loading: false, job: 0
+  };
+}
 try {
   const saved = JSON.parse(localStorage.getItem('dubbelLopend.opts') || 'null');
   if (saved) { if (typeof saved.smart === 'boolean') state.opts.smart = saved.smart; if (saved.groupBy === 'agent') state.opts.groupBy = 'agent'; }
@@ -475,53 +482,133 @@ try {
 function saveOpts() { try { localStorage.setItem('dubbelLopend.opts', JSON.stringify(state.opts)); } catch (e) { /* negeren */ } }
 
 /* ---------- Inlezen ---------- */
-// Tekst decoderen: BOM, UTF-16 (veel nul-bytes), UTF-8, anders Windows-1252.
-function decodeText(b) {
-  if (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) return new TextDecoder('utf-8').decode(b.subarray(3));
-  if (b[0] === 0xFF && b[1] === 0xFE) return new TextDecoder('utf-16le').decode(b.subarray(2));
-  if (b[0] === 0xFE && b[1] === 0xFF) return new TextDecoder('utf-16be').decode(b.subarray(2));
+// Een bestand wordt een "bron": een Excel-werkboek (via SheetJS) of een tekstbestand (.exp e.d.).
+// Tekstbestanden worden in stukken gelezen en alleen de nodige gegevens worden bewaard,
+// zodat ook selecties van honderden MB's passen.
+const CHUNK = 4 * 1024 * 1024, TOP_ROWS = 300;
+const hex = b => [...b].map(x => x.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+const fmtMB = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)).toLocaleString('nl-NL') + ' KB' : (n / 1048576).toLocaleString('nl-NL', { maximumFractionDigits: 1 }) + ' MB';
+const SEP_NAME = { '\t': 'tab', ';': 'puntkomma', ',': 'komma', '|': 'verticale streep' };
+
+function sniffEncoding(b) {
+  if (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) return 'utf-8';
+  if (b[0] === 0xFF && b[1] === 0xFE) return 'utf-16le';
+  if (b[0] === 0xFE && b[1] === 0xFF) return 'utf-16be';
   let z0 = 0, z1 = 0;
   const n = Math.min(b.length, 4000);
   for (let i = 0; i < n; i++) if (b[i] === 0) { if (i % 2) z1++; else z0++; }
-  if (z1 > n / 4) return new TextDecoder('utf-16le').decode(b);
-  if (z0 > n / 4) return new TextDecoder('utf-16be').decode(b);
-  try { return new TextDecoder('utf-8', { fatal: true }).decode(b); }
-  catch (e) { return new TextDecoder('windows-1252').decode(b); }
+  if (z1 > n / 4) return 'utf-16le';
+  if (z0 > n / 4) return 'utf-16be';
+  try { new TextDecoder('utf-8', { fatal: true }).decode(b, { stream: true }); return 'utf-8'; }
+  catch (e) { return 'windows-1252'; }
 }
-// Tab-gescheiden regels (ANVA .exp). Aanhalingstekens alleen weghalen als ze het hele veld omsluiten.
-function splitTsv(text) {
-  const rows = text.split(/\r\n|\n|\r/).map(line => line.split('\t').map(c => {
-    const m = /^"([\s\S]*)"$/.exec(c);
-    return m ? m[1].replace(/""/g, '"') : c;
-  }));
-  while (rows.length && rows[rows.length - 1].every(c => !c.trim())) rows.pop();
-  return rows;
+// Scheidingsteken kiezen op de mediaan over de eerste regels (een titelregel bovenaan stoort dan niet).
+function detectSep(lines) {
+  let best = null, bestScore = 0;
+  for (const c of ['\t', ';', ',', '|']) {
+    const counts = lines.map(l => l.split(c).length - 1).sort((a, b) => a - b);
+    const med = counts[Math.floor(counts.length / 2)] || 0;
+    if (med > bestScore) { best = c; bestScore = med; }
+  }
+  return best;
 }
-async function readWorkbook(file) {
-  const buf = new Uint8Array(await file.arrayBuffer());
-  const isZip = buf[0] === 0x50 && buf[1] === 0x4B;                                   // .xlsx/.xlsm
-  const isOle = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0; // .xls
-  if (isZip || isOle) {
-    const XLSX = await loadXLSX();
-    return XLSX.read(buf, { type: 'array', cellDates: false, cellNF: false, cellText: false });
+const unquote = c => (c.charCodeAt(0) === 34 && /^"[\s\S]*"$/.test(c) ? c.slice(1, -1).replace(/""/g, '"') : c);
+function splitLine(line, sep) {
+  if (!sep) return [line];
+  if (line.indexOf('"') < 0) return line.split(sep);
+  if (sep === '\t') return line.split(sep).map(unquote);
+  const out = [], n = line.length;
+  let i = 0;
+  for (;;) {
+    let v = '';
+    if (line[i] === '"') {
+      i++;
+      while (i < n) { if (line[i] === '"') { if (line[i + 1] === '"') { v += '"'; i += 2; } else { i++; break; } } else v += line[i++]; }
+    }
+    const j = line.indexOf(sep, i);
+    if (j < 0) { out.push(v + line.slice(i)); break; }
+    out.push(v + line.slice(i, j));
+    i = j + 1;
+  }
+  return out;
+}
+// Leest een tekstbestand regel voor regel; onLine(regel, index) kan false teruggeven om te stoppen.
+async function forEachLine(src, onLine, onProgress) {
+  const file = src.file, nl = src.nl;
+  let dec;
+  try { dec = new TextDecoder(src.enc, src.enc === 'utf-8' ? { fatal: true } : undefined); }
+  catch (e) { dec = new TextDecoder('windows-1252'); }
+  let rest = '', pos = 0, idx = 0;
+  const decode = (buf, more) => {
+    try { return dec.decode(buf, { stream: more }); }
+    catch (e) { throw Object.assign(new Error('Ongeldige UTF-8'), { badUtf8: true }); }
+  };
+  while (pos < file.size) {
+    const end = Math.min(file.size, pos + CHUNK);
+    const buf = new Uint8Array(await file.slice(pos, end).arrayBuffer());
+    pos = end;
+    const s = rest + decode(buf, pos < file.size);
+    let start = 0, i;
+    while ((i = s.indexOf(nl, start)) >= 0) {
+      let line = s.slice(start, i);
+      if (nl === '\n' && line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1);
+      start = i + 1;
+      if (onLine(line, idx++) === false) return idx;
+    }
+    rest = s.slice(start);
+    if (onProgress) onProgress(pos / file.size);
+  }
+  rest += decode(new Uint8Array(0), false);
+  if (rest.endsWith('\r')) rest = rest.slice(0, -1);
+  if (rest) onLine(rest, idx++);
+  return idx;
+}
+async function readTop(src) {
+  src.top = [];
+  await forEachLine(src, line => { src.top.push(splitLine(line, src.sep)); return src.top.length < TOP_ROWS; });
+}
+async function openSource(file) {
+  const head = new Uint8Array(await file.slice(0, Math.min(file.size, CHUNK)).arrayBuffer());
+  const diag = { name: file.name, size: file.size, hex: hex(head.subarray(0, 16)) };
+  const fail = msg => Object.assign(new Error(msg), { diag });
+  if (!file.size) throw fail('Het bestand is leeg.');
+  const isZip = head[0] === 0x50 && head[1] === 0x4B && head[2] === 3 && head[3] === 4;
+  const isOle = head[0] === 0xD0 && head[1] === 0xCF && head[2] === 0x11 && head[3] === 0xE0;
+  const enc = isZip || isOle ? null : sniffEncoding(head);
+  const sample = enc ? new TextDecoder(enc).decode(head) : '';
+  const isMarkup = enc && /^\s*<(\?xml|html|table|!doctype)/i.test(sample);
+  if (isZip || isOle || isMarkup) {
+    diag.kind = isZip ? 'Excel (.xlsx)' : isOle ? 'Excel (.xls)' : 'HTML/XML-tabel';
+    let XLSX;
+    try { XLSX = await loadXLSX(); }
+    catch (e) { throw fail('Dit is een Excel-bestand, maar de Excel-lezer (SheetJS) kon niet worden geladen. Controleer de internetverbinding, of exporteer de selectie als .exp/tekst.'); }
+    let wb;
+    try { wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array', cellDates: false, cellNF: false, cellText: false }); }
+    catch (e) { throw fail('Excel-bestand kon niet worden gelezen: ' + (e.message || e)); }
+    return { kind: 'excel', file, wb, sheets: wb.SheetNames, cache: {}, diag };
   }
   // Tekstbestand (.exp, .txt, .csv, …), ongeacht de extensie.
-  const text = decodeText(buf);
-  const first = text.split(/\r\n|\n|\r/).find(l => l.trim()) || '';
-  const count = ch => first.split(ch).length - 1;
-  if (!/^\s*</.test(first) && count('\t') > 0 && count('\t') >= count(';')) {
-    const name = file.name.replace(/\.[^.]+$/, '') || 'Bestand';
-    return { SheetNames: [name], __aoa: { [name]: splitTsv(text) } };
+  const nl = sample.includes('\n') ? '\n' : sample.includes('\r') ? '\r' : '\n';
+  let sampleLines = sample.split(nl);
+  if (file.size > head.length) sampleLines.pop(); // laatste regel kan halverwege zijn afgekapt
+  sampleLines = sampleLines.map(l => l.replace(/\r$/, '')).filter(l => l.trim()).slice(0, 60);
+  const sep = detectSep(sampleLines);
+  const base = file.name.replace(/\.[^.]+$/, '') || 'Bestand';
+  const src = { kind: 'text', file, enc, nl, sep, sheets: [base], diag };
+  Object.assign(diag, {
+    kind: 'tekst', enc, sep: sep ? SEP_NAME[sep] : 'niet gevonden',
+    nl: nl === '\r' ? 'CR' : sample.includes('\r\n') ? 'CRLF' : 'LF'
+  });
+  try { await readTop(src); }
+  catch (e) {
+    if (!e.badUtf8) throw Object.assign(e, { diag });
+    src.enc = diag.enc = 'windows-1252';
+    await readTop(src);
   }
-  const XLSX = await loadXLSX();
-  return XLSX.read(text, { type: 'string', raw: true });
+  return src;
 }
 // Geeft { rows, start }: rows[i] hoort bij rij start + i + 1 in het bestand.
 function sheetAoa(wb, name, limit) {
-  if (wb.__aoa) {
-    const rows = wb.__aoa[name] || [];
-    return { rows: limit ? rows.slice(0, limit + 1) : rows, start: 0 };
-  }
   const ws = wb.Sheets[name];
   if (!ws || !ws['!ref']) return { rows: [], start: 0 };
   const r = XLSX.utils.decode_range(ws['!ref']);
@@ -536,8 +623,19 @@ function sheetAoa(wb, name, limit) {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '', blankrows: true, range: XLSX.utils.encode_range(r) });
   return { rows, start: r.s.r };
 }
-function sheetScore(wb, name, fileName) {
-  const top = sheetAoa(wb, name, 25).rows;
+function topRows(src, sheet) { return src.kind === 'excel' ? sheetAoa(src.wb, sheet, TOP_ROWS) : { rows: src.top, start: 0 }; }
+// Loopt alle rijen vanaf index 'from' langs; onRow(rij, rijnummer) kan false teruggeven om te stoppen.
+async function eachRow(ds, from, onRow, onProgress) {
+  const src = ds.src;
+  if (src.kind === 'excel') {
+    const a = src.cache[ds.sheet] || (src.cache[ds.sheet] = sheetAoa(src.wb, ds.sheet));
+    for (let i = Math.max(0, from); i < a.rows.length; i++) if (onRow(a.rows[i], a.start + i + 1) === false) break;
+    return a.rows.length;
+  }
+  return forEachLine(src, (line, i) => (i >= from && line ? onRow(splitLine(line, src.sep), i + 1) : undefined), onProgress);
+}
+function sheetScore(src, name) {
+  const top = topRows(src, name).rows.slice(0, 26);
   const hr = detectHeaderRow(top);
   const hs = hr >= 0 ? top[hr].map(hInfo) : [];
   const cnt = list => list.filter(w => hs.some(h => h.last.includes(w))).length;
@@ -546,96 +644,149 @@ function sheetScore(wb, name, fileName) {
     const w = Math.max(0, ...top.map(r => r.length));
     if (w >= 30) prov += 3; else if (w >= 15) vol += 3;
   }
-  const nm = name + ' ' + (fileName || '');
+  const nm = name + ' ' + src.file.name;
   if (/volmacht|vocol/i.test(nm)) vol += 5;
   if (/prov|proco/i.test(nm)) prov += 5;
   return { name, vol, prov };
 }
 const other = t => (t === 'vol' ? 'prov' : 'vol');
+const DS_LABEL = { vol: 'volmachtselectie (VOCOL)', prov: 'provinciale selectie (PROCO)' };
 function pickSheet(scores, t, exclude) {
   const o = other(t);
   const c = scores.filter(s => s.name !== exclude);
   if (!c.length) return null;
-  const best = [...c].sort((a, b) => (b[t] - b[o]) - (a[t] - a[o]) || b[t] - a[t])[0];
-  return best;
+  return [...c].sort((a, b) => (b[t] - b[o]) - (a[t] - a[o]) || b[t] - a[t])[0];
 }
 
 async function handleFiles(fileList, t) {
   const files = [...fileList].filter(Boolean).slice(0, 2);
   if (!files.length) return;
   const targets = files.length === 2 ? ['vol', 'prov'] : [t];
-  targets.forEach(x => setLoading(x, files.length === 2 ? files.map(f => f.name).join(' + ') : files[0].name));
-  try {
-    await tick();
-    const books = [];
-    for (const file of files) {
-      const wb = await readWorkbook(file);
-      const scores = wb.SheetNames.map(n => sheetScore(wb, n, file.name));
-      books.push({ file, wb, scores, lean: Math.max(...scores.map(s => s.vol - s.prov)) });
+  targets.forEach(x => { state[x].job++; setLoading(x, files.length === 2 ? files.map(f => f.name).join(' + ') : files[0].name); });
+  await tick();
+  const items = [], failed = [], used = new Set();
+  for (const file of files) {
+    try {
+      const src = await openSource(file);
+      const scores = src.sheets.map(n => sheetScore(src, n));
+      items.push({ src, scores, lean: Math.max(...scores.map(s => s.vol - s.prov)) });
+    } catch (err) {
+      console.error(err);
+      failed.push({ file, err });
     }
-    if (books.length === 2) {
-      books.sort((a, b) => b.lean - a.lean);
-      loadBook('vol', books[0]);
-      loadBook('prov', books[1]);
-    } else {
-      const b = books[0];
-      const pick = loadBook(t, b);
-      // Excel met beide tabbladen: de andere selectie meteen ook vullen.
-      const o = other(t);
-      if (!state[o].recs && b.scores.length > 1) {
-        const os = pickSheet(b.scores, o, pick.name);
-        if (os && os[o] > os[t]) loadSheet(o, b.file, b.wb, os.name, 'uit hetzelfde bestand');
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    targets.forEach(x => { const ds = state[x]; ds.loading = false; ds.error = 'Kon het bestand niet lezen: ' + (err && err.message ? err.message : err); renderDs(x); });
   }
+  if (items.length === 2) {
+    items.sort((a, b) => b.lean - a.lean);
+    await loadItem('vol', items[0]); await loadItem('prov', items[1]);
+    used.add('vol').add('prov');
+  } else if (items.length === 1) {
+    const it = items[0];
+    let dest = targets.length === 2 ? (it.lean >= 0 ? 'vol' : 'prov') : t, note = '';
+    // Los bestand in het verkeerde vak gesleept: zelf naar het goede vak verplaatsen.
+    if (targets.length === 1 && it.src.sheets.length === 1) {
+      const s = it.scores[0], o = other(t);
+      if (s[o] - s[t] >= 3) { dest = o; note = 'herkend als ' + DS_LABEL[o]; }
+    }
+    if (dest !== t && targets.length === 1) { state[t].loading = false; renderDs(t); }
+    const pick = await loadItem(dest, it, note);
+    used.add(dest);
+    // Excel met beide tabbladen: de andere selectie meteen ook vullen.
+    const o = other(dest);
+    if (!state[o].recs && it.scores.length > 1) {
+      const os = pickSheet(it.scores, o, pick.name);
+      if (os && os[o] > os[dest]) { await loadSheet(o, it.src, os.name, 'uit hetzelfde bestand'); used.add(o); }
+    }
+  }
+  for (const f of failed) {
+    const x = targets.find(y => !used.has(y)) || targets[0];
+    used.add(x);
+    Object.assign(state[x], emptyDs(), {
+      job: state[x].job + 1,
+      error: 'Kon het bestand niet lezen: ' + (f.err && f.err.message ? f.err.message : f.err),
+      errDiag: (f.err && f.err.diag) || { name: f.file.name, size: f.file.size }
+    });
+    renderDs(x);
+  }
+  targets.forEach(x => { if (!used.has(x)) { state[x].loading = false; renderDs(x); } });
   recompute();
 }
-function loadBook(t, b) {
-  const pick = pickSheet(b.scores, t) || { name: b.wb.SheetNames[0] };
-  loadSheet(t, b.file, b.wb, pick.name);
+async function loadItem(t, it, note) {
+  const pick = pickSheet(it.scores, t) || { name: it.src.sheets[0] };
+  await loadSheet(t, it.src, pick.name, note);
   return pick;
 }
-function loadSheet(t, file, wb, sheet, note) {
+async function loadSheet(t, src, sheet, note) {
   const ds = state[t];
-  Object.assign(ds, { file, wb, sheet, note: note || '', error: '', loading: false });
-  const a = sheetAoa(wb, sheet);
-  ds.aoa = a.rows; ds.start = a.start;
-  ds.headerRow = detectHeaderRow(ds.aoa);
-  const sc = sheetScore(wb, sheet, file.name);
-  ds.warn = sc[other(t)] > sc[t] ? `Let op: ${wb.__aoa ? 'dit bestand' : 'dit tabblad'} lijkt meer op de ${t === 'vol' ? 'provinciale (PROCO)' : 'volmacht (VOCOL)'}selectie.` : '';
-  applyHeaderRow(t);
+  Object.assign(ds, emptyDs(), { src, sheet, note: note || '', job: ds.job });
+  const tr = topRows(src, sheet);
+  ds.top = tr.rows; ds.start = tr.start;
+  ds.headerRow = detectHeaderRow(ds.top);
+  const sc = sheetScore(src, sheet);
+  ds.warn = sc[other(t)] > sc[t] ? `Let op: ${src.kind === 'text' ? 'dit bestand' : 'dit tabblad'} lijkt meer op de ${DS_LABEL[other(t)]}.` : '';
+  await applyHeaderRow(t);
 }
-function applyHeaderRow(t) {
+async function applyHeaderRow(t) {
   const ds = state[t];
-  ds.headers = ds.headerRow >= 0 ? (ds.aoa[ds.headerRow] || []).map(hInfo) : [];
-  ds.width = Math.max(0, ds.headers.length, ...ds.aoa.slice(ds.headerRow + 1, ds.headerRow + 200).map(r => r.length));
+  ds.headers = ds.headerRow >= 0 ? (ds.top[ds.headerRow] || []).map(hInfo) : [];
+  ds.width = Math.max(0, ds.headers.length, ...ds.top.slice(ds.headerRow + 1).map(r => r.length));
   const { map, assumed } = autoMap(t, ds.headers, ds.width);
   ds.map = map; ds.assumed = assumed;
-  buildRecs(t);
+  await rebuild(t);
+}
+async function rebuild(t) {
+  const ds = state[t], job = ++ds.job;
+  setLoading(t, ds.src.file.name);
+  try {
+    const res = await buildRecs(t, job);
+    if (ds.job !== job) return;
+    Object.assign(ds, res, { loading: false, error: '' });
+  } catch (err) {
+    if (ds.job !== job) return;
+    console.error(err);
+    Object.assign(ds, { loading: false, recs: null, error: 'Kon het bestand niet lezen: ' + (err && err.message ? err.message : err) });
+  }
   renderDs(t);
 }
-function buildRecs(t) {
-  const ds = state[t], fields = FIELDS[t], recs = [];
-  for (let i = ds.headerRow + 1; i < ds.aoa.length; i++) {
-    const row = ds.aoa[i];
-    if (!row) continue;
-    const r = { _row: ds.start + i + 1 };
-    let any = false;
-    for (const f of fields) {
-      const idx = ds.map[f.id];
-      let v = idx >= 0 ? row[idx] : '';
-      if (v == null) v = '';
-      if (f.date) v = parseDate(v);
-      else if (typeof v === 'string') v = v.trim();
-      r[f.id] = v;
-      if (v !== '' && v != null) any = true;
+// Leest alle rijen en bewaart alleen wat de controle nodig heeft:
+// - volmacht: polissen met een echt oud polisnummer + per relatie het kantoor (en per agent de omschrijving);
+// - PROV: alle polissen.
+// Opeenvolgende dekkingsregels van dezelfde polis worden samengevoegd (_n = aantal regels).
+async function buildRecs(t, job) {
+  const ds = state[t], fields = FIELDS[t], isVol = t === 'vol';
+  for (let attempt = 0; ; attempt++) {
+    const recs = [], relK = new Map(), agOms = new Map(), col = {};
+    let total = 0, noPolis = 0, placeholder = 0, last = null;
+    for (const f of fields) col[f.id] = ds.map[f.id] >= 0 ? ds.map[f.id] : -1;
+    const g = (row, id) => { const i = col[id]; if (i < 0) return ''; const v = row[i]; return v == null ? '' : typeof v === 'string' ? v.trim() : v; };
+    try {
+      const lines = await eachRow(ds, ds.headerRow + 1, (row, rowNo) => {
+        if (ds.job !== job) return false;
+        let any = false;
+        for (let k = 0; k < row.length; k++) { const c = row[k]; if (c !== '' && c != null && (typeof c !== 'string' || c.trim())) { any = true; break; } }
+        if (!any) return;
+        total++;
+        const pol = g(row, 'polisnr'), rel = g(row, 'relatienr');
+        let oud = '';
+        if (isVol) {
+          const kant = g(row, 'kantoor'), ag = g(row, 'agent');
+          if (rel !== '' && kant !== '' && !relK.has(txt(rel))) relK.set(txt(rel), txt(kant));
+          if (ag !== '' && !agOms.has(txt(ag))) { const o = g(row, 'agentOms'); if (o !== '') agOms.set(txt(ag), txt(o)); }
+          oud = g(row, 'oudPolis');
+          if (oud === '') return;
+          if (isPlaceholder(oud)) { placeholder++; return; }
+        } else if (pol === '') { noPolis++; return; }
+        if (last && last.polisnr === pol && last.relatienr === rel && (!isVol || last.oudPolis === oud)) { last._n++; return; }
+        const r = { _row: rowNo, _n: 1 };
+        for (const f of fields) { const v = g(row, f.id); r[f.id] = f.date ? parseDate(v) : v; }
+        recs.push(r);
+        last = r;
+      }, p => setProgress(t, p));
+      return { recs, total, lines, noPolis, placeholder, relKantoorRaw: relK, agentOmsRaw: agOms };
+    } catch (err) {
+      if (err && err.badUtf8 && attempt === 0) { ds.src.enc = ds.src.diag.enc = 'windows-1252'; continue; }
+      throw err;
     }
-    if (any) recs.push(r);
   }
-  ds.recs = recs;
 }
 const dsReady = t => { const ds = state[t]; return ds.recs && FIELDS[t].filter(f => f.req).every(f => ds.map[f.id] >= 0); };
 
@@ -649,17 +800,14 @@ function isPlaceholder(v) {
 function compute() {
   const smart = state.opts.smart;
   const K = v => normKey(v, smart);
-  const vol = state.vol.recs, prov = state.prov.recs;
-  const idx = new Map(), relKantoor = new Map(), agentOms = new Map();
-  let volWithOld = 0, volPlaceholder = 0;
-  for (const v of vol) {
-    const kr = K(v.relatienr);
-    if (kr && v.kantoor !== '' && !relKantoor.has(kr)) relKantoor.set(kr, txt(v.kantoor));
-    if (v.agent !== '' && v.agentOms !== '' && !agentOms.has(txt(v.agent))) agentOms.set(txt(v.agent), txt(v.agentOms));
+  const V = state.vol, P = state.prov;
+  const idx = new Map(), relKantoor = new Map();
+  for (const [rel, k] of V.relKantoorRaw) { const kr = K(rel); if (kr && !relKantoor.has(kr)) relKantoor.set(kr, k); }
+  let volWithOld = 0;
+  for (const v of V.recs) {
     const ko = K(v.oudPolis);
     if (!ko) continue;
-    if (isPlaceholder(v.oudPolis)) { volPlaceholder++; continue; }
-    volWithOld++;
+    volWithOld += v._n;
     let m = idx.get(ko);
     if (!m) idx.set(ko, (m = new Map()));
     const pk = K(v.polisnr) || '#' + m.size; // dekkingsregels van dezelfde polis tellen één keer
@@ -667,11 +815,11 @@ function compute() {
   }
   const seen = new Map(), results = [];
   let noPolis = 0;
-  for (const p of prov) {
+  for (const p of P.recs) {
     const k = K(p.polisnr);
-    if (!k) { noPolis++; continue; }
+    if (!k) { noPolis += p._n; continue; }
     const prev = seen.get(k);
-    if (prev) { prev.regels++; continue; }
+    if (prev) { prev.regels += p._n; continue; }
     const hits = idx.has(k) ? [...idx.get(k).values()] : [];
     const pRel = K(p.relatienr);
     const same = pRel ? hits.find(v => K(v.relatienr) === pRel) : null;
@@ -682,13 +830,13 @@ function compute() {
       kantoor: txt(p.kantoor) || relKantoor.get(pRel) || (v ? txt(v.kantoor) : '') || '',
       agent: txt(p.agent) || (v ? txt(v.agent) : '') || '',
       naam: [p.voorletters, p.voorvoegsels, p.achternaam].map(txt).filter(Boolean).join(' ') || (v ? txt(v.naam) : ''),
-      regels: 1
+      regels: p._n
     };
     seen.set(k, res);
     results.push(res);
   }
   state.results = results;
-  state.meta = { agentOms, volRows: vol.length, volWithOld, volPlaceholder, provRows: prov.length, noPolis };
+  state.meta = { agentOms: V.agentOmsRaw, volRows: V.total, volWithOld, volPlaceholder: V.placeholder, provRows: P.total, noPolis: P.noPolis + noPolis };
 }
 function groupKey(r) { const g = state.opts.groupBy === 'agent' ? r.agent : r.kantoor; return g || 'Onbekend'; }
 function groupLabel(g) {
@@ -781,22 +929,63 @@ function setLoading(t, name) {
   ds.loading = true; ds.error = '';
   const card = $(`.ds[data-ds="${t}"]`), info = $('.ds-info', card);
   info.hidden = false;
-  info.innerHTML = `<span class="loading"><span class="spin"></span>Bezig met inlezen van ${esc(name)}…</span>`;
+  info.innerHTML = `<span class="loading"><span class="spin"></span>Bezig met inlezen van ${esc(name)}… <b class="prog"></b></span>`;
 }
+function setProgress(t, p) {
+  const el = $(`.ds[data-ds="${t}"] .prog`);
+  if (el) el.textContent = Math.round(p * 100) + '%';
+}
+const typeOf = v => {
+  if (v === '' || v == null) return 'leeg';
+  if (typeof v === 'number') return 'getal';
+  const s = String(v).trim();
+  if (!s) return 'leeg';
+  if (/^\d+$/.test(s)) return 'getal';
+  if (/[-/.]/.test(s) && isDate(parseDate(s))) return 'datum';
+  return `tekst(${s.length})`;
+};
+// Beschrijving van hoe het bestand is gelezen, zonder klantgegevens (alleen kolomnamen en soorten waarden).
+function diagText(t) {
+  const ds = state[t], d = (ds.src && ds.src.diag) || ds.errDiag || {};
+  const L = [`Vak: ${t === 'vol' ? 'Volmacht (VOCOL)' : 'Provinciaal (PROCO)'}`];
+  if (d.name) L.push(`Bestand: ${d.name} (${fmtMB(d.size || 0)})`);
+  if (d.kind) L.push(`Soort: ${d.kind}` + (d.enc ? ` · tekenset ${d.enc}` : '') + (d.sep ? ` · scheidingsteken ${d.sep}` : '') + (d.nl ? ` · regeleinde ${d.nl}` : ''));
+  if (d.hex) L.push(`Begin (hex): ${d.hex}`);
+  if (ds.error) L.push(`Fout: ${ds.error}`);
+  if (ds.src) {
+    if (ds.src.sheets.length > 1) L.push(`Tabblad: ${ds.sheet} (van ${ds.src.sheets.length})`);
+    L.push(`Kopregel: ${ds.headerRow < 0 ? 'geen' : ds.start + ds.headerRow + 1} · kolommen: ${ds.width}` + (ds.lines != null ? ` · regels in bestand: ${fmtN(ds.lines)}` : ''));
+    if (ds.recs) L.push(`Dataregels: ${fmtN(ds.total)}` + (t === 'vol'
+      ? ` · met oud polisnr: ${fmtN(ds.recs.reduce((a, r) => a + r._n, 0))} · “onbekend” e.d.: ${fmtN(ds.placeholder)}`
+      : ` · zonder polisnr: ${fmtN(ds.noPolis)}`));
+    if (ds.headerRow >= 0) L.push('Koppen: ' + ds.headers.map(h => h.raw).join(' | ').slice(0, 700));
+    const first = ds.top.slice(ds.headerRow + 1).find(r => r.some(c => txt(c).trim()));
+    if (first) L.push(`Eerste dataregel: ${first.length} velden – ` + first.map(typeOf).join(', '));
+    L.push('Koppeling: ' + FIELDS[t].filter(f => f.ui).map(f => `${f.label} = ${ds.map[f.id] >= 0 ? colLetter(ds.map[f.id]) : '–'}`).join(' · '));
+  }
+  return L.join('\n');
+}
+const diagBlock = (t, open) => `<details class="diag"${open ? ' open' : ''}><summary>Bestandsinfo</summary><pre>${esc(diagText(t))}</pre><button type="button" class="btn link" data-act="copydiag">Kopieer bestandsinfo</button></details>`;
 function renderDs(t) {
   const ds = state[t], card = $(`.ds[data-ds="${t}"]`), info = $('.ds-info', card), drop = $('.drop', card);
   if (ds.loading) return;
-  if (!ds.file && !ds.error) { info.hidden = true; return; }
+  if (!ds.src && !ds.error) {
+    info.hidden = true;
+    drop.classList.remove('loaded');
+    $('.drop-body', card).innerHTML = '<strong>Sleep het bestand hierheen</strong>';
+    return;
+  }
   info.hidden = false;
   if (ds.error && !ds.recs) {
     drop.classList.remove('loaded');
-    info.innerHTML = `<div class="msg err">${esc(ds.error)}</div>`;
+    $('.drop-body', card).innerHTML = '<strong>Sleep het bestand hierheen</strong>';
+    info.innerHTML = `<div class="msg err">${esc(ds.error)}</div>${diagBlock(t, true)}`;
     return;
   }
   drop.classList.add('loaded');
-  $('.drop-body', card).innerHTML = `<span class="fname">${esc(ds.file.name)}</span><span class="change">Ander bestand</span>`;
+  $('.drop-body', card).innerHTML = `<span class="fname">${esc(ds.src.file.name)}</span><span class="change">Ander bestand</span>`;
 
-  const sheets = ds.wb.SheetNames;
+  const sheets = ds.src.sheets;
   const opt = (i, label, sel) => `<option value="${i}"${sel ? ' selected' : ''}>${esc(label)}</option>`;
   const fieldsUi = FIELDS[t].filter(f => f.ui);
   const keyChip = f => {
@@ -806,8 +995,8 @@ function renderDs(t) {
     return `<span class="key ${cls}" title="${i >= 0 ? esc(ds.headers[i] ? ds.headers[i].raw : '') : 'Niet gevonden'}"><span class="col">${i >= 0 ? colLetter(i) : '?'}</span>${esc(f.label)}</span>`;
   };
   const sample = i => {
-    for (let r = ds.headerRow + 1; r < Math.min(ds.aoa.length, ds.headerRow + 40); r++) {
-      const v = ds.aoa[r] && ds.aoa[r][i];
+    for (let r = ds.headerRow + 1; r < Math.min(ds.top.length, ds.headerRow + 40); r++) {
+      const v = ds.top[r] && ds.top[r][i];
       if (v !== '' && v != null) return 'bijv. ' + txt(v);
     }
     return '(leeg)';
@@ -817,22 +1006,28 @@ function renderDs(t) {
   const noHeader = ds.headerRow < 0;
   const missing = FIELDS[t].filter(f => f.req && ds.map[f.id] < 0);
   const assumed = FIELDS[t].filter(f => ds.assumed.has(f.id));
+  const empty = !ds.error && ds.total === 0;
+  const volNoOld = t === 'vol' && !empty && !missing.length && ds.recs && !ds.recs.length;
 
   info.innerHTML = `
     <div class="ds-meta">
-      <span class="ds-count">${fmtN(ds.recs.length)} regels</span>
+      <span class="ds-count">${fmtN(ds.total)} regels</span>
       ${sheets.length > 1 ? `<label>Tabblad <select data-act="sheet">${sheets.map(s => opt(esc(s), s, s === ds.sheet)).join('')}</select></label>` : ''}
-      <label title="Rijnummer van de kolomkoppen (0 = geen kopregel)">Kopregel <input type="number" min="0" max="${ds.start + ds.aoa.length}" value="${noHeader ? 0 : ds.start + ds.headerRow + 1}" data-act="hdr"></label>
+      <label title="Rijnummer van de kolomkoppen (0 = geen kopregel)">Kopregel <input type="number" min="0" max="${ds.start + ds.top.length}" value="${noHeader ? 0 : ds.start + ds.headerRow + 1}" data-act="hdr"></label>
       ${ds.note ? `<span class="muted small">(${esc(ds.note)})</span>` : ''}
     </div>
     <div class="keys">${fieldsUi.map(keyChip).join('')}</div>
+    ${ds.error ? `<div class="msg err">${esc(ds.error)}</div>` : ''}
+    ${empty ? '<div class="msg err">Geen gegevensregels gevonden in dit bestand. Kijk bij “Bestandsinfo” hoe het is ingelezen.</div>' : ''}
     ${missing.length ? `<div class="msg err">Kolom niet gevonden: ${missing.map(f => '<b>' + esc(f.label) + '</b>').join(', ')}. Kies de kolom hieronder bij “Kolommen aanpassen”.</div>` : ''}
+    ${volNoOld ? `<div class="msg warn">Geen enkele regel heeft een ingevuld “Polisnr. oude mij.” (kolom ${ds.map.oudPolis >= 0 ? colLetter(ds.map.oudPolis) : '?'})${ds.placeholder ? `; ${fmtN(ds.placeholder)}× “onbekend” e.d.` : ''}. Dan kan er niets dubbel lopen.</div>` : ''}
     ${noHeader ? `<div class="msg info">Geen kolomkoppen gevonden: de vaste kolomindeling van de ${t === 'vol' ? 'VOCOL' : 'PROCO'}-selectie wordt gebruikt.</div>` : ''}
     ${assumed.length && !noHeader ? `<div class="msg warn">Kop niet herkend, daarom de vaste kolom gebruikt voor: ${assumed.map(f => `<b>${esc(f.label)}</b> (${f.col})`).join(', ')}. Controleer dit even.</div>` : ''}
     ${ds.warn ? `<div class="msg warn">${esc(ds.warn)}</div>` : ''}
     <details class="map"${missing.length ? ' open' : ''}><summary>Kolommen aanpassen</summary>
       <div class="map-grid">${fieldsUi.map(f => `<label for="map-${t}-${f.id}">${esc(f.label)}${f.req ? ' <span class="req">*</span>' : ''}</label><select id="map-${t}-${f.id}" data-act="map" data-f="${f.id}">${colOpts(ds.map[f.id])}</select>`).join('')}</div>
-    </details>`;
+    </details>
+    ${diagBlock(t, !!(missing.length || empty || ds.error))}`;
 }
 
 /* ---------- Weergave: resultaat ---------- */
@@ -895,14 +1090,14 @@ function renderResults() {
     kpi('nb', 'd-nb', 'Niet gevonden', c.nb, '#N/B – niet dubbel');
 
   // datumbereik als hulp
-  const span = (rows, get) => {
+  const span = (rows, get, label = 'in bestand') => {
     let lo = Infinity, hi = -Infinity, none = 0;
     for (const r of rows) { const d = get(r); if (isDate(d)) { if (d < lo) lo = d; if (d > hi) hi = d; } else none++; }
     if (lo === Infinity) return 'geen datums gevonden';
-    return `in bestand: ${fmtDate(lo)} t/m ${fmtDate(hi)}` + (none ? ` · ${fmtN(none)} zonder datum` : '');
+    return `${label}: ${fmtDate(lo)} t/m ${fmtDate(hi)}` + (none ? ` · ${fmtN(none)} zonder datum` : '');
   };
   $('#provRange').textContent = span(state.prov.recs, r => r.ingang);
-  $('#volRange').textContent = span(state.vol.recs, r => r.ingang);
+  $('#volRange').textContent = span(state.vol.recs, r => r.ingang, 'met oud polisnr');
 
   // formule-uitleg
   const L = (t, id) => (state[t].map[id] >= 0 ? colLetter(state[t].map[id]) : '?');
@@ -1003,8 +1198,8 @@ async function exportXlsx() {
     const sum = [
       ['Dubbel lopend – controle PROV × Volmacht'],
       ['Gemaakt op', `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`],
-      ['Volmacht (VOCOL)', `${state.vol.file.name} – ${state.vol.sheet}`],
-      ['Provinciaal (PROCO)', `${state.prov.file.name} – ${state.prov.sheet}`],
+      ['Volmacht (VOCOL)', `${state.vol.src.file.name}` + (state.vol.src.sheets.length > 1 ? ` – ${state.vol.sheet}` : '')],
+      ['Provinciaal (PROCO)', `${state.prov.src.file.name}` + (state.prov.src.sheets.length > 1 ? ` – ${state.prov.sheet}` : '')],
       ['Vergelijking', state.opts.smart ? 'Spaties, punten, streepjes en voorloopnullen genegeerd' : 'Exact (zoals X.ZOEKEN)'],
       ['Ingangsdatum PROV', range(f.provFrom, f.provTo)],
       ['Ingangsdatum volmacht', range(f.volFrom, f.volTo)],
@@ -1045,7 +1240,9 @@ async function copyTable() {
   const clean = s => txt(s).replace(/[\t\r\n]+/g, ' ');
   const lines = [cols.map(c => clean(colLabel(c))).join('\t')]
     .concat(state.view.map(r => cols.map(c => clean(c.date ? fmtDate(c.get(r)) : c.get(r))).join('\t')));
-  const text = lines.join('\r\n');
+  await copyText(lines.join('\r\n'), `${fmtN(state.view.length)} regels gekopieerd – plak ze in Excel`);
+}
+async function copyText(text, okMsg) {
   try { await navigator.clipboard.writeText(text); }
   catch (e) {
     const ta = document.createElement('textarea');
@@ -1055,7 +1252,7 @@ async function copyTable() {
     ta.remove();
     if (!ok) { toast('Kopiëren is hier niet toegestaan'); return; }
   }
-  toast(`${fmtN(state.view.length)} regels gekopieerd – plak ze in Excel`);
+  toast(okMsg);
 }
 
 let toastTimer;
@@ -1075,19 +1272,23 @@ $$('.ds').forEach(card => {
   drop.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, t); });
 
   const info = $('.ds-info', card);
-  info.addEventListener('change', e => {
+  info.addEventListener('change', async e => {
     const el = e.target, ds = state[t];
-    if (el.dataset.act === 'sheet') { loadSheet(t, ds.file, ds.wb, el.value); recompute(); }
+    if (el.dataset.act === 'sheet') await loadSheet(t, ds.src, el.value);
     else if (el.dataset.act === 'hdr') {
       const n = parseInt(el.value, 10) || 0;
-      ds.headerRow = n <= 0 ? -1 : Math.max(0, Math.min(ds.aoa.length - 1, n - ds.start - 1));
-      applyHeaderRow(t); recompute();
+      ds.headerRow = n <= 0 ? -1 : Math.max(0, Math.min(ds.top.length - 1, n - ds.start - 1));
+      await applyHeaderRow(t);
     } else if (el.dataset.act === 'map') {
       ds.map[el.dataset.f] = parseInt(el.value, 10);
       ds.assumed.delete(el.dataset.f);
-      buildRecs(t); renderDs(t); recompute();
+      await rebuild(t);
       const d = $('details.map', card); if (d) d.open = true;
-    }
+    } else return;
+    recompute();
+  });
+  info.addEventListener('click', e => {
+    if (e.target.closest('[data-act="copydiag"]')) copyText(diagText(t), 'Bestandsinfo gekopieerd');
   });
 });
 document.addEventListener('dragover', e => e.preventDefault());
