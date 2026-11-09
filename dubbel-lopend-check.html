@@ -161,29 +161,29 @@ footer{margin-top:28px;color:var(--muted);font-size:12.5px}
   <header>
     <h1>Dubbel lopend – PROV × Volmacht</h1>
     <p class="sub">Controleert of een polis dubbel loopt: het <b>polisnummer uit de provinciale selectie</b> mag niet voorkomen als <b>Polisnr. oude mij.</b> in de volmachtselectie. Werkt zoals <span class="mono">X.ZOEKEN</span> + <span class="mono">ALS(…;"Goed";"Checken")</span> in je Excel, maar dan per kantoor en met datumfilters.</p>
-    <div class="banner" id="libError" hidden>De Excel-lezer (SheetJS) kon niet worden geladen. Controleer je internetverbinding en herlaad de pagina.</div>
+    <div class="banner" id="libError" hidden>De Excel-lezer (SheetJS) kon niet worden geladen. .exp-bestanden werken wel, maar Excel-bestanden openen en exporteren naar Excel niet. Controleer je internetverbinding en herlaad de pagina.</div>
   </header>
 
   <div class="step"><span class="n">1</span>Selecties laden</div>
   <div class="grid2">
     <section class="card ds" data-ds="vol">
       <div class="ds-head"><span class="tag tag-vol">VOCOL</span><h2>Volmacht</h2></div>
-      <p class="ds-desc">Selectie volmacht. Er wordt gezocht in <b>Polisnr. oude mij.</b> (kolom U) en het <b>Relatienummer</b> (kolom D) wordt teruggegeven.</p>
+      <p class="ds-desc">Volmachtselectie (.exp uit ANVA of Excel). Er wordt gezocht in <b>Polisnr. oude mij.</b> (kolom U) en het <b>Relatienummer</b> (kolom D) wordt teruggegeven.</p>
       <label class="drop" tabindex="0">
-        <input type="file" accept=".xlsx,.xlsm,.xlsb,.xls,.csv,.txt" multiple hidden>
+        <input type="file" multiple hidden>
         <span class="drop-body"><strong>Sleep de Excel hierheen</strong></span>
-        <span class="drop-hint muted small">of klik om een bestand te kiezen (.xlsx, .xls, .csv)</span>
+        <span class="drop-hint muted small">of klik om te kiezen (.exp, .xlsx, .xls, .csv)</span>
       </label>
       <div class="ds-info" hidden></div>
     </section>
 
     <section class="card ds" data-ds="prov">
       <div class="ds-head"><span class="tag tag-prov">PROCO</span><h2>Provinciaal</h2></div>
-      <p class="ds-desc">Provinciale selectie. Het <b>Polisnummer</b> (kolom D) wordt opgezocht; het <b>Relatienummer</b> (kolom C) wordt vergeleken.</p>
+      <p class="ds-desc">Provinciale selectie (.exp uit ANVA of Excel). Het <b>Polisnummer</b> (kolom D) wordt opgezocht; het <b>Relatienummer</b> (kolom C) wordt vergeleken.</p>
       <label class="drop" tabindex="0">
-        <input type="file" accept=".xlsx,.xlsm,.xlsb,.xls,.csv,.txt" multiple hidden>
+        <input type="file" multiple hidden>
         <span class="drop-body"><strong>Sleep de Excel hierheen</strong></span>
-        <span class="drop-hint muted small">Eén Excel met de tabbladen VOLMACHT en PROV mag ook: beide worden dan herkend.</span>
+        <span class="drop-hint muted small">Je mag ook beide .exp-bestanden tegelijk slepen; ze worden automatisch herkend.</span>
       </label>
       <div class="ds-info" hidden></div>
     </section>
@@ -218,12 +218,12 @@ footer{margin-top:28px;color:var(--muted);font-size:12.5px}
         <div class="fgrp">
           <span>Ingangsdatum PROV</span>
           <div class="frow"><input type="date" id="fProvFrom" aria-label="Ingangsdatum PROV vanaf"><span class="sep">t/m</span><input type="date" id="fProvTo" aria-label="Ingangsdatum PROV tot en met"></div>
-          <span class="hintline" id="provRange"></span>
+          <span class="hintline" id="provRange" title="Regels zonder ingangsdatum vallen buiten een datumfilter"></span>
         </div>
         <div class="fgrp">
           <span>Ingangsdatum volmacht</span>
           <div class="frow"><input type="date" id="fVolFrom" aria-label="Ingangsdatum volmacht vanaf"><span class="sep">t/m</span><input type="date" id="fVolTo" aria-label="Ingangsdatum volmacht tot en met"></div>
-          <span class="hintline" id="volRange"></span>
+          <span class="hintline" id="volRange" title="Regels zonder ingangsdatum vallen buiten een datumfilter"></span>
         </div>
         <div class="fgrp">
           <span>Toon</span>
@@ -405,44 +405,56 @@ const FIELDS = {
     { id: 'relatienr', label: 'Relatienummer', col: 'C', req: true, ui: true, m: mRelnr },
     { id: 'ingang', label: 'Ingangsdatum', col: 'A', ui: true, date: true, m: has('ingangsdatum') },
     { id: 'kantoor', label: 'Kantoorcode', col: null, ui: true, m: has('kantoor') },
-    { id: 'agent', label: 'Agent', col: 'O', ui: true, m: has('agent') },
-    { id: 'voorletters', label: 'Voorletters', col: 'F', m: has('voorletters') },
-    { id: 'voorvoegsels', label: 'Voorvoegsels', col: 'G', m: has('voorvoegsel') },
-    { id: 'achternaam', label: 'Achternaam', col: 'H', m: has('achternaam') },
-    { id: 'straat', label: 'Straat', col: 'I', m: has('straat') },
-    { id: 'huisnr', label: 'Huisnummer', col: 'J', m: h => h.last === 'huisnummer' },
-    { id: 'toevoeging', label: 'Toevoeging', col: 'K', m: has('toevoeging') },
-    { id: 'postcode', label: 'Postcode', col: 'L', m: has('postcode') },
-    { id: 'woonplaats', label: 'Woonplaats', col: 'M', m: has('woonplaats') },
-    { id: 'branche', label: 'Branche', col: 'P', m: has('branche') },
-    { id: 'maatschappij', label: 'Maatschappij', col: 'Q', m: has('maatschappij') },
-    { id: 'hoofdverval', label: 'Hoofdvervaldatum', col: 'R', date: true, m: has('hoofdverval') },
-    { id: 'kenteken', label: 'Kenteken', col: 'V', m: has('kenteken') },
-    { id: 'incasso', label: 'Incassobedrag', col: 'AD', m: has('incasso') }
+    { id: 'agent', label: 'Agent', col: 'N', ui: true, m: has('agent') },
+    { id: 'voorletters', label: 'Voorletters', col: 'E', m: has('voorletters') },
+    { id: 'voorvoegsels', label: 'Voorvoegsels', col: 'F', m: has('voorvoegsel') },
+    { id: 'achternaam', label: 'Achternaam', col: 'G', m: has('achternaam') },
+    { id: 'straat', label: 'Straat', col: 'H', m: has('straat') },
+    { id: 'huisnr', label: 'Huisnummer', col: 'I', m: h => h.last === 'huisnummer' },
+    { id: 'toevoeging', label: 'Toevoeging', col: 'J', m: has('toevoeging') },
+    { id: 'postcode', label: 'Postcode', col: 'K', m: has('postcode') },
+    { id: 'woonplaats', label: 'Woonplaats', col: 'L', m: has('woonplaats') },
+    { id: 'branche', label: 'Branche', col: 'O', m: has('branche') },
+    { id: 'maatschappij', label: 'Maatschappij', col: 'P', m: has('maatschappij') },
+    { id: 'hoofdverval', label: 'Hoofdvervaldatum', col: 'Q', date: true, m: has('hoofdverval') },
+    { id: 'kenteken', label: 'Kenteken', col: 'U', m: has('kenteken') },
+    { id: 'incasso', label: 'Incassobedrag', col: 'AC', m: has('incasso') }
   ]
 };
 const VOL_ONLY = ['kantoorcode', 'wijzigingsreden', 'opmaakdatum', 'wachtjn', 'premievervaldatum', 'medewerker'];
 const PROV_ONLY = ['kenteken', 'meldcode', 'cataloguswaarde', 'dagwaarde', 'gezinssamenstelling', 'komtdubbelvoor', 'postcode', 'geboortedatum', 'woonplaats', 'termijn', 'straat'];
-const ALL_MATCHERS = FIELDS.vol.concat(FIELDS.prov).map(f => f.m);
-const DS_NAME = { vol: 'VOLMACHT', prov: 'PROV' };
-
+// Herkenners per veld (vol + prov samen), om een kopregel te vinden.
+const FIELD_MATCHERS = (() => {
+  const m = new Map();
+  for (const f of FIELDS.vol.concat(FIELDS.prov)) { if (!m.has(f.id)) m.set(f.id, []); m.get(f.id).push(f.m); }
+  return [...m.values()];
+})();
+function headerScore(row) {
+  const hs = (row || []).map(hInfo).filter(h => h.full);
+  return FIELD_MATCHERS.filter(ms => hs.some(h => ms.some(m => m(h)))).length;
+}
+// Index van de kopregel, of -1 als er geen is (minstens 3 herkende koppen nodig).
 function detectHeaderRow(aoa) {
-  let best = 0, bestScore = 0;
+  let best = -1, bestScore = 2;
   for (let r = 0; r < Math.min(25, aoa.length); r++) {
-    const hs = (aoa[r] || []).map(hInfo).filter(h => h.full);
-    const score = ALL_MATCHERS.filter(m => hs.some(m)).length;
+    const score = headerScore(aoa[r]);
     if (score > bestScore) { best = r; bestScore = score; }
   }
   return best;
 }
-function autoMap(type, headers) {
+function autoMap(type, headers, width) {
   const map = {}, assumed = new Set();
+  const noHeaders = !headers.some(h => h.full);
   for (const f of FIELDS[type]) {
     const exp = f.col ? colIndex(f.col) : -1;
     let idx = -1;
-    if (exp >= 0 && exp < headers.length && f.m(headers[exp])) idx = exp;
-    else idx = headers.findIndex(h => h.full && f.m(h));
-    if (idx < 0 && f.req && exp >= 0 && exp < headers.length) { idx = exp; assumed.add(f.id); }
+    if (noHeaders) {
+      if (exp >= 0 && exp < width) { idx = exp; assumed.add(f.id); }
+    } else {
+      if (exp >= 0 && exp < headers.length && f.m(headers[exp])) idx = exp;
+      else idx = headers.findIndex(h => h.full && f.m(h));
+      if (idx < 0 && f.req && exp >= 0 && exp < width) { idx = exp; assumed.add(f.id); }
+    }
     map[f.id] = idx;
   }
   return { map, assumed };
@@ -455,7 +467,7 @@ const state = {
   f: { provFrom: null, provTo: null, volFrom: null, volTo: null, status: 'dubbel', q: '', group: '__all' },
   results: null, meta: null, sort: { k: null, dir: 1 }, page: 0, view: []
 };
-function emptyDs() { return { file: null, wb: null, sheet: null, aoa: null, start: 0, headers: [], headerRow: 0, map: {}, assumed: new Set(), recs: null, note: '', warn: '', error: '', loading: false }; }
+function emptyDs() { return { file: null, wb: null, sheet: null, aoa: null, start: 0, headers: [], headerRow: -1, width: 0, map: {}, assumed: new Set(), recs: null, note: '', warn: '', error: '', loading: false }; }
 try {
   const saved = JSON.parse(localStorage.getItem('dubbelLopend.opts') || 'null');
   if (saved) { if (typeof saved.smart === 'boolean') state.opts.smart = saved.smart; if (saved.groupBy === 'agent') state.opts.groupBy = 'agent'; }
@@ -463,18 +475,53 @@ try {
 function saveOpts() { try { localStorage.setItem('dubbelLopend.opts', JSON.stringify(state.opts)); } catch (e) { /* negeren */ } }
 
 /* ---------- Inlezen ---------- */
-async function readWorkbook(file) {
-  const XLSX = await loadXLSX();
-  const buf = await file.arrayBuffer();
-  if (/\.(csv|txt|tsv)$/i.test(file.name)) {
-    let text = new TextDecoder('utf-8').decode(buf);
-    if (text.includes('\uFFFD')) text = new TextDecoder('windows-1252').decode(buf);
-    return XLSX.read(text.replace(/^\uFEFF/, ''), { type: 'string', raw: true });
-  }
-  return XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: false, cellNF: false, cellText: false });
+// Tekst decoderen: BOM, UTF-16 (veel nul-bytes), UTF-8, anders Windows-1252.
+function decodeText(b) {
+  if (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) return new TextDecoder('utf-8').decode(b.subarray(3));
+  if (b[0] === 0xFF && b[1] === 0xFE) return new TextDecoder('utf-16le').decode(b.subarray(2));
+  if (b[0] === 0xFE && b[1] === 0xFF) return new TextDecoder('utf-16be').decode(b.subarray(2));
+  let z0 = 0, z1 = 0;
+  const n = Math.min(b.length, 4000);
+  for (let i = 0; i < n; i++) if (b[i] === 0) { if (i % 2) z1++; else z0++; }
+  if (z1 > n / 4) return new TextDecoder('utf-16le').decode(b);
+  if (z0 > n / 4) return new TextDecoder('utf-16be').decode(b);
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(b); }
+  catch (e) { return new TextDecoder('windows-1252').decode(b); }
 }
-// Geeft { rows, start }: rows[i] hoort bij Excel-rij start + i + 1.
+// Tab-gescheiden regels (ANVA .exp). Aanhalingstekens alleen weghalen als ze het hele veld omsluiten.
+function splitTsv(text) {
+  const rows = text.split(/\r\n|\n|\r/).map(line => line.split('\t').map(c => {
+    const m = /^"([\s\S]*)"$/.exec(c);
+    return m ? m[1].replace(/""/g, '"') : c;
+  }));
+  while (rows.length && rows[rows.length - 1].every(c => !c.trim())) rows.pop();
+  return rows;
+}
+async function readWorkbook(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const isZip = buf[0] === 0x50 && buf[1] === 0x4B;                                   // .xlsx/.xlsm
+  const isOle = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0; // .xls
+  if (isZip || isOle) {
+    const XLSX = await loadXLSX();
+    return XLSX.read(buf, { type: 'array', cellDates: false, cellNF: false, cellText: false });
+  }
+  // Tekstbestand (.exp, .txt, .csv, …), ongeacht de extensie.
+  const text = decodeText(buf);
+  const first = text.split(/\r\n|\n|\r/).find(l => l.trim()) || '';
+  const count = ch => first.split(ch).length - 1;
+  if (!/^\s*</.test(first) && count('\t') > 0 && count('\t') >= count(';')) {
+    const name = file.name.replace(/\.[^.]+$/, '') || 'Bestand';
+    return { SheetNames: [name], __aoa: { [name]: splitTsv(text) } };
+  }
+  const XLSX = await loadXLSX();
+  return XLSX.read(text, { type: 'string', raw: true });
+}
+// Geeft { rows, start }: rows[i] hoort bij rij start + i + 1 in het bestand.
 function sheetAoa(wb, name, limit) {
+  if (wb.__aoa) {
+    const rows = wb.__aoa[name] || [];
+    return { rows: limit ? rows.slice(0, limit + 1) : rows, start: 0 };
+  }
   const ws = wb.Sheets[name];
   if (!ws || !ws['!ref']) return { rows: [], start: 0 };
   const r = XLSX.utils.decode_range(ws['!ref']);
@@ -489,13 +536,19 @@ function sheetAoa(wb, name, limit) {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '', blankrows: true, range: XLSX.utils.encode_range(r) });
   return { rows, start: r.s.r };
 }
-function sheetScore(wb, name) {
+function sheetScore(wb, name, fileName) {
   const top = sheetAoa(wb, name, 25).rows;
-  const hs = (top[detectHeaderRow(top)] || []).map(hInfo);
+  const hr = detectHeaderRow(top);
+  const hs = hr >= 0 ? top[hr].map(hInfo) : [];
   const cnt = list => list.filter(w => hs.some(h => h.last.includes(w))).length;
   let vol = cnt(VOL_ONLY), prov = cnt(PROV_ONLY);
-  if (/volmacht|vocol/i.test(name)) vol += 5;
-  if (/prov|proco/i.test(name)) prov += 5;
+  if (hr < 0) { // geen kopregel: herken aan het aantal kolommen (VOCOL 21, PROCO 35)
+    const w = Math.max(0, ...top.map(r => r.length));
+    if (w >= 30) prov += 3; else if (w >= 15) vol += 3;
+  }
+  const nm = name + ' ' + (fileName || '');
+  if (/volmacht|vocol/i.test(nm)) vol += 5;
+  if (/prov|proco/i.test(nm)) prov += 5;
   return { name, vol, prov };
 }
 const other = t => (t === 'vol' ? 'prov' : 'vol');
@@ -517,7 +570,7 @@ async function handleFiles(fileList, t) {
     const books = [];
     for (const file of files) {
       const wb = await readWorkbook(file);
-      const scores = wb.SheetNames.map(n => sheetScore(wb, n));
+      const scores = wb.SheetNames.map(n => sheetScore(wb, n, file.name));
       books.push({ file, wb, scores, lean: Math.max(...scores.map(s => s.vol - s.prov)) });
     }
     if (books.length === 2) {
@@ -551,14 +604,15 @@ function loadSheet(t, file, wb, sheet, note) {
   const a = sheetAoa(wb, sheet);
   ds.aoa = a.rows; ds.start = a.start;
   ds.headerRow = detectHeaderRow(ds.aoa);
-  const sc = sheetScore(wb, sheet);
-  ds.warn = sc[other(t)] > sc[t] ? `Let op: dit tabblad lijkt meer op de ${t === 'vol' ? 'provinciale' : 'volmacht'}selectie.` : '';
+  const sc = sheetScore(wb, sheet, file.name);
+  ds.warn = sc[other(t)] > sc[t] ? `Let op: ${wb.__aoa ? 'dit bestand' : 'dit tabblad'} lijkt meer op de ${t === 'vol' ? 'provinciale (PROCO)' : 'volmacht (VOCOL)'}selectie.` : '';
   applyHeaderRow(t);
 }
 function applyHeaderRow(t) {
   const ds = state[t];
-  ds.headers = (ds.aoa[ds.headerRow] || []).map(hInfo);
-  const { map, assumed } = autoMap(t, ds.headers);
+  ds.headers = ds.headerRow >= 0 ? (ds.aoa[ds.headerRow] || []).map(hInfo) : [];
+  ds.width = Math.max(0, ds.headers.length, ...ds.aoa.slice(ds.headerRow + 1, ds.headerRow + 200).map(r => r.length));
+  const { map, assumed } = autoMap(t, ds.headers, ds.width);
   ds.map = map; ds.assumed = assumed;
   buildRecs(t);
   renderDs(t);
@@ -586,18 +640,25 @@ function buildRecs(t) {
 const dsReady = t => { const ds = state[t]; return ds.recs && FIELDS[t].filter(f => f.req).every(f => ds.map[f.id] >= 0); };
 
 /* ---------- Controle ---------- */
+// Waarden in "Polisnr. oude mij." die geen echt polisnummer zijn.
+const PLACEHOLDERS = new Set(['ONBEKEND', 'ONB', 'NVT', 'NB', 'NA', 'GEEN', 'NIETBEKEND', 'NIETVANTOEPASSING', 'LEEG', 'NIHIL', 'NONE', 'NULL', 'NIEUW', 'X', 'XX', 'XXX']);
+function isPlaceholder(v) {
+  const s = String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return !s || /^0+$/.test(s) || PLACEHOLDERS.has(s);
+}
 function compute() {
   const smart = state.opts.smart;
   const K = v => normKey(v, smart);
   const vol = state.vol.recs, prov = state.prov.recs;
   const idx = new Map(), relKantoor = new Map(), agentOms = new Map();
-  let volWithOld = 0;
+  let volWithOld = 0, volPlaceholder = 0;
   for (const v of vol) {
     const kr = K(v.relatienr);
     if (kr && v.kantoor !== '' && !relKantoor.has(kr)) relKantoor.set(kr, txt(v.kantoor));
     if (v.agent !== '' && v.agentOms !== '' && !agentOms.has(txt(v.agent))) agentOms.set(txt(v.agent), txt(v.agentOms));
     const ko = K(v.oudPolis);
     if (!ko) continue;
+    if (isPlaceholder(v.oudPolis)) { volPlaceholder++; continue; }
     volWithOld++;
     let m = idx.get(ko);
     if (!m) idx.set(ko, (m = new Map()));
@@ -627,11 +688,12 @@ function compute() {
     results.push(res);
   }
   state.results = results;
-  state.meta = { agentOms, volRows: vol.length, volWithOld, provRows: prov.length, noPolis };
+  state.meta = { agentOms, volRows: vol.length, volWithOld, volPlaceholder, provRows: prov.length, noPolis };
 }
 function groupKey(r) { const g = state.opts.groupBy === 'agent' ? r.agent : r.kantoor; return g || 'Onbekend'; }
 function groupLabel(g) {
-  if (state.opts.groupBy !== 'agent' || g === 'Onbekend') return g;
+  if (g === 'Onbekend') return g;
+  if (state.opts.groupBy !== 'agent') return /^\d+$/.test(g) ? 'Kantoor ' + g : g;
   const oms = state.meta.agentOms.get(g);
   return oms && oms !== g ? `${g} – ${oms}` : g;
 }
@@ -675,6 +737,7 @@ const COLS = [
   { k: 'vIngang', label: 'Ingangsdatum volmacht', grp: 'vol', date: true, get: r => (r.v ? r.v.ingang : '') },
   { k: 'vMij', label: 'Maatschappij volmacht', grp: 'vol', trunc: true, get: r => (r.v ? r.v.maatschappij : '') },
   { k: 'vBranche', label: 'Branche volmacht', grp: 'vol', trunc: true, get: r => (r.v ? r.v.branche : '') },
+  { k: 'vReden', label: 'Wijzigingsreden volmacht', grp: 'vol', trunc: true, get: r => (r.v ? r.v.wijzreden : '') },
   { k: 'hits', label: 'Treffers', num: true, get: r => r.hits.length }
 ];
 const EXPORT_EXTRA = [
@@ -684,7 +747,6 @@ const EXPORT_EXTRA = [
   { label: 'Agent PROV', get: r => r.p.agent },
   { label: 'Hoofdvervaldatum PROV', date: true, get: r => r.p.hoofdverval },
   { label: 'Kantoorcode volmacht', get: r => (r.v ? r.v.kantoor : '') },
-  { label: 'Wijzigingsreden volmacht', get: r => (r.v ? r.v.wijzreden : '') },
   { label: 'Medewerker volmacht', get: r => (r.v ? r.v.medewerker : '') },
   { label: 'Alle volmacht polisnrs', get: r => r.hits.map(h => txt(h.polisnr)).join(', ') },
   { label: 'Alle volmacht relatienrs', get: r => [...new Set(r.hits.map(h => txt(h.relatienr)))].join(', ') },
@@ -743,9 +805,16 @@ function renderDs(t) {
     if (i < 0 && !f.req) return '';
     return `<span class="key ${cls}" title="${i >= 0 ? esc(ds.headers[i] ? ds.headers[i].raw : '') : 'Niet gevonden'}"><span class="col">${i >= 0 ? colLetter(i) : '?'}</span>${esc(f.label)}</span>`;
   };
-  const width = Math.max(ds.headers.length, ...(ds.aoa.slice(ds.headerRow + 1, ds.headerRow + 6).map(r => r.length)));
+  const sample = i => {
+    for (let r = ds.headerRow + 1; r < Math.min(ds.aoa.length, ds.headerRow + 40); r++) {
+      const v = ds.aoa[r] && ds.aoa[r][i];
+      if (v !== '' && v != null) return 'bijv. ' + txt(v);
+    }
+    return '(leeg)';
+  };
   const colOpts = sel => opt(-1, '— niet gebruiken —', sel === -1) +
-    Array.from({ length: width }, (_, i) => opt(i, `${colLetter(i)} · ${(ds.headers[i] && ds.headers[i].raw) || '(leeg)'}`.slice(0, 70), sel === i)).join('');
+    Array.from({ length: ds.width }, (_, i) => opt(i, `${colLetter(i)} · ${(ds.headers[i] && ds.headers[i].raw) || sample(i)}`.slice(0, 70), sel === i)).join('');
+  const noHeader = ds.headerRow < 0;
   const missing = FIELDS[t].filter(f => f.req && ds.map[f.id] < 0);
   const assumed = FIELDS[t].filter(f => ds.assumed.has(f.id));
 
@@ -753,12 +822,13 @@ function renderDs(t) {
     <div class="ds-meta">
       <span class="ds-count">${fmtN(ds.recs.length)} regels</span>
       ${sheets.length > 1 ? `<label>Tabblad <select data-act="sheet">${sheets.map(s => opt(esc(s), s, s === ds.sheet)).join('')}</select></label>` : ''}
-      <label title="Excel-rijnummer van de kolomkoppen">Kopregel <input type="number" min="${ds.start + 1}" max="${ds.start + ds.aoa.length}" value="${ds.start + ds.headerRow + 1}" data-act="hdr"></label>
+      <label title="Rijnummer van de kolomkoppen (0 = geen kopregel)">Kopregel <input type="number" min="0" max="${ds.start + ds.aoa.length}" value="${noHeader ? 0 : ds.start + ds.headerRow + 1}" data-act="hdr"></label>
       ${ds.note ? `<span class="muted small">(${esc(ds.note)})</span>` : ''}
     </div>
     <div class="keys">${fieldsUi.map(keyChip).join('')}</div>
     ${missing.length ? `<div class="msg err">Kolom niet gevonden: ${missing.map(f => '<b>' + esc(f.label) + '</b>').join(', ')}. Kies de kolom hieronder bij “Kolommen aanpassen”.</div>` : ''}
-    ${assumed.length ? `<div class="msg warn">Kop niet herkend, daarom de vaste kolom gebruikt voor: ${assumed.map(f => `<b>${esc(f.label)}</b> (${f.col})`).join(', ')}. Controleer dit even.</div>` : ''}
+    ${noHeader ? `<div class="msg info">Geen kolomkoppen gevonden: de vaste kolomindeling van de ${t === 'vol' ? 'VOCOL' : 'PROCO'}-selectie wordt gebruikt.</div>` : ''}
+    ${assumed.length && !noHeader ? `<div class="msg warn">Kop niet herkend, daarom de vaste kolom gebruikt voor: ${assumed.map(f => `<b>${esc(f.label)}</b> (${f.col})`).join(', ')}. Controleer dit even.</div>` : ''}
     ${ds.warn ? `<div class="msg warn">${esc(ds.warn)}</div>` : ''}
     <details class="map"${missing.length ? ' open' : ''}><summary>Kolommen aanpassen</summary>
       <div class="map-grid">${fieldsUi.map(f => `<label for="map-${t}-${f.id}">${esc(f.label)}${f.req ? ' <span class="req">*</span>' : ''}</label><select id="map-${t}-${f.id}" data-act="map" data-f="${f.id}">${colOpts(ds.map[f.id])}</select>`).join('')}</div>
@@ -825,7 +895,12 @@ function renderResults() {
     kpi('nb', 'd-nb', 'Niet gevonden', c.nb, '#N/B – niet dubbel');
 
   // datumbereik als hulp
-  const span = (rows, get) => { let lo = Infinity, hi = -Infinity; for (const r of rows) { const d = get(r); if (isDate(d)) { if (d < lo) lo = d; if (d > hi) hi = d; } } return lo === Infinity ? 'geen datums gevonden' : `in bestand: ${fmtDate(lo)} t/m ${fmtDate(hi)}`; };
+  const span = (rows, get) => {
+    let lo = Infinity, hi = -Infinity, none = 0;
+    for (const r of rows) { const d = get(r); if (isDate(d)) { if (d < lo) lo = d; if (d > hi) hi = d; } else none++; }
+    if (lo === Infinity) return 'geen datums gevonden';
+    return `in bestand: ${fmtDate(lo)} t/m ${fmtDate(hi)}` + (none ? ` · ${fmtN(none)} zonder datum` : '');
+  };
   $('#provRange').textContent = span(state.prov.recs, r => r.ingang);
   $('#volRange').textContent = span(state.vol.recs, r => r.ingang);
 
@@ -834,7 +909,7 @@ function renderResults() {
   const m = state.meta;
   $('#formula').innerHTML = `<code>X.ZOEKEN(PROV!${L('prov', 'polisnr')}; VOLMACHT!${L('vol', 'oudPolis')}; VOLMACHT!${L('vol', 'relatienr')})</code>
     <code>ALS(… = PROV!${L('prov', 'relatienr')}; "Goed"; "Checken")</code>
-    <span>${fmtN(m.volRows)} volmachtregels, waarvan ${fmtN(m.volWithOld)} met een oud polisnummer · ${fmtN(state.results.length)} unieke PROV-polissen${m.noPolis ? ` · ${fmtN(m.noPolis)} PROV-regels zonder polisnummer overgeslagen` : ''}</span>`;
+    <span>${fmtN(m.volRows)} volmachtregels, waarvan ${fmtN(m.volWithOld)} met een oud polisnummer${m.volPlaceholder ? ` (${fmtN(m.volPlaceholder)}× “onbekend” e.d. genegeerd)` : ''} · ${fmtN(state.results.length)} unieke PROV-polissen${m.noPolis ? ` · ${fmtN(m.noPolis)} PROV-regels zonder polisnummer overgeslagen` : ''}</span>`;
 
   renderTable();
 }
@@ -881,7 +956,12 @@ async function saveFile(filename, data, mime) {
 function exportCols() { return COLS.map(c => ({ label: colLabel(c), get: c.get, date: c.date, num: c.num })).concat(EXPORT_EXTRA); }
 function rowsToSheet(XLSX, rows, cols) {
   const aoa = [cols.map(c => c.label)];
-  for (const r of rows) aoa.push(cols.map(c => { const v = c.get(r); return v == null ? '' : v; }));
+  // Gewone getallen als getal wegschrijven (geen "getal opgeslagen als tekst"); voorloopnullen blijven tekst.
+  for (const r of rows) aoa.push(cols.map(c => {
+    const v = c.get(r);
+    if (v == null) return '';
+    return typeof v === 'string' && /^(0|[1-9]\d{0,14})$/.test(v) ? Number(v) : v;
+  }));
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   cols.forEach((c, ci) => {
     if (!c.date) return;
@@ -948,7 +1028,7 @@ async function exportXlsx() {
     XLSX.utils.book_append_sheet(wb, rowsToSheet(XLSX, all, cols), sheetName(state.opts.groupBy === 'agent' ? 'Alle agenten' : 'Alle kantoren', used));
     for (const g of gNames) {
       const rows = all.filter(r => groupKey(r) === g);
-      if (rows.length) XLSX.utils.book_append_sheet(wb, rowsToSheet(XLSX, rows, cols), sheetName(g, used));
+      if (rows.length) XLSX.utils.book_append_sheet(wb, rowsToSheet(XLSX, rows, cols), sheetName(groupLabel(g), used));
     }
     const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
     const d = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -999,8 +1079,9 @@ $$('.ds').forEach(card => {
     const el = e.target, ds = state[t];
     if (el.dataset.act === 'sheet') { loadSheet(t, ds.file, ds.wb, el.value); recompute(); }
     else if (el.dataset.act === 'hdr') {
-      const n = (parseInt(el.value, 10) || 1) - ds.start - 1;
-      ds.headerRow = Math.max(0, Math.min(ds.aoa.length - 1, n)); applyHeaderRow(t); recompute();
+      const n = parseInt(el.value, 10) || 0;
+      ds.headerRow = n <= 0 ? -1 : Math.max(0, Math.min(ds.aoa.length - 1, n - ds.start - 1));
+      applyHeaderRow(t); recompute();
     } else if (el.dataset.act === 'map') {
       ds.map[el.dataset.f] = parseInt(el.value, 10);
       ds.assumed.delete(el.dataset.f);
