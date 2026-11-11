@@ -39,6 +39,20 @@
   .producttabs button:hover{background:var(--dwa-groen-licht,#eef3f0)}
   .producttabs button.actief{background:var(--dwa-groen);color:var(--wit)}
   .producttabs button:disabled{opacity:.45;cursor:not-allowed;border-style:dashed}
+  .producttabs button.reltab{border-color:var(--dwa-goud-80);background:var(--dwa-goud-60);color:var(--ink);font-weight:800}
+  .producttabs button.reltab.actief{background:var(--dwa-groen);border-color:var(--dwa-groen);color:var(--wit)}
+  .verhoginggrid{margin-top:12px;border-top:1px solid var(--rand);padding-top:10px}
+  .verhoginglabel{font-size:.82rem;font-weight:700;color:var(--dwa-groen);margin-bottom:6px}
+  .relbalk{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+  .relbalk button{padding:5px 12px;font-size:.82rem}
+  .relgeladen{font-size:.85rem;color:var(--ink-2);margin:0 0 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .reltabel td{vertical-align:top}
+  .reltabel th,.reltabel td{padding-left:8px;padding-right:8px}
+  .reltabel .badge{white-space:nowrap}
+  .drop .selectiehint strong{display:inline;font-size:inherit;margin:0}
+  .reltabel tfoot td{border-top:2px solid var(--rand)}
+  .reltabel button.rel-ga{padding:4px 10px;font-size:.8rem}
+  .verhtag{display:inline-block;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);border-radius:6px;font-size:.72rem;font-weight:700;padding:0 5px}
 
   /* upload */
   .drop{border:2px dashed var(--dwa-groen);border-radius:var(--radius);background:#eef3f0;padding:28px 18px;text-align:center;cursor:pointer;transition:.15s}
@@ -123,7 +137,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 24</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 25</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -136,7 +150,7 @@
         <strong>Sleep de export hierheen</strong>
         <span id="selectiehint" class="selectiehint"></span>
         <span>of klik om te bladeren &middot; .exp, .csv, .tsv of .txt &middot; scheidingsteken <code>tab</code> <code>;</code> of <code>,</code> wordt herkend</span>
-        <input type="file" id="file" accept=".csv,.tsv,.txt,.exp,text/csv">
+        <input type="file" id="file" multiple accept=".csv,.tsv,.txt,.exp,text/csv">
       </div>
       <div class="filerow">
         <span>Bestand:</span><span class="filename" id="fname">voorbeeld (ingebouwd)</span>
@@ -154,7 +168,11 @@
           <div class="field"><label for="jaar">Volgend jaar van opgave</label><input id="jaar" type="number" min="2000" max="2100" value="2027"></div>
           <div class="field"><label for="prov">Toegestane provisie %</label><input id="prov" type="text" value="23, 25"></div>
           <div class="field"><label for="mijoud">Maatschappij oud / nieuw</label><input id="mijoud" type="text" value="P300 / N200"></div>
-          <div class="field"><label for="sysgrens">Premieberekening herzien bij systeemdatum na</label><input id="sysgrens" type="date" value="2026-10-01"></div>
+          <div class="field"><label for="wachtgrens">Premieverhoging bij wachtbestanddatum na</label><input id="wachtgrens" type="date" value="2026-10-01"></div>
+        </div>
+        <div class="verhoginggrid">
+          <div class="verhoginglabel">Premieverhoging per product (%) &mdash; geldt voor nieuwe polissen met een wachtbestanddatum na de grensdatum</div>
+          <div id="verhogingvelden" class="settings-grid"></div>
         </div>
       </details>
     </div>
@@ -193,7 +211,7 @@
     ["tekst1",37,"tekst 1"],["tekst2",38,"tekst 2"],["tekst3",39,"tekst 3"],["tekst4",40,"tekst 4"],["tekst5",41,"tekst 5"],
     ["clausule",43,"clausule 10"],
     ["clausule1",null,/clausule ?1(?!\d)/],
-    ["sysdatum",null,"systeemdatum"],["afwpct",null,"afwijking"],
+    ["wachtdatum",null,/wachtbestand|systeemdatum/],["afwpct",null,"afwijking"],
     ["verzbedraga",44,"verzekerd bedrag a"],["agentprov",45,"agent 1 provisie"]
   ];
   var PRODUCTEN = [
@@ -202,6 +220,7 @@
       naam: "AVB",
       titel: "Aansprakelijkheid Bedrijven",
       selectie: "AVBCO",
+      branches: ["6500","6503"], verhoging: 2.4,
       mijOud: "P300", mijNieuw: "N200",
       cols: COLS_STD,
       checks: buildAvbChecks
@@ -211,6 +230,7 @@
       naam: "Eigen vervoer",
       titel: "Eigen vervoer",
       selectie: "EVVCO",
+      branches: ["3150"], verhoging: 2,
       mijOud: "P300", mijNieuw: "N200",
       cols: COLS_STD,
       checks: buildAvbChecks
@@ -220,6 +240,7 @@
       naam: "Bedrijfsgebouw",
       titel: "Bedrijfsgebouw",
       selectie: "",
+      branches: ["5750","5753"], verhoging: 2.4,
       mijOud: "P300", mijNieuw: "N200",
       // Andere exportindeling (extra Kantoorcode-kolom vooraan + extra velden
       // achteraan); kolommen worden op de koptekst herkend.
@@ -231,6 +252,7 @@
       naam: "Inboedel",
       titel: "Inventaris en goederen",
       selectie: "INVCO",
+      branches: ["5700","5703"], verhoging: 2.4,
       mijOud: "P300", mijNieuw: "N200",
       // Zelfde exportindeling als Bedrijfsgebouw (Kantoorcode vooraan +
       // risicoadres-/bouwvelden achteraan); herkend op de koptekst.
@@ -242,6 +264,7 @@
       naam: "Bedrijfsschade",
       titel: "Bedrijfsschade",
       selectie: "BSCHC",
+      branches: ["5800","5803"], verhoging: 2.4,
       mijOud: "P300", mijNieuw: "N200",
       // Zelfde aanpak; export heeft Bouwaard-kolommen tussen Bijsluiter en
       // Meeverzekerd gelieerde. Kolommen worden op de koptekst herkend.
@@ -253,6 +276,7 @@
       naam: "Werkmaterieel",
       titel: "Werk- en landbouwmaterieel",
       selectie: "WMLCO",
+      branches: ["3500","3503"], verhoging: 2,
       mijOud: "P300", mijNieuw: "N200",
       // Export heeft machine-kolommen (Gebruik werktuig, Soort machine,
       // Meldcode, Kenteken, Merk); kolommen worden op de koptekst herkend.
@@ -264,6 +288,7 @@
       naam: "Aanhanger",
       titel: "Aanhanger",
       selectie: "AANCO",
+      branches: ["2230"], verhoging: 7,
       mijOud: "P300", mijNieuw: "N200",
       cols: COLS_STD,
       checks: buildAvbChecks
@@ -286,8 +311,8 @@
   SAMPLE_AVB = metKolom(SAMPLE_AVB,"Dekking+WachtOms->Dekking",["Bedrijfsaansprakelijkheid","AVB standaard","Bedrijfsaansprakelijkheid"]);
   // Clausule 1 (proefacceptatie) als laatste kolom: rel 982 nog leeg, rel 3602 gevuld.
   SAMPLE_AVB = metKolom(SAMPLE_AVB,"Polis+Wacht->Clausule 1",["","","PA01"]);
-  // Systeemdatum en standaard afwijkingspercentage (toeslag): rel 982 na 1-10 -> herzien.
-  SAMPLE_AVB = metKolom(SAMPLE_AVB,"Polis+Wacht->Systeemdatum",["2-10-2026","14-3-2025","28-9-2026"]);
+  // Wachtbestanddatum en standaard afwijkingspercentage: rel 982 na 1-10 -> premie +2,4%.
+  SAMPLE_AVB = metKolom(SAMPLE_AVB,"Polis+Wacht->Wachtbestand datum",["2-10-2026","14-3-2025","28-9-2026"]);
   SAMPLE_AVB = metKolom(SAMPLE_AVB,"Polis+Wacht->Standaard afwijkingspe",["0","0","0"]);
   var SAMPLES = { avb: SAMPLE_AVB };
 
@@ -340,7 +365,7 @@
     else if(/^-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
     var n=parseFloat(s); return isNaN(n)?null:n;
   }
-  // Systeemdatum -> jjjj-mm-dd (mag een tijd achter de datum hebben).
+  // Datum -> jjjj-mm-dd (mag een tijd achter de datum hebben).
   function sysKey(v){
     var s=String(v==null?"":v).trim(), m;
     if(!s) return "";
@@ -351,12 +376,13 @@
     return "";
   }
   function datumTekst(k){ var p=String(k||"").split("-"); return p.length===3?(+p[2])+"-"+(+p[1])+"-"+p[0]:String(k||""); }
-  // "herzien" (systeemdatum na de grens), "ok", "leeg" of "geenkolom".
-  function herzienStatus(rec,cfg){
-    if(!rec||rec.map.sysdatum==null||rec.map.sysdatum<0) return "geenkolom";
-    var k=sysKey(txt(rec.row,rec.map,"sysdatum"));
+  // Wachtbestanddatum van een (nieuwe) polis t.o.v. de grensdatum:
+  // "na" (premieverhoging geldt), "voor", "leeg" of "geenkolom".
+  function wachtStatus(rec,cfg){
+    if(!rec||rec.map.wachtdatum==null||rec.map.wachtdatum<0) return "geenkolom";
+    var k=sysKey(txt(rec.row,rec.map,"wachtdatum"));
     if(!k) return "leeg";
-    return k>cfg.sysGrens?"herzien":"ok";
+    return k>cfg.wachtGrens?"na":"voor";
   }
   function dateKey(v){
     var s=String(v==null?"":v).trim(); if(!s) return "";
@@ -441,35 +467,35 @@
     var termNw=num(txt(nieuw.row,nieuw.map,"termijn")); if(termNw==null) termNw=num(txt(oud.row,oud.map,"termijn"));
     var margeInc=Math.max(cfg.tol||0,(termNw===1)?1.00:0.10);
     var margeLbl=(termNw===1)?"jaar € 1,00":"maand/overig € 0,10";
-    // Toeslag: het standaard afwijkingspercentage bepaalt de toeslag op het
-    // incassobedrag. Verwacht nieuw = oud × (1 + % / 100). Het percentage van
-    // de nieuwe polis is leidend; is dat leeg, dan dat van de oude polis.
-    var pctN=num(txt(nieuw.row,nieuw.map,"afwpct")), pctO=num(txt(oud.row,oud.map,"afwpct"));
-    var pct=pctN!=null?pctN:pctO;
+    // Premieverhoging per product: staat de nieuwe polis na de grensdatum in het
+    // wachtbestand (wachtbestanddatum van de nieuwe lijn), dan moet de premie
+    // met de vaste verhoging van het product omhoog: verwacht = oud × (1 + %/100).
+    // Anders blijft de premie gelijk aan de oude.
+    var ws=wachtStatus(nieuw,cfg), grensT=datumTekst(cfg.wachtGrens);
+    var pct=(ws==="na"&&cfg.verhoging)?cfg.verhoging:0;
     var verwacht=(iOud!=null&&pct)?Math.round(iOud*(1+pct/100)*100)/100:iOud;
     var diff=(verwacht==null||iNieuw==null)?null:Math.abs(verwacht-iNieuw);
     function eur(n){ return n.toFixed(2).replace(".",","); }
-    add("Incassobedrag (marge "+margeLbl+(pct?" · toeslag "+fmtPct(pct)+"%":"")+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
-        diff==null?"fail":(diff<=margeInc+1e-9?"ok":"fail"),
+    var incOk=diff!=null&&diff<=margeInc+1e-9;
+    add("Incassobedrag (marge "+margeLbl+(pct?" · premieverhoging "+fmtPct(pct)+"%":"")+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
+        diff==null?"fail":(incOk?"ok":"fail"),
         diff==null?"Bedrag ontbreekt of onleesbaar"
-          :(pct?"Verwacht "+eur(verwacht)+" (oud + "+fmtPct(pct)+"% toeslag); verschil "+eur(diff):"Verschil "+eur(diff)));
-    // Standaard afwijkingspercentage (toeslag) zelf, ter info.
-    if(nieuw.map.afwpct==null||nieuw.map.afwpct<0){
-      add("Standaard afwijkingspercentage (toeslag)","—","—","warn","Kolom 'Standaard afwijkingspercentage' ontbreekt in deze export — voeg hem toe aan de selectie");
+          :(pct?"Verwacht "+eur(verwacht)+" (oud + "+fmtPct(pct)+"% verhoging, wachtbestand na "+grensT+"); verschil "+eur(diff)+(incOk?"":" — premieverhoging niet juist verwerkt")
+               :"Verschil "+eur(diff)));
+    // Wachtbestanddatum van de nieuwe polis (bepaalt of de verhoging geldt).
+    if(ws==="geenkolom"){
+      add("Wachtbestanddatum (premieverhoging)","—","—","warn","Kolom 'Wachtbestand datum' ontbreekt in deze export — voeg hem toe aan de selectie");
     } else {
-      add("Standaard afwijkingspercentage (toeslag)",txt(oud.row,oud.map,"afwpct"),txt(nieuw.row,nieuw.map,"afwpct"),"info",
-          pct?"Toeslag "+fmtPct(pct)+"% is meegenomen in de controle van het incassobedrag":"Geen toeslag");
+      add("Wachtbestanddatum (premieverhoging)",txt(oud.row,oud.map,"wachtdatum"),txt(nieuw.row,nieuw.map,"wachtdatum"),
+          pct?"warn":(ws==="leeg"?"info":"ok"),
+          pct?"Nieuwe polis na "+grensT+" in het wachtbestand — premieberekening herzien: +"+fmtPct(cfg.verhoging)+"%"
+            :(ws==="leeg"?"Wachtbestanddatum nieuwe polis leeg — geen verhoging toegepast"
+              :(ws==="na"?"Na "+grensT+" in het wachtbestand — voor dit product geen verhoging ingesteld":"T/m "+grensT+" in het wachtbestand — geen verhoging")));
     }
-    // Systeemdatum: na de grensdatum moet de premieberekening worden herzien.
-    var sysO=herzienStatus(oud,cfg), sysN=herzienStatus(nieuw,cfg), grensT=datumTekst(cfg.sysGrens);
-    if(sysN==="geenkolom"){
-      add("Systeemdatum (premieberekening)","—","—","warn","Kolom 'Systeemdatum' ontbreekt in deze export — voeg hem toe aan de selectie");
-    } else {
-      var welke=[sysO==="herzien"?"oud":"",sysN==="herzien"?"nieuw":""].filter(Boolean).join(" en ");
-      add("Systeemdatum (premieberekening)",txt(oud.row,oud.map,"sysdatum"),txt(nieuw.row,nieuw.map,"sysdatum"),
-          welke?"warn":(sysN==="leeg"&&sysO!=="ok"?"info":"ok"),
-          welke?"Systeemdatum ("+welke+") na "+grensT+" — premieberekening herzien"
-            :(sysN==="leeg"&&sysO!=="ok"?"Systeemdatum leeg":"Systeemdatum t/m "+grensT));
+    // Standaard afwijkingspercentage: alleen ter info (de verhoging volgt het product).
+    if(nieuw.map.afwpct!=null&&nieuw.map.afwpct>=0){
+      add("Standaard afwijkingspercentage",txt(oud.row,oud.map,"afwpct"),txt(nieuw.row,nieuw.map,"afwpct"),"info",
+          "Ter info — de premieverhoging volgt de vaste verhoging van het product ("+fmtPct(cfg.verhoging)+"%)");
     }
     // 9. bedragen / aantallen
     // Geschatte jaaromzet: alleen ter info, geen waarschuwing (niet in een pakket).
@@ -621,19 +647,24 @@
   }
 
   /* ================= State per product ================= */
+  var REL_ID = "rel";   // tabblad 'Per relatie' (alle producten samen)
   var actiefId = PRODUCTEN[0].id;
   var stateVan = {};
   PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:"", name:"", isSample:false, results:null, idx:0, onlyDev:false, filterTermijn:"", filterKantoor:"", report:"" }; });
-  function prod(){ for(var i=0;i<PRODUCTEN.length;i++) if(PRODUCTEN[i].id===actiefId) return PRODUCTEN[i]; }
+  var relState = { sel:null, onlyDev:false, meerdere:false, meldingen:[] };
+  function prodById(id){ for(var i=0;i<PRODUCTEN.length;i++) if(PRODUCTEN[i].id===id) return PRODUCTEN[i]; return null; }
+  function prod(){ return prodById(actiefId); }
   function st(){ return stateVan[actiefId]; }
+  function isRelTab(){ return actiefId===REL_ID; }
 
-  function readConfig(){
-    var p=prod();
+  function readConfig(p){
+    p=p||prod();
     var prov=$("prov").value.split(/[,;/ ]+/).map(num).filter(function(n){return n!=null;});
     var mij=$("mijoud").value.split("/");
     return {
       tol:(num($("tol").value)||0), jaar:String($("jaar").value).trim(),
-      sysGrens:sysKey($("sysgrens").value)||"2026-10-01",
+      wachtGrens:sysKey($("wachtgrens").value)||"2026-10-01",
+      verhoging:p.verhoging||0,
       prov:prov.length?prov:[23,25],
       mijOud:(mij[0]||p.mijOud).trim().toUpperCase(), mijNieuw:(mij[1]||p.mijNieuw).trim().toUpperCase()
     };
@@ -649,12 +680,19 @@
   }
 
   /* ================= Verwerking ================= */
-  function run(){
-    var p=prod(), s=st(), cfg=readConfig();
-    if(!s.text || !s.text.trim()){ s.results=null; s.idx=0; renderAll(); return; }
+  // Controle voor één product (los van het actieve tabblad) en daarna tonen.
+  function run(id){
+    if(typeof id!=="string") id=actiefId;          // ook als klik-handler
+    if(id===REL_ID){ runAlle(); return; }
+    verwerk(id); renderAll();
+  }
+  function runAlle(){ PRODUCTEN.forEach(function(p){ if(stateVan[p.id].text) verwerk(p.id); }); renderAll(); }
+  function verwerk(id){
+    var p=prodById(id), s=stateVan[id], cfg=readConfig(p);
+    if(!s.text || !s.text.trim()){ s.results=null; s.idx=0; return; }
     var delim=detectDelimiter(s.text);
     var rows=parseDelimited(s.text,delim);
-    if(!rows.length){ s.results={error:"Geen regels gevonden in het bestand."}; s.idx=0; renderAll(); return; }
+    if(!rows.length){ s.results={error:"Geen regels gevonden in het bestand."}; s.idx=0; return; }
     var header=rows[0], body=rows.slice(1);
     var looksHeader=header.join(" ").toLowerCase().indexOf("polis")!==-1;
     if(!looksHeader) body=rows;
@@ -689,12 +727,12 @@
     });
     // Proefacceptatie per nieuwe polis (ook bij 'nog invoeren').
     results.forEach(function(r){ r.proef=proefStatus(r.pair.nieuw); });
-    // Premieberekening herzien: systeemdatum van de oude of nieuwe polis na de grens.
+    // Premieberekening herzien: wachtbestanddatum van de nieuwe polis na de grens.
     results.forEach(function(r){
-      var so=herzienStatus(r.pair.oud,cfg), sn=herzienStatus(r.pair.nieuw,cfg);
-      r.sysKolom = sn!=="geenkolom";
-      r.herzien = so==="herzien" || sn==="herzien";
-      r.herzienWelke = [so==="herzien"?"oud":"", sn==="herzien"?"nieuw":""].filter(Boolean).join(" en ");
+      var ws=wachtStatus(r.pair.nieuw,cfg);
+      r.prodId = id;
+      r.wachtKolom = ws!=="geenkolom";
+      r.herzien = ws==="na" && cfg.verhoging>0;
     });
     // Meerdere AVB's per klant: nummer ze per relatienummer (AVB 1 van 2, ...).
     var relTot={}, relSeen={};
@@ -702,8 +740,7 @@
     results.forEach(function(r){ var rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr"); relSeen[rel]=(relSeen[rel]||0)+1; r.avbIdx=relSeen[rel]; r.avbTot=relTot[rel]; });
     s.results={ results:results, losseOud:losseOud, onbekend:onbekend, cfg:cfg, rowCount:records.length, delim:delim, header:looksHeader };
     if(s.idx>=results.length) s.idx=0;
-    s.report=buildReport(s.results);
-    renderAll();
+    s.report=buildReport(s.results,p,s);
   }
 
   /* ================= Weergave ================= */
@@ -713,19 +750,34 @@
     var bar=$("producttabs"); bar.innerHTML="";
     PRODUCTEN.forEach(function(p){
       var b=document.createElement("button");
-      b.textContent=p.naam+" — "+p.titel;
+      var s=stateVan[p.id];
+      b.textContent=p.naam+" — "+p.titel+(s.results&&!s.results.error?" ●":"");
+      if(s.results&&!s.results.error) b.title=s.name+" — "+s.results.results.length+" nieuwe polis(sen)";
       if(p.id===actiefId) b.classList.add("actief");
-      b.addEventListener("click",function(){ actiefId=p.id; syncUploadUI(); renderAll(); });
+      b.addEventListener("click",function(){ actiefId=p.id; renderAll(); });
       bar.appendChild(b);
     });
-    // Ruimte voor toekomstige producten (uitgeschakeld tot ze zijn toegevoegd).
-    var toekomst=document.createElement("button");
-    toekomst.textContent="Meer producten volgen";
-    toekomst.disabled=true; toekomst.title="Alle producten met een eigen selectie staan hierboven. Nieuwe producten worden later toegevoegd.";
-    bar.appendChild(toekomst);
+    // Overzicht per relatie over alle geladen producten.
+    var rb=document.createElement("button");
+    rb.className="reltab"+(isRelTab()?" actief":"");
+    rb.textContent="Per relatie — alle producten";
+    rb.addEventListener("click",function(){ actiefId=REL_ID; renderAll(); });
+    bar.appendChild(rb);
   }
 
+  function geladen(){ return PRODUCTEN.filter(function(p){ var s=stateVan[p.id]; return s.results&&!s.results.error; }); }
+
   function syncUploadUI(){
+    var KOLOMMEN=' &middot; inclusief kolommen <code>Dekking</code>, <code>Clausule 1</code>, <code>Wachtbestand datum</code> en <code>Standaard afwijkingspercentage</code>';
+    $("sample").style.display=isRelTab()?"none":"";
+    if(isRelTab()){
+      var g=geladen();
+      $("fname").textContent=g.length?g.map(function(p){ return p.naam+" ("+stateVan[p.id].name+")"; }).join(" · "):"— nog geen producten geladen —";
+      $("rowinfo").textContent=g.length?"("+g.length+" van "+PRODUCTEN.length+" producten)":"";
+      $("export").disabled=!g.length;
+      $("selectiehint").innerHTML='Sleep <strong>alle exports tegelijk</strong> hierheen (AVBCO, EVVCO, INVCO, BSCHC, WMLCO, AANCO, Bedrijfsgebouw) &middot; elk bestand wordt op branchecode aan het juiste product gekoppeld';
+      return;
+    }
     var s=st(), p=prod();
     $("fname").textContent=s.name||"— nog geen bestand gekozen —";
     $("rowinfo").textContent=(s.text&&s.text.trim())?("("+s.text.split(/\r?\n/).filter(function(l){return l.trim();}).length+" regels)"):"";
@@ -733,15 +785,16 @@
     if($("selectiehint")){
       $("selectiehint").innerHTML = (p.selectie
         ? ('Upload de export van <strong>'+esc(p.naam)+'</strong> &middot; selectie <code>'+esc(p.selectie)+'</code>')
-        : ('Upload de export van <strong>'+esc(p.naam)+'</strong>'))+
-        ' &middot; inclusief kolommen <code>Dekking</code>, <code>Clausule 1</code>, <code>Systeemdatum</code> en <code>Standaard afwijkingspercentage</code>';
+        : ('Upload de export van <strong>'+esc(p.naam)+'</strong>'))+KOLOMMEN;
     }
   }
 
   function renderAll(){
-    var s=st();
     renderProductTabs(); // markering 'actief' moet meelopen met het gekozen tabblad
+    syncUploadUI();
     $("proefacceptatie").innerHTML="";
+    if(isRelTab()){ renderRelatie(); renderFooter(); return; }
+    var s=st();
     if(!s.results){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner info">Upload een export voor <strong>'+esc(prod().naam)+'</strong> (of klik op &laquo;Voorbeeld laden&raquo;) om te beginnen.</div>'; renderFooter(); return; }
     if(s.results.error){ $("samenvatting").innerHTML=""; $("navigatie").innerHTML=""; $("klant").innerHTML='<div class="banner fail">'+esc(s.results.error)+'</div>'; renderFooter(); return; }
     renderSamenvatting(); renderProefacceptatie(); renderNavigatie(); renderKlant(); renderFooter();
@@ -757,14 +810,14 @@
     var geenPa=res.filter(function(r){return r.proef==="niet";}).length;
     var paKolom=res.some(function(r){return r.proef!=="geenkolom";});
     var herzienN=res.filter(function(r){return r.herzien;}).length;
-    var sysKolom=res.some(function(r){return r.sysKolom;});
+    var wachtKolom=res.some(function(r){return r.wachtKolom;});
     var html="";
     if(s.isSample) html+='<div class="banner info"><strong>Voorbeeldgegevens.</strong> Upload je eigen export om je eigen bestand te controleren.</div>';
     html+='<h2>Samenvatting — '+esc(prod().naam)+' ('+esc(prod().titel)+')</h2><div class="tiles">'+
       tile(res.length,"polisparen","")+tile(okN,"akkoord","ok")+tile(warnN,"let op",warnN?"warn":"")+
       tile(failN,"met afwijking",failN?"fail":"")+tile(los,"losse regels",los?"warn":"")+
       (paKolom?tile(geenPa,"proefacceptatie niet uitgevoerd",geenPa?"fail":"ok"):"")+
-      (sysKolom?tile(herzienN,"premieberekening herzien (systeemdatum na "+esc(datumTekst(d.cfg.sysGrens))+")",herzienN?"warn":"ok"):"")+'</div>';
+      (wachtKolom?tile(herzienN,"premieberekening herzien: +"+esc(String(d.cfg.verhoging).replace(".",","))+"% (wachtbestand na "+esc(datumTekst(d.cfg.wachtGrens))+")",herzienN?"warn":"ok"):"")+'</div>';
     $("samenvatting").innerHTML=html;
   }
 
@@ -919,11 +972,18 @@
     } else {
       html+='<div class="dekkingregel leeg"><span class="lbl">Dekking</span> kolom ontbreekt in deze export</div>';
     }
-    // Melding premieberekening herzien (systeemdatum na de grensdatum).
+    // Melding premieberekening herzien (wachtbestanddatum nieuwe polis na de grens).
     if(r.herzien){
-      var sysTekst=[o&&herzienStatus(o,cfg)==="herzien"?"oude polis "+txt(o.row,o.map,"sysdatum"):"",
-                    herzienStatus(n,cfg)==="herzien"?"nieuwe polis "+txt(n.row,n.map,"sysdatum"):""].filter(Boolean).join(", ");
-      html+='<div class="banner warn"><strong>&#9888; Premieberekening herzien.</strong> Systeemdatum ('+esc(sysTekst)+') ligt na '+esc(datumTekst(cfg.sysGrens))+'.</div>';
+      var iO=o?num(txt(o.row,o.map,"incasso")):null;
+      html+='<div class="banner warn"><strong>&#9888; Premieberekening herzien.</strong> De nieuwe polis staat sinds '+esc(txt(n.row,n.map,"wachtdatum"))+
+        ' in het wachtbestand (na '+esc(datumTekst(cfg.wachtGrens))+'): de premie gaat met '+esc(String(cfg.verhoging).replace(".",","))+'% omhoog'+
+        (iO!=null?' &mdash; verwacht incassobedrag '+esc((Math.round(iO*(1+cfg.verhoging/100)*100)/100).toFixed(2).replace(".",","))+' (oud '+esc(iO.toFixed(2).replace(".",","))+')':'')+'.</div>';
+    }
+    // Andere producten van dezelfde relatie in één oogopslag.
+    var andere=relatieItems(stripZeros(rel)).filter(function(it){ return it.p.id!==r.prodId || it.idx!==s.idx; });
+    if(andere.length){
+      html+='<div class="banner info relbalk"><strong>Deze relatie heeft nog '+andere.length+' andere polis'+(andere.length===1?'':'sen')+'</strong> ('+
+        esc(uniek(andere.map(function(it){ return it.p.naam; })).join(", "))+') <button type="button" class="ghost" id="naarRelatie">Bekijk per relatie</button></div>';
     }
 
     if(r.orphan){
@@ -935,7 +995,7 @@
       html+=r.proef==="geenkolom"
         ? '<div class="banner warn">Proefacceptatie: kolom <code>Clausule 1</code> ontbreekt in deze export.</div>'
         : '<div class="banner '+(r.proef==="ok"?"ok":"fail")+'">Proefacceptatie (Clausule 1): '+(r.proef==="ok"?"uitgevoerd &#10003;":"niet uitgevoerd &#10007; &mdash; Clausule 1 is leeg")+'</div>';
-      $("klant").innerHTML=html; return;
+      $("klant").innerHTML=html; koppelRelKnop(stripZeros(rel)); return;
     }
     // Bij 'Alleen afwijkingen' tonen we alleen de afwijkende regels (fout/let op),
     // niet de hele lijst met alles wat goed staat.
@@ -967,16 +1027,19 @@
       html+='</tbody></table></div></details>';
     }
     $("klant").innerHTML=html;
+    koppelRelKnop(stripZeros(rel));
   }
 
   function renderFooter(){
     $("footer").innerHTML="Kolommen worden herkend op koptekst; ontbreekt een kop, dan valt de tool terug op de vaste kolomvolgorde van de standaardexport. "+
-      "Koppeling oud&rarr;nieuw via <code>Polisnr. oude mij.</code> van de nieuwe polis tegenover het polisnummer van de oude polis. Nu actief: alleen AVB.";
+      "Koppeling oud&rarr;nieuw via <code>Polisnr. oude mij.</code> van de nieuwe polis tegenover het polisnummer van de oude polis. "+
+      "Premieverhoging per product bij een wachtbestanddatum na de grensdatum (zie Instellingen).";
   }
 
-  function buildReport(d){
+  function buildReport(d,p,s){
     if(!d||d.error) return "";
-    var lines=["Poliscontrole "+prod().naam+" — "+st().name,""];
+    p=p||prod(); s=s||st();
+    var lines=["Poliscontrole "+p.naam+" — "+s.name,""];
     d.results.forEach(function(r){
       var n=r.pair.nieuw,o=r.pair.oud;
       lines.push("Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+(o?" | oud "+txt(o.row,o.map,"polisnr"):" | GEEN OUDE POLIS")+" => "+r.status.toUpperCase());
@@ -995,47 +1058,268 @@
     }
     var herzien=d.results.filter(function(r){ return r.herzien; });
     if(herzien.length){
-      lines.push("","PREMIEBEREKENING HERZIEN (systeemdatum na "+datumTekst(d.cfg.sysGrens)+") — "+herzien.length);
+      lines.push("","PREMIEBEREKENING HERZIEN (+"+String(d.cfg.verhoging).replace(".",",")+"%, wachtbestand na "+datumTekst(d.cfg.wachtGrens)+") — "+herzien.length);
       herzien.forEach(function(r){
         var n=r.pair.nieuw,o=r.pair.oud;
-        lines.push("   Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+" ("+txt(n.row,n.map,"sysdatum")+")"+
-          (o?" | oud "+txt(o.row,o.map,"polisnr")+" ("+txt(o.row,o.map,"sysdatum")+")":" | nog invoeren"));
+        lines.push("   Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+" (wachtbestand "+txt(n.row,n.map,"wachtdatum")+")"+
+          (o?" | oud "+txt(o.row,o.map,"polisnr"):" | nog invoeren"));
       });
     }
     return lines.join("\n");
   }
 
+  /* ================= Per relatie (alle producten) ================= */
+  function uniek(a){ var u=[]; a.forEach(function(x){ if(u.indexOf(x)===-1) u.push(x); }); return u; }
+  // Alle polissen van alle geladen producten, gegroepeerd per relatienummer.
+  function verzamelRelaties(){
+    var rel={}, volgorde=[];
+    function bak(k){ if(!rel[k]){ rel[k]={ key:k, naam:"", kantoor:"", items:[] }; volgorde.push(k); } return rel[k]; }
+    geladen().forEach(function(p){
+      var d=stateVan[p.id].results;
+      d.results.forEach(function(r,i){
+        var n=r.pair.nieuw, o=r.pair.oud, k=stripZeros(txt(n.row,n.map,"relatienr")); if(!k) return;
+        var b=bak(k);
+        if(!b.naam) b.naam=txt(n.row,n.map,"voorletters")||(o?txt(o.row,o.map,"voorletters"):"");
+        if(!b.kantoor) b.kantoor=txt(n.row,n.map,"kantoor")||(o?txt(o.row,o.map,"kantoor"):"");
+        b.items.push({ p:p, idx:i, r:r, soort:"paar", cfg:d.cfg });
+      });
+      d.losseOud.forEach(function(o){
+        var k=stripZeros(txt(o.row,o.map,"relatienr")); if(!k) return;
+        var b=bak(k);
+        if(!b.naam) b.naam=txt(o.row,o.map,"voorletters");
+        if(!b.kantoor) b.kantoor=txt(o.row,o.map,"kantoor");
+        b.items.push({ p:p, oud:o, soort:"los", cfg:d.cfg });
+      });
+    });
+    var lijst=volgorde.map(function(k){ return rel[k]; });
+    lijst.forEach(function(b){
+      var stat="ok";
+      b.items.forEach(function(it){
+        var x=it.soort==="los"?"warn":it.r.status;
+        if(x==="fail") stat="fail"; else if(x==="warn"&&stat!=="fail") stat="warn";
+      });
+      b.status=stat;
+      b.producten=uniek(b.items.map(function(it){ return it.p.naam; }));
+    });
+    lijst.sort(function(a,b){ var na=num(a.key),nb=num(b.key); return (na!=null&&nb!=null&&na!==nb)?na-nb:a.key.localeCompare(b.key); });
+    return lijst;
+  }
+  function relatieItems(k){
+    var b=verzamelRelaties().filter(function(x){ return x.key===k; })[0];
+    return b?b.items:[];
+  }
+  function koppelRelKnop(k){
+    var knop=$("naarRelatie"); if(!knop) return;
+    knop.onclick=function(){ actiefId=REL_ID; relState.sel=k; relState.onlyDev=false; relState.meerdere=false; renderAll();
+      var nv=$("navigatie"); if(nv&&nv.scrollIntoView) nv.scrollIntoView({behavior:"smooth",block:"start"}); };
+  }
+  function relStatusWoord(b){
+    var nPaar=b.items.filter(function(it){return it.soort==="paar";}).length, nLos=b.items.length-nPaar;
+    if(b.status==="ok") return "akkoord";
+    var nFout=b.items.filter(function(it){return it.soort==="paar"&&it.r.status==="fail";}).length;
+    return nFout?nFout+" polis(sen) met afwijking":(nLos?nLos+" nog omzetten":"let op");
+  }
+
+  function renderRelatie(){
+    var g=geladen(), alle=verzamelRelaties();
+    var html='<h2>Per relatie &mdash; alle producten</h2>';
+    if(relState.meldingen&&relState.meldingen.length){
+      html+='<div class="banner info"><strong>Ingelezen bestanden:</strong><br>'+relState.meldingen.map(esc).join("<br>")+'</div>';
+    }
+    if(!g.length){
+      $("samenvatting").innerHTML=html; $("navigatie").innerHTML="";
+      $("klant").innerHTML='<div class="banner info">Sleep de exports van alle producten tegelijk in het vak hierboven (of laad ze per producttab). Daarna zie je hier per relatie alle polissen naast elkaar.</div>';
+      return;
+    }
+    var okN=alle.filter(function(b){return b.status==="ok";}).length;
+    var failN=alle.filter(function(b){return b.status==="fail";}).length;
+    var warnN=alle.length-okN-failN;
+    var meerN=alle.filter(function(b){return b.producten.length>1;}).length;
+    var polN=alle.reduce(function(t,b){return t+b.items.length;},0);
+    html+='<p class="relgeladen">Geladen: '+g.map(function(p){ return '<span class="badge ok">'+esc(p.naam)+'</span>'; }).join(" ")+
+      (g.length<PRODUCTEN.length?' &middot; nog niet geladen: '+PRODUCTEN.filter(function(p){return g.indexOf(p)===-1;}).map(function(p){return esc(p.naam);}).join(", "):'')+'</p>';
+    html+='<div class="tiles">'+tile(alle.length,"relaties","")+tile(polN,"polissen","")+tile(meerN,"met meerdere producten","")+
+      tile(okN,"akkoord","ok")+tile(warnN,"let op",warnN?"warn":"")+tile(failN,"met afwijking",failN?"fail":"")+'</div>';
+    $("samenvatting").innerHTML=html;
+
+    var zicht=alle.filter(function(b){
+      if(relState.onlyDev&&b.status==="ok") return false;
+      if(relState.meerdere&&b.producten.length<2) return false;
+      return true;
+    });
+    var lStyle='font-size:.8rem;color:var(--ink-2)';
+    var chk='<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="relOnlyDev"'+(relState.onlyDev?" checked":"")+'> Alleen met afwijkingen</label>'+
+            '<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="relMeerdere"'+(relState.meerdere?" checked":"")+'> Alleen meerdere producten</label>';
+    function wire(){
+      $("relOnlyDev").onchange=function(){ relState.onlyDev=this.checked; renderRelatie(); };
+      $("relMeerdere").onchange=function(){ relState.meerdere=this.checked; renderRelatie(); };
+    }
+    if(!zicht.length){
+      $("navigatie").innerHTML='<div class="nav"><div class="klantnaam-nav" style="color:var(--ink-2)">Geen relaties die aan de filters voldoen (0 van '+alle.length+')</div>'+chk+'</div>';
+      wire(); $("klant").innerHTML=""; return;
+    }
+    var pos=-1; zicht.forEach(function(b,i){ if(b.key===relState.sel) pos=i; });
+    if(pos===-1){ pos=0; relState.sel=zicht[0].key; }
+    var b=zicht[pos];
+    var opts=zicht.map(function(x){
+      var mark=x.status==="ok"?"✓":(x.status==="warn"?"!":"✗");
+      return '<option value="'+esc(x.key)+'"'+(x.key===b.key?" selected":"")+'>'+mark+"  Relatie "+esc(x.key)+(x.naam?" · "+esc(x.naam):"")+" — "+x.items.length+" polis(sen): "+esc(x.producten.join(", "))+'</option>';
+    }).join("");
+    $("navigatie").innerHTML='<div class="nav">'+
+      '<button class="pijl" id="prev" title="Vorige relatie" '+(pos===0?"disabled":"")+'>&#8592;</button>'+
+      '<div class="teller">'+(pos+1)+' van '+zicht.length+((relState.onlyDev||relState.meerdere)?' (gefilterd)':'')+'</div>'+
+      '<button class="pijl" id="next" title="Volgende relatie" '+(pos===zicht.length-1?"disabled":"")+'>&#8594;</button>'+
+      '<div class="klantnaam-nav">'+(b.naam?esc(b.naam)+' &mdash; ':'')+'Relatie '+esc(b.key)+' <span class="badge '+b.status+'">'+esc(relStatusWoord(b))+'</span></div>'+
+      '<div class="springnaar"><label for="relSpring" style="'+lStyle+'">Spring naar:</label><select id="relSpring">'+opts+'</select></div>'+chk+'</div>';
+    $("prev").onclick=function(){ if(pos>0){ relState.sel=zicht[pos-1].key; renderRelatie(); } };
+    $("next").onclick=function(){ if(pos<zicht.length-1){ relState.sel=zicht[pos+1].key; renderRelatie(); } };
+    $("relSpring").onchange=function(){ relState.sel=this.value; renderRelatie(); };
+    wire();
+    renderRelatieDetail(b);
+  }
+
+  function renderRelatieDetail(b){
+    function bedrag(v){ var n=num(v); return n==null?"—":n.toFixed(2).replace(".",","); }
+    var totO=0, totN=0;
+    var rijen=b.items.map(function(it){
+      if(it.soort==="los"){
+        var io=num(txt(it.oud.row,it.oud.map,"incasso")); if(io!=null) totO+=io;
+        return '<tr class="r-warn"><td><strong>'+esc(it.p.naam)+'</strong></td>'+
+          '<td class="val">'+esc(dash(txt(it.oud.row,it.oud.map,"polisnr")))+'<br>&rarr; &mdash;</td>'+
+          '<td class="val">'+bedrag(txt(it.oud.row,it.oud.map,"incasso"))+' &rarr; &mdash;</td>'+
+          '<td>&mdash;</td><td>&mdash;</td>'+
+          '<td>Oude polis zonder nieuwe polis: nog omzetten</td>'+
+          '<td><span class="badge warn">nog omzetten</span></td>'+
+          '<td><button type="button" class="ghost rel-ga" data-prod="'+it.p.id+'" data-idx="-1">Bekijk</button></td></tr>';
+      }
+      var r=it.r, n=r.pair.nieuw, o=r.pair.oud;
+      var inc=r.checks.filter(function(c){ return /^Incassobedrag/.test(c.label); })[0];
+      var io=o?num(txt(o.row,o.map,"incasso")):null, inw=num(txt(n.row,n.map,"incasso"));
+      if(io!=null) totO+=io; if(inw!=null) totN+=inw;
+      var incMark=inc?(inc.status==="ok"?'<span class="mark ok">&#10003;</span>':'<span class="mark fail">&#10007;</span>'):'';
+      var verh=r.herzien?' <span class="verhtag">+'+esc(String(it.cfg.verhoging).replace(".",","))+'%</span>':'';
+      var afw=r.orphan?["nog invoeren: geen oude polis"]:r.checks.filter(function(c){return c.status==="fail";}).map(function(c){ return c.label.replace(/\s*\(.*\)$/,""); });
+      var pa=r.proef==="ok"?'<span class="mark ok">&#10003;</span>':(r.proef==="niet"?'<span class="mark fail">&#10007;</span>':'&mdash;');
+      var wd=txt(n.row,n.map,"wachtdatum");
+      return '<tr class="'+(r.status==="ok"?"":"r-"+r.status)+'"><td><strong>'+esc(it.p.naam)+'</strong></td>'+
+        '<td class="val">'+esc(o?dash(txt(o.row,o.map,"polisnr")):"—")+'<br>&rarr; '+esc(dash(txt(n.row,n.map,"polisnr")))+'</td>'+
+        '<td class="val">'+(o?bedrag(txt(o.row,o.map,"incasso")):"—")+' &rarr; '+bedrag(txt(n.row,n.map,"incasso"))+verh+' '+incMark+'</td>'+
+        '<td>'+pa+'</td>'+
+        '<td class="val">'+esc(dash(wd))+(r.herzien?' <span class="mark warn">!</span>':'')+'</td>'+
+        '<td>'+(afw.length?esc(afw.join("; ")):'<span style="color:var(--ok)">geen</span>')+'</td>'+
+        '<td><span class="badge '+r.status+'">'+esc(statusWoord(r))+'</span></td>'+
+        '<td><button type="button" class="ghost rel-ga" data-prod="'+it.p.id+'" data-idx="'+it.idx+'">Bekijk</button></td></tr>';
+    }).join("");
+    var html='<div class="klantkop"><span class="naam">'+(b.naam?esc(b.naam)+' &mdash; ':'')+'Relatie '+esc(b.key)+'</span>'+
+      '<span class="sub">'+b.items.length+' polis(sen) &middot; '+esc(b.producten.join(", "))+(b.kantoor?' &middot; kantoor '+esc(b.kantoor):'')+'</span>'+
+      '<span class="badge '+b.status+'">'+esc(relStatusWoord(b))+'</span></div>'+
+      '<div class="tablewrap"><table class="reltabel"><thead><tr><th>Product</th><th>Polisnr oud &rarr; nieuw</th><th>Incasso oud &rarr; nieuw</th><th>Proef&shy;acceptatie</th><th>Wachtbestand</th><th>Afwijkingen</th><th>Status</th><th></th></tr></thead><tbody>'+
+      rijen+'</tbody><tfoot><tr><td colspan="2"><strong>Totaal incasso relatie</strong></td><td class="val"><strong>'+totO.toFixed(2).replace(".",",")+' &rarr; '+totN.toFixed(2).replace(".",",")+'</strong></td><td colspan="5"></td></tr></tfoot></table></div>';
+    $("klant").innerHTML=html;
+    $("klant").querySelectorAll(".rel-ga").forEach(function(btn){
+      btn.onclick=function(){
+        var id=this.getAttribute("data-prod"), idx=parseInt(this.getAttribute("data-idx"),10), s=stateVan[id];
+        actiefId=id; s.filterTermijn=""; s.filterKantoor=""; s.onlyDev=false; if(idx>=0) s.idx=idx;
+        renderAll();
+        var nv=$("navigatie"); if(nv&&nv.scrollIntoView) nv.scrollIntoView({behavior:"smooth",block:"start"});
+      };
+    });
+  }
+
+  // Rapport per relatie (alleen relaties die niet akkoord zijn).
+  function buildRelReport(){
+    var lines=["Poliscontrole per relatie — "+geladen().map(function(p){return p.naam;}).join(", "),""];
+    verzamelRelaties().filter(function(b){ return b.status!=="ok"; }).forEach(function(b){
+      lines.push("Relatie "+b.key+(b.naam?" ("+b.naam+")":"")+" — "+relStatusWoord(b));
+      b.items.forEach(function(it){
+        if(it.soort==="los"){ lines.push("   - "+it.p.naam+": oude polis "+txt(it.oud.row,it.oud.map,"polisnr")+" nog omzetten"); return; }
+        var r=it.r, n=r.pair.nieuw, o=r.pair.oud;
+        var afw=r.orphan?["nog invoeren"]:r.checks.filter(function(c){return c.status==="fail";}).map(function(c){return c.label;});
+        lines.push("   - "+it.p.naam+": "+(o?txt(o.row,o.map,"polisnr")+" -> ":"")+txt(n.row,n.map,"polisnr")+" => "+statusWoord(r)+(afw.length?" ("+afw.join("; ")+")":""));
+      });
+    });
+    return lines.join("\n");
+  }
+
+  // Product herkennen aan de branchecodes in een export (voor meerdere bestanden tegelijk).
+  function herkenProduct(text){
+    var rows=parseDelimited(text,detectDelimiter(text)); if(!rows.length) return null;
+    var header=rows[0], looksHeader=header.join(" ").toLowerCase().indexOf("polis")!==-1;
+    var map=mapColumns(looksHeader?header:header.map(function(){return "";}), COLS_STD);
+    var tel={};
+    (looksHeader?rows.slice(1):rows).forEach(function(r){
+      var b=stripZeros(txt(r,map,"branche"));
+      PRODUCTEN.forEach(function(p){ if(p.branches.indexOf(b)!==-1) tel[p.id]=(tel[p.id]||0)+1; });
+    });
+    var best=null, n=0; Object.keys(tel).forEach(function(k){ if(tel[k]>n){ n=tel[k]; best=k; } });
+    return best;
+  }
+
+  // Premieverhoging per product (Instellingen).
+  function bouwVerhogingVelden(){
+    var box=$("verhogingvelden"); if(!box) return;
+    box.innerHTML=PRODUCTEN.map(function(p){
+      return '<div class="field"><label for="verh_'+p.id+'">'+esc(p.naam)+'</label><input id="verh_'+p.id+'" type="number" step="0.1" value="'+p.verhoging+'"></div>';
+    }).join("");
+    PRODUCTEN.forEach(function(p){
+      $("verh_"+p.id).addEventListener("change",function(){
+        p.verhoging=num(this.value)||0;
+        if(stateVan[p.id].text) verwerk(p.id);
+        renderAll();
+      });
+    });
+  }
+
   /* ================= Invoer ================= */
   var drop=$("drop"), fileInput=$("file");
   function loadFile(f){
-    var reader=new FileReader();
-    reader.onload=function(){ var s=st(); s.text=String(reader.result); s.name=f.name; s.isSample=false; s.idx=0; syncUploadUI(); run(); };
-    reader.onerror=function(){ st().results={error:"Het bestand kon niet worden gelezen."}; renderAll(); };
+    var id=actiefId, reader=new FileReader();
+    reader.onload=function(){ var s=stateVan[id]; s.text=String(reader.result); s.name=f.name; s.isSample=false; s.idx=0; run(id); };
+    reader.onerror=function(){ stateVan[id].results={error:"Het bestand kon niet worden gelezen."}; renderAll(); };
     reader.readAsText(f,"utf-8");
+  }
+  // Eén bestand in een producttab: naar dat product. Meerdere bestanden, of in
+  // het tabblad 'Per relatie': elk bestand op branchecode naar het juiste product.
+  function loadFiles(lijst){
+    var files=[].slice.call(lijst||[]); if(!files.length) return;
+    if(!isRelTab() && files.length===1){ loadFile(files[0]); return; }
+    var meldingen=[], open=files.length;
+    function klaar(){ if(--open===0){ relState.meldingen=meldingen; actiefId=REL_ID; renderAll(); } }
+    files.forEach(function(f){
+      var reader=new FileReader();
+      reader.onload=function(){
+        var text=String(reader.result), id=herkenProduct(text);
+        if(id){ var s=stateVan[id]; s.text=text; s.name=f.name; s.isSample=false; s.idx=0; verwerk(id); meldingen.push(f.name+" → "+prodById(id).naam); }
+        else meldingen.push(f.name+" → niet herkend (geen bekende branchecode); laad dit bestand via de juiste producttab");
+        klaar();
+      };
+      reader.onerror=function(){ meldingen.push(f.name+" → kon niet worden gelezen"); klaar(); };
+      reader.readAsText(f,"utf-8");
+    });
   }
   drop.addEventListener("click",function(){ fileInput.click(); });
   drop.addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileInput.click(); } });
-  fileInput.addEventListener("change",function(){ if(fileInput.files[0]) loadFile(fileInput.files[0]); });
+  fileInput.addEventListener("change",function(){ loadFiles(fileInput.files); fileInput.value=""; });
   ["dragenter","dragover"].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add("is-over"); }); });
   ["dragleave","drop"].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove("is-over"); }); });
-  drop.addEventListener("drop",function(e){ var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) loadFile(f); });
+  drop.addEventListener("drop",function(e){ if(e.dataTransfer&&e.dataTransfer.files) loadFiles(e.dataTransfer.files); });
 
   $("check").addEventListener("click",run);
-  $("sample").addEventListener("click",function(){ var s=st(); s.text=SAMPLES[actiefId]||""; s.name="voorbeeld (ingebouwd)"; s.isSample=true; s.idx=0; syncUploadUI(); run(); });
+  $("sample").addEventListener("click",function(){ if(isRelTab()) return; var s=st(); s.text=SAMPLES[actiefId]||""; s.name="voorbeeld (ingebouwd)"; s.isSample=true; s.idx=0; run(actiefId); });
   $("export").addEventListener("click",function(){
     var btn=this, done=function(m){ btn.textContent=m; setTimeout(function(){ btn.textContent="Kopieer rapport"; },1600); };
-    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(st().report).then(function(){done("Gekopieerd");},function(){done("Kopiëren mislukt");});
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(isRelTab()?buildRelReport():st().report).then(function(){done("Gekopieerd");},function(){done("Kopiëren mislukt");});
     else done("Kopiëren mislukt");
   });
-  ["tol","jaar","prov","mijoud","sysgrens"].forEach(function(id){ $(id).addEventListener("change",run); });
+  // Algemene instellingen gelden voor alle producten: alles opnieuw controleren.
+  ["tol","jaar","prov","mijoud","wachtgrens"].forEach(function(id){ $(id).addEventListener("change",runAlle); });
   document.addEventListener("keydown",function(e){
     if(e.target && /input|select|textarea/i.test(e.target.tagName)) return;
     if(e.key==="ArrowLeft" && $("prev")) $("prev").click();
     if(e.key==="ArrowRight" && $("next")) $("next").click();
   });
 
-  renderProductTabs();
-  syncUploadUI();
+  bouwVerhogingVelden();
   renderAll();
 })();
 </script>
