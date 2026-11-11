@@ -58,6 +58,12 @@
   .poltitel{margin:20px 0 8px;font-weight:800;color:var(--dwa-groen);font-size:.95rem;border-left:4px solid var(--dwa-goud);padding-left:8px}
   .nav.polnav{position:static;background:#fbfdf9;border-color:var(--dwa-groen)}
   .poldetail{margin-top:4px}
+  .chk.relafw{display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer;font-weight:700;color:var(--dwa-groen);background:var(--dwa-goud-60);border:1px solid var(--dwa-goud-80);border-radius:8px;padding:4px 10px}
+  .klantkop .telling{font-size:.85rem;color:var(--ink-2)}
+  .relfilterinfo{font-size:.85rem;color:var(--ink-2);margin:0 0 8px}
+  .afwtabel tr.afwrij{cursor:pointer}
+  .afwtabel tr.afwrij:hover td{filter:brightness(.97)}
+  .afwtabel td{vertical-align:top}
   .verhtag{display:inline-block;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);border-radius:6px;font-size:.72rem;font-weight:700;padding:0 5px}
 
   /* upload */
@@ -143,7 +149,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 27</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 28</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -662,7 +668,7 @@
   var actiefId = PRODUCTEN[0].id;
   var stateVan = {};
   PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:"", name:"", isSample:false, results:null, idx:0, onlyDev:false, filterTermijn:"", filterKantoor:"", report:"" }; });
-  var relState = { sel:null, onlyDev:false, meerdere:false, meldingen:[], polIdx:0, polOnlyDev:false };
+  var relState = { sel:null, onlyDev:false, meerdere:false, meldingen:[], polIdx:0, polOnlyDev:false, relAfw:false };
   function prodById(id){ for(var i=0;i<PRODUCTEN.length;i++) if(PRODUCTEN[i].id===id) return PRODUCTEN[i]; return null; }
   function prod(){ return prodById(actiefId); }
   function st(){ return stateVan[actiefId]; }
@@ -1167,14 +1173,16 @@
     $("samenvatting").innerHTML=html;
 
     var zicht=alle.filter(function(b){
-      if(relState.onlyDev&&b.status==="ok") return false;
+      if((relState.onlyDev||relState.relAfw)&&b.status==="ok") return false;
       if(relState.meerdere&&b.producten.length<2) return false;
       return true;
     });
     var lStyle='font-size:.8rem;color:var(--ink-2)';
-    var chk='<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="relOnlyDev"'+(relState.onlyDev?" checked":"")+'> Alleen met afwijkingen</label>'+
+    var chk='<label class="chk relafw" title="Toon van de hele relatie alleen de afwijkingen (✗) en risico\'s (!), gebundeld over alle polissen"><input type="checkbox" id="relAfw"'+(relState.relAfw?" checked":"")+'> Alleen afwijkingen &amp; risico\'s (hele relatie)</label>'+
+            '<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="relOnlyDev"'+(relState.onlyDev?" checked":"")+'> Alleen relaties met afwijkingen</label>'+
             '<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="relMeerdere"'+(relState.meerdere?" checked":"")+'> Alleen meerdere producten</label>';
     function wire(){
+      $("relAfw").onchange=function(){ relState.relAfw=this.checked; relState.polIdx=0; renderRelatie(); };
       $("relOnlyDev").onchange=function(){ relState.onlyDev=this.checked; renderRelatie(); };
       $("relMeerdere").onchange=function(){ relState.meerdere=this.checked; renderRelatie(); };
     }
@@ -1203,16 +1211,55 @@
     renderRelatieDetail(b);
   }
 
+  // Heeft een polis van de relatie een afwijking (✗) of risico (!)?
+  function heeftIssue(it){
+    if(it.soort==="los"||it.r.orphan) return true;
+    return it.r.checks.some(function(c){ return c.status==="fail"||c.status==="warn"; });
+  }
+  // Alle afwijkingen en risico's van één polis als lijst {status,label,oud,nieuw,note}.
+  function issuesVan(it){
+    if(it.soort==="los") return [{status:"warn",label:"Nog omzetten",oud:txt(it.oud.row,it.oud.map,"polisnr"),nieuw:"",note:"Oude polis zonder nieuwe polis"}];
+    var r=it.r, n=r.pair.nieuw, uit=[];
+    if(r.orphan){
+      uit.push({status:"fail",label:"Nog invoeren",oud:"",nieuw:txt(n.row,n.map,"polisnr"),note:"Geen oude polis gevonden voor verwijzing "+dash(txt(n.row,n.map,"oudpolisnr"))});
+      if(r.proef==="niet") uit.push({status:"fail",label:"Proefacceptatie (Clausule 1)",oud:"",nieuw:"",note:"Clausule 1 is leeg — proefacceptatie niet uitgevoerd"});
+      if(r.herzien) uit.push({status:"warn",label:"Premieberekening herzien",oud:"",nieuw:txt(n.row,n.map,"wachtdatum"),note:"Wachtbestand na "+datumTekst(it.cfg.wachtGrens)+": +"+String(it.cfg.verhoging).replace(".",",")+"%"});
+      return uit;
+    }
+    r.checks.forEach(function(c){ if(c.status==="fail") uit.push(c); });
+    r.checks.forEach(function(c){ if(c.status==="warn") uit.push(c); });
+    return uit;
+  }
+
   function renderRelatieDetail(b){
     function bedrag(v){ var n=num(v); return n==null?"—":n.toFixed(2).replace(".",","); }
-    if(relState.polIdx>=b.items.length||relState.polIdx<0) relState.polIdx=0;
-    var pi=relState.polIdx;
+    var alleenAfw=relState.relAfw;
+    // Met de relatie-optie aan: alleen polissen met afwijkingen of risico's.
+    var items=alleenAfw?b.items.filter(heeftIssue):b.items;
+    // Totaal incasso altijd over álle polissen van de relatie.
     var totO=0, totN=0;
-    var rijen=b.items.map(function(it,i){
+    b.items.forEach(function(it){
+      if(it.soort==="los"){ var a=num(txt(it.oud.row,it.oud.map,"incasso")); if(a!=null) totO+=a; return; }
+      var o=it.r.pair.oud, n=it.r.pair.nieuw;
+      var x=o?num(txt(o.row,o.map,"incasso")):null, y=num(txt(n.row,n.map,"incasso"));
+      if(x!=null) totO+=x; if(y!=null) totN+=y;
+    });
+    var nFail=0, nWarn=0;
+    b.items.forEach(function(it){ issuesVan(it).forEach(function(c){ if(c.status==="fail") nFail++; else nWarn++; }); });
+    var kop='<div class="klantkop"><span class="naam">'+(b.naam?esc(b.naam)+' &mdash; ':'')+'Relatie '+esc(b.key)+'</span>'+
+      '<span class="sub">'+b.items.length+' polis(sen) &middot; '+esc(b.producten.join(", "))+(b.kantoor?' &middot; kantoor '+esc(b.kantoor):'')+'</span>'+
+      '<span class="badge '+b.status+'">'+esc(relStatusWoord(b))+'</span>'+
+      '<span class="telling"><span class="mark fail">&#10007;</span> '+nFail+' afwijking'+(nFail===1?'':'en')+' &middot; <span class="mark warn">!</span> '+nWarn+' risico\'s</span></div>';
+    if(!items.length){
+      $("klant").innerHTML=kop+'<div class="banner ok">&#10003; Geen afwijkingen of risico\'s bij deze relatie.</div>';
+      return;
+    }
+    if(relState.polIdx>=items.length||relState.polIdx<0) relState.polIdx=0;
+    var pi=relState.polIdx;
+    var rijen=items.map(function(it,i){
       var kies=' data-pi="'+i+'" title="Toon de controle van deze polis"';
       var gek=i===pi?' gekozen':'';
       if(it.soort==="los"){
-        var io=num(txt(it.oud.row,it.oud.map,"incasso")); if(io!=null) totO+=io;
         return '<tr class="polrij r-warn'+gek+'"'+kies+'><td><strong>'+(i===pi?'&#9654; ':'')+esc(it.p.naam)+'</strong></td>'+
           '<td class="val">'+esc(dash(txt(it.oud.row,it.oud.map,"polisnr")))+'<br>&rarr; &mdash;</td>'+
           '<td class="val">'+bedrag(txt(it.oud.row,it.oud.map,"incasso"))+' &rarr; &mdash;</td>'+
@@ -1223,8 +1270,6 @@
       }
       var r=it.r, n=r.pair.nieuw, o=r.pair.oud;
       var inc=r.checks.filter(function(c){ return /^Incassobedrag/.test(c.label); })[0];
-      var io2=o?num(txt(o.row,o.map,"incasso")):null, inw=num(txt(n.row,n.map,"incasso"));
-      if(io2!=null) totO+=io2; if(inw!=null) totN+=inw;
       var incMark=inc?(inc.status==="ok"?'<span class="mark ok">&#10003;</span>':'<span class="mark fail">&#10007;</span>'):'';
       var verh=r.herzien?' <span class="verhtag">+'+esc(String(it.cfg.verhoging).replace(".",","))+'%</span>':'';
       var afw=r.orphan?["nog invoeren: geen oude polis"]:r.checks.filter(function(c){return c.status==="fail";}).map(function(c){ return c.label.replace(/\s*\(.*\)$/,""); });
@@ -1239,33 +1284,52 @@
         '<td><span class="badge '+r.status+'">'+esc(statusWoord(r))+'</span></td>'+
         '<td><button type="button" class="ghost rel-ga" data-prod="'+it.p.id+'" data-idx="'+it.idx+'">Naar product</button></td></tr>';
     }).join("");
-    var html='<div class="klantkop"><span class="naam">'+(b.naam?esc(b.naam)+' &mdash; ':'')+'Relatie '+esc(b.key)+'</span>'+
-      '<span class="sub">'+b.items.length+' polis(sen) &middot; '+esc(b.producten.join(", "))+(b.kantoor?' &middot; kantoor '+esc(b.kantoor):'')+'</span>'+
-      '<span class="badge '+b.status+'">'+esc(relStatusWoord(b))+'</span></div>'+
+    var html=kop+
+      (alleenAfw&&items.length<b.items.length?'<p class="relfilterinfo">Alleen polissen met afwijkingen of risico\'s: '+items.length+' van '+b.items.length+'.</p>':'')+
       '<div class="tablewrap"><table class="reltabel"><thead><tr><th>Product</th><th>Polisnr oud &rarr; nieuw</th><th>Incasso oud &rarr; nieuw</th><th>Proef&shy;acceptatie</th><th>Wachtbestand</th><th>Afwijkingen</th><th>Status</th><th></th></tr></thead><tbody>'+
       rijen+'</tbody><tfoot><tr><td colspan="2"><strong>Totaal incasso relatie</strong></td><td class="val"><strong>'+totO.toFixed(2).replace(".",",")+' &rarr; '+totN.toFixed(2).replace(".",",")+'</strong></td><td colspan="5"></td></tr></tfoot></table></div>';
 
-    // Schakelaar 2: door de polissen van deze relatie, met de volledige controle eronder.
-    var it=b.items[pi];
+    // Hele relatie: alle afwijkingen (✗) en risico's (!) van alle polissen in één lijst.
+    if(alleenAfw){
+      var afwRijen=[];
+      items.forEach(function(it,i){
+        var lbl=it.soort==="los"?it.p.naam+" · "+txt(it.oud.row,it.oud.map,"polisnr")+" → —"
+          :it.p.naam+" · "+(it.r.pair.oud?txt(it.r.pair.oud.row,it.r.pair.oud.map,"polisnr")+" → ":"")+txt(it.r.pair.nieuw.row,it.r.pair.nieuw.map,"polisnr");
+        issuesVan(it).forEach(function(c,k){
+          var mk=c.status==="fail"?'<span class="mark fail">&#10007;</span>':'<span class="mark warn">!</span>';
+          afwRijen.push('<tr class="afwrij r-'+c.status+'" data-pi="'+i+'" title="Toon deze polis">'+
+            '<td>'+(k===0?'<strong>'+esc(lbl)+'</strong>':'')+'</td>'+
+            '<td>'+esc(c.label)+'</td><td class="val">'+esc(dash(c.oud))+'</td><td class="val">'+esc(dash(c.nieuw))+'</td>'+
+            '<td class="st">'+mk+'</td><td class="note">'+esc(c.note||"")+'</td></tr>');
+        });
+      });
+      html+='<div class="poltitel">Afwijkingen &amp; risico\'s &mdash; hele relatie ('+nFail+' afwijking'+(nFail===1?'':'en')+' &middot; '+nWarn+' risico\'s)</div>'+
+        '<div class="tablewrap"><table class="afwtabel"><thead><tr><th>Polis</th><th>Controle</th><th>Oud</th><th>Nieuw</th><th class="st"></th><th>Toelichting</th></tr></thead><tbody>'+
+        afwRijen.join("")+'</tbody></table></div>';
+    }
+
+    // Schakelaar 2: door de polissen van deze relatie, met de controle eronder.
+    var it=items[pi];
     function polLabel(x){
       if(x.soort==="los") return x.p.naam+" · "+txt(x.oud.row,x.oud.map,"polisnr")+" → (nog omzetten)";
       var o2=x.r.pair.oud, n2=x.r.pair.nieuw;
       return x.p.naam+" · "+(o2?txt(o2.row,o2.map,"polisnr")+" → ":"")+txt(n2.row,n2.map,"polisnr");
     }
     function polStatus(x){ return x.soort==="los"?{cls:"warn",woord:"nog omzetten"}:{cls:x.r.status,woord:statusWoord(x.r)}; }
-    var popts=b.items.map(function(x,i){
+    var popts=items.map(function(x,i){
       var ps=polStatus(x), mark=ps.cls==="ok"?"✓":(ps.cls==="warn"?"!":"✗");
       return '<option value="'+i+'"'+(i===pi?" selected":"")+'>'+mark+"  "+esc(polLabel(x))+" — "+esc(ps.woord)+'</option>';
     }).join("");
     var ps=polStatus(it);
+    var polAlleen=relState.polOnlyDev||alleenAfw;
     html+='<div class="poltitel">Polissen van deze relatie &mdash; schakel per polis</div>'+
       '<div class="nav polnav">'+
       '<button class="pijl" id="polPrev" title="Vorige polis" '+(pi===0?"disabled":"")+'>&#8592;</button>'+
-      '<div class="teller">Polis '+(pi+1)+' van '+b.items.length+'</div>'+
-      '<button class="pijl" id="polNext" title="Volgende polis" '+(pi===b.items.length-1?"disabled":"")+'>&#8594;</button>'+
+      '<div class="teller">Polis '+(pi+1)+' van '+items.length+(alleenAfw&&items.length<b.items.length?' (met afwijkingen/risico\'s)':'')+'</div>'+
+      '<button class="pijl" id="polNext" title="Volgende polis" '+(pi===items.length-1?"disabled":"")+'>&#8594;</button>'+
       '<div class="klantnaam-nav">'+esc(polLabel(it))+' <span class="badge '+ps.cls+'">'+esc(ps.woord)+'</span></div>'+
       '<div class="springnaar"><label for="polSpring" style="font-size:.8rem;color:var(--ink-2)">Polis:</label><select id="polSpring">'+popts+'</select></div>'+
-      '<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="polOnlyDev"'+(relState.polOnlyDev?" checked":"")+'> Alleen afwijkingen</label>'+
+      '<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"'+(alleenAfw?' title="Staat aan via de optie voor de hele relatie"':'')+'><input type="checkbox" id="polOnlyDev"'+(polAlleen?" checked":"")+(alleenAfw?" disabled":"")+'> Alleen afwijkingen &amp; risico\'s (deze polis)</label>'+
       '</div>';
     if(it.soort==="los"){
       var od=it.oud;
@@ -1276,16 +1340,16 @@
           .map(function(v){ return '<tr><td>'+v[0]+'</td><td class="val">'+esc(dash(txt(od.row,od.map,v[1])))+'</td></tr>'; }).join("")+
         '</tbody></table></div>';
     } else {
-      html+='<div class="poldetail">'+polisDetailHtml(stateVan[it.p.id].results,it.r,it.idx,{onlyDev:relState.polOnlyDev})+'</div>';
+      html+='<div class="poldetail">'+polisDetailHtml(stateVan[it.p.id].results,it.r,it.idx,{onlyDev:polAlleen})+'</div>';
     }
     $("klant").innerHTML=html;
 
     function kiesPolis(i){ relState.polIdx=i; renderRelatieDetail(b); }
-    $("klant").querySelectorAll("tr.polrij").forEach(function(tr){
+    $("klant").querySelectorAll("tr.polrij, tr.afwrij").forEach(function(tr){
       tr.onclick=function(){ kiesPolis(parseInt(this.getAttribute("data-pi"),10)||0); };
     });
     $("polPrev").onclick=function(){ if(pi>0) kiesPolis(pi-1); };
-    $("polNext").onclick=function(){ if(pi<b.items.length-1) kiesPolis(pi+1); };
+    $("polNext").onclick=function(){ if(pi<items.length-1) kiesPolis(pi+1); };
     $("polSpring").onchange=function(){ kiesPolis(parseInt(this.value,10)||0); };
     $("polOnlyDev").onchange=function(){ relState.polOnlyDev=this.checked; renderRelatieDetail(b); };
     $("klant").querySelectorAll(".rel-ga").forEach(function(btn){
