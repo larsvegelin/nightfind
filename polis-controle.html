@@ -95,10 +95,20 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .phtag.lopend{background:var(--wit);color:var(--ink-2);border-style:dashed;border-color:var(--ink-3)}
   .phregel{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:10px;padding:8px 12px;border:1px solid #c5d6ec;border-radius:10px;background:#f4f8fd;font-size:.85rem;color:var(--ink-2)}
   .phregel>strong{color:#1f4e8c}
-  .phregel button{padding:3px 10px;font-size:.8rem}
-  .phregel details.phlos{flex:1 1 100%}
-  .phregel details.phlos summary{cursor:pointer;font-weight:600;color:#1f4e8c}
-  .phregel details.phlos .tablewrap{margin-top:8px;background:var(--wit)}
+  .phregel button.ghost{padding:3px 10px;font-size:.8rem;border-radius:8px}
+  .phregel.fout{border-color:var(--fail);background:var(--fail-soft);color:var(--fail)}
+  .phregel .phwaarschuwing{flex:1 1 100%;color:var(--warn);font-weight:600}
+  details.phlos{margin-top:10px;border:1px solid #c5d6ec;border-radius:10px;background:#f4f8fd;padding:8px 12px;font-size:.85rem}
+  details.phlos summary{cursor:pointer;font-weight:600;color:#1f4e8c}
+  details.phlos .tablewrap{margin-top:8px;background:var(--wit)}
+  /* twee uploadvakken naast elkaar: ANVA-exports en Premieherberekening */
+  .uploadgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;align-items:start}
+  .drop.phdrop{border-color:#1f4e8c;background:#eef4fc}
+  .drop.phdrop:hover,.drop.phdrop.is-over{border-color:#1f4e8c;background:#dce8f8}
+  .drop.phdrop>strong{color:#1f4e8c}
+  .drop.phdrop .selectiehint{color:#1f4e8c}
+  .drop.phdrop.geladen{border-style:solid}
+  @media (max-width:760px){ .uploadgrid{grid-template-columns:1fr} }
   .banner.ph{background:#eef4fc;border-color:#1f4e8c;color:#173d6e}
   .banner.ph a{color:#1f4e8c;font-weight:700}
   .tile.ph .n{color:#1f4e8c}
@@ -187,7 +197,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 29</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 30</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -196,17 +206,31 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <section>
     <div class="panel">
-      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Kies een bestand of sleep het hierheen">
-        <strong>Sleep de export hierheen</strong>
-        <span id="selectiehint" class="selectiehint"></span>
-        <span>of klik om te bladeren &middot; .exp, .csv, .tsv, .txt of Excel (.xlsx) &middot; scheidingsteken <code>tab</code> <code>;</code> of <code>,</code> wordt herkend</span>
-        <input type="file" id="file" multiple accept=".csv,.tsv,.txt,.exp,.xlsx,.xls,text/csv">
+      <div class="uploadgrid">
+        <div class="uploadkol">
+          <div class="drop" id="drop" tabindex="0" role="button" aria-label="Kies een bestand of sleep het hierheen">
+            <strong>Sleep de export hierheen</strong>
+            <span id="selectiehint" class="selectiehint"></span>
+            <span>of klik om te bladeren &middot; .exp, .csv, .tsv, .txt of Excel (.xlsx) &middot; scheidingsteken <code>tab</code> <code>;</code> of <code>,</code> wordt herkend</span>
+            <input type="file" id="file" multiple accept=".csv,.tsv,.txt,.exp,.xlsx,.xls,text/csv">
+          </div>
+          <div class="filerow">
+            <span>Bestand:</span><span class="filename" id="fname">voorbeeld (ingebouwd)</span>
+            <span id="rowinfo"></span>
+          </div>
+        </div>
+        <div class="uploadkol">
+          <!-- Apart uploadvak voor de Finconnect-export Premieherberekening -->
+          <div class="drop phdrop" id="phdrop" tabindex="0" role="button" aria-label="Kies de export Premieherberekening of sleep hem hierheen">
+            <strong id="phdroptitel">Sleep de Premieherberekening hierheen</strong>
+            <span class="selectiehint">Export uit <strong>Finconnect</strong> &middot; geldt voor <strong>AVB</strong> en <strong>Bedrijfsschade</strong></span>
+            <span>of klik om te bladeren &middot; Excel (.xlsx), .csv of .txt</span>
+            <input type="file" id="phfile" accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv">
+          </div>
+          <div class="phregel" id="phregel"></div>
+        </div>
       </div>
-      <div class="filerow">
-        <span>Bestand:</span><span class="filename" id="fname">voorbeeld (ingebouwd)</span>
-        <span id="rowinfo"></span>
-      </div>
-      <div class="phregel" id="phregel"></div>
+      <div id="phlos"></div>
       <div class="actions">
         <button class="primary" id="check" type="button">Controleer</button>
         <button class="ghost" id="sample" type="button">Voorbeeld laden</button>
@@ -966,13 +990,19 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   function geladen(){ return PRODUCTEN.filter(function(p){ var s=stateVan[p.id]; return s.results&&!s.results.error; }); }
 
-  // Statusregel van de Finconnect-export Premieherberekening in het uploadvak.
+  // Status van het aparte uploadvak Premieherberekening (Finconnect).
   function renderPhRegel(){
-    var box=$("phregel"); if(!box) return;
+    var box=$("phregel"), losBox=$("phlos"); if(!box) return;
     var phProd=PRODUCTEN.filter(function(p){ return p.premieherberekening; });
     var namen=phProd.map(function(p){ return p.naam; }).join(" en ");
+    $("phdrop").classList.toggle("geladen",!!phState.name);
+    $("phdroptitel").textContent=phState.name?"Premieherberekening geladen — sleep een nieuwe export om te vervangen":"Sleep de Premieherberekening hierheen";
+    box.classList.toggle("fout",!!phState.fout);
+    if(losBox) losBox.innerHTML="";
     if(!phState.name){
-      box.innerHTML='<strong>Premieherberekening (Finconnect)</strong><span>nog niet geladen &mdash; sleep die export ook in het vak hierboven. Bij een match op '+esc(namen)+' met status <em>Afgerond</em> (kolom F) vervalt de premiemarge.</span>';
+      box.innerHTML=phState.fout
+        ? '<strong>Niet geladen</strong><span>'+esc(phState.fout)+'</span>'
+        : '<strong>Nog niet geladen</strong><span>Bij een match op '+esc(namen)+' met status <em>Afgerond</em> (kolom F) vervalt de premiemarge.</span>';
       return;
     }
     var afg=phState.rijen.filter(function(x){ return x.afgerond; }).length;
@@ -986,7 +1016,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       });
     });
     var los=phState.rijen.filter(function(x){ return branches.indexOf(x.branche)!==-1 && gekoppeld.indexOf(x)===-1; });
-    var html='<strong>Premieherberekening (Finconnect)</strong><span class="filename">'+esc(phState.name)+'</span>'+
+    var html='<span class="filename">'+esc(phState.name)+'</span>'+
       '<span>'+phState.rijen.length+' regel'+(phState.rijen.length===1?'':'s')+' &middot; '+afg+' afgerond</span>';
     if(geladenPh.length){
       html+='<span class="phtag">'+nAfg+' match afgerond</span>'+(nLopend?'<span class="phtag lopend">'+nLopend+' nog niet afgerond</span>':'')+
@@ -995,15 +1025,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       html+='<span>&middot; laad '+esc(namen)+' om te koppelen</span>';
     }
     html+='<button type="button" class="ghost" id="phWis">Verwijderen</button>';
-    if(los.length){
-      html+='<details class="phlos"><summary>Premieherberekeningen zonder polis in de geladen export ('+los.length+')</summary>'+
+    if(phState.waarschuwing) html+='<span class="phwaarschuwing">&#9888; '+esc(phState.waarschuwing)+'</span>';
+    box.innerHTML=html;
+    if(los.length && losBox){
+      losBox.innerHTML='<details class="phlos"><summary>Premieherberekeningen zonder polis in de geladen export ('+los.length+')</summary>'+
         '<div class="tablewrap"><table><thead><tr><th>Relatie</th><th>Naam</th><th>Polisnummer</th><th>Branche</th><th>Status</th></tr></thead><tbody>'+
         los.map(function(x){
           return '<tr><td class="val">'+esc(dash(x.rel))+'</td><td>'+esc(dash(txt(x.row,x.map,"naam")))+'</td><td class="val">'+esc(dash(x.polis))+'</td>'+
             '<td>'+esc(dash(x.branche))+' '+esc(txt(x.row,x.map,"brancheoms"))+'</td><td>'+esc(dash(x.status))+'</td></tr>';
         }).join("")+'</tbody></table></div></details>';
     }
-    box.innerHTML=html;
     $("phWis").onclick=function(){ phState=leegPh(); runAlle(); };
   }
 
@@ -1016,7 +1047,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       $("fname").textContent=g.length?g.map(function(p){ return p.naam+" ("+stateVan[p.id].name+")"; }).join(" · "):"— nog geen producten geladen —";
       $("rowinfo").textContent=g.length?"("+g.length+" van "+PRODUCTEN.length+" producten)":"";
       $("export").disabled=!g.length;
-      $("selectiehint").innerHTML='Sleep <strong>alle exports tegelijk</strong> hierheen (AVBCO, EVVCO, INVCO, BSCHC, WMLCO, AANCO, Bedrijfsgebouw en de Premieherberekening uit Finconnect) &middot; elk bestand wordt automatisch aan het juiste product gekoppeld';
+      $("selectiehint").innerHTML='Sleep <strong>alle exports tegelijk</strong> hierheen (AVBCO, EVVCO, INVCO, BSCHC, WMLCO, AANCO, Bedrijfsgebouw) &middot; elk bestand wordt op branchecode aan het juiste product gekoppeld';
       return;
     }
     var s=st(), p=prod();
@@ -1026,8 +1057,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     if($("selectiehint")){
       $("selectiehint").innerHTML = (p.selectie
         ? ('Upload de export van <strong>'+esc(p.naam)+'</strong> &middot; selectie <code>'+esc(p.selectie)+'</code>')
-        : ('Upload de export van <strong>'+esc(p.naam)+'</strong>'))+KOLOMMEN+
-        (p.premieherberekening?' &middot; sleep ook de export <strong>Premieherberekening</strong> (Finconnect) erbij':'');
+        : ('Upload de export van <strong>'+esc(p.naam)+'</strong>'))+KOLOMMEN;
     }
   }
 
@@ -1064,7 +1094,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       (wachtKolom?tile(herzienN,"premieberekening herzien: +"+esc(String(d.cfg.verhoging).replace(".",","))+"% (wachtbestand na "+esc(datumTekst(d.cfg.wachtGrens))+")",herzienN?"warn":"ok"):"")+
       (d.cfg.ph?tile(phAfg,"premieherberekening match (afgerond) — marge vervalt","ph")+(phLopend?tile(phLopend,"premieherberekening nog niet afgerond",""):""):"")+'</div>';
     if(prod().premieherberekening && !phState.rijen.length){
-      html+='<p class="relfilterinfo" style="margin-top:10px">Tip: sleep ook de export <strong>Premieherberekening</strong> (Finconnect) in het uploadvak. Polissen met status <em>Afgerond</em> krijgen dan het label Premieherberekening en hoeven niet binnen de premiemarge te vallen.</p>';
+      html+='<p class="relfilterinfo" style="margin-top:10px">Tip: sleep de export <strong>Premieherberekening</strong> (Finconnect) in het blauwe uploadvak. Polissen met status <em>Afgerond</em> krijgen dan het label Premieherberekening en hoeven niet binnen de premiemarge te vallen.</p>';
     }
     $("samenvatting").innerHTML=html;
   }
@@ -1736,6 +1766,29 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   ["dragenter","dragover"].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add("is-over"); }); });
   ["dragleave","drop"].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove("is-over"); }); });
   drop.addEventListener("drop",function(e){ if(e.dataTransfer&&e.dataTransfer.files) loadFiles(e.dataTransfer.files); });
+
+  // Apart uploadvak voor de Premieherberekening (Finconnect).
+  var phDrop=$("phdrop"), phInput=$("phfile");
+  function loadPhBestand(f){
+    if(!f) return;
+    leesBestand(f,function(text){
+      if(!isPhExport(text)){
+        // Per ongeluk een ANVA-export in dit vak? Dan niet als herberekening inlezen.
+        var id=herkenProduct(text);
+        if(id){ phState=leegPh(); phState.fout=f.name+" is een ANVA-export ("+prodById(id).naam+"), geen Premieherberekening — sleep dit bestand in het linker uploadvak."; runAlle(); return; }
+      }
+      laadPh(text,f.name);
+      if(!phState.rijen.length){ phState=leegPh(); phState.fout="Geen regels gevonden in "+f.name+"."; }
+      else if(!isPhExport(text)) phState.waarschuwing="Kop niet herkend als Finconnect-export: kolommen gelezen op vaste positie (status = kolom F, polisnummer = kolom AD). Controleer of dit de juiste export is.";
+      runAlle();
+    },function(m){ phState=leegPh(); phState.fout="Bestand "+f.name+": "+m+"."; runAlle(); });
+  }
+  phDrop.addEventListener("click",function(){ phInput.click(); });
+  phDrop.addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); phInput.click(); } });
+  phInput.addEventListener("change",function(){ loadPhBestand(phInput.files[0]); phInput.value=""; });
+  ["dragenter","dragover"].forEach(function(ev){ phDrop.addEventListener(ev,function(e){ e.preventDefault(); phDrop.classList.add("is-over"); }); });
+  ["dragleave","drop"].forEach(function(ev){ phDrop.addEventListener(ev,function(e){ e.preventDefault(); phDrop.classList.remove("is-over"); }); });
+  phDrop.addEventListener("drop",function(e){ if(e.dataTransfer&&e.dataTransfer.files) loadPhBestand(e.dataTransfer.files[0]); });
 
   $("check").addEventListener("click",run);
   $("sample").addEventListener("click",function(){ if(isRelTab()) return; var s=st(); s.text=SAMPLES[actiefId]||""; s.name="voorbeeld (ingebouwd)"; s.isSample=true; s.idx=0; run(actiefId); });
