@@ -51,7 +51,13 @@
   .reltabel .badge{white-space:nowrap}
   .drop .selectiehint strong{display:inline;font-size:inherit;margin:0}
   .reltabel tfoot td{border-top:2px solid var(--rand)}
-  .reltabel button.rel-ga{padding:4px 10px;font-size:.8rem}
+  .reltabel button.rel-ga{padding:4px 10px;font-size:.8rem;white-space:nowrap}
+  .reltabel tr.polrij{cursor:pointer}
+  .reltabel tr.polrij:hover td{background:#f3f8f4}
+  .reltabel tr.gekozen td{background:var(--dwa-groen-licht,#eef3f0)!important;border-top:2px solid var(--dwa-groen);border-bottom:2px solid var(--dwa-groen)}
+  .poltitel{margin:20px 0 8px;font-weight:800;color:var(--dwa-groen);font-size:.95rem;border-left:4px solid var(--dwa-goud);padding-left:8px}
+  .nav.polnav{position:static;background:#fbfdf9;border-color:var(--dwa-groen)}
+  .poldetail{margin-top:4px}
   .verhtag{display:inline-block;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);border-radius:6px;font-size:.72rem;font-weight:700;padding:0 5px}
 
   /* upload */
@@ -137,7 +143,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 25</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 26</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -438,7 +444,7 @@
     // 1. maatschappijcodes — nieuw moet de nieuwe maatschappij zijn; oud is de
     //    oude maatschappij (P300/P701/P513/... ), dus elke code behalve de nieuwe.
     var mOud=txt(oud.row,oud.map,"mij"), mNieuw=txt(nieuw.row,nieuw.map,"mij");
-    add("Maatschappij (oud &rarr; "+cfg.mijNieuw+")",mOud,mNieuw,
+    add("Maatschappij (oud → "+cfg.mijNieuw+")",mOud,mNieuw,
         (mNieuw.toUpperCase()===cfg.mijNieuw && mOud!=="" && mOud.toUpperCase()!==cfg.mijNieuw)?"ok":"fail",
         "Nieuw moet "+cfg.mijNieuw+" zijn; oud = oude maatschappij (bijv. "+cfg.mijOud+"/P701/P513)");
     // 2. wijzigingsreden (voorloopnullen negeren: 00047 = 47, 00002 = 2)
@@ -651,7 +657,7 @@
   var actiefId = PRODUCTEN[0].id;
   var stateVan = {};
   PRODUCTEN.forEach(function(p){ stateVan[p.id]={ text:"", name:"", isSample:false, results:null, idx:0, onlyDev:false, filterTermijn:"", filterKantoor:"", report:"" }; });
-  var relState = { sel:null, onlyDev:false, meerdere:false, meldingen:[] };
+  var relState = { sel:null, onlyDev:false, meerdere:false, meldingen:[], polIdx:0, polOnlyDev:false };
   function prodById(id){ for(var i=0;i<PRODUCTEN.length;i++) if(PRODUCTEN[i].id===id) return PRODUCTEN[i]; return null; }
   function prod(){ return prodById(actiefId); }
   function st(){ return stateVan[actiefId]; }
@@ -870,7 +876,7 @@
     var vl=txt(n.row,n.map,"voorletters");
     var rel=txt(n.row,n.map,"relatienr");
     var basis=(vl?vl+" — ":"")+"Relatie "+dash(rel);
-    if(r.avbTot>1) basis+=" ("+prod().naam+" "+r.avbIdx+" van "+r.avbTot+")";
+    if(r.avbTot>1) basis+=" ("+(prodById(r.prodId)||prod()).naam+" "+r.avbIdx+" van "+r.avbTot+")";
     return basis;
   }
 
@@ -958,7 +964,16 @@
   function renderKlant(){
     var s=st(), d=s.results, res=d.results;
     if(!res.length){ $("klant").innerHTML=""; return; }
-    var r=res[s.idx], n=r.pair.nieuw, o=r.pair.oud, cfg=d.cfg;
+    var r=res[s.idx];
+    $("klant").innerHTML=polisDetailHtml(d,r,s.idx,{onlyDev:s.onlyDev, relBalk:true, losseRegels:true});
+    koppelRelKnop(stripZeros(txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr")), r.prodId, s.idx);
+  }
+
+  // Volledige controle van één polis als HTML: gebruikt in de producttab én in
+  // het tabblad 'Per relatie' (polisschakelaar).
+  function polisDetailHtml(d,r,idx,opts){
+    opts=opts||{};
+    var n=r.pair.nieuw, o=r.pair.oud, cfg=d.cfg;
     var rel=txt(n.row,n.map,"relatienr");
     var html='<div class="klantkop">'+
       '<span class="naam">'+esc(klantNaam(r))+'</span>'+
@@ -980,7 +995,7 @@
         (iO!=null?' &mdash; verwacht incassobedrag '+esc((Math.round(iO*(1+cfg.verhoging/100)*100)/100).toFixed(2).replace(".",","))+' (oud '+esc(iO.toFixed(2).replace(".",","))+')':'')+'.</div>';
     }
     // Andere producten van dezelfde relatie in één oogopslag.
-    var andere=relatieItems(stripZeros(rel)).filter(function(it){ return it.p.id!==r.prodId || it.idx!==s.idx; });
+    var andere=opts.relBalk?relatieItems(stripZeros(rel)).filter(function(it){ return it.p.id!==r.prodId || it.idx!==idx; }):[];
     if(andere.length){
       html+='<div class="banner info relbalk"><strong>Deze relatie heeft nog '+andere.length+' andere polis'+(andere.length===1?'':'sen')+'</strong> ('+
         esc(uniek(andere.map(function(it){ return it.p.naam; })).join(", "))+') <button type="button" class="ghost" id="naarRelatie">Bekijk per relatie</button></div>';
@@ -995,11 +1010,11 @@
       html+=r.proef==="geenkolom"
         ? '<div class="banner warn">Proefacceptatie: kolom <code>Clausule 1</code> ontbreekt in deze export.</div>'
         : '<div class="banner '+(r.proef==="ok"?"ok":"fail")+'">Proefacceptatie (Clausule 1): '+(r.proef==="ok"?"uitgevoerd &#10003;":"niet uitgevoerd &#10007; &mdash; Clausule 1 is leeg")+'</div>';
-      $("klant").innerHTML=html; koppelRelKnop(stripZeros(rel)); return;
+      return html;
     }
     // Bij 'Alleen afwijkingen' tonen we alleen de afwijkende regels (fout/let op),
     // niet de hele lijst met alles wat goed staat.
-    var zichtbareChecks = s.onlyDev ? r.checks.filter(function(c){ return c.status==="fail"||c.status==="warn"; }) : r.checks;
+    var zichtbareChecks = opts.onlyDev ? r.checks.filter(function(c){ return c.status==="fail"||c.status==="warn"; }) : r.checks;
     var rowsHtml=zichtbareChecks.map(function(c){
       var mk=c.status==="ok"?'<span class="mark ok">&#10003;</span>':(c.status==="warn"?'<span class="mark warn">!</span>':(c.status==="info"?'<span class="mark info">&ndash;</span>':'<span class="mark fail">&#10007;</span>'));
       var vcls=c.wrap?"":"val ";
@@ -1016,7 +1031,7 @@
       '<th class="col-nieuw">Nieuw &middot; '+esc(cfg.mijNieuw)+' (regel '+n.line+')</th>'+
       '<th class="st">Klopt?</th><th>Toelichting</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';
 
-    if(d.losseOud.length||d.onbekend.length){
+    if(opts.losseRegels&&(d.losseOud.length||d.onbekend.length)){
       html+='<details style="margin-top:16px"><summary style="cursor:pointer;font-weight:600;color:var(--dwa-groen)">Regels zonder paar ('+(d.losseOud.length+d.onbekend.length)+')</summary>'+
         '<div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Regel</th><th>Soort</th><th>Relatie</th><th>Maatschappij</th><th>Polisnummer</th><th>Wijz.reden</th></tr></thead><tbody>';
       d.losseOud.concat(d.onbekend).forEach(function(x){
@@ -1026,8 +1041,7 @@
       });
       html+='</tbody></table></div></details>';
     }
-    $("klant").innerHTML=html;
-    koppelRelKnop(stripZeros(rel));
+    return html;
   }
 
   function renderFooter(){
@@ -1108,9 +1122,12 @@
     var b=verzamelRelaties().filter(function(x){ return x.key===k; })[0];
     return b?b.items:[];
   }
-  function koppelRelKnop(k){
+  function koppelRelKnop(k,prodId,idx){
     var knop=$("naarRelatie"); if(!knop) return;
-    knop.onclick=function(){ actiefId=REL_ID; relState.sel=k; relState.onlyDev=false; relState.meerdere=false; renderAll();
+    knop.onclick=function(){
+      actiefId=REL_ID; relState.sel=k; relState.onlyDev=false; relState.meerdere=false; relState.polIdx=0;
+      relatieItems(k).forEach(function(it,i){ if(it.p.id===prodId&&it.idx===idx) relState.polIdx=i; });
+      renderAll();
       var nv=$("navigatie"); if(nv&&nv.scrollIntoView) nv.scrollIntoView({behavior:"smooth",block:"start"}); };
   }
   function relStatusWoord(b){
@@ -1171,53 +1188,102 @@
       '<button class="pijl" id="next" title="Volgende relatie" '+(pos===zicht.length-1?"disabled":"")+'>&#8594;</button>'+
       '<div class="klantnaam-nav">'+(b.naam?esc(b.naam)+' &mdash; ':'')+'Relatie '+esc(b.key)+' <span class="badge '+b.status+'">'+esc(relStatusWoord(b))+'</span></div>'+
       '<div class="springnaar"><label for="relSpring" style="'+lStyle+'">Spring naar:</label><select id="relSpring">'+opts+'</select></div>'+chk+'</div>';
-    $("prev").onclick=function(){ if(pos>0){ relState.sel=zicht[pos-1].key; renderRelatie(); } };
-    $("next").onclick=function(){ if(pos<zicht.length-1){ relState.sel=zicht[pos+1].key; renderRelatie(); } };
-    $("relSpring").onchange=function(){ relState.sel=this.value; renderRelatie(); };
+    // Schakelaar 1: door de relaties (polisschakelaar begint dan weer bij de eerste polis).
+    $("prev").onclick=function(){ if(pos>0){ relState.sel=zicht[pos-1].key; relState.polIdx=0; renderRelatie(); } };
+    $("next").onclick=function(){ if(pos<zicht.length-1){ relState.sel=zicht[pos+1].key; relState.polIdx=0; renderRelatie(); } };
+    $("relSpring").onchange=function(){ relState.sel=this.value; relState.polIdx=0; renderRelatie(); };
     wire();
     renderRelatieDetail(b);
   }
 
   function renderRelatieDetail(b){
     function bedrag(v){ var n=num(v); return n==null?"—":n.toFixed(2).replace(".",","); }
+    if(relState.polIdx>=b.items.length||relState.polIdx<0) relState.polIdx=0;
+    var pi=relState.polIdx;
     var totO=0, totN=0;
-    var rijen=b.items.map(function(it){
+    var rijen=b.items.map(function(it,i){
+      var kies=' data-pi="'+i+'" title="Toon de controle van deze polis"';
+      var gek=i===pi?' gekozen':'';
       if(it.soort==="los"){
         var io=num(txt(it.oud.row,it.oud.map,"incasso")); if(io!=null) totO+=io;
-        return '<tr class="r-warn"><td><strong>'+esc(it.p.naam)+'</strong></td>'+
+        return '<tr class="polrij r-warn'+gek+'"'+kies+'><td><strong>'+(i===pi?'&#9654; ':'')+esc(it.p.naam)+'</strong></td>'+
           '<td class="val">'+esc(dash(txt(it.oud.row,it.oud.map,"polisnr")))+'<br>&rarr; &mdash;</td>'+
           '<td class="val">'+bedrag(txt(it.oud.row,it.oud.map,"incasso"))+' &rarr; &mdash;</td>'+
           '<td>&mdash;</td><td>&mdash;</td>'+
           '<td>Oude polis zonder nieuwe polis: nog omzetten</td>'+
           '<td><span class="badge warn">nog omzetten</span></td>'+
-          '<td><button type="button" class="ghost rel-ga" data-prod="'+it.p.id+'" data-idx="-1">Bekijk</button></td></tr>';
+          '<td><button type="button" class="ghost rel-ga" data-prod="'+it.p.id+'" data-idx="-1">Naar product</button></td></tr>';
       }
       var r=it.r, n=r.pair.nieuw, o=r.pair.oud;
       var inc=r.checks.filter(function(c){ return /^Incassobedrag/.test(c.label); })[0];
-      var io=o?num(txt(o.row,o.map,"incasso")):null, inw=num(txt(n.row,n.map,"incasso"));
-      if(io!=null) totO+=io; if(inw!=null) totN+=inw;
+      var io2=o?num(txt(o.row,o.map,"incasso")):null, inw=num(txt(n.row,n.map,"incasso"));
+      if(io2!=null) totO+=io2; if(inw!=null) totN+=inw;
       var incMark=inc?(inc.status==="ok"?'<span class="mark ok">&#10003;</span>':'<span class="mark fail">&#10007;</span>'):'';
       var verh=r.herzien?' <span class="verhtag">+'+esc(String(it.cfg.verhoging).replace(".",","))+'%</span>':'';
       var afw=r.orphan?["nog invoeren: geen oude polis"]:r.checks.filter(function(c){return c.status==="fail";}).map(function(c){ return c.label.replace(/\s*\(.*\)$/,""); });
       var pa=r.proef==="ok"?'<span class="mark ok">&#10003;</span>':(r.proef==="niet"?'<span class="mark fail">&#10007;</span>':'&mdash;');
       var wd=txt(n.row,n.map,"wachtdatum");
-      return '<tr class="'+(r.status==="ok"?"":"r-"+r.status)+'"><td><strong>'+esc(it.p.naam)+'</strong></td>'+
+      return '<tr class="polrij'+(r.status==="ok"?"":" r-"+r.status)+gek+'"'+kies+'><td><strong>'+(i===pi?'&#9654; ':'')+esc(it.p.naam)+'</strong></td>'+
         '<td class="val">'+esc(o?dash(txt(o.row,o.map,"polisnr")):"—")+'<br>&rarr; '+esc(dash(txt(n.row,n.map,"polisnr")))+'</td>'+
         '<td class="val">'+(o?bedrag(txt(o.row,o.map,"incasso")):"—")+' &rarr; '+bedrag(txt(n.row,n.map,"incasso"))+verh+' '+incMark+'</td>'+
         '<td>'+pa+'</td>'+
         '<td class="val">'+esc(dash(wd))+(r.herzien?' <span class="mark warn">!</span>':'')+'</td>'+
         '<td>'+(afw.length?esc(afw.join("; ")):'<span style="color:var(--ok)">geen</span>')+'</td>'+
         '<td><span class="badge '+r.status+'">'+esc(statusWoord(r))+'</span></td>'+
-        '<td><button type="button" class="ghost rel-ga" data-prod="'+it.p.id+'" data-idx="'+it.idx+'">Bekijk</button></td></tr>';
+        '<td><button type="button" class="ghost rel-ga" data-prod="'+it.p.id+'" data-idx="'+it.idx+'">Naar product</button></td></tr>';
     }).join("");
     var html='<div class="klantkop"><span class="naam">'+(b.naam?esc(b.naam)+' &mdash; ':'')+'Relatie '+esc(b.key)+'</span>'+
       '<span class="sub">'+b.items.length+' polis(sen) &middot; '+esc(b.producten.join(", "))+(b.kantoor?' &middot; kantoor '+esc(b.kantoor):'')+'</span>'+
       '<span class="badge '+b.status+'">'+esc(relStatusWoord(b))+'</span></div>'+
       '<div class="tablewrap"><table class="reltabel"><thead><tr><th>Product</th><th>Polisnr oud &rarr; nieuw</th><th>Incasso oud &rarr; nieuw</th><th>Proef&shy;acceptatie</th><th>Wachtbestand</th><th>Afwijkingen</th><th>Status</th><th></th></tr></thead><tbody>'+
       rijen+'</tbody><tfoot><tr><td colspan="2"><strong>Totaal incasso relatie</strong></td><td class="val"><strong>'+totO.toFixed(2).replace(".",",")+' &rarr; '+totN.toFixed(2).replace(".",",")+'</strong></td><td colspan="5"></td></tr></tfoot></table></div>';
+
+    // Schakelaar 2: door de polissen van deze relatie, met de volledige controle eronder.
+    var it=b.items[pi];
+    function polLabel(x){
+      if(x.soort==="los") return x.p.naam+" · "+txt(x.oud.row,x.oud.map,"polisnr")+" → (nog omzetten)";
+      var o2=x.r.pair.oud, n2=x.r.pair.nieuw;
+      return x.p.naam+" · "+(o2?txt(o2.row,o2.map,"polisnr")+" → ":"")+txt(n2.row,n2.map,"polisnr");
+    }
+    function polStatus(x){ return x.soort==="los"?{cls:"warn",woord:"nog omzetten"}:{cls:x.r.status,woord:statusWoord(x.r)}; }
+    var popts=b.items.map(function(x,i){
+      var ps=polStatus(x), mark=ps.cls==="ok"?"✓":(ps.cls==="warn"?"!":"✗");
+      return '<option value="'+i+'"'+(i===pi?" selected":"")+'>'+mark+"  "+esc(polLabel(x))+" — "+esc(ps.woord)+'</option>';
+    }).join("");
+    var ps=polStatus(it);
+    html+='<div class="poltitel">Polissen van deze relatie &mdash; schakel per polis</div>'+
+      '<div class="nav polnav">'+
+      '<button class="pijl" id="polPrev" title="Vorige polis" '+(pi===0?"disabled":"")+'>&#8592;</button>'+
+      '<div class="teller">Polis '+(pi+1)+' van '+b.items.length+'</div>'+
+      '<button class="pijl" id="polNext" title="Volgende polis" '+(pi===b.items.length-1?"disabled":"")+'>&#8594;</button>'+
+      '<div class="klantnaam-nav">'+esc(polLabel(it))+' <span class="badge '+ps.cls+'">'+esc(ps.woord)+'</span></div>'+
+      '<div class="springnaar"><label for="polSpring" style="font-size:.8rem;color:var(--ink-2)">Polis:</label><select id="polSpring">'+popts+'</select></div>'+
+      '<label class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer"><input type="checkbox" id="polOnlyDev"'+(relState.polOnlyDev?" checked":"")+'> Alleen afwijkingen</label>'+
+      '</div>';
+    if(it.soort==="los"){
+      var od=it.oud;
+      html+='<div class="banner warn"><strong>Nog omzetten.</strong> Oude '+esc(it.p.naam)+'-polis <code>'+esc(txt(od.row,od.map,"polisnr"))+
+        '</code> heeft nog geen nieuwe polis in de export (regel '+od.line+').</div>'+
+        '<div class="tablewrap"><table><tbody>'+
+        [["Maatschappij","mij"],["Branche","brancheoms"],["Polisnummer","polisnr"],["Ingangsdatum","ingang"],["Hoofdvervaldatum","hvd"],["Termijn","termijn"],["Incassobedrag","incasso"],["Eigen risico","eigenrisico"]]
+          .map(function(v){ return '<tr><td>'+v[0]+'</td><td class="val">'+esc(dash(txt(od.row,od.map,v[1])))+'</td></tr>'; }).join("")+
+        '</tbody></table></div>';
+    } else {
+      html+='<div class="poldetail">'+polisDetailHtml(stateVan[it.p.id].results,it.r,it.idx,{onlyDev:relState.polOnlyDev})+'</div>';
+    }
     $("klant").innerHTML=html;
+
+    function kiesPolis(i){ relState.polIdx=i; renderRelatieDetail(b); }
+    $("klant").querySelectorAll("tr.polrij").forEach(function(tr){
+      tr.onclick=function(){ kiesPolis(parseInt(this.getAttribute("data-pi"),10)||0); };
+    });
+    $("polPrev").onclick=function(){ if(pi>0) kiesPolis(pi-1); };
+    $("polNext").onclick=function(){ if(pi<b.items.length-1) kiesPolis(pi+1); };
+    $("polSpring").onchange=function(){ kiesPolis(parseInt(this.value,10)||0); };
+    $("polOnlyDev").onchange=function(){ relState.polOnlyDev=this.checked; renderRelatieDetail(b); };
     $("klant").querySelectorAll(".rel-ga").forEach(function(btn){
-      btn.onclick=function(){
+      btn.onclick=function(e){
+        e.stopPropagation();
         var id=this.getAttribute("data-prod"), idx=parseInt(this.getAttribute("data-idx"),10), s=stateVan[id];
         actiefId=id; s.filterTermijn=""; s.filterKantoor=""; s.onlyDev=false; if(idx>=0) s.idx=idx;
         renderAll();
