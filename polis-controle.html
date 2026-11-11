@@ -123,7 +123,7 @@
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 23</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 24</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -154,6 +154,7 @@
           <div class="field"><label for="jaar">Volgend jaar van opgave</label><input id="jaar" type="number" min="2000" max="2100" value="2027"></div>
           <div class="field"><label for="prov">Toegestane provisie %</label><input id="prov" type="text" value="23, 25"></div>
           <div class="field"><label for="mijoud">Maatschappij oud / nieuw</label><input id="mijoud" type="text" value="P300 / N200"></div>
+          <div class="field"><label for="sysgrens">Premieberekening herzien bij systeemdatum na</label><input id="sysgrens" type="date" value="2026-10-01"></div>
         </div>
       </details>
     </div>
@@ -192,6 +193,7 @@
     ["tekst1",37,"tekst 1"],["tekst2",38,"tekst 2"],["tekst3",39,"tekst 3"],["tekst4",40,"tekst 4"],["tekst5",41,"tekst 5"],
     ["clausule",43,"clausule 10"],
     ["clausule1",null,/clausule ?1(?!\d)/],
+    ["sysdatum",null,"systeemdatum"],["afwpct",null,"afwijking"],
     ["verzbedraga",44,"verzekerd bedrag a"],["agentprov",45,"agent 1 provisie"]
   ];
   var PRODUCTEN = [
@@ -284,6 +286,9 @@
   SAMPLE_AVB = metKolom(SAMPLE_AVB,"Dekking+WachtOms->Dekking",["Bedrijfsaansprakelijkheid","AVB standaard","Bedrijfsaansprakelijkheid"]);
   // Clausule 1 (proefacceptatie) als laatste kolom: rel 982 nog leeg, rel 3602 gevuld.
   SAMPLE_AVB = metKolom(SAMPLE_AVB,"Polis+Wacht->Clausule 1",["","","PA01"]);
+  // Systeemdatum en standaard afwijkingspercentage (toeslag): rel 982 na 1-10 -> herzien.
+  SAMPLE_AVB = metKolom(SAMPLE_AVB,"Polis+Wacht->Systeemdatum",["2-10-2026","14-3-2025","28-9-2026"]);
+  SAMPLE_AVB = metKolom(SAMPLE_AVB,"Polis+Wacht->Standaard afwijkingspe",["0","0","0"]);
   var SAMPLES = { avb: SAMPLE_AVB };
 
   /* ================= Helpers ================= */
@@ -334,6 +339,24 @@
     if(s.indexOf(",")!==-1) s=s.replace(/\./g,"").replace(",",".");
     else if(/^-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
     var n=parseFloat(s); return isNaN(n)?null:n;
+  }
+  // Systeemdatum -> jjjj-mm-dd (mag een tijd achter de datum hebben).
+  function sysKey(v){
+    var s=String(v==null?"":v).trim(), m;
+    if(!s) return "";
+    m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+    if(m){ var j=+m[3]; if(j<100) j+=2000; return j+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[1]).slice(-2); }
+    m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if(m) return m[1]+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[3]).slice(-2);
+    return "";
+  }
+  function datumTekst(k){ var p=String(k||"").split("-"); return p.length===3?(+p[2])+"-"+(+p[1])+"-"+p[0]:String(k||""); }
+  // "herzien" (systeemdatum na de grens), "ok", "leeg" of "geenkolom".
+  function herzienStatus(rec,cfg){
+    if(!rec||rec.map.sysdatum==null||rec.map.sysdatum<0) return "geenkolom";
+    var k=sysKey(txt(rec.row,rec.map,"sysdatum"));
+    if(!k) return "leeg";
+    return k>cfg.sysGrens?"herzien":"ok";
   }
   function dateKey(v){
     var s=String(v==null?"":v).trim(); if(!s) return "";
@@ -418,9 +441,36 @@
     var termNw=num(txt(nieuw.row,nieuw.map,"termijn")); if(termNw==null) termNw=num(txt(oud.row,oud.map,"termijn"));
     var margeInc=Math.max(cfg.tol||0,(termNw===1)?1.00:0.10);
     var margeLbl=(termNw===1)?"jaar € 1,00":"maand/overig € 0,10";
-    var diff=(iOud==null||iNieuw==null)?null:Math.abs(iOud-iNieuw);
-    add("Incassobedrag (marge "+margeLbl+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
-        diff==null?"fail":(diff<=margeInc+1e-9?"ok":"fail"), diff==null?"Bedrag ontbreekt of onleesbaar":"Verschil "+diff.toFixed(2).replace(".",","));
+    // Toeslag: het standaard afwijkingspercentage bepaalt de toeslag op het
+    // incassobedrag. Verwacht nieuw = oud × (1 + % / 100). Het percentage van
+    // de nieuwe polis is leidend; is dat leeg, dan dat van de oude polis.
+    var pctN=num(txt(nieuw.row,nieuw.map,"afwpct")), pctO=num(txt(oud.row,oud.map,"afwpct"));
+    var pct=pctN!=null?pctN:pctO;
+    var verwacht=(iOud!=null&&pct)?Math.round(iOud*(1+pct/100)*100)/100:iOud;
+    var diff=(verwacht==null||iNieuw==null)?null:Math.abs(verwacht-iNieuw);
+    function eur(n){ return n.toFixed(2).replace(".",","); }
+    add("Incassobedrag (marge "+margeLbl+(pct?" · toeslag "+fmtPct(pct)+"%":"")+")",txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),
+        diff==null?"fail":(diff<=margeInc+1e-9?"ok":"fail"),
+        diff==null?"Bedrag ontbreekt of onleesbaar"
+          :(pct?"Verwacht "+eur(verwacht)+" (oud + "+fmtPct(pct)+"% toeslag); verschil "+eur(diff):"Verschil "+eur(diff)));
+    // Standaard afwijkingspercentage (toeslag) zelf, ter info.
+    if(nieuw.map.afwpct==null||nieuw.map.afwpct<0){
+      add("Standaard afwijkingspercentage (toeslag)","—","—","warn","Kolom 'Standaard afwijkingspercentage' ontbreekt in deze export — voeg hem toe aan de selectie");
+    } else {
+      add("Standaard afwijkingspercentage (toeslag)",txt(oud.row,oud.map,"afwpct"),txt(nieuw.row,nieuw.map,"afwpct"),"info",
+          pct?"Toeslag "+fmtPct(pct)+"% is meegenomen in de controle van het incassobedrag":"Geen toeslag");
+    }
+    // Systeemdatum: na de grensdatum moet de premieberekening worden herzien.
+    var sysO=herzienStatus(oud,cfg), sysN=herzienStatus(nieuw,cfg), grensT=datumTekst(cfg.sysGrens);
+    if(sysN==="geenkolom"){
+      add("Systeemdatum (premieberekening)","—","—","warn","Kolom 'Systeemdatum' ontbreekt in deze export — voeg hem toe aan de selectie");
+    } else {
+      var welke=[sysO==="herzien"?"oud":"",sysN==="herzien"?"nieuw":""].filter(Boolean).join(" en ");
+      add("Systeemdatum (premieberekening)",txt(oud.row,oud.map,"sysdatum"),txt(nieuw.row,nieuw.map,"sysdatum"),
+          welke?"warn":(sysN==="leeg"&&sysO!=="ok"?"info":"ok"),
+          welke?"Systeemdatum ("+welke+") na "+grensT+" — premieberekening herzien"
+            :(sysN==="leeg"&&sysO!=="ok"?"Systeemdatum leeg":"Systeemdatum t/m "+grensT));
+    }
     // 9. bedragen / aantallen
     // Geschatte jaaromzet: alleen ter info, geen waarschuwing (niet in een pakket).
     var oOud=num(txt(oud.row,oud.map,"omzet")), oNieuw=num(txt(nieuw.row,nieuw.map,"omzet"));
@@ -583,6 +633,7 @@
     var mij=$("mijoud").value.split("/");
     return {
       tol:(num($("tol").value)||0), jaar:String($("jaar").value).trim(),
+      sysGrens:sysKey($("sysgrens").value)||"2026-10-01",
       prov:prov.length?prov:[23,25],
       mijOud:(mij[0]||p.mijOud).trim().toUpperCase(), mijNieuw:(mij[1]||p.mijNieuw).trim().toUpperCase()
     };
@@ -638,6 +689,13 @@
     });
     // Proefacceptatie per nieuwe polis (ook bij 'nog invoeren').
     results.forEach(function(r){ r.proef=proefStatus(r.pair.nieuw); });
+    // Premieberekening herzien: systeemdatum van de oude of nieuwe polis na de grens.
+    results.forEach(function(r){
+      var so=herzienStatus(r.pair.oud,cfg), sn=herzienStatus(r.pair.nieuw,cfg);
+      r.sysKolom = sn!=="geenkolom";
+      r.herzien = so==="herzien" || sn==="herzien";
+      r.herzienWelke = [so==="herzien"?"oud":"", sn==="herzien"?"nieuw":""].filter(Boolean).join(" en ");
+    });
     // Meerdere AVB's per klant: nummer ze per relatienummer (AVB 1 van 2, ...).
     var relTot={}, relSeen={};
     results.forEach(function(r){ var rel=txt(r.pair.nieuw.row,r.pair.nieuw.map,"relatienr"); relTot[rel]=(relTot[rel]||0)+1; });
@@ -676,7 +734,7 @@
       $("selectiehint").innerHTML = (p.selectie
         ? ('Upload de export van <strong>'+esc(p.naam)+'</strong> &middot; selectie <code>'+esc(p.selectie)+'</code>')
         : ('Upload de export van <strong>'+esc(p.naam)+'</strong>'))+
-        ' &middot; inclusief kolommen <code>Dekking</code> en <code>Clausule 1</code>';
+        ' &middot; inclusief kolommen <code>Dekking</code>, <code>Clausule 1</code>, <code>Systeemdatum</code> en <code>Standaard afwijkingspercentage</code>';
     }
   }
 
@@ -698,12 +756,15 @@
     var los=d.losseOud.length+d.onbekend.length;
     var geenPa=res.filter(function(r){return r.proef==="niet";}).length;
     var paKolom=res.some(function(r){return r.proef!=="geenkolom";});
+    var herzienN=res.filter(function(r){return r.herzien;}).length;
+    var sysKolom=res.some(function(r){return r.sysKolom;});
     var html="";
     if(s.isSample) html+='<div class="banner info"><strong>Voorbeeldgegevens.</strong> Upload je eigen export om je eigen bestand te controleren.</div>';
     html+='<h2>Samenvatting — '+esc(prod().naam)+' ('+esc(prod().titel)+')</h2><div class="tiles">'+
       tile(res.length,"polisparen","")+tile(okN,"akkoord","ok")+tile(warnN,"let op",warnN?"warn":"")+
       tile(failN,"met afwijking",failN?"fail":"")+tile(los,"losse regels",los?"warn":"")+
-      (paKolom?tile(geenPa,"proefacceptatie niet uitgevoerd",geenPa?"fail":"ok"):"")+'</div>';
+      (paKolom?tile(geenPa,"proefacceptatie niet uitgevoerd",geenPa?"fail":"ok"):"")+
+      (sysKolom?tile(herzienN,"premieberekening herzien (systeemdatum na "+esc(datumTekst(d.cfg.sysGrens))+")",herzienN?"warn":"ok"):"")+'</div>';
     $("samenvatting").innerHTML=html;
   }
 
@@ -858,6 +919,12 @@
     } else {
       html+='<div class="dekkingregel leeg"><span class="lbl">Dekking</span> kolom ontbreekt in deze export</div>';
     }
+    // Melding premieberekening herzien (systeemdatum na de grensdatum).
+    if(r.herzien){
+      var sysTekst=[o&&herzienStatus(o,cfg)==="herzien"?"oude polis "+txt(o.row,o.map,"sysdatum"):"",
+                    herzienStatus(n,cfg)==="herzien"?"nieuwe polis "+txt(n.row,n.map,"sysdatum"):""].filter(Boolean).join(", ");
+      html+='<div class="banner warn"><strong>&#9888; Premieberekening herzien.</strong> Systeemdatum ('+esc(sysTekst)+') ligt na '+esc(datumTekst(cfg.sysGrens))+'.</div>';
+    }
 
     if(r.orphan){
       html+='<div class="banner warn"><strong>Nog invoeren.</strong> Geen bijbehorende '+esc(cfg.mijOud)+'-polis gevonden voor verwijzing <code>'+esc(dash(txt(n.row,n.map,"oudpolisnr")))+'</code> (regel '+n.line+'). De oude polis moet nog worden ingevoerd.</div>';
@@ -926,6 +993,15 @@
         lines.push("   Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+(o?" | oud "+txt(o.row,o.map,"polisnr"):" | nog invoeren"));
       });
     }
+    var herzien=d.results.filter(function(r){ return r.herzien; });
+    if(herzien.length){
+      lines.push("","PREMIEBEREKENING HERZIEN (systeemdatum na "+datumTekst(d.cfg.sysGrens)+") — "+herzien.length);
+      herzien.forEach(function(r){
+        var n=r.pair.nieuw,o=r.pair.oud;
+        lines.push("   Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+" ("+txt(n.row,n.map,"sysdatum")+")"+
+          (o?" | oud "+txt(o.row,o.map,"polisnr")+" ("+txt(o.row,o.map,"sysdatum")+")":" | nog invoeren"));
+      });
+    }
     return lines.join("\n");
   }
 
@@ -951,7 +1027,7 @@
     if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(st().report).then(function(){done("Gekopieerd");},function(){done("Kopiëren mislukt");});
     else done("Kopiëren mislukt");
   });
-  ["tol","jaar","prov","mijoud"].forEach(function(id){ $(id).addEventListener("change",run); });
+  ["tol","jaar","prov","mijoud","sysgrens"].forEach(function(id){ $(id).addEventListener("change",run); });
   document.addEventListener("keydown",function(e){
     if(e.target && /input|select|textarea/i.test(e.target.tagName)) return;
     if(e.key==="ArrowLeft" && $("prev")) $("prev").click();
