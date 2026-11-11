@@ -112,6 +112,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .banner.ph{background:#eef4fc;border-color:#1f4e8c;color:#173d6e}
   .banner.ph a{color:#1f4e8c;font-weight:700}
   .tile.ph .n{color:#1f4e8c}
+  .phtag.gelijk{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+  .phvgl{margin-bottom:14px}
+  .phvgl-kop{font-size:.9rem;color:#173d6e;margin-bottom:6px}
+  .phvgl th,.phvgl td{padding:7px 10px}
+  .phuit{font-weight:700;white-space:nowrap}
+  .phuit.gelijk{color:var(--ok)} .phuit.wijzigt{color:#1f4e8c}
   .verhtag{display:inline-block;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);border-radius:6px;font-size:.72rem;font-weight:700;padding:0 5px}
 
   /* upload */
@@ -197,7 +203,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 </head>
 <body>
 <header class="top">
-  <h1>DWA Poliscontrole per product <span>versie 30</span></h1>
+  <h1>DWA Poliscontrole per product <span>versie 31</span></h1>
   <p>Controleer per product de oversluiting oud&nbsp;&rarr;&nbsp;nieuw, klant voor klant. Blader met de pijltjes; per klant zie je de oude en de nieuwe polis naast elkaar met een &#10003; of &#10007; per veld.</p>
 </header>
 
@@ -287,7 +293,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     ["clausule",43,"clausule 10"],
     ["clausule1",null,/clausule ?1(?!\d)/],
     ["wachtdatum",null,/wachtbestand|systeemdatum/],["afwpct",null,"afwijking"],
-    ["verzbedraga",44,"verzekerd bedrag a"],["agentprov",45,"agent 1 provisie"]
+    ["verzbedraga",44,"verzekerd bedrag a"],["agentprov",45,"agent 1 provisie"],
+    ["brutowinst",null,"brutowinst"]
   ];
   var PRODUCTEN = [
     {
@@ -580,20 +587,103 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       ? "match op relatienummer + branche"+(ph.rij.polis?" (polisnummer Finconnect "+ph.rij.polis+")":"")
       : "match op polisnummer "+ph.sleutel;
   }
+  function phOordeel(ph){ return ph&&ph.vgl?ph.vgl.oordeel:"geen"; }
   function phTagHtml(ph,kort){
     if(!ph) return "";
-    return ph.afgerond
-      ? '<span class="phtag" title="Premieherberekening afgerond in Finconnect — premie mag buiten de marge afwijken">'+(kort?"PH":"Premieherberekening match")+'</span>'
-      : '<span class="phtag lopend" title="Premieherberekening gevonden, status: '+esc(ph.status||"leeg")+' — premie wordt gewoon op de marge getoetst">'+(kort?"PH loopt":"Premieherberekening loopt")+'</span>';
+    if(!ph.afgerond) return '<span class="phtag lopend" title="Premieherberekening gevonden, status: '+esc(ph.status||"leeg")+' — premie wordt gewoon op de marge getoetst">'+(kort?"PH loopt":"Premieherberekening loopt")+'</span>';
+    var o=phOordeel(ph);
+    if(o==="gelijk") return '<span class="phtag gelijk" title="Herberekening gelijk aan de oude polis — zelfde gegevens overnemen, premie gewoon getoetst">'+(kort?"PH gelijk":"Premieherberekening: gelijk aan oude polis")+'</span>';
+    if(o==="gewijzigd") return '<span class="phtag" title="Herberekening wijkt af van de oude polis — herberekende waarden overnemen, premiemarge vervalt">'+(kort?"PH gewijzigd":"Premieherberekening: gewijzigd")+'</span>';
+    return '<span class="phtag" title="Premieherberekening afgerond in Finconnect — premie mag buiten de marge afwijken">'+(kort?"PH":"Premieherberekening match")+'</span>';
+  }
+  function phOordeelTekst(ph){
+    var v=ph.vgl;
+    if(!v) return "geen oude polis om mee te vergelijken";
+    if(v.oordeel==="gelijk") return "gelijk aan de oude polis — zelfde gegevens overnemen";
+    if(v.oordeel==="gewijzigd") return "gewijzigd t.o.v. de oude polis ("+v.wijzigt+" van "+v.velden.length+") — herberekende waarden overnemen";
+    return "geen jaarloon, omzet, brutowinst of medewerkers om te vergelijken";
+  }
+  function verzBedragVan(rec){
+    var a=num(txt(rec.row,rec.map,"verzbedrag"))||0, b=num(txt(rec.row,rec.map,"verzbedraga"))||0;
+    return Math.max(a,b);
+  }
+  // Gegevens uit de premieherberekening naast de oude polis zetten. Gelijk = de
+  // nieuwe polis neemt hetzelfde over; anders moet de herberekende waarde op de
+  // nieuwe polis komen. Bij een afgeronde herberekening wordt de nieuwe polis
+  // daarop gecontroleerd; zolang hij loopt alleen ter info.
+  function phVergelijk(oud,nieuw,ph,p){
+    var velden=[];
+    function heeftKolom(rec,key){ return rec.map[key]!=null && rec.map[key]>=0; }
+    function getal(rec,key){ return heeftKolom(rec,key)?num(txt(rec.row,rec.map,key)):null; }
+    function zelfde(a,b){ return a!=null && b!=null && Math.abs(a-b)<0.5; }
+    function veld(key,label,phV,phTekst,oV,nV,ookGelijk){
+      var gelijk=zelfde(oV,phV)||(ookGelijk||[]).some(function(x){ return zelfde(oV,x); });
+      var uitkomst=gelijk?"gelijk":((oV==null||oV===0)?"oudleeg":"afwijkend");
+      var verwacht=gelijk?oV:phV, st, note;
+      var wat=gelijk?"gelijk aan de oude polis, zelfde overnemen"
+        :(uitkomst==="oudleeg"?"oude polis leeg, herberekende waarde "+fmtNl(phV)+" invullen"
+          :"gewijzigd ("+fmtNl(oV)+" → "+fmtNl(phV)+"), herberekende waarde overnemen");
+      note="Finconnect "+phTekst+": "+wat;
+      if(!ph.afgerond){ st="info"; note+=" · voorlopig, herberekening nog niet afgerond"; }
+      else if(nV==null){ st="warn"; note+=" · nieuwe polis is nog leeg"; }
+      else if(zelfde(nV,verwacht)||zelfde(nV,phV)){ st="ok"; }
+      else if(!gelijk && zelfde(nV,oV)){ st="fail"; note+=" · oude waarde overgenomen, moet "+fmtNl(phV)+" zijn"; }
+      else { st="fail"; note+=" · nieuwe polis heeft "+fmtNl(nV)+", moet "+fmtNl(verwacht)+" zijn"; }
+      velden.push({key:key,label:label,oud:oV,ph:phV,phTekst:phTekst,nieuw:nV,uitkomst:uitkomst,verwacht:verwacht,status:st,note:note});
+    }
+    var jl=phWaarde(ph,"jaarloon"); if(jl) veld("jaarloon","Jaarloon",jl,"€ "+fmtNl(jl),getal(oud,"jaarloon"),getal(nieuw,"jaarloon"));
+    var oz=phWaarde(ph,"omzet"); if(oz) veld("omzet","Omzet",oz,"€ "+fmtNl(oz),getal(oud,"omzet"),getal(nieuw,"omzet"));
+    var bw=phWaarde(ph,"brutowinst");
+    if(bw){
+      // Brutowinst: eigen kolom als de export die heeft, anders (bedrijfsschade)
+      // het verzekerd bedrag.
+      if(heeftKolom(oud,"brutowinst") && (getal(oud,"brutowinst")!=null || p.id!=="bs"))
+        veld("brutowinst","Brutowinst",bw,"€ "+fmtNl(bw),getal(oud,"brutowinst"),getal(nieuw,"brutowinst"));
+      else if(p.id==="bs")
+        veld("verzbedrag","Brutowinst (verzekerd bedrag)",bw,"€ "+fmtNl(bw),verzBedragVan(oud)||null,verzBedragVan(nieuw)||null);
+    }
+    var wf=phWaarde(ph,"wnfull"), wp=phWaarde(ph,"wnpart"), wo=phWaarde(ph,"wnoverig"), fte=phWaarde(ph,"fte"), eig=phWaarde(ph,"eigenaren");
+    var tot=(wf||0)+(wp||0)+(wo||0);
+    if(tot>0 || fte>0){
+      var phW=tot>0?tot:fte;
+      var delen=[[wf,"fulltime"],[wp,"parttime"],[wo,"overig"]].filter(function(x){ return x[0]; }).map(function(x){ return fmtNl(x[0])+" "+x[1]; });
+      var tekst=fmtNl(phW)+(tot>0?(delen.length?" ("+delen.join(" + ")+")":""):" fte");
+      // Ook gelijk als de oude polis de eigenaren meetelt of het aantal fte noemt.
+      veld("personeel","Aantal medewerkers",phW,tekst,getal(oud,"personeel"),getal(nieuw,"personeel"),[eig?tot+eig:null, fte||null]);
+    }
+    var wijzigt=velden.filter(function(v){ return v.uitkomst!=="gelijk"; }).length;
+    return { velden:velden, wijzigt:wijzigt, oordeel:velden.length?(wijzigt?"gewijzigd":"gelijk"):"geen" };
+  }
+  function markHtml(st){
+    return st==="ok"?'<span class="mark ok">&#10003;</span>':(st==="warn"?'<span class="mark warn">!</span>':(st==="info"?'<span class="mark info">&ndash;</span>':'<span class="mark fail">&#10007;</span>'));
+  }
+  // Tabel: premieherberekening naast de oude en de nieuwe polis.
+  function phVglHtml(ph){
+    var v=ph.vgl; if(!v||!v.velden.length) return "";
+    var rijen=v.velden.map(function(x){
+      var uit=x.uitkomst==="gelijk"?'<span class="phuit gelijk">gelijk &rarr; zelfde overnemen</span>'
+        :(x.uitkomst==="oudleeg"?'<span class="phuit wijzigt">oud leeg &rarr; '+esc(fmtNl(x.ph))+' invullen</span>'
+          :'<span class="phuit wijzigt">gewijzigd &rarr; '+esc(fmtNl(x.ph))+' overnemen</span>');
+      return '<tr class="'+((x.status==="ok"||x.status==="info")?"":"r-"+x.status)+'"><td>'+esc(x.label)+'</td>'+
+        '<td class="val col-oud">'+esc(x.oud==null?"—":fmtNl(x.oud))+'</td><td class="val">'+esc(x.phTekst)+'</td><td>'+uit+'</td>'+
+        '<td class="val col-nieuw">'+esc(x.nieuw==null?"—":fmtNl(x.nieuw))+'</td><td class="st">'+markHtml(x.status)+'</td></tr>';
+    }).join("");
+    return '<div class="phvgl"><div class="phvgl-kop"><strong>Premieherberekening vergeleken met de oude polis:</strong> '+esc(phOordeelTekst(ph))+
+      (ph.afgerond?'':' <em>(voorlopig &mdash; nog niet afgerond)</em>')+'</div>'+
+      '<div class="tablewrap"><table><thead><tr><th>Gegeven</th><th class="col-oud">Oude polis</th><th>Finconnect</th><th>Uitkomst</th><th class="col-nieuw">Nieuwe polis</th><th class="st">Klopt?</th></tr></thead><tbody>'+
+      rijen+'</tbody></table></div></div>';
   }
 
   /* ================= AVB-controles ================= */
   function buildAvbChecks(oud, nieuw, cfg, ext){
     var c=[];
-    // Premieherberekening (Finconnect): bij status 'Afgerond' mag de premie
-    // afwijken door brutowinst, omzet en aantal medewerkers.
-    var ph=(ext&&ext.ph)||null, phOk=!!(ph&&ph.afgerond);
+    // Premieherberekening (Finconnect): afgerond én gewijzigd t.o.v. de oude
+    // polis (brutowinst, omzet, medewerkers) => de premiemarge vervalt. Gelijk
+    // aan de oude polis => zelfde overnemen, premie gewoon getoetst.
+    var ph=(ext&&ext.ph)||null, phOk=!!(ph&&ph.margeVervalt), vgl=ph?ph.vgl:null;
+    function phVeld(key){ return vgl?vgl.velden.filter(function(v){ return v.key===key; })[0]:null; }
     function add(label,ov,nv,status,note){ c.push({label:label,oud:ov,nieuw:nv,status:status,note:note||""}); }
+    function addPhVeld(v,ov,nv){ add(v.label+" (premieherberekening)",ov,nv,v.status,v.note); }
 
     // Generieke vergelijking van velden die op beide polissen gelijk horen te zijn.
     // mode: "" tekst | "date" | "num" | "jn" | "code" (voorloopnullen negeren)
@@ -613,7 +703,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       if(a===""&&b===""){ st="info"; note="Beide leeg"; }
       else if(a===""||b===""){ st=(opts.soft||opts.info)?"info":"fail"; note="Alleen op één polis ingevuld"; }
       else if(a===b){ st="ok"; }
-      else if(opts.phNote){ st="ok"; note=opts.phNote; }
       else { st=opts.info?"info":(opts.soft?"warn":"fail"); note=opts.diffNote?opts.diffNote(ovRaw,nvRaw):(opts.info?"Wijkt af — niet als fout gerekend":"Waarden verschillen"); }
       add(label, ovRaw, nvRaw, st, note);
     }
@@ -666,18 +755,21 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     if(diff==null){ incSt="fail"; incNote="Bedrag ontbreekt of onleesbaar"; }
     else if(incOk){ incSt="ok"; incNote=incBasis; }
     else if(phOk){
-      // Premieherberekening afgerond: de marge vervalt, afwijking is goedgekeurd.
+      // Premieherberekening afgerond en gewijzigd: de marge vervalt.
       incSt="ok"; incLabel="Incassobedrag (premieherberekening — marge vervalt)";
-      incNote=incBasis+" — goedgekeurd: premie herberekend in Finconnect (brutowinst, omzet, personeel)";
+      incNote=incBasis+" — goedgekeurd: premie herberekend in Finconnect (gegevens gewijzigd t.o.v. de oude polis)";
     }
-    else { incSt="fail"; incNote=incBasis+(pct?" — premieverhoging niet juist verwerkt":""); }
+    else {
+      incSt="fail"; incNote=incBasis+(pct?" — premieverhoging niet juist verwerkt":"");
+      if(ph&&ph.afgerond&&phOordeel(ph)==="gelijk") incNote+=" — herberekening is gelijk aan de oude polis, dus de premie blijft oud"+(pct?" + verhoging":"");
+    }
     add(incLabel,txt(oud.row,oud.map,"incasso"),txt(nieuw.row,nieuw.map,"incasso"),incSt,incNote);
     // Premieherberekening uit de Finconnect-export (alleen AVB en bedrijfsschade).
     if(ph){
-      var phInfo=phGegevens(ph);
       add("Premieherberekening (Finconnect)","—",ph.status||"—",ph.afgerond?"ok":"info",
-          (ph.afgerond?"Match, afgerond — premie mag afwijken van de marge":"Gevonden maar nog niet afgerond — premie wordt gewoon op de marge getoetst")+
-          " · "+phMatchTekst(ph)+(phInfo.length?" · "+phInfo.join(" · "):""));
+          (ph.afgerond?"Afgerond — "+phOordeelTekst(ph)+(phOk?"; premiemarge vervalt":"; premie gewoon getoetst")
+                      :"Nog niet afgerond — premie wordt gewoon op de marge getoetst")+
+          " · "+phMatchTekst(ph)+(ph.rij.jaar?" · naverrekeningsjaar "+ph.rij.jaar:""));
     }
     // Wachtbestanddatum van de nieuwe polis (bepaalt of de verhoging geldt).
     if(ws==="geenkolom"){
@@ -696,24 +788,22 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     }
     // 9. bedragen / aantallen
     // Geschatte jaaromzet: alleen ter info, geen waarschuwing (niet in een pakket).
-    // Met een afgeronde premieherberekening is een verschil verklaard (ok).
-    function phNote(key){
-      if(!phOk) return "";
-      var v=phWaarde(ph,key);
-      return "Gewijzigd via premieherberekening"+(v?" (Finconnect: "+fmtNl(v)+")":"");
-    }
+    // Staat het gegeven in de premieherberekening, dan wordt het daartegen
+    // gecontroleerd (gelijk aan oud = zelfde overnemen, anders herberekende waarde).
     var oOud=num(txt(oud.row,oud.map,"omzet")), oNieuw=num(txt(nieuw.row,nieuw.map,"omzet"));
-    var oVerschil=(oOud!=null&&oNieuw!=null&&oOud!==oNieuw);
-    add("Geschatte jaaromzet",txt(oud.row,oud.map,"omzet"),txt(nieuw.row,nieuw.map,"omzet"),
-        (oOud!=null&&oNieuw!=null&&oOud===oNieuw)||(oVerschil&&phOk)?"ok":"info",
-        oVerschil?(phOk?phNote("omzet"):"Ter info; niet in een pakket, telt niet als afwijking"):"");
-    // Aantal personeelsleden: alleen ter info, geen waarschuwing.
+    if(phVeld("omzet")) addPhVeld(phVeld("omzet"),txt(oud.row,oud.map,"omzet"),txt(nieuw.row,nieuw.map,"omzet"));
+    else add("Geschatte jaaromzet",txt(oud.row,oud.map,"omzet"),txt(nieuw.row,nieuw.map,"omzet"),
+        (oOud!=null&&oNieuw!=null&&oOud===oNieuw)?"ok":"info",
+        (oOud!=null&&oNieuw!=null&&oOud!==oNieuw)?"Ter info; niet in een pakket, telt niet als afwijking":"");
+    // Aantal personeelsleden: zonder premieherberekening alleen ter info.
     var perOud=num(txt(oud.row,oud.map,"personeel")), perNw=num(txt(nieuw.row,nieuw.map,"personeel"));
-    var perVerschil=(perOud!=null&&perNw!=null&&perOud!==perNw);
-    add("Aantal personeelsleden",txt(oud.row,oud.map,"personeel"),txt(nieuw.row,nieuw.map,"personeel"),
-        (perOud!=null&&perNw!=null&&perOud===perNw)||(perVerschil&&phOk)?"ok":"info",
-        perVerschil?(phOk?"Gewijzigd via premieherberekening":"Ter info; telt niet als afwijking"):"");
-    vergelijk("Jaarloon (polis)","jaarloon","num",{soft:true, phNote:phNote("jaarloon")});
+    if(phVeld("personeel")) addPhVeld(phVeld("personeel"),txt(oud.row,oud.map,"personeel"),txt(nieuw.row,nieuw.map,"personeel"));
+    else add("Aantal personeelsleden",txt(oud.row,oud.map,"personeel"),txt(nieuw.row,nieuw.map,"personeel"),
+        (perOud!=null&&perNw!=null&&perOud===perNw)?"ok":"info",
+        (perOud!=null&&perNw!=null&&perOud!==perNw)?"Ter info; telt niet als afwijking":"");
+    if(phVeld("jaarloon")) addPhVeld(phVeld("jaarloon"),txt(oud.row,oud.map,"jaarloon"),txt(nieuw.row,nieuw.map,"jaarloon"));
+    else vergelijk("Jaarloon (polis)","jaarloon","num",{soft:true});
+    if(phVeld("brutowinst")) addPhVeld(phVeld("brutowinst"),txt(oud.row,oud.map,"brutowinst"),txt(nieuw.row,nieuw.map,"brutowinst"));
     // Eigen risico: op de nieuwe polis kan alleen 250 of 500 gekozen worden, dus
     // die zijn altijd goed. Gelijk is goed. Had de oude polis geen eigen risico
     // (0 of leeg), dan is elke nieuwe waarde goedgekeurd. Anders een afwijking.
@@ -747,7 +837,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       else { vbSt="warn"; vbNote="Verschilt — mogelijk aangepast via premieherberekening; controleer"+(phWaarde(ph,"brutowinst")?" (brutowinst Finconnect: "+fmtNl(phWaarde(ph,"brutowinst"))+")":""); }
     }
     else { vbSt="fail"; vbNote="Verzekerde bedragen verschillen"; }
-    add("Verzekerd bedrag (kolom of kolom A)", fmtEur(evO), fmtEur(evN), vbSt, vbNote);
+    // Bedrijfsschade: verzekerd bedrag = brutowinst uit de premieherberekening.
+    if(phVeld("verzbedrag")) addPhVeld(phVeld("verzbedrag"), fmtEur(evO), fmtEur(evN));
+    else add("Verzekerd bedrag (kolom of kolom A)", fmtEur(evO), fmtEur(evN), vbSt, vbNote);
     // 10. J/N-kenmerken (staan vaak alleen op de nieuwe polis -> let op i.p.v. kruis)
     vergelijk("Product bewerking J/N","productbew","jn",{soft:true});
     vergelijk("Mvz. voorrisico J/N","mvzvoorrisico","jn",{soft:true});
@@ -943,6 +1035,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     pairs.forEach(function(pr){ var k=stripZeros(txt(pr.nieuw.row,pr.nieuw.map,"relatienr")); relTotPh[k]=(relTotPh[k]||0)+1; });
     var results=pairs.map(function(pr){
       var ph=zoekPh(pr,p,relTotPh);
+      if(ph){
+        // Herberekening naast de oude polis: gelijk = zelfde overnemen (premie
+        // gewoon toetsen), gewijzigd = herberekende waarden (marge vervalt).
+        ph.vgl=pr.oud?phVergelijk(pr.oud,pr.nieuw,ph,p):null;
+        ph.margeVervalt=ph.afgerond && phOordeel(ph)!=="gelijk";
+      }
       if(!pr.oud) return {pair:pr,status:"fail",checks:[],orphan:true,ph:ph};
       var checks=p.checks(pr.oud,pr.nieuw,cfg,{ph:ph});
       var status=checks.some(function(c){return c.status==="fail";})?"fail":(checks.some(function(c){return c.status==="warn";})?"warn":"ok");
@@ -1006,20 +1104,21 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       return;
     }
     var afg=phState.rijen.filter(function(x){ return x.afgerond; }).length;
-    var gekoppeld=[], nAfg=0, nLopend=0, branches=[], geladenPh=[];
+    var gekoppeld=[], nGelijk=0, nGewijzigd=0, nLopend=0, branches=[], geladenPh=[];
     geladen().forEach(function(p){
       if(!p.premieherberekening) return;
       geladenPh.push(p.naam); branches=branches.concat(p.branches);
       stateVan[p.id].results.results.forEach(function(r){
         if(!r.ph) return;
-        gekoppeld.push(r.ph.rij); if(r.ph.afgerond) nAfg++; else nLopend++;
+        gekoppeld.push(r.ph.rij);
+        if(!r.ph.afgerond) nLopend++; else if(phOordeel(r.ph)==="gelijk") nGelijk++; else nGewijzigd++;
       });
     });
     var los=phState.rijen.filter(function(x){ return branches.indexOf(x.branche)!==-1 && gekoppeld.indexOf(x)===-1; });
     var html='<span class="filename">'+esc(phState.name)+'</span>'+
       '<span>'+phState.rijen.length+' regel'+(phState.rijen.length===1?'':'s')+' &middot; '+afg+' afgerond</span>';
     if(geladenPh.length){
-      html+='<span class="phtag">'+nAfg+' match afgerond</span>'+(nLopend?'<span class="phtag lopend">'+nLopend+' nog niet afgerond</span>':'')+
+      html+='<span class="phtag gelijk">'+nGelijk+' gelijk aan oud</span><span class="phtag">'+nGewijzigd+' gewijzigd</span>'+(nLopend?'<span class="phtag lopend">'+nLopend+' nog niet afgerond</span>':'')+
         (los.length?'<span>&middot; '+los.length+' zonder polis in '+esc(geladenPh.join("/"))+'</span>':'');
     } else {
       html+='<span>&middot; laad '+esc(namen)+' om te koppelen</span>';
@@ -1083,7 +1182,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     var paKolom=res.some(function(r){return r.proef==="ok"||r.proef==="niet";});
     var herzienN=res.filter(function(r){return r.herzien;}).length;
     var wachtKolom=res.some(function(r){return r.wachtKolom;});
-    var phAfg=res.filter(function(r){return r.ph&&r.ph.afgerond;}).length;
+    var phAfg=res.filter(function(r){return r.ph&&r.ph.afgerond;});
+    var phGelijk=phAfg.filter(function(r){return phOordeel(r.ph)==="gelijk";}).length;
+    var phGewijzigd=phAfg.length-phGelijk;
     var phLopend=res.filter(function(r){return r.ph&&!r.ph.afgerond;}).length;
     var html="";
     if(s.isSample) html+='<div class="banner info"><strong>Voorbeeldgegevens.</strong> Upload je eigen export om je eigen bestand te controleren.</div>';
@@ -1092,7 +1193,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       tile(failN,"met afwijking",failN?"fail":"")+tile(los,"losse regels",los?"warn":"")+
       (paKolom?tile(geenPa,"proefacceptatie niet uitgevoerd",geenPa?"fail":"ok"):"")+
       (wachtKolom?tile(herzienN,"premieberekening herzien: +"+esc(String(d.cfg.verhoging).replace(".",","))+"% (wachtbestand na "+esc(datumTekst(d.cfg.wachtGrens))+")",herzienN?"warn":"ok"):"")+
-      (d.cfg.ph?tile(phAfg,"premieherberekening match (afgerond) — marge vervalt","ph")+(phLopend?tile(phLopend,"premieherberekening nog niet afgerond",""):""):"")+'</div>';
+      (d.cfg.ph?tile(phGelijk,"premieherberekening gelijk aan oude polis — zelfde overnemen","ph")+
+                tile(phGewijzigd,"premieherberekening gewijzigd — herberekende waarden overnemen, marge vervalt","ph")+
+                (phLopend?tile(phLopend,"premieherberekening nog niet afgerond",""):""):"")+'</div>';
     if(prod().premieherberekening && !phState.rijen.length){
       html+='<p class="relfilterinfo" style="margin-top:10px">Tip: sleep de export <strong>Premieherberekening</strong> (Finconnect) in het blauwe uploadvak. Polissen met status <em>Afgerond</em> krijgen dan het label Premieherberekening en hoeven niet binnen de premiemarge te vallen.</p>';
     }
@@ -1221,7 +1324,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       var pol=txt(r.pair.nieuw.row,r.pair.nieuw.map,"polisnr");
       var mark=r.status==="ok"?"✓":(r.status==="warn"?"!":"✗");
       var avb=r.avbTot>1?" ["+prod().naam+" "+r.avbIdx+"/"+r.avbTot+"]":"";
-      var phm=r.ph?(r.ph.afgerond?" · premieherberekening":" · premieherberekening loopt"):"";
+      var phm=r.ph?(r.ph.afgerond?" · premieherberekening "+(phOordeel(r.ph)==="geen"?"":phOordeel(r.ph)):" · premieherberekening loopt"):"";
       return '<option value="'+i+'"'+(i===s.idx?" selected":"")+'>'+mark+"  Klant "+esc(dash(rel))+avb+" · polis "+esc(dash(pol))+" — "+esc(statusWoord(r))+esc(phm)+'</option>';
     }).join("");
     $("navigatie").innerHTML=
@@ -1263,9 +1366,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       var phInfo=phGegevens(r.ph), phUrl=txt(r.ph.rij.row,r.ph.rij.map,"url");
       html+='<div class="banner ph"><strong>'+(r.ph.afgerond?'Premieherberekening match':'Premieherberekening nog niet afgerond')+'</strong> &mdash; Finconnect-status: '+esc(r.ph.status||"leeg")+
         ' &middot; '+esc(phMatchTekst(r.ph))+(phInfo.length?' &middot; '+esc(phInfo.join(" · ")):'')+'. '+
-        (r.ph.afgerond?'De premie mag afwijken (brutowinst, omzet, personeel) en hoeft niet binnen de marge te vallen.'
-                      :'De premie wordt gewoon op de marge getoetst tot de herberekening is afgerond.')+
+        (!r.ph.afgerond?'De premie wordt gewoon op de marge getoetst tot de herberekening is afgerond.'
+          :(r.ph.margeVervalt?'Gegevens gewijzigd t.o.v. de oude polis: herberekende waarden overnemen; de premie mag afwijken en hoeft niet binnen de marge te vallen.'
+                             :'Gegevens gelijk aan de oude polis: zelfde overnemen; de premie wordt gewoon getoetst (oud + verhoging, binnen de marge).'))+
         (/^https:\/\//i.test(phUrl)?' <a href="'+esc(phUrl)+'" target="_blank" rel="noopener">Open in Finconnect</a>':'')+'</div>';
+      html+=phVglHtml(r.ph);
     }
     // Dekking direct in beeld, voor elk product.
     if(heeftDekKolom(cfg.header)){
@@ -1281,7 +1386,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       html+='<div class="banner warn"><strong>&#9888; Premieberekening herzien.</strong> De nieuwe polis staat sinds '+esc(txt(n.row,n.map,"wachtdatum"))+
         ' in het wachtbestand (na '+esc(datumTekst(cfg.wachtGrens))+'): de premie gaat met '+esc(String(cfg.verhoging).replace(".",","))+'% omhoog'+
         (iO!=null?' &mdash; verwacht incassobedrag '+esc((Math.round(iO*(1+cfg.verhoging/100)*100)/100).toFixed(2).replace(".",","))+' (oud '+esc(iO.toFixed(2).replace(".",","))+')':'')+'.'+
-        (r.ph&&r.ph.afgerond?' Premieherberekening afgerond: een afwijking van dit bedrag is toegestaan.':'')+'</div>';
+        (r.ph&&r.ph.margeVervalt?' Premieherberekening gewijzigd: een afwijking van dit bedrag is toegestaan.':'')+
+        (r.ph&&r.ph.afgerond&&!r.ph.margeVervalt?' Premieherberekening gelijk aan de oude polis: dit bedrag geldt gewoon.':'')+'</div>';
     }
     // Andere producten van dezelfde relatie in één oogopslag.
     var andere=opts.relBalk?relatieItems(stripZeros(rel)).filter(function(it){ return it.p.id!==r.prodId || it.idx!==idx; }):[];
@@ -1337,7 +1443,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     $("footer").innerHTML="Kolommen worden herkend op koptekst; ontbreekt een kop, dan valt de tool terug op de vaste kolomvolgorde van de standaardexport. "+
       "Koppeling oud&rarr;nieuw via <code>Polisnr. oude mij.</code> van de nieuwe polis tegenover het polisnummer van de oude polis. "+
       "Premieverhoging per product bij een wachtbestanddatum na de grensdatum (zie Instellingen). "+
-      "Premieherberekening (Finconnect): match op polisnummer (of relatienummer + branche); bij status Afgerond vervalt de premiemarge voor AVB en Bedrijfsschade.";
+      "Premieherberekening (Finconnect): match op polisnummer (of relatienummer + branche); jaarloon, omzet, brutowinst en medewerkers worden naast de oude polis gezet. Gelijk = zelfde overnemen (premie gewoon getoetst); gewijzigd en afgerond = herberekende waarden overnemen, premiemarge vervalt (AVB en Bedrijfsschade).";
   }
 
   function buildReport(d,p,s){
@@ -1347,7 +1453,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     d.results.forEach(function(r){
       var n=r.pair.nieuw,o=r.pair.oud;
       lines.push("Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+(o?" | oud "+txt(o.row,o.map,"polisnr"):" | GEEN OUDE POLIS")+" => "+r.status.toUpperCase()+
-        (r.ph?(r.ph.afgerond?" [PREMIEHERBEREKENING]":" [premieherberekening loopt: "+(r.ph.status||"-")+"]"):""));
+        (r.ph?(r.ph.afgerond?" [PREMIEHERBEREKENING "+phOordeel(r.ph).toUpperCase()+"]":" [premieherberekening loopt: "+(r.ph.status||"-")+"]"):""));
       r.checks.filter(function(c){return c.status!=="ok";}).forEach(function(c){
         lines.push("   - "+c.label+": oud="+(c.oud||"-")+" nieuw="+(c.nieuw||"-")+(c.note?" ("+c.note+")":""));
       });
@@ -1370,15 +1476,25 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           (o?" | oud "+txt(o.row,o.map,"polisnr"):" | nog invoeren"));
       });
     }
+    // Premieherberekeningen: gelijk aan de oude polis (zelfde overnemen) of
+    // gewijzigd (herberekende waarden overnemen, marge vervalt).
     var phLijst=d.results.filter(function(r){ return r.ph&&r.ph.afgerond; });
-    if(phLijst.length){
-      lines.push("","PREMIEHERBEREKENING MATCH (afgerond in Finconnect, premiemarge vervalt) — "+phLijst.length);
-      phLijst.forEach(function(r){
+    [["gelijk","PREMIEHERBEREKENING GELIJK AAN OUDE POLIS (zelfde overnemen, premie gewoon getoetst)"],
+     ["gewijzigd","PREMIEHERBEREKENING GEWIJZIGD (herberekende waarden overnemen, premiemarge vervalt)"],
+     ["geen","PREMIEHERBEREKENING ZONDER GEGEVENS OM TE VERGELIJKEN (premiemarge vervalt)"]].forEach(function(g){
+      var lijst=phLijst.filter(function(r){ return phOordeel(r.ph)===g[0]; });
+      if(!lijst.length) return;
+      lines.push("",g[1]+" — "+lijst.length);
+      lijst.forEach(function(r){
         var n=r.pair.nieuw,o=r.pair.oud;
         lines.push("   Relatie "+txt(n.row,n.map,"relatienr")+" | nieuw "+txt(n.row,n.map,"polisnr")+(o?" | oud "+txt(o.row,o.map,"polisnr"):" | nog invoeren")+
-          " | "+(o?txt(o.row,o.map,"incasso"):"-")+" -> "+txt(n.row,n.map,"incasso")+" ("+phMatchTekst(r.ph)+")");
+          " | incasso "+(o?txt(o.row,o.map,"incasso"):"-")+" -> "+txt(n.row,n.map,"incasso")+" ("+phMatchTekst(r.ph)+")");
+        (r.ph.vgl?r.ph.vgl.velden:[]).forEach(function(v){
+          lines.push("      "+v.label+": oud "+(v.oud==null?"-":fmtNl(v.oud))+" | Finconnect "+v.phTekst+" | nieuw "+(v.nieuw==null?"-":fmtNl(v.nieuw))+
+            " => "+(v.uitkomst==="gelijk"?"gelijk, zelfde overnemen":"herberekende waarde "+fmtNl(v.ph)+" overnemen")+(v.status==="fail"?" — NIET JUIST op nieuwe polis":(v.status==="warn"?" — nieuwe polis leeg":"")));
+        });
       });
-    }
+    });
     return lines.join("\n");
   }
 
@@ -1660,7 +1776,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         var r=it.r, n=r.pair.nieuw, o=r.pair.oud;
         var afw=r.orphan?["nog invoeren"]:r.checks.filter(function(c){return c.status==="fail";}).map(function(c){return c.label;});
         lines.push("   - "+it.p.naam+": "+(o?txt(o.row,o.map,"polisnr")+" -> ":"")+txt(n.row,n.map,"polisnr")+" => "+statusWoord(r)+(afw.length?" ("+afw.join("; ")+")":"")+
-          (r.ph?(r.ph.afgerond?" [premieherberekening]":" [premieherberekening loopt]"):""));
+          (r.ph?(r.ph.afgerond?" [premieherberekening "+phOordeel(r.ph)+"]":" [premieherberekening loopt]"):""));
       });
     });
     return lines.join("\n");
