@@ -1,0 +1,6 @@
+# Persoonsgegevens (AVG): ruwe exports, historie en gegenereerd dashboard blijven lokaal
+input/
+data/
+dashboard.html
+# Credentials voor de Atlassian API — nooit committen
+.atlassian.env

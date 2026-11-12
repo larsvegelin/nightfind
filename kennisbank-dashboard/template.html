@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kennisbank-analytics — De Waerdse</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:      #f9f9f7;
+    --surface:   #fcfcfb;
+    --ink:       #0b0b0b;
+    --ink-2:     #52514e;
+    --muted:     #898781;
+    --grid:      #e1e0d9;
+    --baseline:  #c3c2b7;
+    --border:    rgba(11,11,11,0.10);
+    --series-1:  #2a78d6;
+    --series-2:  #eb6834;
+    --good:      #006300;
+    --critical:  #d03b3b;
+    --wash:      rgba(11,11,11,0.045);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page:      #0d0d0d;
+      --surface:   #1a1a19;
+      --ink:       #ffffff;
+      --ink-2:     #c3c2b7;
+      --muted:     #898781;
+      --grid:      #2c2c2a;
+      --baseline:  #383835;
+      --border:    rgba(255,255,255,0.10);
+      --series-1:  #3987e5;
+      --series-2:  #d95926;
+      --good:      #0ca30c;
+      --critical:  #e66767;
+      --wash:      rgba(255,255,255,0.06);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:      #0d0d0d;
+    --surface:   #1a1a19;
+    --ink:       #ffffff;
+    --ink-2:     #c3c2b7;
+    --muted:     #898781;
+    --grid:      #2c2c2a;
+    --baseline:  #383835;
+    --border:    rgba(255,255,255,0.10);
+    --series-1:  #3987e5;
+    --series-2:  #d95926;
+    --good:      #0ca30c;
+    --critical:  #e66767;
+    --wash:      rgba(255,255,255,0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
+  header.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  h1 { font-size: 21px; margin: 0; }
+  .sub { color: var(--ink-2); font-size: 13px; margin: 2px 0 18px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; }
+  button, .btn {
+    font: inherit; font-size: 13px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 12px; cursor: pointer;
+  }
+  button:hover { background: var(--wash); }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 20px; }
+  .filters .lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-right: 2px; }
+  .chip { border-radius: 999px; padding: 4px 14px; }
+  .chip[aria-pressed="true"] { border-color: var(--ink); font-weight: 600; }
+  .chip[disabled] { opacity: .45; cursor: not-allowed; }
+  select {
+    font: inherit; font-size: 13px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+    padding: 4px 10px; cursor: pointer; max-width: 260px;
+  }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px 12px; }
+  .kpi .k-label { color: var(--ink-2); font-size: 12.5px; }
+  .kpi .k-value { font-size: 30px; font-weight: 650; line-height: 1.15; margin: 2px 0 0; }
+  .kpi .k-note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  section.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px 16px; margin-bottom: 20px; }
+  section.card h2 { font-size: 15px; margin: 0 0 2px; }
+  section.card .desc { color: var(--ink-2); font-size: 12.5px; margin: 0 0 14px; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .chart-wrap { position: relative; }
+  .chart-wrap svg { display: block; width: 100%; height: auto; }
+  .tooltip {
+    position: absolute; pointer-events: none; z-index: 5; display: none;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18); padding: 7px 10px; font-size: 12.5px; white-space: nowrap;
+  }
+  .tooltip .t-title { color: var(--ink-2); margin-bottom: 2px; }
+  .tooltip .t-val { font-weight: 600; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: baseline; }
+
+  .bars { display: flex; flex-direction: column; gap: 2px; }
+  .bar-row { display: grid; grid-template-columns: minmax(140px, 300px) 1fr 110px; gap: 10px; align-items: center; padding: 3px 4px; border-radius: 6px; }
+  .bar-row:hover { background: var(--wash); }
+  .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .bar-track { height: 14px; position: relative; }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; background: var(--series-1); border-radius: 0 4px 4px 0; min-width: 2px; }
+  .bar-val { font-size: 12.5px; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bar-val b { color: var(--ink); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--grid); }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--wash); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .table-scroll { overflow: auto; max-height: 430px; }
+  .table-scroll thead th { position: sticky; top: 0; background: var(--surface); }
+  @media print { .table-scroll { max-height: none; overflow: visible; } }
+  .pill { display: inline-block; font-size: 11.5px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; color: var(--ink-2); }
+  .pill.crit { color: var(--critical); border-color: currentColor; }
+  .pill.good { color: var(--good); border-color: currentColor; }
+  .unknown { color: var(--muted); font-style: italic; }
+  .empty { color: var(--muted); padding: 10px 4px; font-size: 13px; }
+  .footnote { color: var(--muted); font-size: 12px; margin-top: 28px; line-height: 1.6; }
+  .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--ink-2); margin: 2px 0 8px; }
+
+  @media print {
+    :root { --page: #fff; --surface: #fff; }
+    .toolbar, .filters, .csv-btn { display: none !important; }
+    section.card { break-inside: avoid; border-color: #ddd; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Kennisbank-analytics</h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div class="toolbar">
+      <button id="themeBtn" title="Wissel licht/donker">◐ Thema</button>
+      <button onclick="window.print()">⎙ Print / PDF</button>
+    </div>
+  </header>
+
+  <div class="filters">
+    <span class="lbl">Periode</span>
+    <button class="chip" data-days="7">Laatste 7 dagen</button>
+    <button class="chip" data-days="14">Laatste 14 dagen</button>
+    <button class="chip" data-days="30">Laatste 30 dagen</button>
+    <button class="chip" data-days="all" aria-pressed="true">Alles</button>
+    <span class="lbl" style="margin-left:16px">Groep</span>
+    <select id="groupSelect" title="Filtert alle onderdelen op groepslidmaatschap"></select>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section class="card">
+    <div class="card-head">
+      <div><h2>Trend</h2><p class="desc">Activiteit per dag binnen de gekozen periode (tijdzone: Europe/Amsterdam).</p></div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="legend"><span><span class="dot" style="background:var(--series-1)"></span>Paginaweergaven per dag</span></div>
+        <div class="chart-wrap" id="chartViews"></div>
+      </div>
+      <div>
+        <div class="legend"><span><span class="dot" style="background:var(--series-2)"></span>Unieke gebruikers per dag</span></div>
+        <div class="chart-wrap" id="chartUsers"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div><h2>Populairste pagina's</h2><p class="desc">Weergaven én unieke gebruikers per pagina — 1 gebruiker die 200× ververst is geen populariteit.</p></div>
+      <button class="csv-btn" data-export="pages">⬇ CSV</button>
+    </div>
+    <div class="bars" id="topPages"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div><h2>Gebruikersactiviteit</h2><p class="desc">Wie gebruikte de kennisbank in de gekozen periode.</p></div>
+      <button class="csv-btn" data-export="activity">⬇ CSV</button>
+    </div>
+    <div class="table-scroll" id="activityTable"></div>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-head">
+        <div><h2>Nooit gebruikt</h2><p class="desc" id="neverDesc"></p></div>
+        <button class="csv-btn" data-export="never">⬇ CSV</button>
+      </div>
+      <div class="table-scroll" id="neverTable"></div>
+    </section>
+    <section class="card">
+      <div class="card-head">
+        <div><h2>90+ dagen inactief</h2><p class="desc">Beheerde accounts met Confluence-toegang, langer dan 90 dagen geen activiteit (bron: paginaweergaven + Atlassian «last active»).</p></div>
+        <button class="csv-btn" data-export="inactive">⬇ CSV</button>
+      </div>
+      <div class="table-scroll" id="inactiveTable"></div>
+    </section>
+  </div>
+
+  <section class="card" id="orphanCard" hidden>
+    <div class="card-head">
+      <div><h2>Verweesde pagina's</h2><p class="desc">Pagina's uit de Confluence-inventaris zonder één weergave in de gekozen periode. Oud + ongelezen = opschoonkandidaat.</p></div>
+      <button class="csv-btn" data-export="orphan">⬇ CSV</button>
+    </div>
+    <div class="table-scroll" id="orphanTable"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div><h2>Onbekende bezoekers</h2><p class="desc">Account-id's uit Refined die niet in de aangeleverde Atlassian-gebruikerslijst staan. Zodra de volledige gebruikerslijst (incl. klantaccounts) beschikbaar is, krijgen deze een naam.</p></div>
+      <button class="csv-btn" data-export="unknown">⬇ CSV</button>
+    </div>
+    <div class="table-scroll" id="unknownTable"></div>
+  </section>
+
+  <p class="footnote" id="footnote"></p>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+const TZ = "Europe/Amsterdam";
+const fmtInt = new Intl.NumberFormat("nl-NL");
+const dayFmt = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", timeZone: TZ });
+const dayFmtFull = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: TZ });
+const dtFmt = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: TZ });
+const isoDay = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+
+// ---- basisafleidingen ------------------------------------------------------
+const events = DATA.events.map(([m, a, p]) => ({ ts: m * 60000, acc: a, page: p }));
+const accounts = DATA.accounts;
+const pages = DATA.pages;
+const lastTs = events.length ? events[events.length - 1].ts : Date.now();
+const firstTs = events.length ? events[0].ts : Date.now();
+const lastDay = isoDay.format(new Date(lastTs));
+const firstDay = isoDay.format(new Date(firstTs));
+for (const e of events) e.day = isoDay.format(new Date(e.ts));
+
+function dayMinus(dayStr, n) {
+  const d = new Date(dayStr + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+function accName(i) { return accounts[i].name; }
+function accLabel(i) {
+  return accounts[i].name || ("onbekend · " + accounts[i].id.slice(-8));
+}
+
+// ---- state -----------------------------------------------------------------
+const state = { days: null, group: null }; // null = alles
+
+function accountInGroup(accIdx) {
+  if (!state.group) return true;
+  const gs = accounts[accIdx].groups || [];
+  return state.group === "(geen groep)" ? gs.length === 0 : gs.includes(state.group);
+}
+function groupFiltered(list) { // accounts-lijst filteren op groepskeuze
+  if (!state.group) return list;
+  return list.filter(a => {
+    const gs = a.groups || [];
+    return state.group === "(geen groep)" ? gs.length === 0 : gs.includes(state.group);
+  });
+}
+function periodEvents() {
+  const from = state.days ? dayMinus(lastDay, state.days - 1) : null;
+  return events.filter(e => (!from || e.day >= from) && accountInGroup(e.acc));
+}
+function periodLabel() {
+  if (!state.days) return `${dayFmtFull.format(new Date(firstTs))} – ${dayFmtFull.format(new Date(lastTs))}`;
+  return `laatste ${state.days} dagen t/m ${dayFmtFull.format(new Date(lastTs))}`;
+}
+
+// ---- KPI's -----------------------------------------------------------------
+function uniqueAccountsSince(fromDay) {
+  const s = new Set();
+  for (const e of events) if (e.day >= fromDay && accountInGroup(e.acc)) s.add(e.acc);
+  return s.size;
+}
+function renderKpis() {
+  const matched = events.filter(e => accName(e.acc)).length;
+  const matchPct = events.length ? Math.round(100 * matched / events.length) : 0;
+  const managedWithAccess = groupFiltered(accounts.filter(a => a.managed && a.confluenceAccess));
+  const seen = new Set(events.map(e => accounts[e.acc].id));
+  const neverUsed = managedWithAccess.filter(a => !seen.has(a.id)).length;
+  const pe = periodEvents();
+  const kpis = [
+    { label: "Unieke gebruikers, laatste dag", value: uniqueAccountsSince(lastDay), note: dayFmtFull.format(new Date(lastTs)) },
+    { label: "Unieke gebruikers, 7 dagen", value: uniqueAccountsSince(dayMinus(lastDay, 6)), note: "t/m laatste dag met data" },
+    { label: "Unieke gebruikers, 30 dagen", value: uniqueAccountsSince(dayMinus(lastDay, 29)), note: "t/m laatste dag met data" },
+    { label: "Paginaweergaven, periode", value: pe.length, note: periodLabel() },
+    { label: "Weergaven met bekende naam", value: matchPct + "%", note: `${fmtInt.format(matched)} van ${fmtInt.format(events.length)} weergaven` },
+    { label: "Nooit gebruikt", value: neverUsed, note: `van ${managedWithAccess.length} accounts met toegang` },
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(k =>
+    `<div class="kpi"><div class="k-label">${k.label}</div><div class="k-value">${typeof k.value === "number" ? fmtInt.format(k.value) : k.value}</div><div class="k-note">${k.note}</div></div>`
+  ).join("");
+}
+
+// ---- lijngrafiek -----------------------------------------------------------
+const tooltip = document.getElementById("tooltip");
+function showTip(html, x, y) {
+  tooltip.innerHTML = html; tooltip.style.display = "block";
+  const r = tooltip.getBoundingClientRect();
+  let left = x + 14, top = y - r.height - 10;
+  if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+  if (top < 4) top = y + 14;
+  tooltip.style.left = (left + window.scrollX) + "px";
+  tooltip.style.top = (top + window.scrollY) + "px";
+}
+function hideTip() { tooltip.style.display = "none"; }
+
+function renderLineChart(el, series, colorVar, unitLabel) {
+  const W = 540, H = 220, padL = 38, padR = 10, padT = 12, padB = 26;
+  const el2 = document.getElementById(el);
+  if (!series.length) { el2.innerHTML = '<div class="empty">Geen data in deze periode.</div>'; return; }
+  const maxV = Math.max(1, ...series.map(d => d.v));
+  const niceMax = Math.ceil(maxV / 4) * 4;
+  const x = i => padL + (series.length === 1 ? (W - padL - padR) / 2 : i * (W - padL - padR) / (series.length - 1));
+  const y = v => padT + (H - padT - padB) * (1 - v / niceMax);
+  let grid = "", yticks = "";
+  for (let g = 0; g <= 4; g++) {
+    const v = niceMax * g / 4, yy = y(v);
+    grid += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/>`;
+    yticks += `<text x="${padL - 6}" y="${yy + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${fmtInt.format(v)}</text>`;
+  }
+  const tickEvery = Math.max(1, Math.ceil(series.length / 7));
+  let xticks = "";
+  series.forEach((d, i) => {
+    if (i % tickEvery === 0 || i === series.length - 1)
+      xticks += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${dayFmt.format(new Date(d.day + "T12:00:00"))}</text>`;
+  });
+  const path = series.map((d, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(d.v).toFixed(1)).join(" ");
+  el2.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${unitLabel} per dag">
+    ${grid}${yticks}${xticks}
+    <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="var(--baseline)" stroke-width="1"/>
+    <path d="${path}" fill="none" stroke="var(${colorVar})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <line id="cross" y1="${padT}" y2="${H - padB}" stroke="var(--baseline)" stroke-width="1" visibility="hidden"/>
+    <circle id="hoverdot" r="4" fill="var(${colorVar})" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+    <rect x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="transparent"/>
+  </svg>`;
+  const svg = el2.querySelector("svg"), cross = svg.querySelector("#cross"), dot = svg.querySelector("#hoverdot");
+  const hit = svg.querySelector("rect:last-of-type");
+  hit.addEventListener("mousemove", ev => {
+    const rect = svg.getBoundingClientRect();
+    const sx = (ev.clientX - rect.left) * W / rect.width;
+    let best = 0, bd = 1e9;
+    series.forEach((d, i) => { const dd = Math.abs(x(i) - sx); if (dd < bd) { bd = dd; best = i; } });
+    const d = series[best];
+    cross.setAttribute("x1", x(best)); cross.setAttribute("x2", x(best)); cross.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", x(best)); dot.setAttribute("cy", y(d.v)); dot.setAttribute("visibility", "visible");
+    showTip(`<div class="t-title">${dayFmtFull.format(new Date(d.day + "T12:00:00"))}</div><div class="t-val"><span class="dot" style="background:var(${colorVar})"></span>${fmtInt.format(d.v)} ${unitLabel}</div>`, ev.clientX, ev.clientY);
+  });
+  hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); hideTip(); });
+}
+
+function renderTrend() {
+  const pe = periodEvents();
+  const from = state.days ? dayMinus(lastDay, state.days - 1) : firstDay;
+  const days = [];
+  for (let d = from; d <= lastDay; d = dayMinus(d, -1)) days.push(d);
+  const viewsPerDay = new Map(days.map(d => [d, 0]));
+  const usersPerDay = new Map(days.map(d => [d, new Set()]));
+  for (const e of pe) {
+    if (!viewsPerDay.has(e.day)) continue;
+    viewsPerDay.set(e.day, viewsPerDay.get(e.day) + 1);
+    usersPerDay.get(e.day).add(e.acc);
+  }
+  renderLineChart("chartViews", days.map(d => ({ day: d, v: viewsPerDay.get(d) })), "--series-1", "weergaven");
+  renderLineChart("chartUsers", days.map(d => ({ day: d, v: usersPerDay.get(d).size })), "--series-2", "gebruikers");
+}
+
+// ---- populairste pagina's --------------------------------------------------
+let pagesExport = [];
+function renderTopPages() {
+  const pe = periodEvents();
+  const agg = new Map();
+  for (const e of pe) {
+    if (!agg.has(e.page)) agg.set(e.page, { views: 0, users: new Set() });
+    const a = agg.get(e.page); a.views++; a.users.add(e.acc);
+  }
+  const rows = [...agg.entries()]
+    .map(([p, a]) => ({ title: pages[p].title, id: pages[p].id, views: a.views, users: a.users.size }))
+    .sort((a, b) => b.views - a.views);
+  pagesExport = rows;
+  const top = rows.slice(0, 15);
+  const max = top.length ? top[0].views : 1;
+  document.getElementById("topPages").innerHTML = top.map(r =>
+    `<div class="bar-row" title="${r.title.replace(/"/g, "&quot;")}">
+      <div class="bar-label">${r.title}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(100 * r.views / max).toFixed(1)}%"></div></div>
+      <div class="bar-val"><b>${fmtInt.format(r.views)}</b> · ${fmtInt.format(r.users)} gebr.</div>
+    </div>`).join("") || '<div class="empty">Geen data in deze periode.</div>';
+}
+
+// ---- tabellen --------------------------------------------------------------
+function tableHTML(headers, rows, emptyMsg) {
+  if (!rows.length) return `<div class="empty">${emptyMsg}</div>`;
+  return `<table><thead><tr>${headers.map(h => `<th${h.num ? ' class="num"' : ""}>${h.t}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td${headers[i].num ? ' class="num"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+let activityExport = [], neverExport = [], inactiveExport = [], unknownExport = [], orphanExport = [];
+
+function renderActivity() {
+  const pe = periodEvents();
+  const agg = new Map();
+  for (const e of pe) {
+    if (!agg.has(e.acc)) agg.set(e.acc, { views: 0, pages: new Set(), last: 0 });
+    const a = agg.get(e.acc); a.views++; a.pages.add(e.page); a.last = Math.max(a.last, e.ts);
+  }
+  const rows = [...agg.entries()]
+    .map(([i, a]) => ({ i, name: accName(i), views: a.views, pages: a.pages.size, last: a.last }))
+    .sort((a, b) => b.last - a.last);
+  activityExport = rows.map(r => ({ naam: r.name || "", account_id: accounts[r.i].id, email: accounts[r.i].email || "", groep: (accounts[r.i].groups || []).join("; "), weergaven: r.views, unieke_paginas: r.pages, laatste_activiteit: new Date(r.last).toISOString() }));
+  document.getElementById("activityTable").innerHTML = tableHTML(
+    [{ t: "Gebruiker" }, { t: "Groep" }, { t: "Weergaven", num: 1 }, { t: "Unieke pagina's", num: 1 }, { t: "Laatste activiteit" }],
+    rows.map(r => [
+      r.name ? r.name : `<span class="unknown">${accLabel(r.i)}</span>`,
+      groupLabel(accounts[r.i]),
+      fmtInt.format(r.views), fmtInt.format(r.pages), dtFmt.format(new Date(r.last)),
+    ]),
+    "Geen activiteit in deze periode.");
+}
+
+function groupLabel(a) {
+  if (!DATA.hasGroups) return "<span class='unknown'>n.n.b.</span>";
+  return (a.groups || []).join(", ") || "(geen groep)";
+}
+function renderNever() {
+  const seen = new Set(events.map(e => accounts[e.acc].id));
+  const rows = groupFiltered(accounts.filter(a => a.managed && a.confluenceAccess && !seen.has(a.id)))
+    .sort((a, b) => groupLabel(a).localeCompare(groupLabel(b)) || (a.name || "").localeCompare(b.name || ""));
+  neverExport = rows.map(a => ({ naam: a.name, email: a.email, groep: (a.groups || []).join("; "), atlassian_last_active_confluence: a.atlassianLastActive || "" }));
+  document.getElementById("neverDesc").textContent =
+    `Accounts met Confluence-toegang zonder één paginaweergave sinds start meting (${dayFmtFull.format(new Date(firstTs))}).`;
+  document.getElementById("neverTable").innerHTML = tableHTML(
+    [{ t: "Naam" }, { t: "Groep" }, { t: "Laatst actief (Atlassian)" }],
+    rows.map(a => [a.name, groupLabel(a), a.atlassianLastActive || '<span class="pill crit">nooit gezien</span>']),
+    "Alle accounts met toegang hebben de kennisbank gebruikt. 🎉");
+}
+
+function renderInactive() {
+  const lastView = new Map();
+  for (const e of events) {
+    const id = accounts[e.acc].id;
+    lastView.set(id, Math.max(lastView.get(id) || 0, e.ts));
+  }
+  const cutoff = lastTs - 90 * 864e5;
+  const rows = groupFiltered(accounts.filter(a => a.managed && a.confluenceAccess))
+    .map(a => {
+      const lv = lastView.get(a.id) || 0;
+      const la = a.atlassianLastActive ? Date.parse(a.atlassianLastActive + "T12:00:00Z") : 0;
+      return { a, last: Math.max(lv, la) };
+    })
+    .filter(r => r.last < cutoff)
+    .sort((a, b) => groupLabel(a.a).localeCompare(groupLabel(b.a)) || a.last - b.last);
+  inactiveExport = rows.map(r => ({ naam: r.a.name, email: r.a.email, groep: (r.a.groups || []).join("; "), laatst_gezien: r.last ? new Date(r.last).toISOString().slice(0, 10) : "nooit" }));
+  document.getElementById("inactiveTable").innerHTML = tableHTML(
+    [{ t: "Naam" }, { t: "Groep" }, { t: "Laatst gezien" }],
+    rows.map(r => [r.a.name, groupLabel(r.a), r.last ? dayFmtFull.format(new Date(r.last)) : '<span class="pill crit">nooit</span>']),
+    "Geen accounts langer dan 90 dagen inactief.");
+}
+
+function renderOrphan() {
+  const card = document.getElementById("orphanCard");
+  if (!DATA.inventory || !DATA.inventory.length) { card.hidden = true; orphanExport = []; return; }
+  card.hidden = false;
+  const pe = periodEvents();
+  const viewed = new Set(pe.map(e => pages[e.page].id));
+  const rows = DATA.inventory.filter(p => !viewed.has(p.id))
+    .sort((a, b) => (a.lastModified || "").localeCompare(b.lastModified || ""));
+  orphanExport = rows.map(p => ({ titel: p.title, space: p.space, laatst_gewijzigd: p.lastModified, url: p.url }));
+  document.getElementById("orphanTable").innerHTML = tableHTML(
+    [{ t: "Pagina" }, { t: "Space" }, { t: "Laatst gewijzigd" }],
+    rows.map(p => [p.url ? `<a href="${p.url}" target="_blank" rel="noopener">${p.title}</a>` : p.title, p.space, p.lastModified || "—"]),
+    "Elke pagina uit de inventaris is in deze periode minstens één keer bekeken. 🎉");
+}
+
+function renderUnknown() {
+  const agg = new Map();
+  for (const e of events) {
+    if (accName(e.acc)) continue;
+    if (!agg.has(e.acc)) agg.set(e.acc, { views: 0, last: 0 });
+    const a = agg.get(e.acc); a.views++; a.last = Math.max(a.last, e.ts);
+  }
+  const rows = [...agg.entries()].map(([i, a]) => ({ id: accounts[i].id, views: a.views, last: a.last }))
+    .sort((a, b) => b.views - a.views);
+  unknownExport = rows.map(r => ({ account_id: r.id, weergaven: r.views, laatste_activiteit: new Date(r.last).toISOString() }));
+  document.getElementById("unknownTable").innerHTML = tableHTML(
+    [{ t: "Atlassian account-id" }, { t: "Weergaven", num: 1 }, { t: "Laatste activiteit" }],
+    rows.map(r => [`<code>${r.id}</code>`, fmtInt.format(r.views), dtFmt.format(new Date(r.last))]),
+    "Alle bezoekers zijn herleid tot een bekende gebruiker.");
+}
+
+// ---- export ----------------------------------------------------------------
+function toCSV(objs) {
+  if (!objs.length) return "";
+  const cols = Object.keys(objs[0]);
+  const esc = v => { v = String(v ?? ""); return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  return cols.join(",") + "\n" + objs.map(o => cols.map(c => esc(o[c])).join(",")).join("\n");
+}
+document.querySelectorAll("[data-export]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const sets = { pages: pagesExport, activity: activityExport, never: neverExport, inactive: inactiveExport, unknown: unknownExport, orphan: orphanExport };
+    const csv = toCSV(sets[btn.dataset.export]);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `kennisbank_${btn.dataset.export}_${lastDay}.csv`;
+    a.click(); URL.revokeObjectURL(a.href);
+  });
+});
+
+// ---- filters & thema -------------------------------------------------------
+document.querySelectorAll(".chip[data-days]").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".chip[data-days]").forEach(c => c.setAttribute("aria-pressed", "false"));
+    chip.setAttribute("aria-pressed", "true");
+    state.days = chip.dataset.days === "all" ? null : parseInt(chip.dataset.days, 10);
+    renderAll();
+  });
+});
+const groupSelect = document.getElementById("groupSelect");
+if (DATA.hasGroups) {
+  groupSelect.innerHTML = ['<option value="">Alle groepen</option>']
+    .concat(DATA.groupNames.map(g => `<option>${g}</option>`), '<option>(geen groep)</option>').join("");
+  groupSelect.addEventListener("change", () => { state.group = groupSelect.value || null; renderAll(); });
+} else {
+  groupSelect.innerHTML = '<option value="">Groepen — n.n.b.</option>';
+  groupSelect.disabled = true;
+}
+document.getElementById("themeBtn").addEventListener("click", () => {
+  const cur = document.documentElement.dataset.theme;
+  const next = cur === "dark" ? "light" : cur === "light" ? "dark"
+    : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("kb-theme", next); } catch (e) {}
+});
+try { const t = localStorage.getItem("kb-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+
+// ---- render ----------------------------------------------------------------
+function renderAll() {
+  document.getElementById("subtitle").textContent =
+    `Meetperiode ${dayFmtFull.format(new Date(firstTs))} – ${dayFmtFull.format(new Date(lastTs))} · ${fmtInt.format(events.length)} paginaweergaven · gegenereerd ${DATA.generatedAt}`;
+  renderKpis(); renderTrend(); renderTopPages(); renderActivity();
+  renderNever(); renderInactive(); renderOrphan(); renderUnknown();
+  document.getElementById("footnote").innerHTML =
+    `<b>Bronnen & beperkingen.</b> Paginaweergaven: Refined-export «Page views events» (site 1564). Gebruikers & groepen: Atlassian org-export. ` +
+    `«Ingelogd» is afgeleid uit paginabezoeken — wie inlogt maar niets opent, telt niet mee. ` +
+    `Een gebruiker in meerdere groepen telt in elke groep mee (dubbeltelling bij groepstotalen). ` +
+    `Zoekopdrachten en downloads volgen zodra Refined die data levert. ` +
+    `Meting loopt vanaf ${dayFmtFull.format(new Date(firstTs))}; uitspraken over «nooit gebruikt» gelden vanaf die datum.`;
+}
+renderAll();
+</script>
+</body>
+</html>
