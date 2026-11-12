@@ -9,17 +9,25 @@ elke tabel exporteerbaar naar CSV (opent direct in Excel).
 
 ## Verversen met nieuwe data
 
-1. Zet nieuwe Refined-exports («Page views events») in `input/pageviews/`.
-   Bestanden mogen overlappen met eerdere exports — events worden gededupliceerd
-   op event-id, dus niets telt dubbel.
+1. Zet nieuwe Refined-exports in `input/pageviews/` («Page views events»,
+   Page details) en `input/searches/` («Search events»). Exporteren gaat via
+   Confluence → Refined Administration → Analytics → periode kiezen → Export;
+   vermoedelijk max. 90 dagen per export, dus exporteer maandelijks.
+   Bestanden mogen overlappen — events worden gededupliceerd op event-id.
+   (De «Page trends»-export bevat dezelfde regels als «Page details»; één van
+   beide is genoeg.)
 2. Zet de nieuwste Atlassian org-export («export users», met groepen) in
    `input/users/` (nieuwste bestandsnaam wint).
 3. Optioneel: ververs de pagina-inventaris (voor «verweesde pagina's»):
    `python3 fetch_atlassian.py` — credentials in `.atlassian.env` (niet in git).
-4. Draai `python3 etl.py` (alleen Python 3 nodig, geen extra installaties).
+4. Draai `python3 etl.py` (alleen Python 3.10+ nodig, geen extra installaties).
+5. Optioneel: `python3 rapport.py` maakt `rapport.html`, een managementrapport
+   over de hele periode (samenvatting, trend, adoptie per groep, populaire
+   pagina's, zoekgedrag, aanbevelingen, bijlagen met namen). Openen in de
+   browser en Ctrl+P → «Opslaan als PDF» voor een A4-versie.
 
-Het script bouwt de historie op in `data/events.csv` (append-only) en genereert
-`dashboard.html` opnieuw uit `template.html`.
+Het script bouwt de historie op in `data/events.csv` en `data/searches.csv`
+(append-only) en genereert `dashboard.html` opnieuw uit `template.html`.
 
 > ⚠️ **Bewaar `data/events.csv`.** Refined bewaart analytics maar beperkt;
 > de opgebouwde historie leeft alleen in die map. Zet de projectmap op een
@@ -35,8 +43,9 @@ Het script bouwt de historie op in `data/events.csv` (append-only) en genereert
 | 90 dagen inactief | Views + Atlassian «last active» |
 | Verweesde pagina's | Pagina-inventaris zonder weergaven in de periode |
 | Groepsfilter | Dropdown, filtert alle onderdelen (dubbeltelling bij meervoudig lidmaatschap) |
+| Zoekopdrachten | Meest gezocht + zoekopdrachten zonder resultaat (tussentijdse toetsaanslagen eruit gefilterd) |
 | Export | CSV per tabel + Print/PDF |
-| Zoekopdrachten / downloads | ⏳ wacht op Refined |
+| Downloads | ⏳ niet in de Refined-exports |
 
 De Refined-export bevat per weergave het echte Atlassian-`account_id`, dus
 koppelen aan namen/groepen gaat direct via de org-export. Systeemgroepen

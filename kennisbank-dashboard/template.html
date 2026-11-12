@@ -214,6 +214,23 @@
     </section>
   </div>
 
+  <div class="grid-2" id="searchCards" hidden>
+    <section class="card">
+      <div class="card-head">
+        <div><h2>Meest gezocht</h2><p class="desc">Zoektermen in de gekozen periode, met het aandeel zoekopdrachten dat niets opleverde.</p></div>
+        <button class="csv-btn" data-export="searchTop">⬇ CSV</button>
+      </div>
+      <div class="table-scroll" id="searchTopTable"></div>
+    </section>
+    <section class="card">
+      <div class="card-head">
+        <div><h2>Zoekopdrachten zonder resultaat</h2><p class="desc">Waar zoeken gebruikers naar dat de kennisbank niet heeft? Kandidaten voor nieuwe content of synoniemen. Tussentijdse toetsaanslagen zijn weggefilterd.</p></div>
+        <button class="csv-btn" data-export="searchZero">⬇ CSV</button>
+      </div>
+      <div class="table-scroll" id="searchZeroTable"></div>
+    </section>
+  </div>
+
   <section class="card" id="orphanCard" hidden>
     <div class="card-head">
       <div><h2>Verweesde pagina's</h2><p class="desc">Pagina's uit de Confluence-inventaris zonder één weergave in de gekozen periode. Oud + ongelezen = opschoonkandidaat.</p></div>
@@ -418,6 +435,42 @@ function tableHTML(headers, rows, emptyMsg) {
 }
 
 let activityExport = [], neverExport = [], inactiveExport = [], unknownExport = [], orphanExport = [];
+let searchTopExport = [], searchZeroExport = [];
+
+const searches = (DATA.searches || []).map(([m, a, t, r, p]) => ({ ts: m * 60000, acc: a, term: t, results: r, partial: !!p }));
+for (const s of searches) s.day = isoDay.format(new Date(s.ts));
+function periodSearches() {
+  const from = state.days ? dayMinus(lastDay, state.days - 1) : null;
+  return searches.filter(s => !s.partial && (!from || s.day >= from) && accountInGroup(s.acc));
+}
+function escHTML(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function renderSearches() {
+  const wrap = document.getElementById("searchCards");
+  if (!searches.length) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  const ps = periodSearches();
+  const agg = new Map();
+  for (const s of ps) {
+    if (!agg.has(s.term)) agg.set(s.term, { n: 0, zero: 0, users: new Set(), zeroUsers: new Set(), zeroLast: 0 });
+    const a = agg.get(s.term); a.n++; a.users.add(s.acc);
+    if (s.results === 0) { a.zero++; a.zeroUsers.add(s.acc); a.zeroLast = Math.max(a.zeroLast, s.ts); }
+  }
+  const all = [...agg.entries()].map(([t, a]) => ({ term: DATA.searchTerms[t], n: a.n, zero: a.zero, users: a.users.size, zeroUsers: a.zeroUsers.size, last: a.zeroLast }));
+  const top = all.slice().sort((a, b) => b.n - a.n || b.users - a.users).slice(0, 50);
+  const zero = all.filter(r => r.zero > 0).sort((a, b) => b.zero - a.zero || b.zeroUsers - a.zeroUsers).slice(0, 50);
+  searchTopExport = top.map(r => ({ zoekterm: r.term, keer: r.n, unieke_gebruikers: r.users, zonder_resultaat: r.zero }));
+  searchZeroExport = zero.map(r => ({ zoekterm: r.term, keer_zonder_resultaat: r.zero, gebruikers_zonder_resultaat: r.zeroUsers, laatste_keer: new Date(r.last).toISOString() }));
+  document.getElementById("searchTopTable").innerHTML = tableHTML(
+    [{ t: "Zoekterm" }, { t: "Keer", num: 1 }, { t: "Gebr.", num: 1 }, { t: "Zonder resultaat", num: 1 }],
+    top.map(r => [escHTML(r.term), fmtInt.format(r.n), fmtInt.format(r.users),
+      r.zero ? `<span class="pill crit">${Math.round(100 * r.zero / r.n)}%</span>` : "—"]),
+    "Geen zoekopdrachten in deze periode.");
+  document.getElementById("searchZeroTable").innerHTML = tableHTML(
+    [{ t: "Zoekterm" }, { t: "Keer", num: 1 }, { t: "Gebr.", num: 1 }, { t: "Laatste keer" }],
+    zero.map(r => [escHTML(r.term), fmtInt.format(r.zero), fmtInt.format(r.zeroUsers), dtFmt.format(new Date(r.last))]),
+    "Elke zoekopdracht in deze periode leverde resultaat op. 🎉");
+}
 
 function renderActivity() {
   const pe = periodEvents();
@@ -519,7 +572,7 @@ function toCSV(objs) {
 }
 document.querySelectorAll("[data-export]").forEach(btn => {
   btn.addEventListener("click", () => {
-    const sets = { pages: pagesExport, activity: activityExport, never: neverExport, inactive: inactiveExport, unknown: unknownExport, orphan: orphanExport };
+    const sets = { pages: pagesExport, activity: activityExport, never: neverExport, inactive: inactiveExport, unknown: unknownExport, orphan: orphanExport, searchTop: searchTopExport, searchZero: searchZeroExport };
     const csv = toCSV(sets[btn.dataset.export]);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
@@ -560,12 +613,12 @@ function renderAll() {
   document.getElementById("subtitle").textContent =
     `Meetperiode ${dayFmtFull.format(new Date(firstTs))} – ${dayFmtFull.format(new Date(lastTs))} · ${fmtInt.format(events.length)} paginaweergaven · gegenereerd ${DATA.generatedAt}`;
   renderKpis(); renderTrend(); renderTopPages(); renderActivity();
-  renderNever(); renderInactive(); renderOrphan(); renderUnknown();
+  renderSearches(); renderNever(); renderInactive(); renderOrphan(); renderUnknown();
   document.getElementById("footnote").innerHTML =
     `<b>Bronnen & beperkingen.</b> Paginaweergaven: Refined-export «Page views events» (site 1564). Gebruikers & groepen: Atlassian org-export. ` +
     `«Ingelogd» is afgeleid uit paginabezoeken — wie inlogt maar niets opent, telt niet mee. ` +
     `Een gebruiker in meerdere groepen telt in elke groep mee (dubbeltelling bij groepstotalen). ` +
-    `Zoekopdrachten en downloads volgen zodra Refined die data levert. ` +
+    `Zoekopdrachten: Refined-export «Search events». Downloads volgen zodra Refined die data levert. ` +
     `Meting loopt vanaf ${dayFmtFull.format(new Date(firstTs))}; uitspraken over «nooit gebruikt» gelden vanaf die datum.`;
 }
 renderAll();

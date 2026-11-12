@@ -6,12 +6,14 @@ Gebruik:
 
 Leest alle CSV's uit:
     input/pageviews/   Refined-exports "Page views events" (mogen overlappen; dedupliceren op event-id)
+    input/searches/    Refined-exports "Search events" (idem)
     input/users/       Atlassian org-export "export users" (rij per groep-lidmaatschap; nieuwste bestand wint)
     input/accounts/    Atlassian "managed accounts" export (aanvullend; nieuwste bestand wint)
     input/groups/      (optioneel) extra groepslidmaatschap: account_id,group_name
 
 Schrijft:
     data/events.csv    append-only historie van alle ooit geziene events (gededupliceerd)
+    data/searches.csv  idem voor zoekopdrachten
     dashboard.html     zelfstandig dashboard met de data ingebed (template.html + data)
 
 Herhaalde imports zijn veilig: bestaande events worden niet dubbel geteld.
@@ -24,11 +26,13 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
 INPUT_VIEWS = BASE / "input" / "pageviews"
+INPUT_SEARCHES = BASE / "input" / "searches"
 INPUT_USERS = BASE / "input" / "users"
 INPUT_ACCOUNTS = BASE / "input" / "accounts"
 INPUT_GROUPS = BASE / "input" / "groups"
 INPUT_PAGES = BASE / "input" / "pages"
 STORE = BASE / "data" / "events.csv"
+SEARCH_STORE = BASE / "data" / "searches.csv"
 TEMPLATE = BASE / "template.html"
 OUTPUT = BASE / "dashboard.html"
 
@@ -44,6 +48,12 @@ EVENT_FIELDS = [
     "id", "timestamp_origin", "event_name", "visitor_id",
     "page_id", "page_title", "page_type", "account_id", "user_type", "site_id",
 ]
+SEARCH_FIELDS = ["id", "timestamp_origin", "account_id", "user_type", "search_term", "search_results"]
+
+# Een zoekterm die binnen dit aantal seconden door dezelfde gebruiker wordt
+# aangevuld tot een langere term ("woon" → "woonunit") telt als tussentijdse
+# toetsaanslag, niet als echte zoekvraag.
+PARTIAL_SEARCH_SECONDS = 10
 
 
 def parse_en_date(s: str) -> str:
@@ -83,20 +93,45 @@ def parse_pageviews_csv(path: Path) -> dict:
     return events
 
 
-def load_store() -> dict:
-    if not STORE.exists():
+def parse_searches_csv(path: Path) -> dict:
+    """Parse één Refined-export "Search events"."""
+    out = {}
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            if (r.get("event_name") or "").strip() != "SearchTerm" or not (r.get("id") or "").strip():
+                continue
+            rec = {k: (r.get(k) or "").strip() for k in SEARCH_FIELDS}
+            rec["timestamp_origin"] = rec["timestamp_origin"].replace(";", " ")
+            out[rec["id"]] = rec
+    return out
+
+
+def load_store(path: Path = STORE) -> dict:
+    if not path.exists():
         return {}
-    with open(STORE, newline="", encoding="utf-8") as f:
+    with open(path, newline="", encoding="utf-8") as f:
         return {r["id"]: r for r in csv.DictReader(f)}
 
 
-def save_store(events: dict) -> None:
-    STORE.parent.mkdir(parents=True, exist_ok=True)
+def save_store(events: dict, path: Path = STORE, fields: list = EVENT_FIELDS) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     ordered = sorted(events.values(), key=lambda e: e["timestamp_origin"])
-    with open(STORE, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=EVENT_FIELDS)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
         w.writerows(ordered)
+
+
+def mark_partial_searches(searches: list) -> set:
+    """Ids van zoekopdrachten die een tussentijdse toetsaanslag zijn."""
+    partial = set()
+    ordered = sorted(searches, key=lambda s: (s["account_id"], s["timestamp_origin"]))
+    for a, b in zip(ordered, ordered[1:]):
+        ta, tb = a["search_term"].lower(), b["search_term"].lower()
+        if (a["account_id"] == b["account_id"] and ta != tb and tb.startswith(ta)
+                and ts_to_epoch_sec(b["timestamp_origin"]) - ts_to_epoch_sec(a["timestamp_origin"]) < PARTIAL_SEARCH_SECONDS):
+            partial.add(a["id"])
+    return partial
 
 
 def load_org_users() -> tuple:
@@ -206,15 +241,18 @@ def merge_users(org_users: list, managed: list) -> list:
     return list(by_id.values())
 
 
-def ts_to_epoch_min(ts: str) -> int:
-    # "2026-06-29 06:28:28.891+00" (milliseconden optioneel) → epoch-minuten UTC
+def ts_to_epoch_sec(ts: str) -> float:
+    # "2026-06-29 06:28:28.891+00" (milliseconden optioneel) → epoch-seconden UTC
     if ts.endswith("+00"):
         ts = ts + ":00"
-    dt = datetime.fromisoformat(ts)
-    return int(dt.timestamp() // 60)
+    return datetime.fromisoformat(ts).timestamp()
 
 
-def build_data(events: dict, accounts: list, groups: dict, inventory: list) -> dict:
+def ts_to_epoch_min(ts: str) -> int:
+    return int(ts_to_epoch_sec(ts) // 60)
+
+
+def build_data(events: dict, accounts: list, groups: dict, inventory: list, searches: dict | None = None) -> dict:
     account_ids, page_keys = [], []
     account_index, page_index = {}, {}
 
@@ -233,6 +271,25 @@ def build_data(events: dict, accounts: list, groups: dict, inventory: list) -> d
             page_index[pkey] = len(page_keys)
             page_keys.append(pkey)
         compact_events.append([ts_to_epoch_min(e["timestamp_origin"]), account_index[aid], page_index[pkey]])
+
+    terms, term_index, compact_searches = [], {}, []
+    search_list = list((searches or {}).values())
+    partial = mark_partial_searches(search_list)
+    for s in sorted(search_list, key=lambda s: s["timestamp_origin"]):
+        aid = s["account_id"]
+        if aid not in account_index:
+            account_index[aid] = len(account_ids)
+            account_ids.append(aid)
+        term = " ".join(s["search_term"].lower().split())
+        if term not in term_index:
+            term_index[term] = len(terms)
+            terms.append(term)
+        try:
+            results = int(s["search_results"])
+        except ValueError:
+            results = -1
+        compact_searches.append([ts_to_epoch_min(s["timestamp_origin"]), account_index[aid],
+                                 term_index[term], results, 1 if s["id"] in partial else 0])
 
     managed = {a["id"]: a for a in accounts}
     accounts_out = []
@@ -257,6 +314,8 @@ def build_data(events: dict, accounts: list, groups: dict, inventory: list) -> d
         "accounts": accounts_out,
         "pages": [{"id": p[0], "title": p[1], "type": p[2]} for p in page_keys],
         "events": compact_events,
+        "searchTerms": terms,
+        "searches": compact_searches,
         "inventory": inventory,
     }
 
@@ -270,13 +329,22 @@ def render(data: dict) -> None:
     OUTPUT.write_text(html, encoding="utf-8")
 
 
-def main() -> None:
+def load_all():
+    """Leest input/ in, werkt de historie in data/ bij en geeft alles terug wat
+    dashboard en rapport nodig hebben."""
     events = load_store()
     before = len(events)
     view_files = sorted(INPUT_VIEWS.glob("*.csv")) if INPUT_VIEWS.exists() else []
     for path in view_files:
         events.update(parse_pageviews_csv(path))
     save_store(events)
+
+    searches = load_store(SEARCH_STORE)
+    s_before = len(searches)
+    search_files = sorted(INPUT_SEARCHES.glob("*.csv")) if INPUT_SEARCHES.exists() else []
+    for path in search_files:
+        searches.update(parse_searches_csv(path))
+    save_store(searches, SEARCH_STORE, SEARCH_FIELDS)
 
     org_users, memberships = load_org_users()
     accounts = merge_users(org_users, load_accounts())
@@ -285,13 +353,24 @@ def main() -> None:
         merged = groups.get(aid, [])
         groups[aid] = merged + [g for g in gs if g not in merged]
     inventory = load_page_inventory()
-    data = build_data(events, accounts, groups, inventory)
+    stats = {
+        "events_new": len(events) - before, "view_files": len(view_files),
+        "searches_new": len(searches) - s_before, "search_files": len(search_files),
+        "org_users": len(org_users),
+    }
+    return events, searches, accounts, groups, inventory, stats
+
+
+def main() -> None:
+    events, searches, accounts, groups, inventory, st = load_all()
+    data = build_data(events, accounts, groups, inventory, searches)
     render(data)
 
     view_accounts = {e["account_id"] for e in events.values()}
     known = {a["id"] for a in accounts if a["name"]}
-    print(f"Events in historie : {len(events)} ({len(events) - before} nieuw uit {len(view_files)} bestand(en))")
-    print(f"Gebruikers bekend  : {len(accounts)} (org-export: {len(org_users)})")
+    print(f"Events in historie : {len(events)} ({st['events_new']} nieuw uit {st['view_files']} bestand(en))")
+    print(f"Zoekopdrachten     : {len(searches)} ({st['searches_new']} nieuw uit {st['search_files']} bestand(en))")
+    print(f"Gebruikers bekend  : {len(accounts)} (org-export: {st['org_users']})")
     print(f"Accounts in views  : {len(view_accounts)}, waarvan herleidbaar: {len(view_accounts & known)}")
     print(f"Groepen            : {len(data['groupNames'])} → {', '.join(data['groupNames']) or '-'}")
     print(f"Pagina-inventaris  : {len(inventory)} pagina's")
