@@ -156,7 +156,7 @@ def analyse():
     top_terms = [{"term": t, "n": c, "users": len(term_users[t]), "zero": term_zero[t]}
                  for t, c in term_n.most_common(15)]
     zero_terms = [{"term": t, "n": c, "users": len(zero_users[t])}
-                  for t, c in sorted(term_zero.items(), key=lambda x: (-x[1], -len(zero_users[x[0]]), x[0]))[:20]]
+                  for t, c in sorted(term_zero.items(), key=lambda x: (-len(zero_users[x[0]]), -x[1], x[0]))[:20]]
 
     # --- personen ----------------------------------------------------------
     early = {a for a in active if last_seen[a] < recent_cut}
@@ -341,7 +341,7 @@ def build_html(r) -> str:
         f"samen goed voor {n(r['views'])} paginaweergaven. {trend_txt}",
         f"<b>Het gebruik is geconcentreerd:</b> de vijf meest actieve accounts zijn samen goed voor {r['top5_share']}% van alle weergaven.",
         f"<b>{zero_pct}% van de zoekopdrachten levert niets op</b> ({n(r['zero_total'])} van {n(r['searches'])}). "
-        f"Meest gezocht zonder resultaat: {zero_list}.",
+        f"Termen waarbij de meeste verschillende gebruikers niets vonden: {zero_list}.",
         f"<b>{n(len(r['orphans']))} van de {n(r['inventory'])} Confluence-pagina's</b> zijn in deze periode door niemand geopend.",
         f"<b>{n(len(r['dropouts']))} gebruikers zijn afgehaakt:</b> wel actief in de periode, maar niet meer in de laatste {RECENT_DAYS} dagen. "
         f"Daar staan {n(r['newcomers'])} nieuwe gebruikers in diezelfde {RECENT_DAYS} dagen tegenover.",
@@ -429,15 +429,17 @@ def build_html(r) -> str:
                        f'<td class="r">{t["zero_cell"]}</td></tr>'
                        for t in tt)
              + '</tbody></table></div><div class="card"><h3>Zoekopdrachten zonder resultaat</h3><table><thead><tr>'
-             '<th>Zoekterm</th><th class="r">Keer</th><th class="r">Gebr.</th></tr></thead><tbody>'
-             + "".join(f'<tr><td>{esc(z["term"])}</td><td class="r">{z["n"]}</td><td class="r">{z["users"]}</td></tr>' for z in zt)
-             + "</tbody></table></div></div>")
+             '<th>Zoekterm</th><th class="r">Gebr. zonder resultaat</th><th class="r">Keer</th></tr></thead><tbody>'
+             + "".join(f'<tr><td>{esc(z["term"])}</td><td class="r">{z["users"]}</td><td class="r">{z["n"]}</td></tr>' for z in zt)
+             + '</tbody></table><div class="note">Gesorteerd op het aantal verschillende gebruikers dat niets vond; '
+               'één persoon die tien keer hetzelfde zoekt, is minder een contentgat dan vier mensen die elk één keer zoeken.</div>'
+             + "</div></div>")
 
     # --- aanbevelingen ---
     recs = []
     if zt:
         recs.append(("Vul de contentgaten uit de zoekdata",
-                     f"Maak of verrijk pagina's voor de termen die het vaakst niets opleveren ({zero_list}). "
+                     f"Maak of verrijk pagina's voor de termen waarbij de meeste gebruikers niets vonden ({zero_list}). "
                      "Bij spellingsvarianten (zoals «eigenaarsbelang» naast «eigenarenbelang», of «een dag kenteken» naast "
                      "«eendagskenteken») is een label, synoniem of aanbevolen link vaak genoeg."))
     if low:

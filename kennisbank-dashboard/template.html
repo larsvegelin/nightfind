@@ -224,7 +224,7 @@
     </section>
     <section class="card">
       <div class="card-head">
-        <div><h2>Zoekopdrachten zonder resultaat</h2><p class="desc">Waar zoeken gebruikers naar dat de kennisbank niet heeft? Kandidaten voor nieuwe content of synoniemen. Tussentijdse toetsaanslagen zijn weggefilterd.</p></div>
+        <div><h2>Zoekopdrachten zonder resultaat</h2><p class="desc">Waar zoeken gebruikers naar dat de kennisbank niet heeft? Gesorteerd op het aantal verschillende gebruikers dat niets vond: dat zijn de echte contentgaten. Tussentijdse toetsaanslagen zijn weggefilterd.</p></div>
         <button class="csv-btn" data-export="searchZero">⬇ CSV</button>
       </div>
       <div class="table-scroll" id="searchZeroTable"></div>
@@ -458,7 +458,7 @@ function renderSearches() {
   }
   const all = [...agg.entries()].map(([t, a]) => ({ term: DATA.searchTerms[t], n: a.n, zero: a.zero, users: a.users.size, zeroUsers: a.zeroUsers.size, last: a.zeroLast }));
   const top = all.slice().sort((a, b) => b.n - a.n || b.users - a.users).slice(0, 50);
-  const zero = all.filter(r => r.zero > 0).sort((a, b) => b.zero - a.zero || b.zeroUsers - a.zeroUsers).slice(0, 50);
+  const zero = all.filter(r => r.zero > 0).sort((a, b) => b.zeroUsers - a.zeroUsers || b.zero - a.zero).slice(0, 50);
   searchTopExport = top.map(r => ({ zoekterm: r.term, keer: r.n, unieke_gebruikers: r.users, zonder_resultaat: r.zero }));
   searchZeroExport = zero.map(r => ({ zoekterm: r.term, keer_zonder_resultaat: r.zero, gebruikers_zonder_resultaat: r.zeroUsers, laatste_keer: new Date(r.last).toISOString() }));
   document.getElementById("searchTopTable").innerHTML = tableHTML(
