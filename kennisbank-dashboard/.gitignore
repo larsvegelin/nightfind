@@ -7,3 +7,5 @@ rapport.pdf
 # Credentials voor de Atlassian API — nooit committen
 .atlassian.env
 __pycache__/
+rapport_kort.html
+*.pdf
