@@ -26,9 +26,13 @@ elke tabel exporteerbaar naar CSV (opent direct in Excel).
    pagina's, zoekgedrag, aanbevelingen, bijlagen met namen). Openen in de
    browser en Ctrl+P → «Opslaan als PDF» voor een A4-versie.
 6. Optioneel: `python3 rapport_kort.py` maakt `rapport_kort.html`: een kort
-   rapport van twee pagina's in de huisstijl van De Waerdse, alleen kerncijfers
-   en zonder namen. Logo in `input/brand/logo-dewaerdse.png`. Afdrukken naar PDF
-   met marges «Geen» en achtergrondafbeeldingen aan.
+   rapport in de huisstijl van De Waerdse. Twee samenvattende pagina's
+   (ingelogd en niet ingelogd per categorie, trend, populaire pagina's,
+   zoeken zonder resultaat) plus bijlage A (ingelogde gebruikers met
+   weergaven, pagina's en zoekopdrachten) en bijlage B (niet ingelogd, per
+   categorie). De bijlagen worden in de browser over A4-pagina's verdeeld.
+   Logo in `input/brand/logo-dewaerdse.png`. Afdrukken naar PDF met marges
+   «Geen» en achtergrondafbeeldingen aan.
 
 Het script bouwt de historie op in `data/events.csv` en `data/searches.csv`
 (append-only) en genereert `dashboard.html` opnieuw uit `template.html`.

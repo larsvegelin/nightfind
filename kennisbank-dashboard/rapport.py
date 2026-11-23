@@ -172,7 +172,19 @@ def analyse():
     admin_views = sum(1 for e in ev if e["user_type"] == "GLOBAL_ADMIN")
     admin_accounts = {e["account_id"] for e in ev if e["user_type"] == "GLOBAL_ADMIN"}
 
+    # Per persoon in de doelgroep: weergaven, verschillende pagina's, zoekopdrachten.
+    pages_per = collections.defaultdict(set)
+    for e in ev:
+        pages_per[e["account_id"]].add(e["page_id"])
+    searches_per = collections.Counter(s["account_id"] for s in real)
+    people = [{
+        "id": a, "name": name(a), "email": (acc.get(a) or {}).get("email", ""), "groups": groups_of(a),
+        "active": a in active, "views": active.get(a, 0), "pages": len(pages_per[a]),
+        "searches": searches_per.get(a, 0), "last": last_seen.get(a),
+    } for a in target]
+
     return {
+        "people": people,
         "start": start, "end": end, "days": (end.date() - start.date()).days + 1,
         "views": len(ev), "active": len(active), "target": len(target),
         "recent_active": sum(1 for a in active if last_seen[a] >= recent_cut),
