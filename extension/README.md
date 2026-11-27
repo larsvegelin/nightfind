@@ -74,6 +74,16 @@ dat jij daar op het icoon klikt.
 - **Groter paneel** (instelling: normaal, groot of extra groot) en nooit meer naar links en rechts
   scrollen.
 
+### Nieuw in 1.50
+- **Ga naar adres uit je lijst** (Handmatig → Pagina → Ga naar adres): zet je links in je Excel of CSV. Kies *uit de kolom “link”* voor een volledig adres per regel, of zet een waarde uit je lijst in een vast adres met `{{kolom}}`, bijvoorbeeld `https://mijn.dewaerdse.nl/dewaerdse/RelatieDetails.aspx?req={{relatienummer}}&s=A&origin=10002`. Een kolom vol adressen wordt vanzelf voorgesteld; met de kolomknoppen zet je `{{kolom}}` op de plek van de cursor. Bij een bestaande stap kies je hetzelfde onder *naar een adres (vast of uit je lijst)*.
+- **Vooruitblik**: in het venster zie je het adres van ronde 1 tot 3. Bij de stap staat het adres van de ronde op de rondeschuif, met *ga hierheen* om op die pagina de volgende stappen aan te wijzen.
+- Een waarde midden in een adres gaat er veilig in (spatie → `%20`, `&` → `%26`). Een volledig adres uit je lijst blijft zoals het is; `www.…` zonder `https://` krijgt `https://` ervoor. Alleen `http://` en `https://` zijn toegestaan.
+- Is de kolom leeg in een regel, dan slaat ParseLab die ronde over (met de reden in het logboek en een kolom “Fout” in het resultaat) en gaat door met de volgende regel.
+- **Opnieuw proberen op de juiste pagina**: lukt een stap na *Ga naar adres* niet, dan gaat ParseLab terug naar het adres van díe regel, niet naar het adres waarop je de stap hebt aangewezen (dat hoort bij een andere regel).
+- **Gewone sites laden echt**: binnen dezelfde site veranderde *Ga naar adres* alleen het adres in de adresbalk. Dat werkt in web-apps zoals Cockpit, maar op een gewone site (bijvoorbeeld `.aspx`- of `.php`-pagina's) bleef de oude pagina staan en werd die uitgelezen. Nu laadt ParseLab zo'n pagina echt. Web-apps (Blazor, Vue, React, Angular …) blijven zonder herladen werken; reageert een web-app niet op het nieuwe adres, dan laadt ParseLab de pagina alsnog.
+- Begint de flow met *Ga naar adres*, dan gaat ParseLab niet eerst nog naar de startpagina of de pagina van stap 1: elke ronde opent meteen de pagina van die regel.
+- Een kolomnaam wijzigen past ook het adres uit die kolom aan, en *Download invoerkolommen* neemt de adreskolom mee (ook bij *Andere pagina's uitlezen*).
+
 ### Nieuw in 1.49
 - **Rustig tempo** (Start → Volgende ronde → *rustig tempo*): na elke regel wacht ParseLab tot de pagina klaar is en pauzeert dan nog een paar seconden. De pauze verschilt per regel (tussen 1× en 2× het ingestelde aantal seconden). Zo krijgt een site niet elke paar seconden een verzoek. Handig voor grote lijsten op sites zoals de BAG Viewer of Google Maps.
 

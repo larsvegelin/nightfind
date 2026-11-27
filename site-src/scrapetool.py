@@ -238,7 +238,7 @@ BODY = """
 
 <div class="uitleg"><details open><summary>Probeer dit (2 minuten)</summary>
   <ol>
-    <li><b>Andere pagina's uitlezen (nieuw in {V}):</b> klik hierboven <i>Voorbeeldlijst met adressen</i>. Kies in het paneel <i>Handmatig → Uitlezen → Andere pagina's</i> en klik <i>Start</i>. ParseLab haalt elk adres op, ook van een andere website en van een pagina die pas met JavaScript gevuld wordt, en zet titel, prijs, merk en tekst in het resultaat.</li>
+    <li><b>Andere pagina's uitlezen (nieuw in 1.48):</b> klik hierboven <i>Voorbeeldlijst met adressen</i>. Kies in het paneel <i>Handmatig → Uitlezen → Andere pagina's</i> en klik <i>Start</i>. ParseLab haalt elk adres op, ook van een andere website en van een pagina die pas met JavaScript gevuld wordt, en zet titel, prijs, merk en tekst in het resultaat.</li>
     <li><b>Velden kiezen:</b> open de stap, klik <i>Veld aanwijzen</i> en klik op de productpagina op de titel en de prijs. Klik <i>Test op eerste adres</i> en daarna weer <i>Start</i>.</li>
     <li><b>Een lijst uitlezen:</b> <i>Handmatig → Uitlezen → Tabel / lijst</i>, klik op één product. Met <i>Volgende</i> erbij bladert ParseLab door.</li>
     <li><b>Een formulier invullen:</b> laad de <i>Voorbeeldlijst voor het formulier</i>, open <i>Bestelformulier</i> en wijs met <i>Handmatig → Invullen</i> de velden en de knop aan.</li>

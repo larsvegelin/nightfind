@@ -38,7 +38,7 @@ python3 site-src/build.py
 
 - **Wachtlijst en vragen** gaan naar de tabel `wachtlijst` in het Supabase-project `scraper` (EU). Bezoekers kunnen alleen invoegen; via de API kan niemand de lijst lezen. Bekijk de aanmeldingen in het Supabase-dashboard.
 - **Extensie:** de site ziet via `bridge.js` of ParseLab geïnstalleerd is (op `larsvegelin.github.io`, `*.parselab.nl` en localhost) en past dan de knoppen aan.
-- `downloads/parselab-extension.zip` is de huidige extensie (1.49), gezipt uit `extension/`.
+- `downloads/parselab-extension.zip` is de huidige extensie (1.50), gezipt uit `extension/`.
 
 ## De extensie (`extension/`)
 
@@ -47,11 +47,17 @@ De broncode van de Chrome-extensie (Manifest V3): `panel.js` (het paneel), `back
 Nieuwe zip maken na een wijziging:
 
 ```
-cd extension && zip -qr ../downloads/parselab-extension.zip . && cd ..
+rm -f downloads/parselab-extension.zip && cd extension && zip -qr ../downloads/parselab-extension.zip . && cd ..
 python3 site-src/scrapetool.py
 ```
 
-Nieuw in 1.49: **rustig tempo** tussen de regels (pagina klaar, dan een wisselende pauze). Nieuw in 1.48: **Andere pagina's uitlezen**. Voor elke regel uit je lijst haalt ParseLab de pagina van het adres op, ook van andere websites, zonder je tabblad te verlaten. Eerst snel (alleen de HTML); is de pagina leeg zonder JavaScript, dan in een verborgen tabblad. Velden wijs je één keer aan op een voorbeeldpagina.
+Test van *Ga naar adres* met adressen uit de lijst (laadt de echte extensie in Chromium via Playwright, met een nagebootste portaalsite):
+
+```
+node tests/extensie-ga-naar-adres.mjs
+```
+
+Nieuw in 1.50: **Ga naar adres uit je lijst**. Zet je links in je Excel/CSV en kies bij de stap de kolom, of gebruik `{{kolom}}` in het adres (bv. `…/RelatieDetails.aspx?req={{relatienummer}}&s=A`). Gewone sites (bv. `.aspx`-pagina's) worden daarbij echt geladen. Nieuw in 1.49: **rustig tempo** tussen de regels (pagina klaar, dan een wisselende pauze). Nieuw in 1.48: **Andere pagina's uitlezen**. Voor elke regel uit je lijst haalt ParseLab de pagina van het adres op, ook van andere websites, zonder je tabblad te verlaten. Eerst snel (alleen de HTML); is de pagina leeg zonder JavaScript, dan in een verborgen tabblad. Velden wijs je één keer aan op een voorbeeldpagina.
 
 ## Nog in te vullen
 

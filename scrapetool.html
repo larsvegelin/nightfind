@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ParseLab scrapetool</title>
-<meta name="description" content="Probeer het echte ParseLab-paneel 1.49 in je browser, op een voorbeeldwebshop. Zonder installatie, met voorbeelddata.">
+<meta name="description" content="Probeer het echte ParseLab-paneel 1.50 in je browser, op een voorbeeldwebshop. Zonder installatie, met voorbeelddata.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="assets/parselab/logo.svg" type="image/svg+xml">
 <style>
@@ -121,12 +121,12 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
 <body>
 
 <div class="demo-bar" role="region" aria-label="ParseLab demo">
-  <b>ParseLab scrapetool 1.49</b><span class="tag">Demo in je browser</span>
+  <b>ParseLab scrapetool 1.50</b><span class="tag">Demo in je browser</span>
   <span>Het echte paneel van de extensie, op een voorbeeldwebshop.</span>
   <span class="sp"></span>
   <button type="button" data-lijst="adressen">Voorbeeldlijst met adressen</button>
   <button type="button" data-lijst="formulier">Voorbeeldlijst voor het formulier</button>
-  <a href="downloads/parselab-extension.zip" download>Download extensie 1.49</a>
+  <a href="downloads/parselab-extension.zip" download>Download extensie 1.50</a>
   <a class="groen" href="index.html">Naar de website</a>
 </div>
 <div class="klein-scherm">Op een klein scherm bedekt het paneel de pagina. Bekijk deze demo op een computer.</div>
@@ -134,7 +134,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
 
 <div class="uitleg"><details open><summary>Probeer dit (2 minuten)</summary>
   <ol>
-    <li><b>Andere pagina's uitlezen (nieuw in 1.49):</b> klik hierboven <i>Voorbeeldlijst met adressen</i>. Kies in het paneel <i>Handmatig → Uitlezen → Andere pagina's</i> en klik <i>Start</i>. ParseLab haalt elk adres op, ook van een andere website en van een pagina die pas met JavaScript gevuld wordt, en zet titel, prijs, merk en tekst in het resultaat.</li>
+    <li><b>Andere pagina's uitlezen (nieuw in 1.48):</b> klik hierboven <i>Voorbeeldlijst met adressen</i>. Kies in het paneel <i>Handmatig → Uitlezen → Andere pagina's</i> en klik <i>Start</i>. ParseLab haalt elk adres op, ook van een andere website en van een pagina die pas met JavaScript gevuld wordt, en zet titel, prijs, merk en tekst in het resultaat.</li>
     <li><b>Velden kiezen:</b> open de stap, klik <i>Veld aanwijzen</i> en klik op de productpagina op de titel en de prijs. Klik <i>Test op eerste adres</i> en daarna weer <i>Start</i>.</li>
     <li><b>Een lijst uitlezen:</b> <i>Handmatig → Uitlezen → Tabel / lijst</i>, klik op één product. Met <i>Volgende</i> erbij bladert ParseLab door.</li>
     <li><b>Een formulier invullen:</b> laad de <i>Voorbeeldlijst voor het formulier</i>, open <i>Bestelformulier</i> en wijs met <i>Handmatig → Invullen</i> de velden en de knop aan.</li>
@@ -1692,6 +1692,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
     function renderAddMenuHints() { $all('[data-desc]').forEach(el => { el.textContent = t(el.dataset.desc); }); }
     let ADV = false;   // "Gevorderd" open? → extra velden (eigen patroon, vaste waarde) tonen
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function escA(s) { return esc(s).replace(/"/g, '&quot;'); }   // voor waarden binnen een attribuut
     function flash(btn, t) { const o = btn.textContent; btn.textContent = t; setTimeout(() => btn.textContent = o, 1200); }
 
     window.__WT_TOGGLE__ = () => { host.style.display = host.style.display === 'none' ? 'block' : 'none'; };
@@ -2778,6 +2779,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
             if (st.type === 'click' && st.match) { const m = st.match; const v = m.bron === 'vast' ? resolveValue(m.tekst, ctx) : m.bron === 'kolom' ? ctx[Object.keys(ctx).find(k => zelfdeNaam(k, m.col))] : '‹' + ((m.veld && m.veld.naam) || 'veld') + '›'; return '👆 “' + String(v == null ? '' : v).slice(0, 28) + '”'; }
             if (st.type === 'print' && st.folderBy) { const v = ctx[Object.keys(ctx).find(k => zelfdeNaam(k, st.folderBy))]; return '📁 ' + currentFolder + '/' + String(v == null ? '' : v).slice(0, 24); }
             if (st.type === 'type' && st.text) return '⌨ “' + String(resolveValue(st.text, ctx)).slice(0, 28) + '”';
+            if (navDynamisch(st)) { const a = navAdres(st, ctx); return a.href ? '➜ ' + navToon(a.href).slice(0, 40) : a.mist.length ? '— geen ' + a.mist[0] + ', overslaan' : '— geen geldig adres'; }
         } catch (e) {}
         return '';
     }
@@ -2833,6 +2835,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
         let n = 0;
         steps.forEach(x => {
             if (x === behalve) return;
+            const adresVoor = x.urlKol + '|' + x.url;
             ['value', 'text', 'standaard', 'url'].forEach(f => { if (typeof x[f] === 'string' && reT.test(x[f])) { x[f] = x[f].replace(reG, '{{' + nieuw + '}}'); n++; } });
             if (x.match) {
                 if (x.match.bron === 'kolom' && zelfdeNaam(x.match.col, oud)) { x.match.col = nieuw; n++; }
@@ -2841,6 +2844,8 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
             }
             if (zelfdeNaam(x.folderBy, oud)) { x.folderBy = nieuw; x.detail = 'PDF → map per “' + nieuw + '”'; n++; }
             if (zelfdeNaam(x.fileBy, oud)) { x.fileBy = nieuw; n++; }
+            if (zelfdeNaam(x.urlKol, oud)) { x.urlKol = nieuw; n++; }
+            if (x.urlKol + '|' + x.url !== adresVoor) { if (x.type === 'nav' && x.mode === 'url') { x.name = navNaam(x); x.detail = navUitleg(x); } else if (x.kind === 'extern') x.detail = externUitleg(x); }
             if (x.type === 'fill' && x.colmap) x.colmap.forEach(m => { if (zelfdeNaam(m.col, oud)) { m.col = nieuw; n++; } });
         });
         const g = $('#flow-group'); if (g && zelfdeNaam(g.value, oud)) { g.dataset.pending = nieuw; renderGroupOptions(); }
@@ -2916,9 +2921,36 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
         if (kind === 'shot') { addStep({ type: 'shot', name: 'Schermafbeelding', detail: 'wat je ziet als afbeelding (PNG)' }); return; }
         if (kind === 'kl-waarde') return kies('Klik op een knop, regel of tegel die bij een waarde hoort', (d, fr) => d && klikWaar(d, fr));
         if (kind === 'goto') {
-            askInline({ title: 'Ga naar adres', html: '<label class="kol">Adres (URL)<input id="wt-ask-url" class="wt-num" style="width:100%" value="' + esc(location.href) + '"></label><div class="hint">ParseLab gaat naar dit adres en wacht tot de pagina klaar is.</div>',
-                buttons: [{ label: 'Toevoegen', primary: true, check: v => /^https?:\/\//i.test(String(v['wt-ask-url'] || '').trim()) ? '' : 'Vul een adres in dat begint met http:// of https://',
-                    fn: v => { const url = String(v['wt-ask-url']).trim(); addStep({ type: 'nav', mode: 'url', url, name: 'Naar ' + kortUrl(url).slice(0, 30), detail: url }); } }, { label: t('cancel') }] });
+            const cols = csvCols(), auto = urlKolom();
+            const o = (v, l) => '<option value="' + escA(v) + '"' + (v === auto ? ' selected' : '') + '>' + esc(l) + '</option>';
+            const maak = v => { const k = String(v['wt-ask-urlkol'] || ''); return { type: 'nav', mode: 'url', urlKol: k || undefined, url: k ? '' : String(v['wt-ask-url'] || '').trim() }; };
+            askInline({ title: 'Ga naar adres',
+                html: (cols.length ? '<label class="kol">Adres<select id="wt-ask-urlkol" class="wt-num" style="width:100%">' + o('', 'vast adres, of een adres met {{kolom}} erin') + cols.map(c => o(c, 'uit de kolom “' + c + '” van je lijst')).join('') + '</select></label>' : '') +
+                    '<div data-navvast><label class="kol">Adres (URL)<input id="wt-ask-url" class="wt-num" style="width:100%" value="' + escA(location.href) + '"></label>' +
+                    (cols.length ? '<div class="wt-row">' + cols.slice(0, 10).map(c => '<button class="sugg" data-navtok="' + escA(c) + '" title="Zet {{' + escA(c) + '}} op de plek van de cursor">{{' + esc(c) + '}}</button>').join('') + '</div>' : '') +
+                    '<div class="hint">Een waarde uit je lijst zet je erin met <code>{{kolom}}</code>, bv. <code>…/RelatieDetails.aspx?req={{relatienummer}}&amp;s=A</code>. Klik op een kolom hierboven om hem op de plek van de cursor te zetten.</div></div>' +
+                    '<div class="vooruit" id="wt-ask-navvb" style="overflow-wrap:anywhere"></div>' +
+                    '<div class="hint">ParseLab gaat elke ronde naar dit adres en wacht tot de pagina klaar is.' + (cols.length ? '' : ' Upload eerst een lijst als je per regel een ander adres wilt.') + '</div>',
+                onRender: box => {
+                    const q = x => box.querySelector(x), inp = q('#wt-ask-url');
+                    const toon = () => {
+                        const v = { 'wt-ask-urlkol': q('#wt-ask-urlkol') ? q('#wt-ask-urlkol').value : '', 'wt-ask-url': inp.value };
+                        q('[data-navvast]').style.display = v['wt-ask-urlkol'] ? 'none' : '';
+                        const st = maak(v), rr = flowRows.length ? rondeRijen() : [];
+                        if (!navDynamisch(st)) { q('#wt-ask-navvb').style.display = 'none'; return; }
+                        q('#wt-ask-navvb').style.display = '';
+                        q('#wt-ask-navvb').innerHTML = '<b>Vooruitblik</b>' + (rr.length ? rr.slice(0, 3).map((r, k) => { const a = navAdres(st, Object.assign({}, r || {}, { ronde: k + 1 })); return '<br>ronde ' + (k + 1) + ': ' + (a.href ? esc(navToon(a.href)) : a.mist.length ? '<i>geen “' + esc(a.mist[0]) + '” in deze regel → ronde overslaan</i>' : '<i>geen geldig adres</i>'); }).join('') : '<br><i>Nog geen lijst geladen.</i>');
+                    };
+                    box.querySelectorAll('[data-navtok]').forEach(b => b.onclick = () => {
+                        const tok = '{{' + b.dataset.navtok + '}}', p0 = inp.selectionStart != null ? inp.selectionStart : inp.value.length, p1 = inp.selectionEnd != null ? inp.selectionEnd : p0;
+                        inp.value = inp.value.slice(0, p0) + tok + inp.value.slice(p1); inp.focus(); try { inp.setSelectionRange(p0 + tok.length, p0 + tok.length); } catch (e) {} toon();
+                    });
+                    inp.addEventListener('input', toon); if (q('#wt-ask-urlkol')) q('#wt-ask-urlkol').onchange = toon;
+                    toon();
+                },
+                buttons: [{ label: 'Toevoegen', primary: true,
+                    check: v => { const st = maak(v); if (st.urlKol) return ''; return /^(https?:\/\/|\{\{)/i.test(st.url) ? '' : 'Vul een adres in dat begint met http:// of https://, of met {{kolom}}'; },
+                    fn: v => { const st = maak(v); if (!st.urlKol) delete st.urlKol; st.name = navNaam(st); st.detail = navUitleg(st); addStep(st); } }, { label: t('cancel') }] });
             return;
         }
         if (kind === 'rijlus') { addStep({ type: 'rijlus', name: 'Voor elke regel van de ronde', detail: rondeKol() ? 'alle regels met dezelfde “' + rondeKol() + '”' : 'alle regels van de ronde — kies bij de lijst “Eén ronde per …”' }); return; }
@@ -3019,15 +3051,66 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
         if (!/^https?:/i.test(url)) { try { url = new URL(best.getAttribute('src') || '', location.href).href; } catch (e) { url = ''; } }
         return /^https?:/i.test(url) && url !== location.href ? url : null;
     }
-    // Ga naar een adres. Binnen dezelfde web-app (bv. Vue/React) zonder herladen, zodat het paneel blijft.
-    function gaNaar(url) {
+    // Ga naar een adres. Binnen dezelfde web-app (Blazor, Vue, React, Angular …) zonder herladen, zodat het
+    // paneel blijft. Een gewone site (bv. .aspx- of .php-pagina's) laadt de pagina echt: daar verandert anders
+    // alleen het adres in de adresbalk en zou ParseLab de oude pagina uitlezen. Reageert een web-app niet op
+    // het nieuwe adres, dan ook alsnog echt laden.
+    const WEBAPP_SEL = 'script[src*="blazor" i],[data-v-app],[ng-version],#__next,#__nuxt,[data-reactroot],#___gatsby,[data-sveltekit-preload-data]';
+    function isWebApp() { try { return !!doc.querySelector(WEBAPP_SEL); } catch (e) { return false; } }
+    async function gaNaar(url) {
         let u; try { u = new URL(url, location.href); } catch (e) { return; }
         if (u.href === location.href) return;
-        if (u.origin === location.origin) {
-            try { history.pushState(history.state, '', u.href); window.dispatchEvent(new PopStateEvent('popstate', { state: history.state })); return; } catch (e) {}
+        const gewonePagina = /\.(aspx?|php\d?|jsp|cfm|html?|do|action|cgi|pl)$/i.test(u.pathname);
+        if (u.origin === location.origin && !gewonePagina && isWebApp()) {
+            let veranderd = false;
+            const mo = new MutationObserver(ms => { if (ms.some(m => Array.from(m.addedNodes).concat(Array.from(m.removedNodes)).some(n => n.nodeType === 1 && n !== window.__wtHost))) veranderd = true; });
+            try {
+                mo.observe(doc.body || doc.documentElement, { childList: true, subtree: true });
+                history.pushState(history.state, '', u.href); window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+                for (let t0 = Date.now(); !veranderd && Date.now() - t0 < 2500; ) await sleep(100);
+            } catch (e) {}
+            mo.disconnect();
+            if (veranderd) return;
+            log('  ⓘ De web-app reageerde niet op het nieuwe adres; de pagina wordt gewoon geladen.');
         }
         location.href = u.href;
     }
+    // ---- "Ga naar adres" met een adres uit je lijst ----
+    // Een hele kolom met adressen (urlKol), of een sjabloon met {{kolom}}, bv.
+    // https://mijn.voorbeeld.nl/RelatieDetails.aspx?req={{relatienummer}}&s=A.
+    // Een waarde midden in het adres gaat er veilig in (spatie → %20, & → %26); een waarde
+    // helemaal vooraan (een volledig adres uit de lijst) blijft zoals hij is.
+    // Begint de flow met "Ga naar adres"? Dan gaat elke ronde zelf naar de juiste pagina.
+    function begintMetAdres(st) { const s0 = st && st.steps && st.steps[0]; return !!(s0 && s0.type === 'nav' && s0.mode === 'url'); }
+    function navDynamisch(s) { return !!(s && s.type === 'nav' && s.mode === 'url' && (s.urlKol || /\{\{[^}]+\}\}/.test(s.url || ''))); }
+    function metSchema(a) {   // "www.site.nl/x" of "site.nl/x" uit Excel → https://…
+        if (!a || /^[a-z][a-z0-9+.-]*:/i.test(a) || /^[\/?#.]/.test(a)) return a;
+        const host = a.split(/[\/?#]/)[0];
+        return /^(?:[\w-]+\.)+[a-z]{2,24}(?::\d+)?$/i.test(host) && !/\.(aspx?|html?|php|jsp|cgi|pdf)$/i.test(host) ? 'https://' + a : a;
+    }
+    function navAdres(s, ctx) {
+        ctx = metVast(ctx);
+        const mist = [];
+        const sjabloon = String(s.urlKol ? '{{' + s.urlKol + '}}' : (s.url || '')).trim();
+        const adres = metSchema(sjabloon.replace(/\{\{([^}]+)\}\}/g, (m, expr, pos) => {
+            let v = resolveValue('{{' + expr + '}}', ctx); v = v == null ? '' : String(v).trim();
+            if (!v || /^\{\{[^}]*\}\}$/.test(v)) { mist.push(expr.trim()); return ''; }
+            return pos === 0 ? v : encodeURIComponent(v).replace(/%2F/gi, '/').replace(/%3A/gi, ':');
+        }).trim());
+        let href = '';
+        if (adres && !mist.length) { try { const u = new URL(adres, location.href); if (/^https?:$/.test(u.protocol)) href = u.href; } catch (e) {} }
+        return { adres, href, mist };
+    }
+    function navToon(u) { try { return decodeURI(String(u || '').replace(/^https?:\/\//i, '')); } catch (e) { return String(u || '').replace(/^https?:\/\//i, ''); } }
+    function navNaam(s) {
+        if (s.urlKol) return 'Naar adres uit “' + String(s.urlKol).slice(0, 22) + '”';
+        if (!navDynamisch(s)) return 'Naar ' + kortUrl(s.url || location.href).slice(0, 30);
+        // bv. "Naar RelatieDetails.aspx met relatienummer"
+        const stuk = String(s.url).replace(/^https?:\/\/[^\/]*/i, '').split(/[?#]/)[0].split('/').filter(Boolean).pop() || '';
+        const kol = tokensFrom(s.url).filter((c, k, a) => a.indexOf(c) === k);
+        return ('Naar ' + (stuk && stuk.indexOf('{{') < 0 ? stuk : 'adres') + (kol.length ? ' met ' + kol.join(', ') : '')).slice(0, 50);
+    }
+    function navUitleg(s) { return s.urlKol ? 'elke ronde het adres uit de kolom “' + s.urlKol + '”' : navDynamisch(s) ? 'per ronde: ' + navToon(s.url) : kortUrl(s.url || ''); }
     // ---- Lus "voor elk item in een lijst" — met uitleg per stap ----
     function toonItems(spec, ms) {
         const its = lusItems(spec);
@@ -3260,8 +3343,21 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
         }
         else if (t_ === 'nav') {
             const m = s.mode || 'back';
-            h = '<div class="stparams"><select data-i="' + i + '" data-f="mode">' + opt('back', m, 'terug (vorige pagina)') + opt('loop', m, 'terug naar de lijst van de lus') + opt('url', m, 'naar een vast adres') + '</select>' +
-                (m === 'url' ? ' <input class="pin" data-i="' + i + '" data-f="url" value="' + esc(s.url || '') + '" placeholder="https://…">' : '') + '</div>';
+            const cols = csvCols(), o = (v, cur, l) => '<option value="' + escA(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(l) + '</option>';
+            h = '<div class="stparams"><select data-i="' + i + '" data-f="mode">' + opt('back', m, 'terug (vorige pagina)') + opt('loop', m, 'terug naar de lijst van de lus') + opt('url', m, 'naar een adres (vast of uit je lijst)') + '</select>';
+            if (m === 'url') {
+                if (cols.length || s.urlKol) h += ' <select data-i="' + i + '" data-f="navKol">' + o('', s.urlKol || '', 'adres hieronder') + cols.concat(s.urlKol && !cols.includes(s.urlKol) ? [s.urlKol] : []).map(c => o(c, s.urlKol || '', 'uit kolom “' + c + '”')).join('') + '</select>';
+                if (!s.urlKol) h += ' <input class="pin" data-i="' + i + '" data-f="url" value="' + escA(s.url || '') + '" placeholder="https://… (mag {{kolom}} bevatten)">' +
+                    (cols.length ? '<div class="wt-row" style="flex-basis:100%;gap:4px">' + cols.slice(0, 10).map(c => '<button class="sugg" data-navtok="' + i + '" data-kol="' + escA(c) + '" title="Zet {{' + escA(c) + '}} in het adres">{{' + esc(c) + '}}</button>').join('') + '</div>' : '');
+                if (navDynamisch(s)) {
+                    const rr = flowRows.length ? rondeRijen() : [], r = rr.length ? (VB_RONDE - 1) % rr.length : -1;
+                    const a = r >= 0 ? navAdres(s, Object.assign({}, rr[r] || {}, { ronde: VB_RONDE })) : null;
+                    h += '<div class="hint" style="flex-basis:100%;overflow-wrap:anywhere">' + (!a ? 'Nog geen lijst: upload een lijst met ' + (s.urlKol ? 'de kolom “' + esc(s.urlKol) + '”' : 'de kolommen uit het adres') + '.' :
+                        a.href ? 'Ronde ' + VB_RONDE + ': <code title="' + escA(a.href) + '">' + esc(navToon(a.href).slice(0, 90)) + '</code> <button class="mini" data-navga="' + escA(a.href) + '" title="Ga nu naar dit adres, bv. om de volgende stappen aan te wijzen">' + IC('goto', 'ico-sm') + ' ga hierheen</button>' :
+                        'Ronde ' + VB_RONDE + ': ' + (a.mist.length ? 'geen “' + esc(a.mist[0]) + '” in deze regel, dus deze ronde wordt overgeslagen.' : '“' + esc(a.adres.slice(0, 60)) + '” is geen geldig adres.')) + '</div>';
+                }
+            }
+            h += '</div>';
         }
         else if (t_ === 'waitfor') h = '<div class="stparams">hoogstens <input class="pin s" type="number" data-i="' + i + '" data-f="timeout" value="' + (s.timeout || 8000) + '"> ms</div>';
         else if (t_ === 'scroll') h = '<div class="stparams"><select data-i="' + i + '" data-f="mode">' + opt('element', s.mode, 'naar de aangewezen plek') + opt('bottom', s.mode, 'naar onderen') + '</select></div>';
@@ -3311,8 +3407,9 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
                 s.mode = val; if (val === 'smart' && (!s.ms || s.ms < 2000)) s.ms = 8000; if (val === 'fixed' && s.ms > 60000) s.ms = 1000;
                 s.name = val === 'smart' ? 'Wachten tot de pagina klaar is' : val === 'fixed' ? 'Even wachten' : 'Wachten tot iets er staat'; renderSteps();
             }
-            else if (f === 'mode' && s.type === 'nav') { s.mode = val; s.name = val === 'back' ? 'Terug naar vorige pagina' : val === 'loop' ? 'Terug naar de lijst' : 'Naar ' + kortUrl(s.url || location.href).slice(0, 30); if (val === 'url' && !s.url) s.url = location.href; renderSteps(); }
-            else if (f === 'url' && s.type === 'nav') { s.url = val; s.detail = kortUrl(val); }
+            else if (f === 'mode' && s.type === 'nav') { s.mode = val; if (val === 'url' && !s.url && !s.urlKol) s.url = location.href; s.name = val === 'back' ? 'Terug naar vorige pagina' : val === 'loop' ? 'Terug naar de lijst' : navNaam(s); s.detail = val === 'back' ? 'zoals de terugknop van de browser' : val === 'loop' ? 'naar de pagina waar de lus begon' : navUitleg(s); renderSteps(); }
+            else if (f === 'navKol' && s.type === 'nav') { if (val) s.urlKol = val; else { delete s.urlKol; if (!s.url) s.url = location.href; } s.name = navNaam(s); s.detail = navUitleg(s); renderSteps(); }
+            else if (f === 'url' && s.type === 'nav') { s.url = String(val).trim(); s.name = navNaam(s); s.detail = navUitleg(s); }
             else if (f === 'folderBy' || f === 'fileBy') { s[f] = val; if (f === 'folderBy') s.detail = val ? 'PDF → map per “' + val + '”' : 'zoals Ctrl+P → Opslaan als PDF'; renderSteps(); }
             else if (f === 'url') { s.url = val; s.detail = val; }
             else { s[f] = val; if (f === 'test' || f === 'ifFalse') renderSteps(); }
@@ -3360,6 +3457,14 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
         box.querySelectorAll('[data-lusshow]').forEach(b => b.onclick = () => { const n = toonItems(steps[+b.dataset.lusshow].spec, 3000); flash(b, n ? '✔ ' + n + ' items' : '✗ niet op deze pagina'); });
         box.querySelectorAll('[data-luspick]').forEach(b => b.onclick = () => { const s = steps[+b.dataset.luspick]; beginPick(el => { const det = autoDetectList(el); if (!det) { log('  ⚠ Geen lijst gevonden — wijs een hele regel aan.', true); return; } s.spec = det; s.detail = det.count + ' items gevonden'; toonItems(det, 2500); renderSteps(); renderFlow(); persist(); }, 'Klik op één item (regel) in de lijst'); });
         box.querySelectorAll('[data-gopage]').forEach(b => b.onclick = e => { e.stopPropagation(); const u = b.dataset.gopage; if (u) naarAdres(u); });
+        box.querySelectorAll('[data-navga]').forEach(b => b.onclick = e => { e.stopPropagation(); const u = b.dataset.navga; if (u) naarAdres(u); });
+        box.querySelectorAll('[data-navtok]').forEach(b => b.onclick = () => {
+            const s = steps[+b.dataset.navtok]; if (!s) return;
+            const inp = box.querySelector('.stparams [data-f="url"][data-i="' + b.dataset.navtok + '"]'), tok = '{{' + b.dataset.kol + '}}';
+            const cur = inp ? inp.value : (s.url || ''), p0 = inp && inp.selectionStart != null ? inp.selectionStart : cur.length, p1 = inp && inp.selectionEnd != null ? inp.selectionEnd : p0;
+            s.url = (cur.slice(0, p0) + tok + cur.slice(p1)).trim(); s.name = navNaam(s); s.detail = navUitleg(s);
+            renderSteps(); renderFlow(); persist();
+        });
         box.querySelectorAll('[data-epick]').forEach(b => b.onclick = () => externVeldAanwijzen(steps[+b.dataset.epick]));
         box.querySelectorAll('[data-eweg]').forEach(b => b.onclick = () => { const [i, j] = b.dataset.eweg.split(':').map(Number); const st = steps[i]; if (st && st.velden) { st.velden.splice(j, 1); st.detail = externUitleg(st); renderSteps(); renderFlow(); persist(); } });
         box.querySelectorAll('[data-etest]').forEach(b => b.onclick = async () => {
@@ -3811,6 +3916,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
             const intern = new Set(['ronde', 'vandaag']); steps.forEach(x => { if (x.type === 'scrape') intern.add(String(x.col || x.name || '').toLowerCase()); });
             if ((s.type === 'setval' || s.type === 'select') && (s.bron === 'eerder' || s.bron === 'logica' || s.bron === 'oplopend' || s.bron === 'vast')) return;
             ['value', 'text', 'url'].forEach(f => tokensFrom(s[f]).forEach(c => { if (!intern.has(c.toLowerCase()) && !/^vorige /i.test(c)) add(c); }));
+            if (s.urlKol) add(s.urlKol);   // adres uit een kolom (Ga naar adres, Andere pagina's uitlezen)
             if (s.match && s.match.bron === 'kolom' && !steps.some(x => x.type === 'scrape' && zelfdeNaam(x.col || x.name, s.match.col))) add(s.match.col);
         });
         return cols;
@@ -4183,7 +4289,14 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
         }
         else if (s.type === 'nav') {
             const van = location.href;
-            if (s.mode === 'url') { log('  ➜ naar ' + kortUrl(s.url)); gaNaar(s.url); }
+            if (s.mode === 'url') {
+                // Vast adres, of per ronde uit je lijst (kolom of {{kolom}} in het adres).
+                const a = navAdres(s, Object.assign({}, row || {}, extraCtx || {}));
+                if (a.mist.length) { log('  ⚠ ' + s.name + ': geen waarde voor “' + a.mist.join('”, “') + '” in deze regel'); return { ok: false }; }
+                if (!a.href) { log('  ⚠ ' + s.name + ': “' + a.adres.slice(0, 80) + '” is geen geldig adres (alleen http:// en https://)'); return { ok: false }; }
+                log('  ➜ naar ' + (navDynamisch(s) ? navToon(a.href).slice(0, 90) : kortUrl(a.href)));
+                await gaNaar(a.href);
+            }
             else if (s.mode === 'loop') {
                 const L = RUN_ST && RUN_ST.lus && RUN_ST.loops && RUN_ST.loops[RUN_ST.lus.si];
                 const doel = L && L.url;
@@ -4193,7 +4306,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
                     log('  ↩ terug naar de lijst');
                     history.back();
                     for (let t0 = Date.now(); Date.now() - t0 < 4000 && location.href === van; ) await sleep(150);
-                    if (doel && location.href !== doel) gaNaar(doel);   // terugknop bracht ons niet bij de lijst
+                    if (doel && location.href !== doel) await gaNaar(doel);   // terugknop bracht ons niet bij de lijst
                 }
             }
             else { log('  ↩ terug naar vorige pagina'); history.back(); }
@@ -4766,7 +4879,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
         if (stopReq) return;
         // De volgende ronde begint op de pagina van stap 1 (bv. terug naar het zoekformulier).
         const s0 = st.steps.find(x => x.pageUrl && x.type !== 'nav');
-        if (st.terugStart && !st.startUrl && s0 && kortUrl(s0.pageUrl) !== kortUrl()) {
+        if (st.terugStart && !st.startUrl && !begintMetAdres(st) && s0 && kortUrl(s0.pageUrl) !== kortUrl()) {
             log('  Terug naar de pagina van stap 1 voor de volgende ronde: ' + kortUrl(s0.pageUrl));
             await saveRun(st);
             let u = null; try { u = new URL(s0.pageUrl); } catch (e) {}
@@ -4856,7 +4969,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
                 continue;
             }
             // Begin van een ronde: naar de startpagina en wachten tot die écht geladen is.
-            if (si === 0 && st.startUrl && !stopReq && !(st.steps[0] && st.steps[0].type === 'nav' && st.steps[0].mode === 'url')) {
+            if (si === 0 && st.startUrl && !stopReq && !begintMetAdres(st)) {
                 const sl = rp + '_' + ri;
                 if (!zelfdeUrl(st.startUrl, location.href) && st.startNav !== sl) {
                     st.startNav = sl; await saveRun(st);
@@ -4922,10 +5035,14 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
                     attempt++;
                 }
                 // Werkt de match niet? Eén keer terug naar het adres waar dit stuk flow begint en opnieuw.
-                if (!ok && step.pageUrl && step.kind !== 'extern' && !stopReq && $('#flow-urlherstel') && $('#flow-urlherstel').checked) {
+                if (!ok && step.pageUrl && step.kind !== 'extern' && !(step.type === 'nav' && step.mode === 'url') && !stopReq && $('#flow-urlherstel') && $('#flow-urlherstel').checked) {
                     st.hersteld = st.hersteld || {}; const sl = rp + '_' + ri + '_' + si;
                     if (!st.hersteld[sl]) {
-                        st.hersteld[sl] = 1; const k0 = paginaBegin(st.steps, si), url = st.steps[k0].pageUrl || step.pageUrl;
+                        st.hersteld[sl] = 1; const k0 = paginaBegin(st.steps, si);
+                        // Kwam dit stuk na "Ga naar adres" uit je lijst? Dan terug naar het adres van DEZE regel,
+                        // niet naar het adres van tijdens het bouwen (dat hoort bij een andere regel).
+                        const voor = st.steps[k0 - 1], dyn = navDynamisch(voor) ? navAdres(voor, Object.assign({}, rows[ri] || {}, rondeCtx(st, (st.passBasis || 0) + rp * rows.length + ri + 1))).href : '';
+                        const url = dyn || st.steps[k0].pageUrl || step.pageUrl;
                         log('  ↪ Lukt niet. Terug naar het adres van stap ' + (k0 + 1) + ' (' + kortUrl(url) + ') en opnieuw vanaf daar…');
                         logE.status = 'retry'; logE.healing = { method: 'terug naar adres', confidence: 1, reden: kortUrl(url) + ', opnieuw vanaf stap ' + (k0 + 1) };
                         st.cursor = { rp, ri, si: k0 }; logE.ms = Date.now() - logE.start; logE.regel = ri + 1; st.log.push(logE); await saveRun(st);
@@ -4956,7 +5073,7 @@ html.wt-maskeer input[type="password"] { filter: blur(8px) !important; }
                     st.laatsteTussenZip = Date.now(); await saveRun(st);
                     try { const mapNu = currentFolder; currentFolder = baseFolder; const n = await downloadZip({ auto: true, soort: 'tussenstand' }); currentFolder = mapNu; if (n) log('  ⬇ Tussenstand-ZIP gedownload (' + n + ' bestanden tot nu toe).'); } catch (e) {}
                 }
-                if (pass < (st.passBasis || 0) + total && !st.startUrl) {
+                if (pass < (st.passBasis || 0) + total && !st.startUrl && !begintMetAdres(st)) {
                     const s0 = st.steps.find(x => x.pageUrl && x.type !== 'nav');
                     if (s0 && kortUrl(s0.pageUrl) !== kortUrl()) {
                         log('  ↩ Terug naar stap 1: ' + kortUrl(s0.pageUrl));
